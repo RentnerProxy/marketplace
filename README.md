@@ -1,2 +1,2 @@
-Hier entsteht der Marketplace für Apps und Module von RentnerProxy.
-Geplant sind App-Registrierung, Veröffentlichung und Auffindbarkeit für die Community.
+This repository will contain the marketplace for RentnerProxy apps and modules.
+It will provide app registration, publishing, and discovery for the community.
