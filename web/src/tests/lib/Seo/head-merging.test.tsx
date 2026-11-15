@@ -9,7 +9,10 @@ import {
     createRouter,
     notFound,
 } from '@tanstack/react-router'
-import { marketplaceRobotsDirectives, marketplaceSeoPages } from '@/config/seo.config.ts'
+import {
+    marketplaceRobotsDirectives,
+    marketplaceSeoPages,
+} from '@/config/seo.config.ts'
 import { buildMarketplacePageHead } from '@/lib/Seo/metadata.ts'
 
 async function renderHead(path: string) {
@@ -18,7 +21,10 @@ async function renderHead(path: string) {
             meta: [
                 { title: 'Private Marketplace default' },
                 { name: 'description', content: 'Private default description' },
-                { name: 'robots', content: marketplaceRobotsDirectives.private },
+                {
+                    name: 'robots',
+                    content: marketplaceRobotsDirectives.private,
+                },
             ],
         }),
         notFoundComponent: () => null,
@@ -28,11 +34,16 @@ async function renderHead(path: string) {
         path: '/apps',
         head: () => buildMarketplacePageHead('/apps'),
     })
-    const privatePage = createRoute({ getParentRoute: () => root, path: '/login' })
+    const privatePage = createRoute({
+        getParentRoute: () => root,
+        path: '/login',
+    })
     const missingArticle = createRoute({
         getParentRoute: () => root,
         path: '/missing-article',
-        loader: () => { throw notFound() },
+        loader: () => {
+            throw notFound()
+        },
         head: () => ({}),
     })
     const router = createRouter({
@@ -43,13 +54,20 @@ async function renderHead(path: string) {
     await router.load()
     return renderToStaticMarkup(
         <RouterContextProvider router={router}>
-            <html><head><HeadContent /></head><body /></html>
+            <html>
+                <head>
+                    <HeadContent />
+                </head>
+                <body />
+            </html>
         </RouterContextProvider>,
     )
 }
 
 function tags(html: string, name: string) {
-    return html.match(new RegExp(`<meta\\b[^>]*name="${name}"[^>]*>`, 'g')) ?? []
+    return (
+        html.match(new RegExp(`<meta\\b[^>]*name="${name}"[^>]*>`, 'g')) ?? []
+    )
 }
 
 describe('Real TanStack SSR head inheritance', () => {
@@ -57,10 +75,18 @@ describe('Real TanStack SSR head inheritance', () => {
         const html = await renderHead('/apps?token=private#secret')
         const page = marketplaceSeoPages.find((entry) => entry.path === '/apps')
         if (!page) throw new Error('Missing public page configuration')
-        expect(tags(html, 'robots')).toEqual([`<meta name="robots" content="${marketplaceRobotsDirectives.public}"/>`])
-        expect(html.match(/<title>[^<]*<\/title>/g)).toEqual([`<title>${page.title}</title>`])
-        expect(tags(html, 'description')).toEqual([`<meta name="description" content="${page.description}"/>`])
-        expect(html.match(/<link[^>]*rel="canonical"[^>]*>/g)).toEqual(['<link rel="canonical" href="https://market.rentner.dev/apps"/>'])
+        expect(tags(html, 'robots')).toEqual([
+            `<meta name="robots" content="${marketplaceRobotsDirectives.public}"/>`,
+        ])
+        expect(html.match(/<title>[^<]*<\/title>/g)).toEqual([
+            `<title>${page.title}</title>`,
+        ])
+        expect(tags(html, 'description')).toEqual([
+            `<meta name="description" content="${page.description}"/>`,
+        ])
+        expect(html.match(/<link[^>]*rel="canonical"[^>]*>/g)).toEqual([
+            '<link rel="canonical" href="https://market.rentner.dev/apps"/>',
+        ])
         expect(html).not.toContain('noindex')
         expect(html).not.toContain('token=')
     })
@@ -69,9 +95,15 @@ describe('Real TanStack SSR head inheritance', () => {
         'keeps the private default for %s without public metadata',
         async (path) => {
             const html = await renderHead(path)
-            expect(tags(html, 'robots')).toEqual([`<meta name="robots" content="${marketplaceRobotsDirectives.private}"/>`])
-            expect(html.match(/<title>[^<]*<\/title>/g)).toEqual(['<title>Private Marketplace default</title>'])
-            expect(tags(html, 'description')).toEqual(['<meta name="description" content="Private default description"/>'])
+            expect(tags(html, 'robots')).toEqual([
+                `<meta name="robots" content="${marketplaceRobotsDirectives.private}"/>`,
+            ])
+            expect(html.match(/<title>[^<]*<\/title>/g)).toEqual([
+                '<title>Private Marketplace default</title>',
+            ])
+            expect(tags(html, 'description')).toEqual([
+                '<meta name="description" content="Private default description"/>',
+            ])
             expect(html).not.toContain('rel="canonical"')
         },
     )

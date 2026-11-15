@@ -1,5 +1,8 @@
 import { isRedirect } from '@tanstack/react-router'
-import { marketplaceRobotsDirectives, marketplaceSeoPages } from '@/config/seo.config.ts'
+import {
+    marketplaceRobotsDirectives,
+    marketplaceSeoPages,
+} from '@/config/seo.config.ts'
 import { marketplaceBlogPublishedPosts } from '@/features/MarketplaceBlog/marketplace-blog.config.ts'
 import { parseMarketplaceBlogPublishedPosts } from '@/features/MarketplaceBlog/validation.ts'
 
@@ -15,8 +18,11 @@ export function getMarketplaceRobotsDirectiveService(
     handlerType: string,
     status = 200,
 ): string {
-    const canonicalPath = pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
-    return handlerType !== 'serverFn' && status < 300 && indexablePaths.has(canonicalPath)
+    const canonicalPath =
+        pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
+    return handlerType !== 'serverFn' &&
+        status < 300 &&
+        indexablePaths.has(canonicalPath)
         ? marketplaceRobotsDirectives.public
         : marketplaceRobotsDirectives.private
 }
@@ -26,7 +32,11 @@ export function addMarketplaceIndexingHeadersService(
     pathname: string,
     handlerType: string,
 ): Response {
-    const directive = getMarketplaceRobotsDirectiveService(pathname, handlerType, response.status)
+    const directive = getMarketplaceRobotsDirectiveService(
+        pathname,
+        handlerType,
+        response.status,
+    )
     try {
         response.headers.set('x-robots-tag', directive)
         return response

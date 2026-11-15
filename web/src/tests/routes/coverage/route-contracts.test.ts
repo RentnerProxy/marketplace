@@ -326,8 +326,14 @@ describe('Thin route boundary contracts', () => {
         'explicitly indexes only public page %s with its canonical URL',
         (path) => {
             const head = route(path).head!()
-            expect(head.meta).toContainEqual({ name: 'robots', content: 'index, follow, max-image-preview:large' })
-            expect(head.links).toContainEqual({ rel: 'canonical', href: `https://market.rentner.dev${path}` })
+            expect(head.meta).toContainEqual({
+                name: 'robots',
+                content: 'index, follow, max-image-preview:large',
+            })
+            expect(head.links).toContainEqual({
+                rel: 'canonical',
+                href: `https://market.rentner.dev${path}`,
+            })
             expect(route('/register').head).toBeUndefined()
         },
     )
@@ -336,7 +342,10 @@ describe('Thin route boundary contracts', () => {
         const options = route('__root')
         const head = options.head!()
         expect(head.meta).toContainEqual({ charSet: 'utf-8' })
-        expect(head.meta).toContainEqual({ name: 'robots', content: 'noindex, nofollow, nosnippet' })
+        expect(head.meta).toContainEqual({
+            name: 'robots',
+            content: 'noindex, nofollow, nosnippet',
+        })
         expect(head.meta).toContainEqual({ title: PROJECT_CONFIG.defaultName })
         expect(head.meta).toContainEqual({
             name: 'viewport',

@@ -31,18 +31,39 @@ installStorageMutationBarrierFatalExitHandlerService()
 
 const searchVisibilityMiddleware = createMiddleware({ type: 'request' }).server(
     async function ({ pathname, handlerType, next }) {
-        setResponseHeader('x-robots-tag', getMarketplaceRobotsDirectiveService(pathname, handlerType))
+        setResponseHeader(
+            'x-robots-tag',
+            getMarketplaceRobotsDirectiveService(pathname, handlerType),
+        )
         try {
             const result = await next()
-            setResponseHeader('x-robots-tag', getMarketplaceRobotsDirectiveService(pathname, handlerType, result.response.status))
+            setResponseHeader(
+                'x-robots-tag',
+                getMarketplaceRobotsDirectiveService(
+                    pathname,
+                    handlerType,
+                    result.response.status,
+                ),
+            )
             return {
                 ...result,
-                response: addMarketplaceIndexingHeadersService(result.response, pathname, handlerType),
+                response: addMarketplaceIndexingHeadersService(
+                    result.response,
+                    pathname,
+                    handlerType,
+                ),
             }
         } catch (error) {
-            setResponseHeader('x-robots-tag', marketplaceRobotsDirectives.private)
+            setResponseHeader(
+                'x-robots-tag',
+                marketplaceRobotsDirectives.private,
+            )
             if (error instanceof Response) {
-                throw addMarketplaceIndexingHeadersService(error, pathname, handlerType)
+                throw addMarketplaceIndexingHeadersService(
+                    error,
+                    pathname,
+                    handlerType,
+                )
             }
             throw error
         }
@@ -56,7 +77,11 @@ const passwordResetPrivacyMiddleware = createMiddleware({
     if (legacyRedirect) {
         return legacyRedirect
     }
-    if (!isPasswordResetPath(pathname) && !isFirstSuperUserSetupPath(pathname) && handlerType !== 'serverFn') {
+    if (
+        !isPasswordResetPath(pathname) &&
+        !isFirstSuperUserSetupPath(pathname) &&
+        handlerType !== 'serverFn'
+    ) {
         return next()
     }
 

@@ -17,7 +17,8 @@ export const Route = createFileRoute('/blog_/$slug')({
         if (!post) throw notFound()
         return { post }
     },
-    head: ({ loaderData }) => loaderData ? buildMarketplaceBlogArticleHead(loaderData.post) : {},
+    head: ({ loaderData }) =>
+        loaderData ? buildMarketplaceBlogArticleHead(loaderData.post) : {},
     component: MarketplaceBlogArticleRoute,
 })
 

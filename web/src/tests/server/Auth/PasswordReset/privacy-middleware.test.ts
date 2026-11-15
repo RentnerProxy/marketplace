@@ -604,37 +604,58 @@ describe('Start password-reset privacy middleware', () => {
     )
 
     it.each(['/setup', '/setup/', '/%73etup'])(
-        'keeps the bootstrap page at %s private and out of search results', async (path) => {
+        'keeps the bootstrap page at %s private and out of search results',
+        async (path) => {
             const response = await frameworkEntry.fetch(requestFor(path), {})
             expect(response.status).toBe(200)
             expectPrivacy(response.headers)
-            expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow, nosnippet')
+            expect(response.headers.get('x-robots-tag')).toBe(
+                'noindex, nofollow, nosnippet',
+            )
         },
     )
 
-    it.each(['/login', '/register', '/admin/users', '/user/dashboard', '/blog/unpublished'])(
-        'prevents indexing nonpublic or unknown content at %s', async (path) => {
-            const response = await frameworkEntry.fetch(requestFor(path), {})
-            expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow, nosnippet')
-        },
-    )
+    it.each([
+        '/login',
+        '/register',
+        '/admin/users',
+        '/user/dashboard',
+        '/blog/unpublished',
+    ])('prevents indexing nonpublic or unknown content at %s', async (path) => {
+        const response = await frameworkEntry.fetch(requestFor(path), {})
+        expect(response.headers.get('x-robots-tag')).toBe(
+            'noindex, nofollow, nosnippet',
+        )
+    })
 
     it('allows a successful public page while excluding its error response', async () => {
         const response = await frameworkEntry.fetch(requestFor('/apps'), {})
-        expect(response.headers.get('x-robots-tag')).toBe('index, follow, max-image-preview:large')
-        terminal.mockResolvedValueOnce(new Response('Synthetic unavailable page', { status: 503 }))
+        expect(response.headers.get('x-robots-tag')).toBe(
+            'index, follow, max-image-preview:large',
+        )
+        terminal.mockResolvedValueOnce(
+            new Response('Synthetic unavailable page', { status: 503 }),
+        )
         const unavailable = await frameworkEntry.fetch(requestFor('/apps'), {})
         expect(unavailable.status).toBe(503)
-        expect(unavailable.headers.get('x-robots-tag')).toBe('noindex, nofollow, nosnippet')
+        expect(unavailable.headers.get('x-robots-tag')).toBe(
+            'noindex, nofollow, nosnippet',
+        )
     })
 
     it('marks an unhandled public-page failure noindex through the actual Start error converter', async () => {
-        terminal.mockRejectedValueOnce(new Error('Synthetic public-page failure'))
+        terminal.mockRejectedValueOnce(
+            new Error('Synthetic public-page failure'),
+        )
         const log = vi.spyOn(console, 'error').mockImplementation(() => {})
         try {
             const response = await frameworkEntry.fetch(requestFor('/'), {})
             expect(response.status).toBe(500)
-            expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow, nosnippet')
-        } finally { log.mockRestore() }
+            expect(response.headers.get('x-robots-tag')).toBe(
+                'noindex, nofollow, nosnippet',
+            )
+        } finally {
+            log.mockRestore()
+        }
     })
 })

@@ -1,5 +1,9 @@
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
-import { marketplacePublicOrigin, marketplaceRobotsDirectives, marketplaceSeoPages } from '@/config/seo.config.ts'
+import {
+    marketplacePublicOrigin,
+    marketplaceRobotsDirectives,
+    marketplaceSeoPages,
+} from '@/config/seo.config.ts'
 import type { MarketplaceSeoPage } from './Types/seo.types.ts'
 
 export function marketplaceCanonicalUrl(path: string): string {
@@ -7,7 +11,10 @@ export function marketplaceCanonicalUrl(path: string): string {
     return `${marketplacePublicOrigin}${pathname}`
 }
 
-export function buildMarketplaceHead(page: MarketplaceSeoPage, article = false) {
+export function buildMarketplaceHead(
+    page: MarketplaceSeoPage,
+    article = false,
+) {
     const canonical = marketplaceCanonicalUrl(page.path)
     const image = marketplaceCanonicalUrl('/brand/marketplace-logo-1280.webp')
     return {
