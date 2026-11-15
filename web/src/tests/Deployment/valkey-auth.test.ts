@@ -72,9 +72,12 @@ afterEach(async function () {
 
 // Independent Valkey ACL protocol vectors; abc is the standard SHA-256 test vector.
 const valkeyAclVectors = new Map([
-    ["", 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],
-    ["abc", 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'],
-    ["synthetic $() ; % \"' \\ unicode-ä-only", '06b020998b7a52d4b90b371c08d4f765236669bf140c705126072e2892b50ab8'],
+    ['', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],
+    ['abc', 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'],
+    [
+        'synthetic $() ; % "\' \\ unicode-ä-only',
+        '06b020998b7a52d4b90b371c08d4f765236669bf140c705126072e2892b50ab8',
+    ],
 ])
 
 async function executeSyntheticCommand(options: {
@@ -147,10 +150,7 @@ async function executeSyntheticCommand(options: {
 }
 
 describe('embedded Valkey authentication', function () {
-    shellTest.each([
-        'abc',
-        'synthetic $() ; % "\' \\ unicode-ä-only',
-    ])(
+    shellTest.each(['abc', 'synthetic $() ; % "\' \\ unicode-ä-only'])(
         'hashes the password exactly without shell injection, secret arguments or logging',
         async function (password) {
             const result = await executeSyntheticCommand({ password })

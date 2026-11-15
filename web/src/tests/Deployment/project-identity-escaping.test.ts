@@ -194,7 +194,11 @@ describe('project identity escaping', function () {
                 `MAIL_FROM_NAME="${doubleQuoted(defaultName)}"`,
             )
             expect(
-                renderProjectIdentityFile('.env.dev.example', rendered, identity),
+                renderProjectIdentityFile(
+                    '.env.dev.example',
+                    rendered,
+                    identity,
+                ),
             ).toBe(rendered)
             const restored = renderProjectIdentityFile(
                 '.env.dev.example',
@@ -203,7 +207,11 @@ describe('project identity escaping', function () {
             )
             expect(await readWithBunEnvFile(restored)).toBe('')
             expect(restored).toBe(
-                renderProjectIdentityFile('.env.dev.example', original, renamed),
+                renderProjectIdentityFile(
+                    '.env.dev.example',
+                    original,
+                    renamed,
+                ),
             )
         },
     )

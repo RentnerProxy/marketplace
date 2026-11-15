@@ -10,7 +10,10 @@ import {
 
 const SETUP_LOG_CHECK_INTERVAL_MS = 30_000
 
-export async function startFirstSuperUserSetupLogService(origin: string, signal?: AbortSignal) {
+export async function startFirstSuperUserSetupLogService(
+    origin: string,
+    signal?: AbortSignal,
+) {
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
 

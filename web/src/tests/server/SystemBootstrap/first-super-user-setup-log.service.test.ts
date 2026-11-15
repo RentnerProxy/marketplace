@@ -65,7 +65,10 @@ describe('automatischer First-Superuser-Link in den App-Logs', function () {
     it('does not start bootstrap work when startup was already aborted', async function () {
         const controller = new AbortController()
         controller.abort()
-        await startFirstSuperUserSetupLogService('http://localhost:3000', controller.signal)
+        await startFirstSuperUserSetupLogService(
+            'http://localhost:3000',
+            controller.signal,
+        )
         expect(status).not.toHaveBeenCalled()
         expect(createAccess).not.toHaveBeenCalled()
         expect(output).toBe('')
@@ -79,7 +82,10 @@ describe('automatischer First-Superuser-Link in den App-Logs', function () {
             accessStarted.resolve()
             return pending.promise
         })
-        const starting = startFirstSuperUserSetupLogService('http://localhost:3000', controller.signal)
+        const starting = startFirstSuperUserSetupLogService(
+            'http://localhost:3000',
+            controller.signal,
+        )
         await accessStarted.promise
         controller.abort()
         pending.resolve(token)

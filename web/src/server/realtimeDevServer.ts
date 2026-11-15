@@ -15,15 +15,12 @@ process.env.DATABASE_URL = environment.DATABASE_URL
 process.env.VALKEY_URL = environment.VALKEY_URL
 const setupAbort = new AbortController()
 
-const { handleRealtimePublishBridge, setRealtimeServer } = await import(
-    '@/websockets/Server/realtimeServer.ts'
-)
-const { handleRealtimeUpgrade, realtimeWebSocketHandler } = await import(
-    '@/websockets/Server/realtimeWebSocket.ts'
-)
-const { startRealtimeValkeySubscriber } = await import(
-    '@/websockets/Server/realtimeValkey.ts'
-)
+const { handleRealtimePublishBridge, setRealtimeServer } =
+    await import('@/websockets/Server/realtimeServer.ts')
+const { handleRealtimeUpgrade, realtimeWebSocketHandler } =
+    await import('@/websockets/Server/realtimeWebSocket.ts')
+const { startRealtimeValkeySubscriber } =
+    await import('@/websockets/Server/realtimeValkey.ts')
 
 const DEV_REALTIME_PUBLISH_SECRET = 'xwf'
 
@@ -98,13 +95,14 @@ async function shutdown() {
         Promise.resolve().then(() => subscriber?.disconnect()),
     ])
     if (results.some((result) => result.status === 'rejected')) {
-        throw new Error('Development-Verbindungen konnten nicht vollständig beendet werden.')
+        throw new Error(
+            'Development-Verbindungen konnten nicht vollständig beendet werden.',
+        )
     }
 }
 
-const { startFirstSuperUserSetupLogService } = await import(
-    '@/server/SystemBootstrap/first-super-user-setup-log.service.ts'
-)
+const { startFirstSuperUserSetupLogService } =
+    await import('@/server/SystemBootstrap/first-super-user-setup-log.service.ts')
 await startFirstSuperUserSetupLogService(environment.ORIGIN, setupAbort.signal)
 
 const realtimeDevUrl = new URL(

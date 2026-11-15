@@ -31,22 +31,46 @@ describe('development setup environment', function () {
     it.each(['', 'http://localhost:6379', 'invalid-secret-value'])(
         'rejects missing or invalid Valkey configuration without echoing it',
         function (VALKEY_URL) {
-            expect(() => parseDevelopmentSetupEnvironmentService({ ...environment, VALKEY_URL })).toThrow('VALKEY_URL auf eine erreichbare Valkey-Instanz')
+            expect(() =>
+                parseDevelopmentSetupEnvironmentService({
+                    ...environment,
+                    VALKEY_URL,
+                }),
+            ).toThrow('VALKEY_URL auf eine erreichbare Valkey-Instanz')
         },
     )
 
     it('reports invalid database configuration without printing its value', function () {
-        expect(() => parseDevelopmentSetupEnvironmentService({ ...environment, DATABASE_URL: 'synthetic-private-value' })).toThrow('DATABASE_URL oder eine vollständige POSTGRES-Konfiguration')
+        expect(() =>
+            parseDevelopmentSetupEnvironmentService({
+                ...environment,
+                DATABASE_URL: 'synthetic-private-value',
+            }),
+        ).toThrow('DATABASE_URL oder eine vollständige POSTGRES-Konfiguration')
     })
 
-    it.each(['https://localhost/path', 'https://user:synthetic@localhost', 'file:///tmp/test'])(
+    it.each([
+        'https://localhost/path',
+        'https://user:synthetic@localhost',
+        'file:///tmp/test',
+    ])(
         'requires an exact public web origin without credentials',
         function (ORIGIN) {
-            expect(() => parseDevelopmentSetupEnvironmentService({ ...environment, ORIGIN })).toThrow('ORIGIN muss die http(s)-Origin')
+            expect(() =>
+                parseDevelopmentSetupEnvironmentService({
+                    ...environment,
+                    ORIGIN,
+                }),
+            ).toThrow('ORIGIN muss die http(s)-Origin')
         },
     )
 
     it('rejects use as a production startup path', function () {
-        expect(() => parseDevelopmentSetupEnvironmentService({ ...environment, NODE_ENV: 'production' })).toThrow('darf nicht in Produktion')
+        expect(() =>
+            parseDevelopmentSetupEnvironmentService({
+                ...environment,
+                NODE_ENV: 'production',
+            }),
+        ).toThrow('darf nicht in Produktion')
     })
 })
