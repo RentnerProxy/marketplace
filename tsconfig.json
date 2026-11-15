@@ -1,0 +1,28 @@
+{
+    "include": ["**/*.ts", "**/*.tsx"],
+    "exclude": ["node_modules", "core/target"],
+
+    "compilerOptions": {
+        "target": "ES2022",
+        "jsx": "react-jsx",
+        "module": "ESNext",
+        "paths": {
+            "@/*": ["./web/src/*"]
+        },
+        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "types": ["bun", "vite/client"],
+
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "noEmit": true,
+
+        "skipLibCheck": true,
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true
+    }
+}

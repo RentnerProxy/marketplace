@@ -1,0 +1,14 @@
+title = "RentnerProxy Marketplace"
+
+[extend]
+useDefault = true
+
+# Public deterministic compatibility fixture, derived from public 0x13 seed bytes.
+# Both the exact path and reviewed JSON line must match; changed keys still fail.
+[[allowlists]]
+description = "Deterministic restore-journal compatibility fixture key"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|[\\/])core[\\/]tests[\\/]fixtures[\\/]restore-journal-v1\.json$''']
+regexes = ['''^\s*"keyBase64": "IK7cwUMrL8dmZehRwyCA/V5iTy20uNN08iJjVUsfpIE=",\s*$''']

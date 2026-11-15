@@ -1,0 +1,16 @@
+services:
+    marketplace:
+        image: ghcr.io/rentnerproxy/marketplace:latest
+        restart: unless-stopped
+        init: true
+        stop_grace_period: 4h10m
+        ports:
+            - '${APP_PORT:-6600}:3000'
+        env_file:
+            - .env
+        volumes:
+            - marketplace_data:/data
+            - ${BACKUP_PATH:-./backups}:/data/backups
+
+volumes:
+    marketplace_data:

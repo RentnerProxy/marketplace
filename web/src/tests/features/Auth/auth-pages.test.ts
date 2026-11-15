@@ -1,0 +1,298 @@
+import { beforeEach, describe, expect, it, vi } from 'bun:test'
+import { createElement } from 'react'
+import type { AnchorHTMLAttributes, ReactNode } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { PASSWORD_POLICY } from '@/config/security.config.ts'
+import type { CreateFirstSuperUserAccountLogicReturn } from '@/features/Auth/FirstSuperUser/Types/first-super-user-form.types.ts'
+import type { PasswordResetClientPhase } from '@/lib/Auth/PasswordReset/Types/password-reset-controller.types.ts'
+
+const submit = vi.fn()
+const change = vi.fn()
+const values: Record<string, string> = { username: 'starter-admin', email: '' }
+
+function Field({
+    name,
+    children,
+}: {
+    name: string
+    children: (field: {
+        name: string
+        state: { value: string }
+        handleChange: (value: string) => void
+    }) => ReactNode
+}) {
+    return children({
+        name,
+        state: { value: values[name] ?? '' },
+        handleChange: (value) => change(name, value),
+    })
+}
+
+const loginState = {
+    isLoading: false,
+    isPasskeyLoading: false,
+    requiresTwoFactor: false,
+    twoFactorCode: ['', '', '', '', '', ''],
+    trustThisDevice: false,
+    isTwoFactorError: false,
+}
+const resetState: { phase: PasswordResetClientPhase; isLoading: boolean } = {
+    phase: 'ready',
+    isLoading: false,
+}
+const forgotState = { isLoading: false }
+const setupState: CreateFirstSuperUserAccountLogicReturn['state'] = {
+    setupAccessState: 'granted',
+    isCreating: false,
+    formValues: {
+        username: 'starter-admin',
+        email: 'admin@example.test',
+        password: '',
+        confirmPassword: '',
+        firstName: 'Ada',
+        lastName: 'Tester',
+        street: 'Teststraße',
+        houseNumber: '12',
+        postalCode: '12345',
+        city: 'Teststadt',
+    },
+}
+const headerState = {
+    companyName: 'Test Workspace',
+    hasCustomLogo: false,
+    logoSrc: '/custom-logo.webp',
+}
+
+vi.mock('@/language/useTranslationStore.ts', () => ({
+    default: () => ({ t: (key: string) => key }),
+}))
+vi.mock('@tanstack/react-router', () => ({
+    Link: ({
+        to,
+        children,
+        ...props
+    }: AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) =>
+        createElement('a', { ...props, href: to }, children),
+}))
+vi.mock('@/shared/AddressFormFields/index.tsx', () => ({
+    default: ({ values: address }: { values: { city: string } }) =>
+        createElement('output', null, address.city),
+}))
+vi.mock('@/features/Auth/Login/Hooks/useLoginLogic.ts', () => ({
+    default: () => ({
+        state: loginState,
+        form: { Field },
+        handler: {
+            handleSubmit: submit,
+            handlePasskeyLogin: submit,
+            handleTwoFactorSubmit: submit,
+            handleTwoFactorChange: change,
+            handleTwoFactorRef: change,
+            handleBackToLogin: submit,
+        },
+        setter: { setTrustThisDevice: change },
+    }),
+}))
+vi.mock('@/features/Auth/Login/Hooks/useLoginHeaderLogic.ts', () => ({
+    default: () => ({ state: headerState }),
+}))
+vi.mock(
+    '@/features/Auth/ForgotPassword/Hooks/usePasswordForgotLogic.ts',
+    () => ({
+        default: () => ({
+            state: forgotState,
+            handler: { handleSubmit: submit },
+            form: { Field },
+        }),
+    }),
+)
+vi.mock('@/features/Auth/PasswordReset/Hooks/usePasswordResetLogic.ts', () => ({
+    default: () => ({
+        state: resetState,
+        handler: { handleSubmit: submit, handleRetryValidation: submit },
+        form: { Field },
+    }),
+}))
+vi.mock(
+    '@/features/Auth/FirstSuperUser/Hooks/useCreateFirstSuperUserAccountLogic.ts',
+    () => ({
+        default: () => ({
+            state: setupState,
+            handler: { handleSubmit: submit },
+            setter: { setFieldValue: change },
+        }),
+    }),
+)
+
+import Login from '@/features/Auth/Login/index.tsx'
+import ForgotPassword from '@/features/Auth/ForgotPassword/index.tsx'
+import PasswordReset from '@/features/Auth/PasswordReset/index.tsx'
+import Setup from '@/features/Auth/FirstSuperUser/index.tsx'
+import Privacy from '@/features/Auth/Privacy/index.tsx'
+import Terms from '@/features/Auth/Terms/index.tsx'
+
+beforeEach(function () {
+    vi.clearAllMocks()
+    Object.assign(loginState, {
+        isLoading: false,
+        isPasskeyLoading: false,
+        requiresTwoFactor: false,
+        trustThisDevice: false,
+        isTwoFactorError: false,
+    })
+    Object.assign(resetState, { phase: 'ready', isLoading: false })
+    Object.assign(setupState, {
+        setupAccessState: 'granted',
+        isCreating: false,
+    })
+    forgotState.isLoading = false
+    headerState.hasCustomLogo = false
+    headerState.logoSrc = '/rentnerproxy-logo.png'
+})
+
+describe('authentication page states', function () {
+    it('renders credentials, recovery and passkey choices with default branding', function () {
+        const html = renderToStaticMarkup(createElement(Login))
+        expect(html).toContain('Test Workspace')
+        expect(html).toContain('value="starter-admin"')
+        expect(html).toContain('type="password"')
+        expect(html).toContain('href="/forgot-password"')
+        expect(html).not.toContain('/custom-logo.webp')
+    })
+
+    it('shows custom branding and independent pending labels', function () {
+        headerState.hasCustomLogo = true
+        headerState.logoSrc = '/custom-logo.webp'
+        loginState.isLoading = true
+        loginState.isPasskeyLoading = true
+        const html = renderToStaticMarkup(createElement(Login))
+        expect(html).toContain('/custom-logo.webp')
+        expect(html).toContain('alt="Test Workspace"')
+        expect(html).toContain('auth.login.loggingIn')
+        expect(html).toContain('auth.login.passkeyLoggingIn')
+        expect(html.match(/disabled=""/g)).toHaveLength(2)
+    })
+
+    it('replaces credential controls with the two-factor challenge', function () {
+        loginState.requiresTwoFactor = true
+        loginState.isTwoFactorError = true
+        loginState.trustThisDevice = true
+        const html = renderToStaticMarkup(createElement(Login))
+        expect(html).toContain('auth.twoFactor.title')
+        expect(html).toContain('auth.login.twoFactorCodeIncomplete')
+        expect(html).toContain('type="checkbox"')
+        expect(html).toContain('checked=""')
+        expect(html).not.toContain('href="/forgot-password"')
+        expect(html).not.toContain('type="password"')
+    })
+
+    it.each([false, true])(
+        'keeps recovery navigation while a request is pending=%s',
+        function (pending) {
+            forgotState.isLoading = pending
+            const html = renderToStaticMarkup(createElement(ForgotPassword))
+            expect(html).toContain('type="email"')
+            expect(html).toContain('required=""')
+            expect(html).toContain('href="/login"')
+            expect(html).toContain(
+                pending
+                    ? 'auth.forgotPassword.requesting'
+                    : 'auth.forgotPassword.requestLink',
+            )
+            expect(html.includes('disabled=""')).toBe(pending)
+        },
+    )
+
+    it.each(['checking', 'unavailable'] as const)(
+        'hides password entry while validation is %s',
+        function (phase) {
+            resetState.phase = phase
+            const html = renderToStaticMarkup(createElement(PasswordReset))
+            expect(html).toContain('role="status"')
+            expect(html).not.toContain('type="password"')
+            expect(html).toContain(
+                phase === 'unavailable'
+                    ? 'auth.passwordReset.retryValidation'
+                    : 'auth.passwordReset.validating',
+            )
+        },
+    )
+
+    it.each([false, true])(
+        'renders both password fields with the policy and submitting=%s',
+        function (pending) {
+            resetState.phase = pending ? 'submitting' : 'ready'
+            resetState.isLoading = pending
+            const html = renderToStaticMarkup(createElement(PasswordReset))
+            expect(html.match(/type="password"/g)).toHaveLength(2)
+            expect(html).toContain(
+                `minLength="${PASSWORD_POLICY.minimumNewLength}"`,
+            )
+            expect(html).toContain(
+                `maxLength="${PASSWORD_POLICY.maximumLength}"`,
+            )
+            expect(html).toContain('aria-describedby="reset-password-policy"')
+            expect(html).toContain('href="/login"')
+            expect(html).toContain(
+                pending
+                    ? 'auth.passwordReset.saving'
+                    : 'auth.passwordReset.save',
+            )
+        },
+    )
+
+    it.each(['checking', 'missing'] as const)(
+        'keeps first-user inputs hidden until setup access is granted (%s)',
+        function (phase) {
+            setupState.setupAccessState = phase
+            const html = renderToStaticMarkup(createElement(Setup))
+            expect(html).toContain('<main')
+            expect(html).not.toContain('<form')
+            expect(html).not.toContain('admin@example.test')
+            expect(html).toContain(
+                phase === 'checking'
+                    ? 'auth.firstSetup.checkingSetupLink'
+                    : 'auth.firstSetup.setupLinkRequired',
+            )
+        },
+    )
+
+    it.each([false, true])(
+        'renders initial account/personal data and protects pending submissions=%s',
+        function (pending) {
+            setupState.isCreating = pending
+            const html = renderToStaticMarkup(createElement(Setup))
+            expect(html).toContain('<form')
+            expect(html).toContain('admin@example.test')
+            expect(html).toContain('value="Ada"')
+            expect(html).toContain('Teststadt')
+            expect(html).toContain('first-setup-password-policy')
+            expect(html).toContain(
+                pending ? 'auth.firstSetup.creating' : 'auth.firstSetup.create',
+            )
+            expect(html.includes('disabled=""')).toBe(pending)
+        },
+    )
+
+    it.each([
+        {
+            Component: Privacy,
+            title: 'auth.privacy.title',
+            content: 'auth.privacy.placeholder',
+        },
+        {
+            Component: Terms,
+            title: 'auth.terms.title',
+            content: 'auth.terms.placeholder',
+        },
+    ])(
+        'renders the public legal page $title',
+        function ({ Component, title, content }) {
+            const html = renderToStaticMarkup(createElement(Component))
+            expect(html).toContain(
+                `<h1 class="text-2xl font-bold text-white">${title}</h1>`,
+            )
+            expect(html).toContain(content)
+        },
+    )
+})

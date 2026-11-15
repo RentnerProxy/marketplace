@@ -1,0 +1,89 @@
+version: 2
+updates:
+    - package-ecosystem: 'bun'
+      directory: '/'
+      schedule:
+          interval: 'cron'
+          cronjob: '0 3 * * *'
+          timezone: 'Europe/Berlin'
+      cooldown:
+          default-days: 1
+      commit-message:
+          prefix: 'chore'
+          include: 'scope'
+      labels: ['dependencies', 'bun']
+      open-pull-requests-limit: 10
+      groups:
+          bun-minor-and-patch:
+              applies-to: 'version-updates'
+              patterns: ['*']
+              update-types: ['minor', 'patch']
+    - package-ecosystem: 'cargo'
+      directory: '/core'
+      schedule:
+          interval: 'cron'
+          cronjob: '0 3 * * *'
+          timezone: 'Europe/Berlin'
+      cooldown:
+          default-days: 1
+      commit-message:
+          prefix: 'chore'
+          include: 'scope'
+      labels: ['dependencies', 'cargo']
+      open-pull-requests-limit: 10
+      groups:
+          cargo-minor-and-patch:
+              applies-to: 'version-updates'
+              patterns: ['*']
+              update-types: ['minor', 'patch']
+    - package-ecosystem: 'docker'
+      directory: '/'
+      schedule:
+          interval: 'cron'
+          cronjob: '0 3 * * *'
+          timezone: 'Europe/Berlin'
+      cooldown:
+          default-days: 1
+      commit-message:
+          prefix: 'chore'
+          include: 'scope'
+      labels: ['dependencies', 'docker']
+      open-pull-requests-limit: 10
+      groups:
+          docker-by-dependency:
+              applies-to: 'version-updates'
+              group-by: 'dependency-name'
+    - package-ecosystem: 'docker-compose'
+      directory: '/'
+      schedule:
+          interval: 'cron'
+          cronjob: '0 3 * * *'
+          timezone: 'Europe/Berlin'
+      cooldown:
+          default-days: 1
+      commit-message:
+          prefix: 'chore'
+          include: 'scope'
+      labels: ['dependencies', 'docker-compose']
+      open-pull-requests-limit: 10
+      ignore:
+          # Do not recursively update Marketplace's own release channel.
+          - dependency-name: 'rentnerproxy/marketplace'
+    - package-ecosystem: 'github-actions'
+      directory: '/'
+      schedule:
+          interval: 'cron'
+          cronjob: '0 3 * * *'
+          timezone: 'Europe/Berlin'
+      cooldown:
+          default-days: 1
+      commit-message:
+          prefix: 'chore'
+          include: 'scope'
+      labels: ['dependencies', 'github-actions']
+      open-pull-requests-limit: 10
+      groups:
+          github-actions-minor-and-patch:
+              applies-to: 'version-updates'
+              patterns: ['*']
+              update-types: ['minor', 'patch']

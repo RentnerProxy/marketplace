@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+export PGPASSWORD="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+exec su-exec postgres:postgres psql -X -h 127.0.0.1 -p 5432 \
+    -U "${POSTGRES_USER:-postgres}" -d "$POSTGRES_DB" "$@"

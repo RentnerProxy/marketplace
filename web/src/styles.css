@@ -1,0 +1,197 @@
+@import 'tailwindcss';
+@import '@rentnerkev/tooltips/tailwind.css';
+@import '@rentnerkev/toasts/tailwind.css';
+@import '@rentnerkev/inputs/tailwind.css';
+@import '@rentnerkev/calendar/tailwind.css';
+@import '@rentnerkev/select/tailwind.css';
+@import '@rentnerkev/picker/tailwind.css';
+
+@theme {
+    --font-sans:
+        'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    --color-primary: #30ee61;
+    --color-primary-hover: #65f586;
+    --color-primary-foreground: #020a0b;
+    --color-primary-hover-foreground: #020a0b;
+    --color-primary-text: #65f586;
+    --color-background-dark: #0f1014;
+    --color-surface-dark: #181a1f;
+    --color-input-dark: #22252b;
+    --color-border-dark: #2e323b;
+    --color-secondary-text: #9ca3af;
+    --color-foreground: #ffffff;
+    --color-focus-ring: #65f586;
+    --color-success: #a7f3d0;
+    --color-warning: #fde68a;
+    --color-danger: #fca5a5;
+}
+
+html,
+body {
+    min-height: 100%;
+    background: var(--color-background-dark);
+    color: var(--color-foreground);
+}
+
+html {
+    color-scheme: dark;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+.app-theme-light .text-white {
+    color: var(--color-foreground);
+}
+
+.bg-primary.text-white {
+    color: var(--color-primary-foreground);
+}
+
+@media (hover: hover) {
+    .bg-primary.text-white.hover\:bg-primary-hover:hover {
+        color: var(--color-primary-hover-foreground);
+    }
+
+    .app-theme-light .hover\:text-white:hover {
+        color: var(--color-foreground);
+    }
+}
+
+.app-theme-light .text-primary {
+    color: var(--color-primary-text);
+}
+
+.app-theme-light .bg-red-500.text-white,
+.app-theme-light .bg-red-600.text-white,
+.app-theme-light .bg-emerald-600.text-white {
+    color: #ffffff;
+}
+
+.app-theme-light .text-amber-100,
+.app-theme-light .text-amber-200,
+.app-theme-light .text-amber-300,
+.app-theme-light .text-amber-500,
+.app-theme-light .text-amber-200\/70,
+.app-theme-light .text-yellow-100,
+.app-theme-light .text-yellow-200,
+.app-theme-light .text-yellow-50\/80 {
+    color: var(--color-warning);
+}
+
+.app-theme-light .text-green-100,
+.app-theme-light .text-green-200,
+.app-theme-light .text-green-300,
+.app-theme-light .text-green-400,
+.app-theme-light .text-green-100\/90,
+.app-theme-light .text-emerald-100,
+.app-theme-light .text-emerald-200,
+.app-theme-light .text-emerald-300,
+.app-theme-light .text-emerald-400,
+.app-theme-light .text-emerald-500 {
+    color: var(--color-success);
+}
+
+.app-theme-light .text-red-100,
+.app-theme-light .text-red-200,
+.app-theme-light .text-red-300,
+.app-theme-light .text-red-400,
+.app-theme-light .text-red-500,
+.app-theme-light .text-red-100\/90,
+.app-theme-light .text-red-300\/80 {
+    color: var(--color-danger);
+}
+
+@media (hover: hover) {
+    .app-theme-light .hover\:text-amber-100:hover,
+    .app-theme-light .hover\:text-amber-200:hover,
+    .app-theme-light .hover\:text-amber-300:hover,
+    .app-theme-light .hover\:text-yellow-100:hover,
+    .app-theme-light .hover\:text-yellow-200:hover,
+    .app-theme-light .hover\:text-yellow-300:hover {
+        color: var(--color-warning);
+    }
+
+    .app-theme-light .hover\:text-green-100:hover,
+    .app-theme-light .hover\:text-green-200:hover,
+    .app-theme-light .hover\:text-green-300:hover,
+    .app-theme-light .hover\:text-emerald-100:hover,
+    .app-theme-light .hover\:text-emerald-200:hover,
+    .app-theme-light .hover\:text-emerald-300:hover {
+        color: var(--color-success);
+    }
+
+    .app-theme-light .hover\:text-red-100:hover,
+    .app-theme-light .hover\:text-red-200:hover,
+    .app-theme-light .hover\:text-red-300:hover {
+        color: var(--color-danger);
+    }
+}
+
+.app-theme-light .border-primary\/30 {
+    border-color: var(--color-primary-text);
+}
+
+.app-theme-light .border-amber-400\/30,
+.app-theme-light .border-yellow-400\/30,
+.app-theme-light .border-yellow-500\/30 {
+    border-color: var(--color-warning);
+}
+
+.app-theme-light .border-green-500\/30,
+.app-theme-light .border-emerald-400\/30,
+.app-theme-light .border-emerald-500\/30 {
+    border-color: var(--color-success);
+}
+
+.app-theme-light .border-red-400\/30,
+.app-theme-light .border-red-500\/30 {
+    border-color: var(--color-danger);
+}
+
+.app-theme-light .text-gray-100,
+.app-theme-light .text-gray-200,
+.app-theme-light .text-gray-300 {
+    color: var(--color-foreground);
+}
+
+.app-theme-light .text-gray-400,
+.app-theme-light .text-gray-500,
+.app-theme-light .text-gray-600,
+.app-theme-light .placeholder-gray-600::placeholder {
+    color: var(--color-secondary-text);
+}
+
+.app-theme-light .text-secondary-text\/60,
+.app-theme-light .text-secondary-text\/80 {
+    color: var(--color-secondary-text);
+}
+
+.app-theme-light .placeholder\:text-secondary-text\/60::placeholder {
+    color: var(--color-secondary-text);
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-background-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border-dark);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-secondary-text);
+}
+
+html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-dark) var(--color-background-dark);
+}
