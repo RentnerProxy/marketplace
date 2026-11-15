@@ -56,6 +56,10 @@ export type MarketplaceBlogLogicReturn = {
         channel: MarketplaceBlogChannelFilter
         hasPublishedPosts: boolean
         posts: readonly MarketplaceBlogDisplayPost[]
+        featuredPost: Extract<
+            MarketplaceBlogDisplayPost,
+            { kind: 'published' }
+        > | null
     }
     handler: {
         handleChannelChange: (channel: MarketplaceBlogChannelFilter) => void

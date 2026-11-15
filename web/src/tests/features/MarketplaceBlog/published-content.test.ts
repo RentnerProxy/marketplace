@@ -1,4 +1,7 @@
 import { beforeEach, expect, it, vi } from 'bun:test'
+import { createElement } from 'react'
+import type { AnchorHTMLAttributes } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import {
     hookReact,
     renderHook,
@@ -11,6 +14,7 @@ let language = 'de'
 function fixture(
     version: string,
     category: 'changelog' | 'news' = 'changelog',
+    publishedAt = '2000-01-01',
 ): MarketplaceBlogPublishedPost {
     return {
         kind: 'published',
@@ -18,7 +22,7 @@ function fixture(
         category,
         releaseTag: `v${version}`,
         version,
-        publishedAt: '2000-01-01',
+        publishedAt,
         content: {
             en: {
                 title: 'Synthetic English release',
@@ -35,7 +39,7 @@ function fixture(
 }
 const publishedPosts: readonly MarketplaceBlogPublishedPost[] = [
     fixture('0.0.0-alpha.0'),
-    fixture('0.0.0-beta.0', 'news'),
+    fixture('0.0.0-beta.0', 'news', '2000-01-02'),
     fixture('0.0.0'),
     fixture('0.0.0-rc.0'),
 ]
@@ -45,9 +49,45 @@ vi.mock('@/language/useTranslationStore.ts', () => ({
     default: () => ({ language, t: (key: string) => key }),
 }))
 vi.mock('@/features/MarketplaceBlog/marketplace-blog.config.ts', () => ({
+    marketplaceBlogChannels: ['all', 'stable', 'beta', 'alpha'],
     marketplaceBlogPublishedPosts: publishedPosts,
-    marketplaceBlogPreviewPosts: [],
+    marketplaceBlogPreviewPosts: [
+        {
+            kind: 'preview',
+            id: 'alpha-preview',
+            category: 'changelog',
+            channel: 'alpha',
+        },
+        {
+            kind: 'preview',
+            id: 'beta-preview',
+            category: 'changelog',
+            channel: 'beta',
+        },
+        {
+            kind: 'preview',
+            id: 'stable-preview',
+            category: 'changelog',
+            channel: 'stable',
+        },
+    ],
 }))
+vi.mock('@tanstack/react-router', () => ({
+    Link: ({
+        to,
+        params,
+        ...props
+    }: AnchorHTMLAttributes<HTMLAnchorElement> & {
+        to: string
+        params?: { slug: string }
+    }) =>
+        createElement('a', {
+            ...props,
+            href: to.replace('$slug', params?.slug ?? ''),
+        }),
+}))
+const { default: MarketplaceBlog } =
+    await import('@/features/MarketplaceBlog/index.tsx')
 const { default: useMarketplaceBlogLogic } =
     await import('@/features/MarketplaceBlog/Hooks/useMarketplaceBlogLogic.ts')
 const render = () => renderHook(useMarketplaceBlogLogic)
@@ -61,13 +101,13 @@ it.each(['de', 'fr'])(
         const post = render().state.posts[0]
         expect(post).toMatchObject({
             kind: 'published',
-            releaseTag: 'v0.0.0-alpha.0',
-            version: '0.0.0-alpha.0',
-            channel: 'alpha',
-            publishedAt: '2000-01-01',
+            releaseTag: 'v0.0.0-beta.0',
+            version: '0.0.0-beta.0',
+            channel: 'beta',
+            publishedAt: '2000-01-02',
             ...(locale === 'de'
-                ? publishedPosts[0]?.content.de
-                : publishedPosts[0]?.content.en),
+                ? publishedPosts[1]?.content.de
+                : publishedPosts[1]?.content.en),
         })
     },
 )
@@ -106,3 +146,29 @@ it.each([
         expect(() => resolveMarketplaceBlogReleaseChannel(tag)).toThrow()
     },
 )
+
+it('features the newest real article and replaces initial previews and no-articles copy after publication', function () {
+    language = 'en'
+    expect(render().state.featuredPost).toMatchObject({
+        releaseTag: 'v0.0.0-beta.0',
+        publishedAt: '2000-01-02',
+    })
+    expect(
+        render().state.posts.every((post) => post.kind === 'published'),
+    ).toBe(true)
+    const html = renderToStaticMarkup(renderHook(MarketplaceBlog))
+    expect(html).toContain('href="/blog/synthetic-0-0-0-beta-0"')
+    expect(html).toContain('2000-01-02')
+    for (const key of [
+        'featuredLabel',
+        'featuredTitle',
+        'note',
+        'comingSoon',
+        'versionPending',
+    ]) {
+        expect(html).not.toContain(`marketplace.blog.${key}`)
+    }
+    render().handler.handleChannelChange('alpha')
+    expect(render().state.featuredPost?.releaseTag).toBe('v0.0.0-beta.0')
+    expect(render().state.posts.map((post) => post.channel)).toEqual(['alpha'])
+})

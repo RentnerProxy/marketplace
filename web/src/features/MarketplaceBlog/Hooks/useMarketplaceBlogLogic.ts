@@ -19,13 +19,15 @@ export default function useMarketplaceBlogLogic(): MarketplaceBlogLogicReturn {
     const [channel, setChannel] = useState<MarketplaceBlogChannelFilter>('all')
     const { language, t } = useTranslationStore()
     const publishedPosts = useMemo(
-        () => parseMarketplaceBlogPublishedPosts(marketplaceBlogPublishedPosts),
+        () =>
+            parseMarketplaceBlogPublishedPosts(
+                marketplaceBlogPublishedPosts,
+            ).toSorted((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
         [],
     )
-    const posts: MarketplaceBlogDisplayPost[] = [
-        ...publishedPosts,
-        ...marketplaceBlogPreviewPosts,
-    ].map((post) => {
+    const posts: MarketplaceBlogDisplayPost[] = (
+        publishedPosts.length > 0 ? publishedPosts : marketplaceBlogPreviewPosts
+    ).map((post) => {
         if (post.kind === 'preview') {
             return {
                 kind: post.kind,
@@ -64,6 +66,8 @@ export default function useMarketplaceBlogLogic(): MarketplaceBlogLogicReturn {
         state: {
             channel,
             posts: filteredPosts,
+            featuredPost:
+                posts.find((post) => post.kind === 'published') ?? null,
             hasPublishedPosts: filteredPosts.some(
                 (post) => post.kind === 'published',
             ),

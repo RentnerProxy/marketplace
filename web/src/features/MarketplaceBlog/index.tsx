@@ -76,26 +76,48 @@ export default function MarketplaceBlog() {
 
             <div className="mx-auto max-w-[1440px] px-5 pb-20 pt-10 sm:px-8 sm:pb-28 sm:pt-14 lg:px-12">
                 <section
-                    aria-labelledby="featured-preview-title"
+                    aria-labelledby="featured-post-title"
                     className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-marketplace-void px-7 py-11 text-white sm:px-10 sm:py-14"
                 >
                     <CardWave />
                     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.8fr)] lg:items-center">
-                        <div>
+                        <div lang={state.featuredPost?.contentLanguage}>
                             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-[#a3ffb8]">
-                                {t('marketplace.blog.featuredLabel')}
+                                {state.featuredPost?.releaseTag ??
+                                    t('marketplace.blog.featuredLabel')}
                             </p>
                             <h2
-                                id="featured-preview-title"
+                                id="featured-post-title"
                                 className="mt-5 max-w-2xl font-display text-4xl leading-[1.04] tracking-tight sm:text-5xl"
                             >
-                                {t('marketplace.blog.featuredTitle')}
+                                {state.featuredPost ? (
+                                    <Link
+                                        to="/blog/$slug"
+                                        params={{ slug: state.featuredPost.id }}
+                                        className="underline-offset-4 hover:underline"
+                                    >
+                                        {state.featuredPost.title}
+                                    </Link>
+                                ) : (
+                                    t('marketplace.blog.featuredTitle')
+                                )}
                             </h2>
                             <p className="mt-5 max-w-xl text-sm leading-7 text-[#c1d2c9]">
-                                {t('marketplace.blog.featuredSummary')}
+                                {state.featuredPost?.summary ??
+                                    t('marketplace.blog.featuredSummary')}
                             </p>
                             <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-[#a3ffb8]">
-                                {t('marketplace.blog.comingSoon')}
+                                {state.featuredPost ? (
+                                    <time
+                                        dateTime={
+                                            state.featuredPost.publishedAt
+                                        }
+                                    >
+                                        {state.featuredPost.publishedAt}
+                                    </time>
+                                ) : (
+                                    t('marketplace.blog.comingSoon')
+                                )}
                             </p>
                         </div>
                         <div className="rounded-3xl border border-white/15 bg-white/[0.04] p-6 sm:p-7">
@@ -164,9 +186,11 @@ export default function MarketplaceBlog() {
                             ))}
                         </div>
                     </div>
-                    <p className="mb-7 max-w-3xl text-sm leading-7 text-[#52675d]">
-                        {t('marketplace.blog.note')}
-                    </p>
+                    {!state.featuredPost && (
+                        <p className="mb-7 max-w-3xl text-sm leading-7 text-[#52675d]">
+                            {t('marketplace.blog.note')}
+                        </p>
+                    )}
                     {!state.hasPublishedPosts && (
                         <p
                             role="status"
