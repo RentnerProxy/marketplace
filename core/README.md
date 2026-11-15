@@ -87,7 +87,7 @@ Alle Rust-Testimplementierungen und Test-Helfer liegen unter `core/tests/`.
 unter `core/tests/unit/`. In `core/src/` bleiben dafür ausschließlich bedingte
 Modulverweise; Produktivdateien enthalten keine eingebetteten Testfunktionen.
 
-Rust 1.99.1 ist in `rust-toolchain.toml` festgelegt. Die Root-Kommandos wählen
+Rust 1.100.0 ist in `rust-toolchain.toml` festgelegt. Die Root-Kommandos wählen
 diese Toolchain auch dann, wenn lokal eine andere Standardversion aktiv ist.
 Für lokale Coverage werden zusätzlich `cargo-llvm-cov` und die Rust-Komponente
 `llvm-tools-preview` benötigt; die Forgejo-Prüfung ergänzt fehlende Werkzeuge.
