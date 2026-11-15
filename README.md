@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="banner.png" alt="TanStack Dummy – Build, Deploy, Relax" width="800">
+    <img src="banner.png" alt="RentnerProxy Marketplace" width="800">
 </p>
 
 <div align="center">
@@ -12,43 +12,49 @@
 [![React 19](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![MIT-Lizenz](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
+[![MIT License](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
 
 </div>
 
 # <!-- project:defaultName -->RentnerProxy Marketplace<!-- /project -->
 
-Grundlage des offiziellen RentnerProxy-Marketplace mit TanStack Start, React, TypeScript, Tailwind CSS und Rust-Core.
+The foundation of the official RentnerProxy Marketplace, built with TanStack Start, React, TypeScript, Tailwind CSS and a Rust core.
 
-Projektangaben in `web/src/config/app.config.ts` anpassen und mit `bun run project:sync` übernehmen. Volume-Namen werden aus dem letzten Teil von `imageRepository` abgeleitet; diesen bei bestehenden Installationen beibehalten.
+The first alpha provides a public preview of the planned official apps, their development and approval workflow, and a versioned blog. Public registration remains closed. App downloads, installation and submissions are not available yet; the first operator account uses the private initial-admin setup flow.
 
-## Voraussetzungen
+Project identity is configured in `web/src/config/app.config.ts` and synchronized with `bun run project:sync`. Volume names are derived from the last segment of `imageRepository`; keep that segment unchanged for existing installations.
 
-- Bun ab 1.4.4; die Projektversion steht in `package.json`. `bun run format` und `bun run format:check` verwenden den nativen Formatter `bun fmt` mit den Einstellungen aus `bunfig.toml`.
-- Rust 1.99.1 mit Cargo, rustfmt und Clippy für die lokale Entwicklung; im Produktionsimage ist der Core bereits enthalten.
-- PostgreSQL und Valkey – möglichst aktuelle stabile Versionen.
-- PostgreSQL-Tools `pg_dump` und `pg_restore` in der Hauptversion der Datenbank für Backups; im Produktionsimage enthalten.
-- SMTP-Zugang für Systemmails.
+## Requirements
 
-## Installation
+- Bun 1.4.4 or later; the project version is declared in `package.json`. `bun run format` and `bun run format:check` use the native `bun fmt` formatter with the settings in `bunfig.toml`.
+- Rust 1.99.1 with Cargo, rustfmt and Clippy for local development. The production image already includes the compiled core.
+- PostgreSQL and Valkey, preferably current stable versions.
+- PostgreSQL `pg_dump` and `pg_restore` tools matching the database major version for backups. They are included in the production image.
+- SMTP access for system email.
 
-PostgreSQL und Valkey starten.
+## Local development
+
+Start PostgreSQL and Valkey, then install the dependencies and create your local environment file:
 
 ```bash
 bun install
 cp .env.dev.example .env.local
 ```
 
-`.env.local` anpassen (Datenbank, Valkey, Verschlüsselungsschlüssel und SMTP). Valkey wird über `VALKEY_URL` und `VALKEY_PASSWORD` konfiguriert; der Client verwendet `redis://` beziehungsweise `rediss://`. Danach:
+Configure the database, Valkey, encryption key and SMTP settings in `.env.local`. Use `VALKEY_URL` with the `redis://` or `rediss://` protocol; set `VALKEY_PASSWORD` when cache authentication is enabled. Then run:
 
 ```bash
 bun run db:migrate
 bun run dev
 ```
 
-Die App läuft unter `http://localhost:3000`. Für den ersten Admin in einem zweiten Terminal `bun run setup:url` ausführen und den ausgegebenen Einmallink öffnen.
+The app runs at `http://localhost:3000`. On a fresh installation, the development processes print the private initial-admin setup link. You can also run `bun run setup:url` in a second terminal and open the generated link.
 
-Für Produktion werden nur Docker Compose, `docker-compose.yml` und `.env` benötigt. Das vorgebaute Image bringt Webserver, Worker, PostgreSQL 18 und Valkey mit. `.env.example` als `.env` übernehmen und die zwölf vorgesehenen Werte anpassen: `ORIGIN`, Datenbankpasswort, Verschlüsselungsschlüssel und SMTP-Zugang; App-Port und Backup-Pfad besitzen bereits passende Vorgaben. `AUTH_ENCRYPTION_KEY` mit `openssl rand -base64 32` erzeugen.
+## Production deployment
+
+Production requires Docker Compose, `docker-compose.yml` and `.env`. The complete image bundles the web server, worker, PostgreSQL 18 and Valkey. The current Compose file selects `ghcr.io/rentnerproxy/marketplace:v1.0.0-alpha.1`; the commands below apply after that verified release image has been published. Configure registry pull access if the image requires authentication.
+
+Copy `.env.example` to `.env` and configure `ORIGIN`, the database password, encryption key and SMTP credentials. The application port and backup path already have defaults. Use `ORIGIN=https://market.rentner.dev` for the centrally hosted Marketplace. Generate `AUTH_ENCRYPTION_KEY` with `openssl rand -base64 32` and keep it unchanged across updates. The mail worker requires complete SMTP configuration even while public registration is disabled.
 
 ```bash
 docker compose pull
@@ -56,70 +62,67 @@ docker compose up -d
 docker compose logs -f marketplace
 ```
 
-Der Dienst <!-- project:applianceService -->`marketplace`<!-- /project --> veröffentlicht ausschließlich `${APP_PORT:-6600}`. Den Reverse-Proxy mit HTTPS auf diesen Port weiterleiten und dessen öffentliche Adresse als `ORIGIN` setzen. PostgreSQL, Valkey und die Prozesskonsole lauschen ausschließlich auf Loopback. Weitergereichte Client-IP-Header werden ohne konfigurierte Vertrauensstellung ignoriert; IP-Limits und Protokolle verwenden die direkte Gegenstelle.
+The <!-- project:applianceService -->`marketplace`<!-- /project --> service publishes only `${APP_PORT:-6600}`. Point an HTTPS reverse proxy at this port and set `ORIGIN` to its public address. PostgreSQL, Valkey and the process console listen only on loopback. Forwarded client-IP headers are ignored unless trust is configured; IP limits and logs use the direct peer otherwise.
 
-Der Prozessmanager startet zuerst PostgreSQL und Valkey, wartet auf ihre Bereitschaft und startet anschließend Webserver und Worker. Die bereits vorhandene App-Initialisierung wendet vor dem Webserverstart ausstehende Migrationen an und synchronisiert Standardrechte; der Worker startet erst nach erfolgreicher App-Bereitschaft. Healthchecks prüfen alle vier Dienste. Fällt ein benötigter Prozess aus, beendet sich das gesamte Image mit Fehlerstatus und Docker startet es gemäß `unless-stopped` neu. Beim Stoppen werden zuerst Webserver und Worker beendet; PostgreSQL und Valkey bleiben während des Job-Drains verfügbar. Die feste Stoppschonfrist von `4h10m` schützt laufende Backups und Wiederherstellungen.
+The process manager starts PostgreSQL and Valkey first, waits for readiness, then starts the web server and worker. The existing application initialization applies pending migrations and synchronizes default permissions before the web server starts; the worker starts only after the app is ready. Health checks cover all four services. If a required process fails, the complete image exits with an error and Docker restarts it under `unless-stopped`. During shutdown, the web server and worker stop first, while PostgreSQL and Valkey remain available as jobs drain. The fixed `4h10m` stop grace period protects running backups and restores.
 
-Für den ersten Admin den neuesten Setup-Link aus den Containerlogs vollständig im Browser öffnen. Der Link gilt zehn Minuten und wird bis zur ersten Benutzeranlage automatisch erneuert. Danach wird kein Setup-Link mehr erzeugt.
+To create the first admin, open the latest complete setup link from the container logs in your browser. The link is valid for ten minutes and is renewed until the first user has been created. Setup links are no longer generated once an account exists.
 
-Das Volume <!-- project:dataVolume -->`marketplace_data`<!-- /project --> enthält PostgreSQL unter `/data/postgresql/18/docker` und öffentliche/private App-Dateien unter `/data/storage`. Backups liegen unter `/data/backups` und werden durch `BACKUP_PATH=./backups` auf dem Host gespeichert. Der Container richtet ausschließlich seine festen Unterverzeichnisse ein; vorhandene Dateien werden nicht rekursiv umberechtigt. App und Worker laufen als `bun` (UID 1000), PostgreSQL und Valkey unter eigenen Benutzern. `root` verwaltet den Start und reicht die Dienste an diese Benutzer weiter. Den Backup-Hostpfad und den Verschlüsselungsschlüssel zusätzlich außerhalb des Hosts sichern.
+The <!-- project:dataVolume -->`marketplace_data`<!-- /project --> volume contains PostgreSQL at `/data/postgresql/18/docker` and public/private application files under `/data/storage`. Backups live at `/data/backups`, mounted on the host through `BACKUP_PATH=./backups`. The container initializes only its fixed subdirectories; it does not recursively change permissions on existing files. The app and worker run as `bun` (UID 1000), while PostgreSQL and Valkey use their own users. `root` supervises startup and delegates services to those users. Keep an additional copy of the backup directory and encryption key outside the host.
 
-Bei Updates `.env`, Schlüssel und Volumes beibehalten, ein vollständiges Backup prüfen und anschließend `docker compose pull && docker compose up -d` ausführen. Ein Image-Rollback nimmt Schemaänderungen nicht zurück. PostgreSQL bleibt auf Major 18; fremde Major-Versionen und unvollständige Datenverzeichnisse werden abgewiesen. Valkey bleibt flüchtig: Offene Setup- und Verifikations-Flows beginnen nach Datenverlust neu; Queues und Zeitpläne werden aus den dauerhaften App-Daten abgeglichen. Die vollständige Betriebs- und Umstiegsanleitung steht in [docker/README.md](docker/README.md).
+For updates, retain `.env`, keys and volumes, verify a complete backup, select the intended verified image version, and run `docker compose pull && docker compose up -d`. Rolling back an image does not undo schema changes. PostgreSQL remains on major version 18; other major versions and incomplete data directories are rejected. Valkey is ephemeral: outstanding setup and verification flows restart after data loss, while queues and schedules are reconciled from durable application data. See [docker/README.md](docker/README.md) for operating and migration procedures.
 
-## Features
+## Capabilities
 
-- Login, Logout und Passwort-Reset
-- Zwei-Faktor-Authentifizierung, Passkeys und vertrauenswürdige Geräte
-- Benutzerverwaltung, Einladungen und Berechtigungen
-- Admin-Dashboard mit kompakten Dienstgruppen und schreibgeschützten Live-Konsolen für Webserver, WebSocket-Server, Worker, PostgreSQL, Valkey und Rust-Core
-- Automatische Backups und Wiederherstellung
-- Audit-Logs, Mail-Queue und Hintergrundjobs
-- Realtime-Updates über WebSockets
-- Deutsch/Englisch und anpassbares Design
+- Public Marketplace preview, planned official apps and an interactive development workflow.
+- Versioned blog with Alpha, Beta and Stable filters and bundled release posts.
+- Login, logout and password reset; public self-registration remains disabled.
+- Two-factor authentication, passkeys and trusted devices.
+- Administrative user management, invitations and permissions.
+- Admin dashboard with grouped service status and read-only live consoles for the web server, WebSocket server, worker, PostgreSQL, Valkey and Rust core.
+- Automated backups and restoration.
+- Audit logs, mail queue and background jobs.
+- Realtime updates over WebSockets.
+- Public/authentication navigation in English, German, Spanish, French, Italian, Portuguese, Dutch and Polish. Some inherited administration labels fall back to English; legal pages provide German/English content with English fallback.
 
-Die Dashboard-Konsolen zeigen pro Dienst bis zu 300 stdout-/stderr-Zeilen und bestätigte Statusprüfungen und aktualisieren alle zwei Sekunden. Bei geöffnetem Dashboard wird der geprüfte Zustand sofort, bei Änderungen und ansonsten einmal pro Minute protokolliert, auch wenn der Dienst keine eigene Ausgabe erzeugt. Der Prozessmanager stellt für die Containerausgabe eine interne, ausschließlich lesbare Loopback-Schnittstelle bereit; ein Docker-Socket oder weiterer Container ist nicht erforderlich. Superuser-Prüfung, feste Dienstauswahl und Bereinigung bekannter Geheimnisfelder, Setup-Tokens und sensibler PostgreSQL-Folgezeilen bleiben erhalten. Der Puffer liegt begrenzt im Arbeitsspeicher und beginnt beim Containerneustart neu. Im Entwicklungsbetrieb zeigt die Konsole lokale Anwendungs- und Statusereignisse.
+Dashboard consoles retain up to 300 stdout/stderr lines and verified status checks per service, refreshing every two seconds. While the dashboard is open, verified state is logged immediately, on changes, and at least once per minute even if the service produces no output. The process manager exposes container output through an internal read-only loopback interface; no Docker socket or additional container is needed. Superuser checks, fixed service selection and redaction of known secret fields, setup tokens and sensitive PostgreSQL continuation lines remain in place. The bounded in-memory buffer resets on container restart. In development, the console displays local application and status events.
 
-## Rust-Core
+## Rust core
 
-Kurze Core-Aufträge verwenden private, wiederverwendbare stdin/stdout-Worker mit höchstens vier Prozessen je Binärdatei und begrenzter Warteschlange. Die Grenzwerte und zulässigen Operationen stehen in `web/src/config/core.config.ts`. Jeder Auftrag prüft seine Dateisystemgrenzen erneut und besitzt eine eigene Abbruchsteuerung.
+Short core operations use private reusable stdin/stdout workers, with at most four processes per executable and a bounded queue. Limits and allowed operations are defined in `web/src/config/core.config.ts`. Each operation rechecks its filesystem boundaries and has its own cancellation control.
 
-Hintergrundbilder werden im Worker-Kanal als begrenzte binäre Antwort bis 8 MiB übertragen; Lesen und Legacy-Migration bleiben im Rust-Core. Ein `binaryResult`-Header enthält die Auftrags-ID und die exakte Byteanzahl, gefolgt von den unveränderten Dateibytes. Eine leere Datei ist von einer fehlenden Datei (`null`) unterscheidbar. Erst der vollständige Payload bestätigt den Abschluss. Fragmentierte, widersprüchliche oder unvollständige Antworten werden verworfen und führen zu keiner automatischen Wiederholung. Die bestehenden JSON-/Base64-Operationen bleiben kompatibel.
+Legacy background images use bounded binary responses of up to 8 MiB over the worker channel; reading and legacy migration remain in the Rust core. A `binaryResult` header contains the operation ID and exact byte count, followed by the unchanged file bytes. An empty file is distinct from a missing file (`null`). Only the complete payload confirms completion. Fragmented, contradictory or incomplete responses are rejected without automatic retries. Existing JSON/Base64 operations remain compatible.
 
-Branding überträgt Logo, kleines Logo und Favicon in einem binären Auftrag mit drei geprüften Längen: höchstens 8 MiB je Variante und 24 MiB insgesamt, innerhalb des gemeinsamen Pool-Speicherlimits. Rust validiert alle Varianten vor der ersten Veröffentlichung und nutzt denselben abgesicherten Staging-Ablauf wie die bisherige JSON-Schnittstelle. Die private Worker-Erweiterung bleibt additiv zu Protokoll 1; Web und Core werden gemeinsam gebaut und ausgeliefert.
+Branding transfers the logo, small logo and favicon in one binary operation with three validated lengths: at most 8 MiB per variant and 24 MiB in total, within the shared pool memory limit. Rust validates every variant before publishing any file and uses the same protected staging flow as the JSON interface. The private worker extension is additive to protocol 1; web and core are built and delivered together.
 
-Backup-Dateien löscht der Core über frische, nicht Symlinks folgende Verzeichnishandles mit Inodeprüfungen und Verzeichnis-Synchronisierung. Retention bündelt Katalogreferenzen derselben Archivdatei; SQL, Berechtigungen und Audit bleiben in TypeScript. Ein exklusiver [PostgreSQL-Tabellenlock](https://www.postgresql.org/docs/18/explicit-locking.html) schützt die Referenzprüfung bis zum Commit vor konkurrierenden Änderungen. Jede Transaktion löscht höchstens eine physische Datei. Ein späterer DB-Commitfehler kann das bereits bestätigte Unlink weiterhin nicht zurückrollen. Nach einer unvollständig bestätigten Löschung erfolgt keine automatische Wiederholung. Die privaten Backup-Verzeichnisse setzen kooperierende Dienste desselben Betriebssystembenutzers voraus; eine atomare Kombination aus Inodevergleich und Unlink bietet das Dateisystem-API nicht.
+The core deletes backup files through freshly opened, non-symlink-following directory handles, inode checks and directory synchronization. Retention groups catalog references to the same archive; SQL, permissions and auditing remain in TypeScript. An exclusive [PostgreSQL table lock](https://www.postgresql.org/docs/18/explicit-locking.html) protects reference checks against concurrent changes until commit. Each transaction deletes at most one physical file. A subsequent database commit failure cannot undo an already confirmed unlink. Incompletely confirmed deletion is never retried automatically. Private backup directories assume cooperating services running as the same operating-system user; the filesystem API cannot atomically combine inode comparison and unlink.
 
-Einzelne private Dateien ab 4 MiB bis zum Limit von 8 MiB schreibt Bun unter Linux x64/arm64 direkt. Kleinere Dateien bleiben auf dem gemessenen schnelleren Core-Pfad; die Grenze steht in `web/src/config/private-storage.config.ts`. Ein Descriptor-Adapter bindet alle Pfadoperationen über das echte `/proc/self/fd` an geöffnete Verzeichnisse; Symlink-Schutz, private Rechte, atomisches Ersetzen und Datei-/Verzeichnis-Synchronisierung bleiben erhalten. Höchstens vier direkte Schreibvorgänge sind aktiv; aktive und wartende direkte Aufträge teilen die Grenzen von 32 Aufträgen und 64 MiB einschließlich Metadaten, getrennt von den Core-Pools. Eingaben werden vor dem ersten Await kopiert und nach vollständigem Abschluss gelöscht. Abbrüche wirken kooperativ vor der Veröffentlichung; bereits laufendes Datei-I/O wird vor der Rückgabe vollständig abgewartet und besitzt keinen eigenen beendbaren Prozess. Auf anderen Plattformen oder bei fehlendem procfs vor der ersten Mutation übernimmt der Rust-Core die binären Dateidaten. Fehler nach Beginn der Mutation lösen keine Wiederholung aus.
+On Linux x64/arm64, Bun writes individual private files from 4 MiB up to the 8 MiB limit directly. Smaller files retain the measured faster core path; the threshold is configured in `web/src/config/private-storage.config.ts`. A descriptor adapter anchors every path operation to open directories through the real `/proc/self/fd`; symlink protection, private permissions, atomic replacement and file/directory synchronization remain intact. At most four direct writes run concurrently. Active and queued direct operations share limits of 32 jobs and 64 MiB including metadata, separate from the core pools. Inputs are copied before the first await and cleared after completion. Cancellation is cooperative before publication; running file I/O is fully awaited before returning and has no separately terminable process. On other platforms, or when procfs is unavailable before the first mutation, the Rust core handles the binary data. Errors after mutation begins are not retried.
 
-Lange Aufträge, blockierende Sperren und explizite Prozessumgebungen behalten eigene Prozesse. Die Restore-Journal-Sitzung bleibt separat. Unsichere Mutationen werden niemals automatisch wiederholt. Nitro und der Hintergrund-Worker warten beim Herunterfahren zuerst auf direkte Schreibvorgänge und schließen danach ihre Core-Pools; kurzlebige Bun-Prozesse räumen Core-Pools beim natürlichen Ende auf.
+Long operations, blocking locks and explicit process environments retain dedicated processes. The restore-journal session remains separate. Unsafe mutations are never retried automatically. During shutdown, Nitro and the background worker await direct writes before closing their core pools; short-lived Bun processes close core pools on natural exit.
 
-Beim Performancevergleich mit dem letzten Stand ohne Rust (`8e81ff6`) sind unterschiedliche Durabilitätsgarantien zu beachten: Der damalige TypeScript-Schreibpfad synchronisierte die Datei, aber nicht das Zielverzeichnis nach der Umbenennung. Der aktuelle Pfad synchronisiert beides. Die zusätzliche Verzeichnis-Synchronisierung ist nötig, weil ein [Datei-`fsync` den Verzeichniseintrag nicht automatisch dauerhaft speichert](https://man7.org/linux/man-pages/man2/fsync.2.html). Sie bleibt auch bei Performanceoptimierungen erhalten.
+When comparing performance with the historical TypeScript-only baseline (`8e81ff6`), account for different durability guarantees: that write path synchronized the file but not its destination directory after rename. The current implementation synchronizes both. Directory synchronization remains necessary because [file `fsync` does not automatically persist its directory entry](https://man7.org/linux/man-pages/man2/fsync.2.html), and is retained during performance optimization.
 
-Große binäre Nutzdaten werden bei leerem Lesepuffer direkt in den löschbaren Zielpuffer gelesen. Vorhandene Verzeichnisse werden zuerst ohne Symlink-Folgen geöffnet und nur bei fehlendem Eintrag angelegt. Bei Archivextraktionen synchronisieren höchstens vier Threads bereits beschriebene Dateien parallel; zusätzlich bleibt höchstens die aktuell geschriebene Nutzdatei offen. Jeder Rückweg wartet auf alle gestarteten Synchronisierungen und schließt deren Handles, bevor die Aufrufer aufräumen. Erfolg setzt weiterhin `sync_all` für jede Nutzdatei sowie die abschließenden Integritäts-, Quellidentitäts- und Abbruchprüfungen voraus.
+Large binary payloads are read directly into the clearable destination buffer when the read buffer is empty. Existing directories are opened without following symlinks and created only when absent. Archive extraction synchronizes written files with at most four concurrent threads, while at most one current payload file remains open. Every return path waits for all started synchronization work and closes its handles before callers clean up. Success still requires `sync_all` for every payload file and the final integrity, source-identity and cancellation checks.
 
-`bun run core:format:check`, `bun run core:lint` und `bun run core:coverage` prüfen Rust einschließlich des 90-%-Coverage-Gates. `bun run test:core-integration` prüft die echte Web/Core-Grenze. Rust-Tests liegen ausschließlich unter `core/tests/`.
+`bun run core:format:check`, `bun run core:lint` and `bun run core:coverage` validate Rust, including its 90% coverage gate. `bun run test:core-integration` tests the actual web/core boundary. Rust tests live exclusively under `core/tests/`.
 
-## Feature-Struktur
+## Project structure
 
-`web/` enthält TypeScript-Quellcode, öffentliche Assets und den unverändert
-verschobenen Drizzle-Ordner. `core/` enthält Cargo und die nativen Programme
-für Archive, Storage, PostgreSQL-Werkzeuge und den Appliance-Prozessmanager.
-Manifest, Bun-Lockfile, Web-Konfiguration und `drizzle.config.ts` bleiben im
-Root. Die Zuständigkeiten, Dependency-Entscheidungen und Prüfkommandos stehen
-in [core/README.md](core/README.md).
+`web/` contains TypeScript source, public assets and the relocated Drizzle directory. `core/` contains Cargo and native programs for archives, storage, PostgreSQL tools and the appliance process manager. The manifest, Bun lockfile, web configuration and `drizzle.config.ts` remain at the root. Responsibilities, dependency decisions and verification commands are described in [core/README.md](core/README.md).
 
 ```text
-web/src/features/<Bereich>/<Feature>/
-├── Components/    # UI-Komponenten
-├── Types/         # Typen und Verträge
+web/src/features/<Area>/<Feature>/
+├── Components/    # UI components
+├── Types/         # Types and contracts
 ├── Hooks/         # use...Logic: state, handler, optional setter/refs/form/table
-├── index.tsx      # Seite
-├── middleware.ts  # Validierung, Autorisierung und Service-Aufruf
-└── validation.ts  # Zod-Validierung
+├── index.tsx      # Page
+├── middleware.ts  # Validation, authorization and service delegation
+└── validation.ts  # Zod validation
 ```
 
-Ordner und Dateien nur bei Bedarf anlegen; größere Komponenten bündeln eigene Hooks und Types unter `Components/<Name>/`. Views enthalten JSX, die Logik liegt in Hooks. Backendlogik liegt in `web/src/server`, UI-freie Helfer in `web/src/lib`, gemeinsame UI in `web/src/shared`; Tests spiegeln diese Pfade unter `web/src/tests`. Öffentliche Seiten verwenden `PublicLayout`, geschützte `AuthenticatedLayout`. Referenz: `web/src/features/Admin/PermissionManagement`.
+Create directories and files only when needed. Larger components keep their own hooks and types under `Components/<Name>/`. Views contain JSX, with logic in hooks. Backend logic lives in `web/src/server`, UI-free helpers in `web/src/lib`, shared UI in `web/src/shared`, and tests mirror those paths under `web/src/tests`. Public pages use `PublicLayout`; protected pages use `AuthenticatedLayout`. See `web/src/features/Admin/PermissionManagement` for an example.
 
-## Lizenz
+## License
 
 MIT

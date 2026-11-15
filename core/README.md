@@ -1,96 +1,94 @@
-# Rust-Core
+# Rust core
 
-Der Core bündelt technische Arbeiten mit umfangreichen Dateisystem-, Stream-
-und Prozessgrenzen. TanStack, React, Authentifizierung, Berechtigungen,
-Drizzle-Schema, SQL-Transaktionen, Queues und fachliche Abläufe bleiben in
-`web/src`. JavaScript-Manifest, Lockfile und Web-Konfiguration liegen im Root.
+The core handles technical work involving extensive filesystem, stream,
+and process boundaries. TanStack, React, authentication, permissions,
+the Drizzle schema, SQL transactions, queues, and application workflows remain
+in `web/src`. The JavaScript manifest, lockfile, and web configuration live at the repository root.
 
-## Zuständigkeiten
+## Responsibilities
 
-| Bisher TypeScript                           | Jetzt Rust                                                                                           | TypeScript bleibt zuständig für                                |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Archivverschlüsselung und Integrität        | Inkrementelles AES-256-GCM, HKDF, HMAC, Schlüssel- und Dateiprüfung                                  | Autorisierung, Schlüsselübergabe und Download-Antwort          |
-| TAR/PAX und Archivvalidierung               | Begrenztes Schreiben, Parsen, Manifestprüfung, sichere Pfade und Extraktion                          | Backup- und Restore-Aufträge, Fortschrittsanzeige              |
-| Archivimport und Dateisammlung              | Quarantäne, Kapazitätsreservierung, Dateisperren, Hintergrundbild-Overlay                            | HTTP-Uploadgrenzen und fachliche Admission                     |
-| Private Dateien und Hintergrundbilder       | Private Verzeichnisse, atomare Veröffentlichung, Größenlimits, Dateiidentitäten und Legacy-Migration | Benutzerzuordnung, Bildbearbeitung mit Sharp und Audit-Log     |
-| Storage-Admission und Dateisperren          | Admission-Gate, Shared-/Exclusive-Leases, Besitzprüfung, Freigabe und Drain                          | SQL-Barrieren, Verbindungsgesundheit und Request-Scope         |
-| Physische Storage-Wiederherstellung         | Vorbereitung, persistentes Recovery-Journal, Commit und Rollback                                     | SQL-Barrieren und fachlicher Restore-Ablauf                    |
-| Restore-Journal und persistenter Status     | HKDF/HMAC-Kette, gehaltener Journal-Handle, begrenztes Lesen und atomare Statusdatei                 | Fachliche Zustandsentscheidungen und Fortschrittsanzeige       |
-| Backup-Dateien und System-Branding          | Root-/Pfadprüfung, gebündelte Archivveröffentlichung und atomare Veröffentlichung der Bildvarianten  | Autorisierung, SQL, Audit-Log und Bildbearbeitung mit Sharp    |
-| PostgreSQL-Werkzeugprozesse                 | Versionsprüfung, begrenzte Laufzeit, Abbruch, private Verbindungsdaten und gehaltene Datei-Handles   | Datenbankkonfiguration, SQL und Berechtigungen                 |
-| Appliance-Prozessmanager und Prozesskonsole | Prozessstart, Bereitschaft, geordneter Shutdown, Rollenwechsel, begrenzte und bereinigte Logs        | Geschütztes Admin-Dashboard und bestehende App-Initialisierung |
+| Previously in TypeScript | Now in Rust | TypeScript remains responsible for |
+| --- | --- | --- |
+| Archive encryption and integrity | Incremental AES-256-GCM, HKDF, HMAC, key and file validation | Authorization, key handoff, and download responses |
+| TAR/PAX and archive validation | Bounded writing, parsing, manifest validation, safe paths, and extraction | Backup and restore jobs, progress display |
+| Archive import and file collection | Quarantine, capacity reservations, file locks, background-image overlays | HTTP upload limits and application admission decisions |
+| Private files and background images | Private directories, atomic publication, size limits, file identities, and legacy migration | User assignment, image processing with Sharp, and audit logging |
+| Storage admission and file locks | Admission gate, shared and exclusive leases, ownership checks, release, and draining | SQL barriers, connection health, and request scope |
+| Physical storage restoration | Preparation, persistent recovery journal, commit, and rollback | SQL barriers and the application restore workflow |
+| Restore journal and persistent status | HKDF/HMAC chain, retained journal handle, bounded reads, and atomic status file | Application state decisions and progress display |
+| Backup files and system branding | Root and path validation, bundled archive publication, and atomic publication of image variants | Authorization, SQL, audit logging, and image processing with Sharp |
+| PostgreSQL tool processes | Version checks, bounded execution time, cancellation, private connection settings, and retained file handles | Database configuration, SQL, and permissions |
+| Appliance process manager and process console | Process startup, readiness, orderly shutdown, role transitions, and bounded sanitized logs | Protected administrator dashboard and existing application initialization |
 
-Die Bibliothek hat drei dünne Programme: `marketplace-archive`, `marketplace-storage`
-und `marketplace-appliance`. Archiv- und Storage-Aufträge verwenden JSON über
-stdin und begrenzte NDJSON-Antworten mit Fortschritt, Ergebnis oder Fehler.
-Argumente werden ohne Shell übergeben. Ein privater Abbruchmarker ermöglicht
-kooperativen Abbruch auch unter Windows. Unbestätigte Mutationen halten die
-bestehende TypeScript-Storage-Barriere geschlossen; ein bereits bestätigtes
-Recovery-Ergebnis bleibt bei einem verspäteten Abbruch erhalten.
+The library has three thin executables: `marketplace-archive`, `marketplace-storage`,
+and `marketplace-appliance`. Archive and storage jobs use JSON over
+stdin and bounded NDJSON responses containing progress, a result, or an error.
+Arguments are passed without a shell. A private cancellation marker enables
+cooperative cancellation on Windows as well. Unacknowledged mutations keep the
+existing TypeScript storage barrier closed; a recovery result that has already
+been acknowledged is preserved if cancellation arrives late.
 
-Zusammengehörige Dateischritte bilden einen Core-Auftrag. Storage-Admission
-und Freigabe benötigen jeweils einen Aufruf; Statusdateien werden mit einem
-Aufruf geschrieben und synchronisiert. `backupPublishFile` bündelt Datei-Sync,
-Umbenennen und Verzeichnis-Sync. Nach einer möglicherweise erfolgten
-Veröffentlichung gilt ein fehlender Nachweis als `CORE_OPERATION_UNCERTAIN`.
+Related file operations form one core job. Storage admission and release
+each require one call; status files are written and synchronized in one
+call. `backupPublishFile` combines file synchronization, renaming, and
+directory synchronization. After publication may have occurred,
+missing confirmation is treated as `CORE_OPERATION_UNCERTAIN`.
 
-Ein Restore öffnet `marketplace-storage journal-session` über private
-stdin/stdout-Pipes. Rust hält den ursprünglichen Datei-Handle, die
-Verzeichnisidentität, die erwarteten kanonischen Bytes und den abgeleiteten
-Schlüssel bis zum geprüften Abschluss. Fortlaufende `requestId`-Werte ordnen
-Bestätigungen eindeutig zu; fehlende, doppelte oder veraltete Antworten
-beenden die Sitzung ohne Wiederholung einer Mutation. Die Sitzung ist auf
-32 Anfragen mit je 64 KiB begrenzt. Die Web-Seite begrenzt zusätzlich die
-Warteschlange, Antwortzeit und Gesamtlaufzeit. Der Schlüssel wird weder in
-Argumenten noch in Logs übertragen. Journalformat und HKDF/HMAC bleiben zu
-den unabhängigen Node-Referenzdaten kompatibel.
+A restore opens `marketplace-storage journal-session` through private
+stdin/stdout pipes. Rust retains the original file handle, directory identity,
+expected canonical bytes, and derived key until completion has been verified.
+Sequential `requestId` values correlate acknowledgments unambiguously;
+missing, duplicate, or stale responses end the session without retrying a
+mutation. The session is limited to 32 requests of 64 KiB each. The web side
+also bounds the queue, response time, and total execution time. The key is
+never passed in arguments or logs. The journal format and HKDF/HMAC remain
+compatible with the independent Node reference fixtures.
 
-Branding veröffentlicht alle drei vorbereiteten Bildvarianten in einem
-Auftrag und ersetzt jede Datei atomar. Die drei Dateiersetzungen bilden
-keine gemeinsame Dateisystemtransaktion; Sharp, SQL und Audit bleiben im
-bestehenden fachlichen Ablauf.
+Branding publishes all three prepared image variants in one job and replaces
+each file atomically. The three file replacements do not form a single
+filesystem transaction; Sharp, SQL, and audit logging remain in the existing
+application workflow.
 
-Der Appliance-Prozess stellt auf Loopback `/core/health` und ausschließlich
-lesbare Log-Snapshots bereit. Das Dashboard fragt den tatsächlichen Prozess
-ab und bietet eine zusätzliche Rust-Core-Card mit Konsole. Die Konsole
-erfordert auch in der Entwicklung Superuser-Rechte. Im Entwicklungsbetrieb
-startet `bun run dev` den Core im reinen Telemetrie-Modus; dieser startet keine
-Produktionsdatenbank.
+The appliance process exposes `/core/health` and read-only log snapshots over
+loopback. The dashboard queries the actual process and provides an additional
+Rust core card with a console. The console requires superuser privileges,
+including in development. During development, `bun run dev` starts the core
+in telemetry-only mode; it does not start a production database.
 
-## Dependencies und Laufzeit
+## Dependencies and runtime
 
-- `std` übernimmt Prozesse, Threads, Streams und native Dateisperren. Der Core
-  besitzt keinen asynchronen Tokio-Server. Eine zusätzliche Runtime würde für
-  diese begrenzten CLI-Aufträge und den kleinen Loopback-Endpunkt keinen
-  konkreten Vorteil bringen. Deshalb bleiben `ctrlc` und synchrone I/O passend;
-  `tokio::signal`, `tokio::fs`, `CancellationToken` und `TaskTracker` werden
-  erst bei einem echten asynchronen Dienst benötigt.
-- Die Archivkryptografie verwendet RustCrypto (`hkdf` 0.13, `hmac` 0.13,
-  `sha2` 0.11) und `aead-gcm-stream` 0.4 mit dessen kompatibler `aes`-Generation
-  0.8. Das bisherige einzelne GCM-Tag und das Archivformat bleiben kompatibel.
-  Unabhängige Node-Referenzarchive prüfen beide Richtungen. Der Core benötigt
-  weder OpenSSL noch Perl; Rustls wäre hier keine passende Datei-Krypto-API.
-- `fs2` entfällt. Sperren verwenden `std::fs::File`; `fs4` mit ausschließlich
-  dem `sync`-Feature liefert die plattformübergreifende freie Kapazität.
-- `time` vereinheitlicht Zeitformate; `chrono` entfällt. `base64` 0.23 und
-  `getrandom` 0.4 sind aktualisiert. `Serde`, `cap-std` und `cap-fs-ext` bleiben
-  für explizite Verträge und handle-relative Dateisystemgrenzen erhalten.
-- PostgreSQL erhält keine Zugangsdaten über Prozessargumente. Private
-  Service-Dateien und `PGPASSWORD` transportieren die Verbindungseinstellungen;
-  ein konstanter `--dbname`-Parameter erzwingt bei `pg_restore` die direkte
-  Wiederherstellung. Rohes Tool-stderr wird nicht an die Weboberfläche gegeben.
+- `std` handles processes, threads, streams, and native file locks. The core
+  has no asynchronous Tokio server. An additional runtime would provide no
+  concrete benefit for these bounded CLI jobs and the small loopback endpoint.
+  Therefore, `ctrlc` and synchronous I/O remain suitable; `tokio::signal`,
+  `tokio::fs`, `CancellationToken`, and `TaskTracker` would only be needed for
+  an actual asynchronous service.
+- Archive cryptography uses RustCrypto (`hkdf` 0.13, `hmac` 0.13,
+  `sha2` 0.11) and `aead-gcm-stream` 0.4 with its compatible `aes` generation
+  0.8. The existing single GCM tag and archive format remain compatible.
+  Independent Node reference archives verify both directions. The core needs
+  neither OpenSSL nor Perl; Rustls would not be a suitable file-cryptography API here.
+- `fs2` is no longer used. Locks use `std::fs::File`; `fs4`, with only its
+  `sync` feature enabled, provides cross-platform free-capacity queries.
+- `time` standardizes time formats; `chrono` is no longer used. `base64` 0.23
+  and `getrandom` 0.4 have been updated. `Serde`, `cap-std`, and `cap-fs-ext`
+  remain for explicit contracts and handle-relative filesystem boundaries.
+- PostgreSQL receives no credentials through process arguments. Private
+  service files and `PGPASSWORD` carry connection settings; a constant
+  `--dbname` argument forces `pg_restore` to perform a direct restore.
+  Raw tool stderr is not exposed to the web interface.
 
-## Prüfung
+## Verification
 
-Alle Rust-Testimplementierungen und Test-Helfer liegen unter `core/tests/`.
-Öffentliche Integrationssuiten stehen direkt dort, Tests privater Funktionen
-unter `core/tests/unit/`. In `core/src/` bleiben dafür ausschließlich bedingte
-Modulverweise; Produktivdateien enthalten keine eingebetteten Testfunktionen.
+All Rust test implementations and helpers live under `core/tests/`.
+Public integration suites live directly in that directory; tests of private
+functions live under `core/tests/unit/`. Only conditional module references
+remain in `core/src/`; production files contain no embedded test functions.
 
-Rust 1.99.1 ist in `rust-toolchain.toml` festgelegt. Die Root-Kommandos wählen
-diese Toolchain auch dann, wenn lokal eine andere Standardversion aktiv ist.
-Für lokale Coverage werden zusätzlich `cargo-llvm-cov` und die Rust-Komponente
-`llvm-tools-preview` benötigt; die Forgejo-Prüfung ergänzt fehlende Werkzeuge.
+Rust 1.99.1 is pinned in `rust-toolchain.toml`. Commands run from the repository
+root select this toolchain even if a different default version is active locally.
+Local coverage additionally requires `cargo-llvm-cov` and the Rust component
+`llvm-tools-preview`; GitHub CI installs the required coverage tools.
 
 ```bash
 bun run core:build
@@ -102,20 +100,19 @@ bun run test
 bun run test:core-integration
 ```
 
-Rust-Prüfungen berücksichtigen alle Targets und Features; Clippy läuft mit
-`-D warnings`. `core:coverage` und der dedizierte Forgejo-Runner `rust` erzwingen
-mindestens 90 % Zeilen- und Funktionsabdeckung. Zusätzliche LLVM-Werkzeuge
-werden nur installiert, wenn sie fehlen. Die vorhandenen Cargo-, rustfmt-
-und Clippy-Werkzeuge des Runners werden verwendet.
+Rust checks cover all targets and features; Clippy runs with
+`-D warnings`. `core:coverage` and the GitHub CI Rust job enforce at least
+90% line and function coverage. Local commands use the installed Cargo,
+rustfmt, Clippy, and coverage tools with the pinned Rust toolchain.
 
-Zusätzlich prüft `cargo-audit` das aufgelöste Lockfile gegen die aktuelle
-RustSec-Datenbank: bei Änderungen, vor Releases und im geplanten
-Sicherheitsworkflow. Das Werkzeug wird nur ergänzt, wenn es fehlt; ein
-fehlgeschlagener Datenbankabruf gilt als fehlgeschlagene Prüfung.
+The Dependency Security workflow also checks the resolved lockfile against
+the current RustSec database using `cargo-audit` on pull requests, pushes to
+`main`, and its scheduled security run. It installs a checksum-verified
+`cargo-audit` binary; failure to fetch the advisory database fails the check.
 
-Reine TypeScript-Tests laufen ohne native Programme. Tests mit tatsächlichen
-Rust-Prozessen heißen `*.core.test.ts` und laufen zusätzlich im Docker-Target
-`core-integration`; dort sind die Produktionsprogramme verfügbar. Isolierte
-Appliance-Fixtures prüfen Startup, Bereitschaft, Datenerhalt und Shutdown
-ohne Anwendungsmigrationen. Der Drizzle-Ordner wurde ausschließlich unverändert
-nach `web/drizzle` verschoben; `drizzle.config.ts` bleibt im Root.
+Pure TypeScript tests run without native executables. Tests using actual Rust
+processes are named `*.core.test.ts` and also run in the Docker target
+`core-integration`, where the production executables are available. Isolated
+appliance fixtures check startup, readiness, data retention, and shutdown
+without application migrations. The Drizzle directory was moved unchanged
+to `web/drizzle`; `drizzle.config.ts` remains at the repository root.
