@@ -175,7 +175,7 @@ describe('project identity escaping', function () {
             )
             expect(await readWithBunEnvFile(rendered)).toBe('')
             expect(rendered).not.toContain(defaultName)
-            expect(rendered).toContain('MAIL_FROM_NAME=\n')
+            expect(rendered).not.toContain('MAIL_FROM_NAME=')
             const manifest = renderProjectIdentityFile(
                 'web/public/manifest.json',
                 await source('web/public/manifest.json'),
@@ -215,18 +215,4 @@ describe('project identity escaping', function () {
             )
         },
     )
-
-    it('clears legacy generated mail names without changing an actual environment file', async function () {
-        const original = (await source('.env.dev.example')).replace(
-            /^MAIL_FROM_NAME=$/gmu,
-            'MAIL_FROM_NAME=Legacy generated name',
-        )
-        const rendered = renderProjectIdentityFile(
-            '.env.dev.example',
-            original,
-            renamed,
-        )
-        expect(await readWithBunEnvFile(rendered)).toBe('')
-        expect(rendered).not.toContain('Legacy generated name')
-    })
 })

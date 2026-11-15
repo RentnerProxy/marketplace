@@ -929,10 +929,8 @@
         "skipToContent": "Zum Inhalt springen",
         "home": "Zur Marketplace-Startseite",
         "adminLogin": "Verwaltung",
-        "status": "Der Marketplace entsteht",
-        "title": "Mehr Möglichkeiten für",
-        "description": "Ein Zuhause für Erweiterungen, die zu deinem Setup passen. Hier entsteht der zentrale Marketplace für offizielle RentnerProxy-Apps.",
-        "followDevelopment": "Entwicklung auf GitHub verfolgen",
+        "description": "Monitoring, DNS, Sicherheit und mehr. Hier entsteht der Ort für Apps, mit denen du dein RentnerProxy-Setup erweiterst.",
+        "followDevelopment": "Entwicklung verfolgen",
         "availability": "Noch nicht verfügbar: App-Katalog, Installation und öffentliche Registrierung folgen in weiteren Entwicklungsschritten.",
         "inPreparation": "In Vorbereitung",
         "outlook": "Die ersten offiziellen Apps",
@@ -967,6 +965,20 @@
                 "title": "CrowdSec",
                 "description": "CrowdSec als Erweiterung für dein Sicherheitskonzept."
             }
-        }
+        },
+        "tagline": "Dein RentnerProxy. Noch mehr Möglichkeiten.",
+        "browseApps": "Geplante Apps entdecken",
+        "outlookEyebrow": "Das kommt als Nächstes",
+        "heroEyebrow": "Offizielle Apps. Dein nächstes Upgrade.",
+        "accountNavigation": "Kontozugang",
+        "login": "Login",
+        "register": "Registrieren",
+        "registrationSoon": "Registrieren – bald verfügbar",
+        "footerHeadline": "Mehr drin. Mehr du.",
+        "footerDescription": "Offizielle Apps für dein RentnerProxy. Ein Zuhause für alles, was dein Setup als Nächstes braucht.",
+        "footerExplore": "Entdecken",
+        "footerLegal": "Rechtliches",
+        "footerLanguage": "Sprache",
+        "backToTop": "Nach oben"
     }
 }

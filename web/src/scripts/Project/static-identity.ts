@@ -184,19 +184,12 @@ function replaceCompose(content: string, config: ProjectIdentity) {
 }
 
 function replaceEnvDev(content: string, config: ProjectIdentity) {
-    let next = replaceOnce(
+    return replaceOnce(
         content,
         /^(DATABASE_URL=.*\/)[^\r\n]+$/gmu,
         `$1${escapeReplacement(config.databaseName)}`,
         'development databaseName',
     )
-    next = replaceOnce(
-        next,
-        /^(MAIL_FROM_NAME=)[^\r\n]*$/gmu,
-        '$1',
-        'development mail sender name',
-    )
-    return next
 }
 
 function replaceEnvProduction(content: string, config: ProjectIdentity) {

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { Link, Outlet } from '@tanstack/react-router'
-import { ArrowUpRight } from 'lucide-react'
 import Footer from './Components/Footer.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 
@@ -15,8 +14,8 @@ export default function PublicLayout({ children }: { children?: ReactNode }) {
             >
                 {t('marketplace.skipToContent')}
             </a>
-            <header className="border-b border-border-dark">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-5 sm:px-8">
+            <header className="border-b border-white/10 bg-marketplace-void text-white">
+                <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-5 sm:px-8 lg:px-12">
                     <Link
                         to="/"
                         className="flex min-w-0 items-center gap-3"
@@ -27,8 +26,8 @@ export default function PublicLayout({ children }: { children?: ReactNode }) {
                             alt=""
                             className="h-11 w-11 shrink-0 object-contain"
                         />
-                        <span className="min-w-0">
-                            <span className="block text-base font-bold tracking-tight sm:text-lg">
+                        <span className="hidden min-w-0 min-[380px]:block">
+                            <span className="block font-display text-lg tracking-tight sm:text-xl">
                                 RentnerProxy
                             </span>
                             <span className="block text-xs font-medium uppercase tracking-[0.2em] text-secondary-text">
@@ -36,13 +35,10 @@ export default function PublicLayout({ children }: { children?: ReactNode }) {
                             </span>
                         </span>
                     </Link>
-                    <Link
-                        to="/login"
-                        className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border-dark bg-surface-dark px-3 py-2.5 text-sm font-semibold transition-colors hover:border-primary hover:text-primary sm:px-4"
-                    >
-                        {t('marketplace.adminLogin')}
-                        <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
-                    </Link>
+                    <nav aria-label={t('marketplace.accountNavigation')} className="flex shrink-0 items-center gap-3 sm:gap-5">
+                        <Link to="/login" className="py-2 text-sm font-semibold text-white/80 transition-colors hover:text-primary">{t('marketplace.login')}</Link>
+                        <button type="button" disabled title={t('marketplace.registrationSoon')} aria-label={t('marketplace.registrationSoon')} className="min-h-10 cursor-not-allowed rounded-xl border border-primary/50 bg-primary/10 px-3 py-2 text-xs font-semibold text-[#a3ffb8] sm:px-4 sm:text-sm">{t('marketplace.register')}</button>
+                    </nav>
                 </div>
             </header>
             <main

@@ -929,10 +929,8 @@
         "skipToContent": "Skip to content",
         "home": "Marketplace home",
         "adminLogin": "Administration",
-        "status": "The marketplace is taking shape",
-        "title": "More possibilities for",
-        "description": "A home for extensions that fit your setup. We are building the central marketplace for official RentnerProxy apps.",
-        "followDevelopment": "Follow development on GitHub",
+        "description": "Monitoring, DNS, security and more. The future home for apps that take your RentnerProxy setup further.",
+        "followDevelopment": "Follow development",
         "availability": "Not available yet: the app catalog, installation, and public registration will follow in later development stages.",
         "inPreparation": "In preparation",
         "outlook": "The first official apps",
@@ -967,6 +965,20 @@
                 "title": "CrowdSec",
                 "description": "A CrowdSec extension for your security setup."
             }
-        }
+        },
+        "tagline": "Your RentnerProxy. Even more possibilities.",
+        "browseApps": "Explore planned apps",
+        "outlookEyebrow": "Coming up next",
+        "heroEyebrow": "Official apps. Your next upgrade.",
+        "accountNavigation": "Account access",
+        "login": "Login",
+        "register": "Register",
+        "registrationSoon": "Registration – coming soon",
+        "footerHeadline": "More possibilities. More you.",
+        "footerDescription": "Official apps for your RentnerProxy. A home for whatever your setup needs next.",
+        "footerExplore": "Explore",
+        "footerLegal": "Legal",
+        "footerLanguage": "Language",
+        "backToTop": "Back to top"
     }
 }
