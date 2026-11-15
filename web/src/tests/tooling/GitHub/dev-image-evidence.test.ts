@@ -57,7 +57,9 @@ function loadedFixture() {
 test('loaded image binds OCI runtime config and layers while permitting a backend image ID', () => {
     const { config, inspected } = loadedFixture()
     expect(verifyDevLoadedImage(config, inspected)).toBe(manifestDigest)
-    expect(verifyDevLoadedImage(config, { ...inspected, Id: imageId })).toBe(imageId)
+    expect(verifyDevLoadedImage(config, { ...inspected, Id: imageId })).toBe(
+        imageId,
+    )
     expect(
         verifyDevLoadedImage(config, {
             ...inspected,
@@ -77,11 +79,18 @@ test.each([
     { RootFS: { Type: 'other', Layers: [] } },
     { RootFS: { Type: 'layers', Layers: [] } },
     { RootFS: { Type: 'layers', Layers: [`sha256:${'e'.repeat(64)}`] } },
-    { RootFS: { Type: 'layers', Layers: [`sha256:${'f'.repeat(64)}`, `sha256:${'e'.repeat(64)}`] } },
+    {
+        RootFS: {
+            Type: 'layers',
+            Layers: [`sha256:${'f'.repeat(64)}`, `sha256:${'e'.repeat(64)}`],
+        },
+    },
     { Config: null },
 ])('rejects loaded image identity or layer mismatch: %j', (change) => {
     const { config, inspected } = loadedFixture()
-    expect(() => verifyDevLoadedImage(config, { ...inspected, ...change })).toThrow()
+    expect(() =>
+        verifyDevLoadedImage(config, { ...inspected, ...change }),
+    ).toThrow()
 })
 
 test.each([
@@ -90,7 +99,13 @@ test.each([
     { Entrypoint: ['/other.sh'] },
     { Cmd: ['other'] },
     { Healthcheck: { Test: ['CMD', '/other'], Interval: 1000000000 } },
-    { Healthcheck: { Test: ['CMD', '/healthcheck'], Interval: 1000000000, Disabled: true } },
+    {
+        Healthcheck: {
+            Test: ['CMD', '/healthcheck'],
+            Interval: 1000000000,
+            Disabled: true,
+        },
+    },
     { Labels: { title: 'Marketplace', revision: 'forged' } },
 ])('rejects changed runtime config: %j', (change) => {
     const { config, inspected } = loadedFixture()
@@ -111,13 +126,17 @@ test.each([
     { rootfs: { type: 'layers', diff_ids: ['sha256:invalid'] } },
 ])('rejects unsupported OCI runtime configuration: %j', (change) => {
     const { config, inspected } = loadedFixture()
-    expect(() => verifyDevLoadedImage({ ...config, ...change }, inspected)).toThrow()
+    expect(() =>
+        verifyDevLoadedImage({ ...config, ...change }, inspected),
+    ).toThrow()
 })
 
 test('rejects missing expected runtime keys and malformed loaded objects', () => {
     const { config, inspected } = loadedFixture()
     const { Env: _env, ...withoutEnv } = inspected.Config
-    expect(() => verifyDevLoadedImage(config, { ...inspected, Config: withoutEnv })).toThrow()
+    expect(() =>
+        verifyDevLoadedImage(config, { ...inspected, Config: withoutEnv }),
+    ).toThrow()
     expect(() => verifyDevLoadedImage(config, [inspected])).toThrow()
     expect(() => verifyDevLoadedImage(null, inspected)).toThrow()
 })
@@ -139,7 +158,8 @@ function fixture() {
                 'org.opencontainers.image.version': identity.version,
                 'org.opencontainers.image.source':
                     'https://github.com/RentnerProxy/marketplace',
-                'org.opencontainers.image.title': 'RentnerProxy Marketplace Dev',
+                'org.opencontainers.image.title':
+                    'RentnerProxy Marketplace Dev',
             },
         },
     }
@@ -168,7 +188,10 @@ test('manual main identity binds the repository, revision, run and platform', ()
         devImageIdentity({
             ...context,
             repository: 'rentnerproxy/marketplace',
-            workflowRef: context.workflowRef.replace('RentnerProxy', 'rentnerproxy'),
+            workflowRef: context.workflowRef.replace(
+                'RentnerProxy',
+                'rentnerproxy',
+            ),
         }),
     ).toEqual(devImageIdentity(context))
 })
@@ -196,9 +219,12 @@ const invalidContexts: Partial<DevImageContext>[] = [
     { runAttempt: '1\n' },
 ]
 
-test.each(invalidContexts)('rejects identity outside the trusted manual workflow: %j', (change) => {
-    expect(() => devImageIdentity({ ...context, ...change })).toThrow()
-})
+test.each(invalidContexts)(
+    'rejects identity outside the trusted manual workflow: %j',
+    (change) => {
+        expect(() => devImageIdentity({ ...context, ...change })).toThrow()
+    },
+)
 
 test('candidate validation reconstructs evidence from independently inspected bytes', () => {
     const { identity, actual } = fixture()
@@ -251,10 +277,13 @@ test.each([
     ).toThrow()
 })
 
-test.each([null, [], {}, 'candidate'].map((value) => ({ value })))('rejects malformed evidence %j', ({ value }) => {
-    const { identity, actual } = fixture()
-    expect(() => validateDevCandidate(value, identity, actual)).toThrow()
-})
+test.each([null, [], {}, 'candidate'].map((value) => ({ value })))(
+    'rejects malformed evidence %j',
+    ({ value }) => {
+        const { identity, actual } = fixture()
+        expect(() => validateDevCandidate(value, identity, actual)).toThrow()
+    },
+)
 
 test.each([
     { manifest: { schemaVersion: 2, manifests: [] } },
@@ -265,7 +294,9 @@ test.each([
     { imageId: 'sha256:bad' },
 ])('rejects malformed actual image data: %j', (change) => {
     const { identity, actual } = fixture()
-    expect(() => createDevCandidate(identity, { ...actual, ...change })).toThrow()
+    expect(() =>
+        createDevCandidate(identity, { ...actual, ...change }),
+    ).toThrow()
 })
 
 test.each([
@@ -285,16 +316,18 @@ test.each([
     ).toThrow()
 })
 
-test.each([
-    { os: 'windows' },
-    { architecture: 'arm64' },
-    { config: {} },
-])('rejects unsupported config: %j', (change) => {
-    const { identity, actual, config } = fixture()
-    expect(() =>
-        createDevCandidate(identity, { ...actual, config: { ...config, ...change } }),
-    ).toThrow()
-})
+test.each([{ os: 'windows' }, { architecture: 'arm64' }, { config: {} }])(
+    'rejects unsupported config: %j',
+    (change) => {
+        const { identity, actual, config } = fixture()
+        expect(() =>
+            createDevCandidate(identity, {
+                ...actual,
+                config: { ...config, ...change },
+            }),
+        ).toThrow()
+    },
+)
 
 test.each(['revision', 'version', 'source', 'title'])(
     'rejects actual label mismatch for %s even when evidence is unchanged',
@@ -311,7 +344,10 @@ test.each(['revision', 'version', 'source', 'title'])(
             },
         }
         expect(() =>
-            validateDevCandidate(candidate, identity, { ...actual, config: changed }),
+            validateDevCandidate(candidate, identity, {
+                ...actual,
+                config: changed,
+            }),
         ).toThrow()
     },
 )
@@ -349,7 +385,11 @@ test('publication requires both actual remote tag digests to match', () => {
     const { identity, actual } = fixture()
     const candidate = createDevCandidate(identity, actual)
     expect(
-        createDevPublication(candidate, { immutable: manifestDigest, dev: manifestDigest }, at),
+        createDevPublication(
+            candidate,
+            { immutable: manifestDigest, dev: manifestDigest },
+            at,
+        ),
     ).toEqual({
         schemaVersion: 1,
         published: true,
@@ -396,7 +436,9 @@ test('rejects forged typed identities and candidates at evidence creation bounda
         createDevCandidate({ ...identity, version: 'dev-forged' }, actual),
     ).toThrow()
     const candidate = createDevCandidate(identity, actual)
-    expect(() => createDevAssessment({ ...candidate, digest: 'bad' }, at)).toThrow()
+    expect(() =>
+        createDevAssessment({ ...candidate, digest: 'bad' }, at),
+    ).toThrow()
     expect(() =>
         createDevPublication(
             { ...candidate, immutableTag: 'forged' },

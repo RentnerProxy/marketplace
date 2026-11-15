@@ -75,7 +75,12 @@ async function executeScan(status: number, archive: boolean) {
     }
 }
 
-shellTest.each([[0, false], [23, false], [0, true], [23, true]] as const)(
+shellTest.each([
+    [0, false],
+    [23, false],
+    [0, true],
+    [23, true],
+] as const)(
     'anonymous image scan preserves scanner exit %s (archive: %s)',
     async (status, archive) => {
         const result = await executeScan(status, archive)
