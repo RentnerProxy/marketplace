@@ -35,9 +35,25 @@ export default function PublicLayout({ children }: { children?: ReactNode }) {
                             </span>
                         </span>
                     </Link>
-                    <nav aria-label={t('marketplace.accountNavigation')} className="flex shrink-0 items-center gap-3 sm:gap-5">
-                        <Link to="/login" className="py-2 text-sm font-semibold text-white/80 transition-colors hover:text-primary">{t('marketplace.login')}</Link>
-                        <button type="button" disabled title={t('marketplace.registrationSoon')} aria-label={t('marketplace.registrationSoon')} className="min-h-10 cursor-not-allowed rounded-xl border border-primary/50 bg-primary/10 px-3 py-2 text-xs font-semibold text-[#a3ffb8] sm:px-4 sm:text-sm">{t('marketplace.register')}</button>
+                    <nav
+                        aria-label={t('marketplace.accountNavigation')}
+                        className="flex shrink-0 items-center gap-3 sm:gap-5"
+                    >
+                        <Link
+                            to="/login"
+                            className="py-2 text-sm font-semibold text-white/80 transition-colors hover:text-primary"
+                        >
+                            {t('marketplace.login')}
+                        </Link>
+                        <button
+                            type="button"
+                            disabled
+                            title={t('marketplace.registrationSoon')}
+                            aria-label={t('marketplace.registrationSoon')}
+                            className="min-h-10 cursor-not-allowed rounded-xl border border-primary/50 bg-primary/10 px-3 py-2 text-xs font-semibold text-[#a3ffb8] sm:px-4 sm:text-sm"
+                        >
+                            {t('marketplace.register')}
+                        </button>
                     </nav>
                 </div>
             </header>
