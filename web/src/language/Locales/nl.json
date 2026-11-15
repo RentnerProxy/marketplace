@@ -1,0 +1,508 @@
+{
+    "common": {
+        "active": "Actief",
+        "actions": "Acties",
+        "all": "Alle",
+        "cancel": "Annuleren",
+        "delete": "Verwijderen",
+        "edit": "Bewerken",
+        "error": "Fout",
+        "inactive": "Inactief",
+        "logout": "Afmelden",
+        "rights": "Machtigingen",
+        "save": "Opslaan",
+        "saving": "Opslaan...",
+        "status": "Status",
+        "zoom": "Zoomen",
+        "activate": "Activeren",
+        "approve": "Goedkeuren",
+        "backToLogin": "Terug naar aanmelden",
+        "clickToCopy": "Klik om te kopiëren",
+        "copied": "Gekopieerd!",
+        "deactivate": "Deactiveren",
+        "field": "Veld",
+        "loggingOut": "Afmelden...",
+        "no": "Nee",
+        "planned": "Gepland",
+        "reject": "Afwijzen",
+        "removeSelection": "Selectie wissen",
+        "yes": "Ja"
+    },
+    "language": {
+        "de": "Deutsch",
+        "en": "English",
+        "sectionTitle": "Taal",
+        "sectionDescription": "Kies de taal van de interface.",
+        "save": "Taal opslaan",
+        "savedTitle": "Taal opgeslagen",
+        "savedDescription": "De taal is gewijzigd.",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
+    },
+    "nav": {
+        "collapse": "Navigatie inklappen",
+        "expand": "Navigatie uitklappen",
+        "overview": "Overzicht",
+        "permissions": "Machtigingen",
+        "user": "Gebruiker",
+        "backups": "Back-ups",
+        "admin": "Beheer",
+        "dashboard": "Dashboard",
+        "navigation": "Navigatie",
+        "systemSettings": "Systeeminstellingen",
+        "userManagement": "Gebruikersbeheer",
+        "auditLogs": "Auditlogboeken"
+    },
+    "auth": {
+        "firstSetup": {
+            "emailPlaceholder": "E-mailadres",
+            "passwordPlaceholder": "Wachtwoord",
+            "passwordMismatch": "De wachtwoorden komen niet overeen.",
+            "title": "Eerste supergebruiker aanmaken",
+            "description": "Stel het eerste account in. Vereiste systeemgegevens en machtigingen worden automatisch gecontroleerd en toegevoegd.",
+            "accountTitle": "Aanmeldgegevens",
+            "accountDescription": "Je gebruikt deze gegevens om je later aan te melden.",
+            "confirmPasswordPlaceholder": "Herhaal het wachtwoord",
+            "checkingSetupLink": "Installatielink controleren…",
+            "setupLinkRequired": "Zoek de installatielink in de app-logboeken",
+            "setupLinkDescription": "Zoek bij lokale ontwikkeling de installatielink in de terminal van bun run dev. Open bij een Komodo-installatie de stacklogboeken en kies de service ‘app’. Kopieer de volledige nieuwste link en open deze in je browser. De link is tien minuten geldig en wordt automatisch vernieuwd totdat de eerste installatie is voltooid.",
+            "personalInfoTitle": "Persoonlijke gegevens",
+            "personalInfoDescription": "Deze gegevens zijn optioneel en kunnen later worden gewijzigd.",
+            "create": "Supergebruiker aanmaken",
+            "creating": "Supergebruiker aanmaken...",
+            "created": "De eerste supergebruiker is aangemaakt. Je kunt je nu aanmelden.",
+            "createError": "De eerste supergebruiker kon niet worden aangemaakt.",
+            "alreadyCompleted": "De eerste installatie is al voltooid.",
+            "invalidSetupToken": "De installatielink is ongeldig of verlopen. Open de nieuwste link uit de app-logboeken.",
+            "invalidData": "Controleer je invoer.",
+            "invalidUsername": "De gebruikersnaam moet tussen 1 en 50 tekens bevatten.",
+            "invalidEmail": "Voer een geldig e-mailadres in."
+        },
+        "forgotPassword": {
+            "requesting": "Aanvragen...",
+            "description": "Voer je e-mailadres in om je wachtwoord opnieuw in te stellen.",
+            "emailPlaceholder": "Je e-mailadres",
+            "requestLink": "Link aanvragen",
+            "title": "Wachtwoord vergeten",
+            "emailSent": "De e-mail voor wachtwoordherstel is verzonden."
+        },
+        "login": {
+            "passwordPlaceholder": "Wachtwoord",
+            "title": "Aanmelden",
+            "eyebrow": "Je marketplace-account",
+            "welcomeBack": "Fijn dat je er weer bent.",
+            "newHere": "Nieuw hier?",
+            "discoverRegistration": "Meer over registreren",
+            "description": "Meld je aan bij je account.",
+            "forgotPassword": "Wachtwoord vergeten?",
+            "login": "Aanmelden",
+            "loggingIn": "Aanmelden...",
+            "usernamePlaceholder": "Je gebruikersnaam",
+            "failed": "Aanmelden mislukt",
+            "or": "of",
+            "passkeyFailed": "Aanmelden met toegangssleutel mislukt",
+            "passkeyLogin": "Aanmelden met toegangssleutel",
+            "passkeyLoggingIn": "Toegangssleutel controleren...",
+            "passkeyUnsupported": "Je browser ondersteunt geen toegangssleutels.",
+            "twoFactorCodeRequired": "Voer je 2FA-code in.",
+            "twoFactorCodeIncomplete": "Voer de volledige 2FA-code in."
+        },
+        "register": {
+            "email": "E-mailadres",
+            "eyebrow": "Binnenkort voor jou",
+            "title": "Jouw toegang tot de marketplace.",
+            "description": "Eén account voor je RentnerProxy-apps en uitbreidingen.",
+            "previewTitle": "Registratie is binnenkort beschikbaar",
+            "previewDescription": "Dit is een voorbeeld. De velden zijn uitgeschakeld; er worden geen gegevens verzameld en er wordt geen account aangemaakt.",
+            "accountDetails": "Voorbeeld van accountgegevens",
+            "emailPlaceholder": "Je e-mailadres",
+            "comingSoon": "Nog niet beschikbaar",
+            "alreadyRegistered": "Heb je al een account?"
+        },
+        "passwordReset": {
+            "newPasswordTitle": "Nieuw wachtwoord",
+            "newPasswordPlaceholder": "Nieuw wachtwoord",
+            "saving": "Opslaan...",
+            "passwordMismatch": "De wachtwoorden komen niet overeen.",
+            "validating": "Herstellink controleren…",
+            "validationError": "De herstellink kon niet worden gecontroleerd. Probeer het opnieuw.",
+            "retryValidation": "Link opnieuw controleren",
+            "missingLinkTitle": "Herstellink ontbreekt",
+            "missingLinkDescription": "Vraag een nieuwe link voor wachtwoordherstel aan.",
+            "invalidLinkTitle": "Ongeldige herstellink",
+            "invalidLinkDescription": "De herstellink is ongeldig of verlopen. Vraag een nieuwe aan.",
+            "newPasswordDescription": "Stel een nieuw wachtwoord voor je account in.",
+            "confirmPasswordPlaceholder": "Herhaal het wachtwoord",
+            "save": "Wachtwoord opslaan",
+            "updated": "Je wachtwoord is gewijzigd. Meld je nu aan in dezelfde browser.",
+            "updatedTitle": "Wachtwoord opgeslagen",
+            "updateError": "Het wachtwoord kon niet worden gewijzigd."
+        },
+        "twoFactor": {
+            "title": "Tweefactorauthenticatie",
+            "codeLabel": "Zescijferige verificatiecode",
+            "description": "Voer de zescijferige code uit je authenticator-app in.",
+            "rememberDevice": "Dit apparaat onthouden",
+            "rememberDeviceDescription": "De volgende keer dat je je in deze browser aanmeldt, is geen 2FA-code nodig. Het token is 30 dagen geldig."
+        },
+        "passwordPolicy": "Het wachtwoord moet tussen {{min}} en {{max}} tekens bevatten.",
+        "privacy": {
+            "title": "Privacybeleid",
+            "placeholder": "Tijdelijke tekst voor het privacybeleid."
+        },
+        "terms": {
+            "title": "Gebruiksvoorwaarden",
+            "placeholder": "Tijdelijke tekst voor de gebruiksvoorwaarden."
+        }
+    },
+    "safeDelete": {
+        "close": "Dialoogvenster sluiten",
+        "confirming": "Verwijderen…",
+        "description": "Deze actie kan niet ongedaan worden gemaakt.",
+        "title": "Verwijderen bevestigen"
+    },
+    "userSettings": {
+        "account": "Account",
+        "appearance": "Weergave",
+        "color": {
+            "reset": "Herstellen",
+            "primaryButton": "Primaire knop",
+            "save": "Kleur opslaan",
+            "secondaryButton": "Secundaire knop",
+            "title": "Systeemkleur"
+        },
+        "font": {
+            "family": {
+                "system": "Systeem",
+                "inter": "Inter",
+                "mono": "Mono",
+                "serif": "Serif"
+            },
+            "preview": "Voorbeeld",
+            "familyTitle": "Lettertype",
+            "saveFamily": "Lettertype opslaan",
+            "saveSize": "Tekstgrootte opslaan",
+            "size": "Tekstgrootte",
+            "sizeTitle": "Tekstgrootte",
+            "sizePreview": "Klein voorbeeld",
+            "sizeValue": "{{size}}px"
+        },
+        "security": {
+            "label": "Beveiliging",
+            "2faConfirm": "Bevestigen",
+            "2faDisable": "2FA uitschakelen",
+            "2faTitle": "Tweefactorauthenticatie",
+            "passwordTitle": "Wachtwoord",
+            "passkeyAdd": "Passkey toevoegen",
+            "passkeyCreatedAt": "Aangemaakt",
+            "passkeyDelete": "Verwijderen",
+            "passkeysTitle": "Passkeys",
+            "reauthenticationTotpPlaceholder": "123456",
+            "2faDisabling": "Uitschakelen...",
+            "passwordSending": "Verzenden...",
+            "signInAgain": "Opnieuw aanmelden",
+            "2faEnable": "2FA inschakelen",
+            "2faPreparing": "Voorbereiden...",
+            "copyFailed": "Kopiëren mislukt.",
+            "passwordReset": "Wachtwoordherstel versturen",
+            "passkeyAdding": "Toegangssleutel toevoegen...",
+            "passkeyBackedUp": "Gesynchroniseerd",
+            "passkeyLastUsedAt": "Laatst gebruikt",
+            "passkeySingleDevice": "Alleen dit apparaat",
+            "passkeysLoading": "Toegangssleutels laden...",
+            "reauthenticationPasswordLabel": "Huidig wachtwoord",
+            "reauthenticationPasswordPlaceholder": "Voer je huidige wachtwoord in",
+            "reauthenticationTotpLabel": "Huidige 2FA-code",
+            "checking": "Controleren...",
+            "secret": "Geheim: {{secret}}"
+        },
+        "header": {
+            "title": "Gebruikersinstellingen",
+            "subtitle": "Instellingen voor {{username}}"
+        },
+        "settingsLabel": "Gebruikersinstellingen",
+        "background": {
+            "choose": "Achtergrond kiezen",
+            "custom": "Eigen achtergrond",
+            "darkness": "Achtergrond donkerder maken",
+            "empty": "Geen afbeelding geselecteerd",
+            "preview": "Voorbeeld van eigen achtergrond",
+            "remove": "Achtergrond verwijderen",
+            "removing": "Verwijderen...",
+            "save": "Achtergrond opslaan",
+            "saveBrightness": "Helderheid opslaan",
+            "zoom": "Achtergrondzoom",
+            "zoomValue": "{{zoom}}x"
+        },
+        "close": "Gebruikersinstellingen sluiten",
+        "theme": {
+            "dark": "Donkere modus",
+            "light": "Lichte modus",
+            "save": "Thema opslaan",
+            "title": "Hoofdthema"
+        },
+        "personalInfo": {
+            "city": "Plaats",
+            "firstName": "Voornaam",
+            "houseNumber": "Huisnummer",
+            "lastName": "Achternaam",
+            "postalCode": "Postcode",
+            "save": "Gegevens opslaan",
+            "street": "Straat",
+            "title": "Persoonlijke gegevens"
+        },
+        "profileImage": {
+            "choose": "Afbeelding kiezen",
+            "save": "Profielfoto opslaan",
+            "title": "Profielfoto",
+            "userId": "Gebruikers-ID: {{userId}}"
+        }
+    },
+    "admin": {
+        "auditLogs": {
+            "action": "Actie",
+            "user": "Gebruiker",
+            "method": "Methode",
+            "created": "Aangemaakt",
+            "details": "Details",
+            "system": "Systeem",
+            "pageTitle": "Auditlogboeken",
+            "entriesTitle": "Vermeldingen",
+            "oldValue": "- Oud",
+            "newValue": "+ Nieuw",
+            "message": "Bericht",
+            "route": "Route",
+            "showDetails": "Auditdetails tonen",
+            "searchPlaceholder": "Auditlogboeken doorzoeken...",
+            "userFilterPlaceholder": "Gebruikers filteren...",
+            "messageFilterPlaceholder": "Berichten filteren...",
+            "routeFilterPlaceholder": "Routes filteren...",
+            "createdFilterPlaceholder": "Aangemaakt van/tot",
+            "entryCount": "{{count}} vermeldingen",
+            "itemLabel": "vermeldingen"
+        },
+        "dashboard": {
+            "console": {
+                "connecting": "Verbinden",
+                "disconnected": "Losgekoppeld",
+                "readOnly": "Alleen-lezen",
+                "open": "Console openen",
+                "opened": "Console geopend",
+                "title": "{{service}} · Console",
+                "emptyTitle": "Serviceconsole",
+                "pendingSource": "Servicelogboek",
+                "close": "Console sluiten",
+                "output": "Alleen-lezen console-uitvoer",
+                "shortLabel": "Console"
+            },
+            "services": {
+                "valkey": "Valkey",
+                "websocket": "WebSocket-server",
+                "webserver": "Webserver",
+                "worker": "Achtergrondproces",
+                "postgresql": "PostgreSQL",
+                "core": "Rust-kern"
+            },
+            "status": {
+                "running": "Actief",
+                "starting": "Wordt gestart",
+                "connecting": "Verbinden",
+                "down": "Niet beschikbaar",
+                "error": "Fout",
+                "checking": "Controleren"
+            },
+            "groups": {
+                "application": {
+                    "title": "Applicatie"
+                }
+            },
+            "title": "Beheerdersdashboard"
+        },
+        "systemSettings": {
+            "plan": "Planning",
+            "preview": "Voorbeeld"
+        },
+        "backups": {
+            "title": "Back-ups",
+            "automaticEnabled": "Automatische back-ups inschakelen",
+            "scheduleTitle": "Planning",
+            "weekday": {
+                "0": "Zo",
+                "1": "Ma",
+                "2": "Di",
+                "3": "Wo",
+                "4": "Do",
+                "5": "Vr",
+                "6": "Za"
+            },
+            "import": "Importeren",
+            "historyTitle": "Back-upgeschiedenis",
+            "table": {
+                "trigger": "Aanleiding",
+                "size": "Grootte",
+                "itemLabel": "back-ups"
+            },
+            "trigger": {
+                "manual": "Handmatig",
+                "import": "Importeren"
+            },
+            "stats": {
+                "failed": "Mislukt",
+                "imported": "geïmporteerd"
+            },
+            "delete": "Back-up verwijderen",
+            "deleteTitle": "Back-up verwijderen",
+            "status": {
+                "queued": "In wachtrij",
+                "running": "Actief",
+                "completed": "Voltooid",
+                "failed": "Mislukt"
+            }
+        },
+        "permissions": {
+            "retry": "Opnieuw proberen",
+            "catalog": {
+                "backups": {
+                    "name": "Back-ups"
+                },
+                "auditLogs": {
+                    "name": "Auditlogboeken"
+                },
+                "adminDashboard": {
+                    "name": "Beheerdersdashboard"
+                }
+            },
+            "presets": {
+                "nameLabel": "Naam",
+                "descriptionLabel": "Beschrijving"
+            },
+            "users": {
+                "total": "{{count}} gebruikers",
+                "previous": "Vorige pagina",
+                "next": "Volgende pagina",
+                "unsavedChanges": "Niet-opgeslagen wijzigingen",
+                "loading": "Gebruikers laden"
+            }
+        },
+        "users": {
+            "tableTitle": "Gebruikers",
+            "createTitle": "Gebruiker aanmaken",
+            "accountTitle": "Account",
+            "permissionsTitle": "Rechten",
+            "username": "Gebruikersnaam",
+            "email": "E-mail",
+            "created": "Aangemaakt",
+            "userCount": "{{count}} gebruikers",
+            "itemLabel": "gebruikers",
+            "create": "Aanmaken",
+            "updateError": "De gebruiker kon niet worden bijgewerkt.",
+            "loading": "Gebruikers laden",
+            "searchPlaceholder": "Gebruikers zoeken",
+            "createdFilterPlaceholder": "Aangemaakt van/tot"
+        }
+    },
+    "layout": {
+        "topbar": {
+            "defaultTitle": "Overzicht",
+            "defaultDescription": "Een overzicht van je huidige omgeving."
+        },
+        "footer": {
+            "terms": "Gebruiksvoorwaarden",
+            "privacy": "Privacybeleid",
+            "imprint": "Colofon"
+        }
+    },
+    "notifications": {
+        "title": "Meldingen"
+    },
+    "shared": {
+        "routeError": {
+            "retry": "Opnieuw proberen"
+        },
+        "table": {
+            "rowsPerPage": "Rijen per pagina",
+            "previousPage": "Vorige pagina",
+            "nextPage": "Volgende pagina",
+            "filterPlaceholder": "Filteren…",
+            "filterColumnPlaceholder": "{{column}} filteren…"
+        },
+        "transfer": {
+            "backupFailed": "Back-up mislukt"
+        },
+        "notFound": {
+            "title": "Pagina niet gevonden."
+        }
+    },
+    "mailTemplates": {
+        "failedLogin": {
+            "ip": "IP-adres",
+            "unknown": "Onbekend",
+            "unknownLocation": "Niet beschikbaar"
+        }
+    },
+    "securityChangeMail": {
+        "timestamp": "Tijd (UTC)"
+    },
+    "marketplace": {
+        "adminLogin": "Beheer",
+        "usernameLabel": "Gebruikersnaam",
+        "passwordLabel": "Wachtwoord",
+        "apps": {
+            "monitoring": {
+                "title": "Monitoring",
+                "description": "Houd je installatie in de gaten met een officiële monitoringuitbreiding."
+            },
+            "docker": {
+                "title": "Docker Discovery",
+                "description": "Ontdek Docker-services en koppel ze aan RentnerProxy."
+            },
+            "dns": {
+                "title": "DNS",
+                "description": "Cloudflare, deSEC en Hetzner: DNS-01 en dynamische DNS."
+            },
+            "crowdsec": {
+                "title": "CrowdSec",
+                "description": "Een CrowdSec-uitbreiding voor de beveiliging van je installatie."
+            },
+            "loadBalancer": {
+                "title": "Loadbalancer",
+                "description": "Verdeel aanvragen over meerdere upstreamservers."
+            },
+            "oidc": {
+                "title": "OpenID Connect",
+                "description": "Koppel identiteitsproviders via OpenID Connect."
+            }
+        },
+        "login": "Aanmelden",
+        "footerLanguage": "Taal",
+        "skipToContent": "Naar inhoud",
+        "home": "Marketplace-startpagina",
+        "description": "Monitoring, DNS, beveiliging en meer. De toekomstige plek voor apps die je RentnerProxy-installatie verder brengen.",
+        "followDevelopment": "Ontwikkeling volgen",
+        "availability": "Nog niet beschikbaar: de appcatalogus, installatie en openbare registratie volgen in latere ontwikkelfasen.",
+        "inPreparation": "In voorbereiding",
+        "outlook": "De eerste officiële apps",
+        "outlookNote": "Gepland. Nog niet beschikbaar om te installeren.",
+        "loginDescription": "Meld je aan om de marketplace te beheren.",
+        "recoveryHint": "Toegang is momenteel bedoeld voor bestaande beheerdersaccounts.",
+        "passkeyDescription": "Meld je aan met een toegangssleutel die al voor je account is ingesteld.",
+        "tagline": "Jouw RentnerProxy. Nog meer mogelijkheden.",
+        "browseApps": "Geplande apps bekijken",
+        "outlookEyebrow": "Binnenkort",
+        "heroEyebrow": "Officiële apps. Jouw volgende upgrade.",
+        "accountNavigation": "Accounttoegang",
+        "register": "Registreren",
+        "registrationSoon": "Registratie binnenkort beschikbaar",
+        "footerHeadline": "Meer mogelijkheden. Meer jij.",
+        "footerDescription": "Officiële apps voor jouw RentnerProxy. Een plek voor alles wat je installatie straks nodig heeft.",
+        "footerExplore": "Ontdekken",
+        "footerLegal": "Juridisch"
+    },
+    "maintenance": {
+        "requestSent": "Verzenden..."
+    }
+}

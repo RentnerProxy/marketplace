@@ -125,6 +125,7 @@ vi.mock(
 )
 
 import Login from '@/features/Auth/Login/index.tsx'
+import Register from '@/features/Auth/Register/index.tsx'
 import ForgotPassword from '@/features/Auth/ForgotPassword/index.tsx'
 import PasswordReset from '@/features/Auth/PasswordReset/index.tsx'
 import Setup from '@/features/Auth/FirstSuperUser/index.tsx'
@@ -151,12 +152,28 @@ beforeEach(function () {
 })
 
 describe('authentication page states', function () {
+    it('keeps registration a disabled preview with no credential submission path', function () {
+        const html = renderToStaticMarkup(createElement(Register))
+        expect(html).toContain('auth.register.previewTitle')
+        expect(html).toContain('auth.register.previewDescription')
+        expect(html).toContain('<fieldset disabled="" aria-describedby="registration-preview-notice"')
+        expect(html).toContain('type="submit" disabled=""')
+        expect(html).toContain('type="email"')
+        expect(html).toContain('type="password"')
+        expect(html).toContain('href="/login"')
+        expect(html).not.toContain('<form')
+        expect(html).not.toContain('name="password"')
+        expect(submit).not.toHaveBeenCalled()
+        expect(change).not.toHaveBeenCalled()
+    })
+
     it('renders credentials, recovery and passkey choices with default branding', function () {
         const html = renderToStaticMarkup(createElement(Login))
         expect(html).toContain('Test Workspace')
         expect(html).toContain('value="starter-admin"')
         expect(html).toContain('type="password"')
         expect(html).toContain('href="/forgot-password"')
+        expect(html).toContain('href="/register"')
         expect(html).not.toContain('/custom-logo.webp')
     })
 
@@ -277,21 +294,19 @@ describe('authentication page states', function () {
     it.each([
         {
             Component: Privacy,
-            title: 'auth.privacy.title',
-            content: 'auth.privacy.placeholder',
+            title: 'Privacy',
+            content: 'session_id',
         },
         {
             Component: Terms,
-            title: 'auth.terms.title',
-            content: 'auth.terms.placeholder',
+            title: 'Legal notice',
+            content: 'Kevin Sträßler',
         },
     ])(
         'renders the public legal page $title',
         function ({ Component, title, content }) {
             const html = renderToStaticMarkup(createElement(Component))
-            expect(html).toContain(
-                `<h1 class="text-2xl font-bold text-white">${title}</h1>`,
-            )
+            expect(html).toContain(title)
             expect(html).toContain(content)
         },
     )

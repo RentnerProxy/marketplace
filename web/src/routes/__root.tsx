@@ -17,6 +17,7 @@ import TanStackQueryDevtools from '@/integrations/TanstackQuery/devtools.tsx'
 import appCss from '@/styles.css?url'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import TransferOverlay from '@/shared/TransferOverlay/index.tsx'
+import { CALENDAR_LOCALES, SELECT_LOCALES, TOAST_LOCALES } from '@/config/language-library.config.ts'
 
 import type { ReactNode } from 'react'
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
@@ -69,14 +70,14 @@ function RootDocument({ children }: { children: ReactNode }) {
             <body suppressHydrationWarning>
                 <TooltipProvider>
                     <InputProvider locale={language}>
-                        <SelectProvider locale={language}>
+                        <SelectProvider locale={SELECT_LOCALES[language]}>
                             <ToastProvider
-                                locale={language}
+                                locale={TOAST_LOCALES[language]}
                                 position="bottom-right"
                                 className="w-100 max-w-[calc(100vw-2rem)]"
                             >
                                 <CalendarProvider
-                                    locale={language}
+                                    locale={CALENDAR_LOCALES[language]}
                                     messages={{
                                         keyboardHelp: t(
                                             'shared.calendar.keyboardHelp',

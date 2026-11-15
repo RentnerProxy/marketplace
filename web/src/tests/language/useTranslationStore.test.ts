@@ -21,7 +21,7 @@ describe('useTranslationStore serverseitig', function () {
         const unsubscribe = reactMock.subscribe?.(subscriber)
 
         expect(store.language).toBe('de')
-        expect(store.availableLanguages).toEqual(['de', 'en'])
+        expect(store.availableLanguages).toEqual(['en', 'de', 'es', 'fr', 'it', 'pt', 'nl', 'pl'])
         const options = { count: 2, name: 'Österreich' }
         const translation: string = store.t('example.key', options)
         expect(translation).toBe('translated:example.key')
@@ -29,8 +29,8 @@ describe('useTranslationStore serverseitig', function () {
         expect(i18nextMock.api.init).toHaveBeenCalledWith(
             expect.objectContaining({
                 lng: 'de',
-                fallbackLng: 'de',
-                supportedLngs: ['de', 'en'],
+                fallbackLng: 'en',
+                supportedLngs: ['en', 'de', 'es', 'fr', 'it', 'pt', 'nl', 'pl'],
                 interpolation: { escapeValue: false },
             }),
         )

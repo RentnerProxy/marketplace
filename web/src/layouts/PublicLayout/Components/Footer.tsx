@@ -1,20 +1,25 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowUpRight, ArrowUp } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
+import MarketplaceLogo from '@/shared/Brand/MarketplaceLogo.tsx'
 import useFooterLogic from '../Hooks/useFooterLogic.ts'
 
 export default function Footer() {
     const { t } = useTranslationStore()
-    const { state, handler } = useFooterLogic()
+    const { state } = useFooterLogic()
 
     return (
         <footer className="relative overflow-hidden bg-marketplace-void text-white">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 1440 120" preserveAspectRatio="none" className="marketplace-wave pointer-events-none absolute inset-x-0 top-0 h-16 w-full sm:h-24">
+                <path d="M0 75C220 19 468 29 720 71S1190 127 1440 55V0H0Z" fill="#0fb33a" />
+                <path d="M0 64C220 8 468 18 720 60S1190 116 1440 44V0H0Z" fill="#f7faf8" />
+            </svg>
             <div
                 aria-hidden="true"
                 className="marketplace-breathe absolute -right-20 top-4 h-72 w-72 rounded-full border-[40px] border-primary/5"
             />
-            <div className="relative mx-auto max-w-[1440px] px-5 pb-6 pt-12 sm:px-8 sm:pt-16 lg:px-12">
+            <div className="relative mx-auto max-w-[1440px] px-5 pb-6 pt-28 sm:px-8 sm:pt-36 lg:px-12">
                 <div className="grid gap-12 pb-12 md:grid-cols-[1.4fr_1fr] lg:gap-24">
                     <div>
                         <Link
@@ -22,19 +27,7 @@ export default function Footer() {
                             aria-label={state.companyName}
                             className="inline-flex items-center gap-3"
                         >
-                            <img
-                                src="/rentnerproxy-logo.png"
-                                alt=""
-                                width="48"
-                                height="48"
-                                className="h-12 w-12 object-contain"
-                            />
-                            <span className="font-display text-2xl">
-                                RentnerProxy
-                                <span className="block text-primary sm:ml-2 sm:inline">
-                                    Marketplace
-                                </span>
-                            </span>
+                            <MarketplaceLogo className="w-64 sm:w-72" sizes="(min-width: 640px) 288px, 256px" />
                         </Link>
                         <p className="mt-7 max-w-lg font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
                             {t('marketplace.footerHeadline')}
@@ -82,10 +75,10 @@ export default function Footer() {
                             </h2>
                             <div className="mt-5 flex flex-col items-start gap-4 text-sm text-[#c1d2c9]">
                                 <Link
-                                    to="/terms"
+                                    to="/imprint"
                                     className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
                                 >
-                                    {t('layout.footer.terms')}
+                                    {t('layout.footer.imprint')}
                                 </Link>
                                 <Link
                                     to="/privacy"
@@ -101,41 +94,7 @@ export default function Footer() {
                     <span>
                         © {state.currentYear} {state.companyName}
                     </span>
-                    <div className="flex items-center gap-5">
-                        <div
-                            className="inline-flex gap-1"
-                            role="group"
-                            aria-label={t('marketplace.footerLanguage')}
-                        >
-                            {state.availableLanguages.map((language) => (
-                                <button
-                                    key={language}
-                                    type="button"
-                                    aria-label={t(`language.${language}`)}
-                                    aria-pressed={state.language === language}
-                                    disabled={state.isChangingLanguage}
-                                    onClick={() =>
-                                        void handler.handleLanguageChange(
-                                            language,
-                                        )
-                                    }
-                                    className={`min-h-9 min-w-10 rounded-lg px-2 font-semibold transition-colors disabled:opacity-50 ${state.language === language ? 'bg-primary text-marketplace-void' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-                                >
-                                    {language.toUpperCase()}
-                                </button>
-                            ))}
-                        </div>
-                        <span className="font-mono text-[10px]">
-                            {state.appVersion}
-                        </span>
-                        <a
-                            href="#main-content"
-                            aria-label={t('marketplace.backToTop')}
-                            className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition-colors hover:border-primary hover:text-primary"
-                        >
-                            <ArrowUp aria-hidden="true" className="h-4 w-4" />
-                        </a>
-                    </div>
+                    <span className="font-mono text-[10px]">{state.appVersion}</span>
                 </div>
             </div>
         </footer>

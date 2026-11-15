@@ -1,0 +1,508 @@
+{
+    "common": {
+        "active": "Activo",
+        "actions": "Acciones",
+        "all": "Todos",
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "edit": "Editar",
+        "error": "Error",
+        "inactive": "Inactivo",
+        "logout": "Cerrar sesión",
+        "rights": "Permisos",
+        "save": "Guardar",
+        "saving": "Guardando...",
+        "status": "Estado",
+        "zoom": "Zoom",
+        "activate": "Activar",
+        "approve": "Aprobar",
+        "backToLogin": "Volver al inicio de sesión",
+        "clickToCopy": "Haz clic para copiar",
+        "copied": "¡Copiado!",
+        "deactivate": "Desactivar",
+        "field": "Campo",
+        "loggingOut": "Cerrando sesión...",
+        "no": "No",
+        "planned": "Previsto",
+        "reject": "Rechazar",
+        "removeSelection": "Quitar selección",
+        "yes": "Sí"
+    },
+    "language": {
+        "de": "Deutsch",
+        "en": "English",
+        "sectionTitle": "Idioma",
+        "sectionDescription": "Elige el idioma de la interfaz.",
+        "save": "Guardar idioma",
+        "savedTitle": "Idioma guardado",
+        "savedDescription": "El idioma se ha cambiado correctamente.",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
+    },
+    "nav": {
+        "collapse": "Contraer navegación",
+        "expand": "Expandir navegación",
+        "overview": "Resumen",
+        "permissions": "Permisos",
+        "user": "Usuario",
+        "backups": "Copias de seguridad",
+        "admin": "Administración",
+        "dashboard": "Panel",
+        "navigation": "Navegación",
+        "systemSettings": "Ajustes del sistema",
+        "userManagement": "Gestión de usuarios",
+        "auditLogs": "Registros de auditoría"
+    },
+    "auth": {
+        "firstSetup": {
+            "emailPlaceholder": "Dirección de correo electrónico",
+            "passwordPlaceholder": "Contraseña",
+            "passwordMismatch": "Las contraseñas no coinciden.",
+            "title": "Crear el primer superusuario",
+            "description": "Configura la primera cuenta. Los datos del sistema y los permisos necesarios se comprueban y añaden automáticamente.",
+            "accountTitle": "Datos de acceso",
+            "accountDescription": "Usarás estos datos para iniciar sesión.",
+            "confirmPasswordPlaceholder": "Repite la contraseña",
+            "checkingSetupLink": "Comprobando el enlace de configuración…",
+            "setupLinkRequired": "Busca el enlace de configuración en los registros de la aplicación",
+            "setupLinkDescription": "En desarrollo local, busca el enlace de configuración en el terminal de bun run dev. En un despliegue con Komodo, abre los registros de la pila y selecciona el servicio «app». Copia el enlace más reciente completo y ábrelo en el navegador. Es válido durante diez minutos y se renueva automáticamente hasta completar la configuración inicial.",
+            "personalInfoTitle": "Información personal",
+            "personalInfoDescription": "Estos datos son opcionales y se pueden cambiar más adelante.",
+            "create": "Crear superusuario",
+            "creating": "Creando superusuario...",
+            "created": "Se ha creado el primer superusuario. Ya puedes iniciar sesión.",
+            "createError": "No se ha podido crear el primer superusuario.",
+            "alreadyCompleted": "La configuración inicial ya se ha completado.",
+            "invalidSetupToken": "El enlace de configuración no es válido o ha caducado. Abre el más reciente de los registros de la aplicación.",
+            "invalidData": "Comprueba los datos introducidos.",
+            "invalidUsername": "El nombre de usuario debe tener entre 1 y 50 caracteres.",
+            "invalidEmail": "Introduce una dirección de correo válida."
+        },
+        "forgotPassword": {
+            "requesting": "Solicitando...",
+            "description": "Introduce tu correo electrónico para restablecer la contraseña.",
+            "emailPlaceholder": "Tu dirección de correo",
+            "requestLink": "Solicitar enlace",
+            "title": "Contraseña olvidada",
+            "emailSent": "Se ha enviado el correo para restablecer la contraseña."
+        },
+        "login": {
+            "passwordPlaceholder": "Contraseña",
+            "title": "Inicio de sesión",
+            "eyebrow": "Tu cuenta del marketplace",
+            "welcomeBack": "Nos alegra verte de nuevo.",
+            "newHere": "¿Es tu primera visita?",
+            "discoverRegistration": "Descubrir el registro",
+            "description": "Inicia sesión en tu cuenta.",
+            "forgotPassword": "¿Has olvidado la contraseña?",
+            "login": "Iniciar sesión",
+            "loggingIn": "Iniciando sesión...",
+            "usernamePlaceholder": "Tu nombre de usuario",
+            "failed": "Error al iniciar sesión",
+            "or": "o",
+            "passkeyFailed": "Error al iniciar sesión con clave de acceso",
+            "passkeyLogin": "Iniciar sesión con clave de acceso",
+            "passkeyLoggingIn": "Comprobando la clave de acceso...",
+            "passkeyUnsupported": "Tu navegador no admite claves de acceso.",
+            "twoFactorCodeRequired": "Introduce tu código 2FA.",
+            "twoFactorCodeIncomplete": "Introduce el código 2FA completo."
+        },
+        "register": {
+            "email": "Dirección de correo electrónico",
+            "eyebrow": "Cada vez más cerca",
+            "title": "Tu entrada al marketplace.",
+            "description": "Una cuenta para tus aplicaciones y extensiones de RentnerProxy.",
+            "previewTitle": "El registro estará disponible pronto",
+            "previewDescription": "Esta es una vista previa. Los campos están desactivados; no se recogen datos ni se crea ninguna cuenta.",
+            "accountDetails": "Vista previa de los datos de la cuenta",
+            "emailPlaceholder": "Tu dirección de correo",
+            "comingSoon": "Todavía no disponible",
+            "alreadyRegistered": "¿Ya tienes una cuenta?"
+        },
+        "passwordReset": {
+            "newPasswordTitle": "Nueva contraseña",
+            "newPasswordPlaceholder": "Nueva contraseña",
+            "saving": "Guardando...",
+            "passwordMismatch": "Las contraseñas no coinciden.",
+            "validating": "Comprobando el enlace de restablecimiento…",
+            "validationError": "No se ha podido comprobar el enlace. Inténtalo de nuevo.",
+            "retryValidation": "Comprobar el enlace de nuevo",
+            "missingLinkTitle": "Falta el enlace de restablecimiento",
+            "missingLinkDescription": "Solicita un nuevo enlace para restablecer la contraseña.",
+            "invalidLinkTitle": "Enlace de restablecimiento no válido",
+            "invalidLinkDescription": "El enlace no es válido o ha caducado. Solicita uno nuevo.",
+            "newPasswordDescription": "Establece una nueva contraseña para tu cuenta.",
+            "confirmPasswordPlaceholder": "Repite la contraseña",
+            "save": "Guardar contraseña",
+            "updated": "Se ha actualizado tu contraseña. Inicia sesión ahora en este mismo navegador.",
+            "updatedTitle": "Contraseña guardada",
+            "updateError": "No se ha podido actualizar la contraseña."
+        },
+        "twoFactor": {
+            "title": "Autenticación de dos factores",
+            "codeLabel": "Código de verificación de seis dígitos",
+            "description": "Introduce el código de seis dígitos de tu aplicación de autenticación.",
+            "rememberDevice": "Recordar este dispositivo",
+            "rememberDeviceDescription": "La próxima vez que inicies sesión en este navegador no se pedirá un código 2FA. El token es válido durante 30 días."
+        },
+        "passwordPolicy": "La contraseña debe tener entre {{min}} y {{max}} caracteres.",
+        "privacy": {
+            "title": "Política de privacidad",
+            "placeholder": "Texto provisional para la política de privacidad."
+        },
+        "terms": {
+            "title": "Condiciones de uso",
+            "placeholder": "Texto provisional para las condiciones de uso."
+        }
+    },
+    "safeDelete": {
+        "close": "Cerrar diálogo",
+        "confirming": "Eliminando...",
+        "description": "Esta acción no se puede deshacer.",
+        "title": "Confirmar eliminación"
+    },
+    "userSettings": {
+        "account": "Cuenta",
+        "appearance": "Apariencia",
+        "color": {
+            "reset": "Restablecer",
+            "primaryButton": "Botón principal",
+            "save": "Guardar color",
+            "secondaryButton": "Botón secundario",
+            "title": "Color del sistema"
+        },
+        "font": {
+            "family": {
+                "system": "Sistema",
+                "inter": "Inter",
+                "mono": "Mono",
+                "serif": "Serif"
+            },
+            "preview": "Vista previa",
+            "familyTitle": "Familia tipográfica",
+            "saveFamily": "Guardar tipografía",
+            "saveSize": "Guardar tamaño de letra",
+            "size": "Tamaño de letra",
+            "sizeTitle": "Tamaño de letra",
+            "sizePreview": "Vista previa pequeña",
+            "sizeValue": "{{size}}px"
+        },
+        "security": {
+            "label": "Seguridad",
+            "2faConfirm": "Confirmar",
+            "2faDisable": "Desactivar 2FA",
+            "2faTitle": "Autenticación de dos factores",
+            "passwordTitle": "Contraseña",
+            "passkeyAdd": "Añadir clave de acceso",
+            "passkeyCreatedAt": "Creado",
+            "passkeyDelete": "Eliminar",
+            "passkeysTitle": "Claves de acceso",
+            "reauthenticationTotpPlaceholder": "123456",
+            "2faDisabling": "Desactivando...",
+            "passwordSending": "Enviando...",
+            "signInAgain": "Iniciar sesión de nuevo",
+            "2faEnable": "Activar 2FA",
+            "2faPreparing": "Preparando...",
+            "copyFailed": "No se ha podido copiar.",
+            "passwordReset": "Enviar restablecimiento de contraseña",
+            "passkeyAdding": "Añadiendo clave de acceso...",
+            "passkeyBackedUp": "Sincronizado",
+            "passkeyLastUsedAt": "Último uso",
+            "passkeySingleDevice": "Solo este dispositivo",
+            "passkeysLoading": "Cargando claves de acceso...",
+            "reauthenticationPasswordLabel": "Contraseña actual",
+            "reauthenticationPasswordPlaceholder": "Introduce la contraseña actual",
+            "reauthenticationTotpLabel": "Código 2FA actual",
+            "checking": "Comprobando...",
+            "secret": "Secreto: {{secret}}"
+        },
+        "header": {
+            "title": "Ajustes de usuario",
+            "subtitle": "Ajustes de {{username}}"
+        },
+        "settingsLabel": "Ajustes de usuario",
+        "background": {
+            "choose": "Elegir fondo",
+            "custom": "Fondo personalizado",
+            "darkness": "Oscurecer fondo",
+            "empty": "Ninguna imagen seleccionada",
+            "preview": "Vista previa del fondo personalizado",
+            "remove": "Quitar fondo",
+            "removing": "Eliminando...",
+            "save": "Guardar fondo",
+            "saveBrightness": "Guardar brillo",
+            "zoom": "Zoom del fondo",
+            "zoomValue": "{{zoom}}x"
+        },
+        "close": "Cerrar ajustes de usuario",
+        "theme": {
+            "dark": "Modo oscuro",
+            "light": "Modo claro",
+            "save": "Guardar tema",
+            "title": "Tema principal"
+        },
+        "personalInfo": {
+            "city": "Ciudad",
+            "firstName": "Nombre",
+            "houseNumber": "Número",
+            "lastName": "Apellidos",
+            "postalCode": "Código postal",
+            "save": "Guardar datos",
+            "street": "Calle",
+            "title": "Datos personales"
+        },
+        "profileImage": {
+            "choose": "Elegir imagen",
+            "save": "Guardar imagen de perfil",
+            "title": "Imagen de perfil",
+            "userId": "ID de usuario: {{userId}}"
+        }
+    },
+    "admin": {
+        "auditLogs": {
+            "action": "Acción",
+            "user": "Usuario",
+            "method": "Método",
+            "created": "Creado",
+            "details": "Detalles",
+            "system": "Sistema",
+            "pageTitle": "Registros de auditoría",
+            "entriesTitle": "Entradas",
+            "oldValue": "- Anterior",
+            "newValue": "+ Nuevo",
+            "message": "Mensaje",
+            "route": "Ruta",
+            "showDetails": "Mostrar detalles de auditoría",
+            "searchPlaceholder": "Buscar registros de auditoría...",
+            "userFilterPlaceholder": "Filtrar usuarios...",
+            "messageFilterPlaceholder": "Filtrar mensajes...",
+            "routeFilterPlaceholder": "Filtrar rutas...",
+            "createdFilterPlaceholder": "Creado desde/hasta",
+            "entryCount": "{{count}} entradas",
+            "itemLabel": "entradas"
+        },
+        "dashboard": {
+            "console": {
+                "connecting": "Conectando",
+                "disconnected": "Desconectado",
+                "readOnly": "Solo lectura",
+                "open": "Abrir consola",
+                "opened": "Consola abierta",
+                "title": "{{service}} · Consola",
+                "emptyTitle": "Consola del servicio",
+                "pendingSource": "Registro del servicio",
+                "close": "Cerrar consola",
+                "output": "Salida de consola de solo lectura",
+                "shortLabel": "Consola"
+            },
+            "services": {
+                "valkey": "Valkey",
+                "websocket": "Servidor WebSocket",
+                "webserver": "Servidor web",
+                "worker": "Proceso de trabajo",
+                "postgresql": "PostgreSQL",
+                "core": "Núcleo Rust"
+            },
+            "status": {
+                "running": "En ejecución",
+                "starting": "Iniciando",
+                "connecting": "Conectando",
+                "down": "No disponible",
+                "error": "Error",
+                "checking": "Comprobando"
+            },
+            "groups": {
+                "application": {
+                    "title": "Aplicación"
+                }
+            },
+            "title": "Panel de administración"
+        },
+        "systemSettings": {
+            "plan": "Programación",
+            "preview": "Vista previa"
+        },
+        "backups": {
+            "title": "Copias de seguridad",
+            "automaticEnabled": "Activar copias de seguridad automáticas",
+            "scheduleTitle": "Programación",
+            "weekday": {
+                "0": "Dom",
+                "1": "Lun",
+                "2": "Mar",
+                "3": "Mié",
+                "4": "Jue",
+                "5": "Vie",
+                "6": "Sáb"
+            },
+            "import": "Importación",
+            "historyTitle": "Historial de copias de seguridad",
+            "table": {
+                "trigger": "Origen",
+                "size": "Tamaño",
+                "itemLabel": "copias de seguridad"
+            },
+            "trigger": {
+                "manual": "Manual",
+                "import": "Importación"
+            },
+            "stats": {
+                "failed": "Fallido",
+                "imported": "importados"
+            },
+            "delete": "Eliminar copia",
+            "deleteTitle": "Eliminar copia",
+            "status": {
+                "queued": "En cola",
+                "running": "En ejecución",
+                "completed": "Completada",
+                "failed": "Fallido"
+            }
+        },
+        "permissions": {
+            "retry": "Volver a intentar",
+            "catalog": {
+                "backups": {
+                    "name": "Copias de seguridad"
+                },
+                "auditLogs": {
+                    "name": "Registros de auditoría"
+                },
+                "adminDashboard": {
+                    "name": "Panel de administración"
+                }
+            },
+            "presets": {
+                "nameLabel": "Nombre",
+                "descriptionLabel": "Descripción"
+            },
+            "users": {
+                "total": "{{count}} usuarios",
+                "previous": "Página anterior",
+                "next": "Página siguiente",
+                "unsavedChanges": "Cambios sin guardar",
+                "loading": "Cargando usuarios"
+            }
+        },
+        "users": {
+            "tableTitle": "Usuarios",
+            "createTitle": "Crear usuario",
+            "accountTitle": "Cuenta",
+            "permissionsTitle": "Permisos",
+            "username": "Nombre de usuario",
+            "email": "Correo electrónico",
+            "created": "Creado",
+            "userCount": "{{count}} usuarios",
+            "itemLabel": "usuarios",
+            "create": "Crear",
+            "updateError": "No se pudo actualizar el usuario.",
+            "loading": "Cargando usuarios",
+            "searchPlaceholder": "Buscar usuarios",
+            "createdFilterPlaceholder": "Creado desde/hasta"
+        }
+    },
+    "layout": {
+        "topbar": {
+            "defaultTitle": "Resumen",
+            "defaultDescription": "Un resumen de tu área actual."
+        },
+        "footer": {
+            "terms": "Condiciones de uso",
+            "privacy": "Política de privacidad",
+            "imprint": "Aviso legal"
+        }
+    },
+    "notifications": {
+        "title": "Notificaciones"
+    },
+    "shared": {
+        "routeError": {
+            "retry": "Volver a intentar"
+        },
+        "table": {
+            "rowsPerPage": "Filas por página",
+            "previousPage": "Página anterior",
+            "nextPage": "Página siguiente",
+            "filterPlaceholder": "Filtrar…",
+            "filterColumnPlaceholder": "Filtrar {{column}}…"
+        },
+        "transfer": {
+            "backupFailed": "Copia fallida"
+        },
+        "notFound": {
+            "title": "Página no encontrada."
+        }
+    },
+    "mailTemplates": {
+        "failedLogin": {
+            "ip": "Dirección IP",
+            "unknown": "Desconocida",
+            "unknownLocation": "No disponible"
+        }
+    },
+    "securityChangeMail": {
+        "timestamp": "Hora (UTC)"
+    },
+    "marketplace": {
+        "adminLogin": "Administración",
+        "usernameLabel": "Nombre de usuario",
+        "passwordLabel": "Contraseña",
+        "apps": {
+            "monitoring": {
+                "title": "Monitorización",
+                "description": "Supervisa tu instalación con una extensión oficial de monitorización."
+            },
+            "docker": {
+                "title": "Docker Discovery",
+                "description": "Descubre servicios de Docker y conéctalos a RentnerProxy."
+            },
+            "dns": {
+                "title": "DNS",
+                "description": "Cloudflare, deSEC y Hetzner: DNS-01 y DNS dinámico."
+            },
+            "crowdsec": {
+                "title": "CrowdSec",
+                "description": "Una extensión de CrowdSec para la seguridad de tu instalación."
+            },
+            "loadBalancer": {
+                "title": "Balanceador de carga",
+                "description": "Distribuye las solicitudes entre varios servidores de destino."
+            },
+            "oidc": {
+                "title": "OpenID Connect",
+                "description": "Conecta proveedores de identidad mediante OpenID Connect."
+            }
+        },
+        "login": "Iniciar sesión",
+        "footerLanguage": "Idioma",
+        "skipToContent": "Saltar al contenido",
+        "home": "Inicio del marketplace",
+        "description": "Monitorización, DNS, seguridad y mucho más. El futuro hogar de las aplicaciones que llevarán tu instalación de RentnerProxy más lejos.",
+        "followDevelopment": "Seguir el desarrollo",
+        "availability": "Todavía no disponible: el catálogo de aplicaciones, la instalación y el registro público llegarán en fases posteriores.",
+        "inPreparation": "En preparación",
+        "outlook": "Las primeras aplicaciones oficiales",
+        "outlookNote": "Previstas. Todavía no se pueden instalar.",
+        "loginDescription": "Inicia sesión para administrar el marketplace.",
+        "recoveryHint": "Por ahora, el acceso está destinado a las cuentas de administración existentes.",
+        "passkeyDescription": "Inicia sesión con una clave de acceso ya configurada para tu cuenta.",
+        "tagline": "Tu RentnerProxy. Aún más posibilidades.",
+        "browseApps": "Explorar aplicaciones previstas",
+        "outlookEyebrow": "Próximamente",
+        "heroEyebrow": "Aplicaciones oficiales. Tu próxima mejora.",
+        "accountNavigation": "Acceso a la cuenta",
+        "register": "Registrarse",
+        "registrationSoon": "Registro: próximamente",
+        "footerHeadline": "Más posibilidades. Más tú.",
+        "footerDescription": "Aplicaciones oficiales para tu RentnerProxy. Un lugar para todo lo que tu instalación necesite después.",
+        "footerExplore": "Explorar",
+        "footerLegal": "Información legal"
+    },
+    "maintenance": {
+        "requestSent": "Enviando..."
+    }
+}

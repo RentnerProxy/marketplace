@@ -29,13 +29,19 @@
         "zoom": "Zoom"
     },
     "language": {
-        "de": "German",
+        "de": "Deutsch",
         "en": "English",
         "sectionDescription": "Choose the language for the interface.",
         "sectionTitle": "Language",
         "save": "Save language",
         "savedTitle": "Language saved",
-        "savedDescription": "Language changed successfully"
+        "savedDescription": "Language changed successfully",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
     },
     "nav": {
         "admin": "Admin",
@@ -86,6 +92,10 @@
             "emailSent": "The reset email was sent."
         },
         "login": {
+            "eyebrow": "Your marketplace account",
+            "welcomeBack": "Good to have you back.",
+            "newHere": "New here?",
+            "discoverRegistration": "Explore registration",
             "description": "Please sign in to your account",
             "forgotPassword": "Forgot password?",
             "login": "Log in",
@@ -101,6 +111,18 @@
             "passkeyUnsupported": "Your browser does not support passkeys.",
             "twoFactorCodeRequired": "Please enter your 2FA code.",
             "twoFactorCodeIncomplete": "Please enter the complete 2FA code."
+        },
+        "register": {
+            "eyebrow": "Coming your way",
+            "title": "Your way into the marketplace.",
+            "description": "One account for your RentnerProxy apps and extensions.",
+            "previewTitle": "Registration is coming soon",
+            "previewDescription": "This is a preview. The fields are disabled; no information is collected and no account is created.",
+            "accountDetails": "Account details preview",
+            "email": "Email address",
+            "emailPlaceholder": "Your email address",
+            "comingSoon": "Not available yet",
+            "alreadyRegistered": "Already have an account?"
         },
         "passwordReset": {
             "validating": "Checking reset link …",
@@ -763,7 +785,8 @@
         },
         "footer": {
             "terms": "Terms of use",
-            "privacy": "Privacy policy"
+            "privacy": "Privacy policy",
+            "imprint": "Imprint"
         }
     },
     "notifications": {
@@ -978,7 +1001,6 @@
         "footerDescription": "Official apps for your RentnerProxy. A home for whatever your setup needs next.",
         "footerExplore": "Explore",
         "footerLegal": "Legal",
-        "footerLanguage": "Language",
-        "backToTop": "Back to top"
+        "footerLanguage": "Language"
     }
 }

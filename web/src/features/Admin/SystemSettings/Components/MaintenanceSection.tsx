@@ -1,3 +1,4 @@
+import { CALENDAR_LOCALES } from '@/config/language-library.config.ts'
 import { Check, Clock, Wrench, X } from 'lucide-react'
 import { SingleCalendar } from '@rentnerkev/calendar'
 import { NumericInput } from '@rentnerkev/inputs'
@@ -66,7 +67,7 @@ export default function MaintenanceSection({
                                     enableTime
                                     button
                                     backdrop
-                                    locale={language}
+                                    locale={CALENDAR_LOCALES[language]}
                                     icon={<Clock className="h-4 w-4" />}
                                     showHolidays
                                     minDateTime={state.maintenanceMinDateTime}

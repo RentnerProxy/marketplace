@@ -30,12 +30,18 @@
     },
     "language": {
         "de": "Deutsch",
-        "en": "Englisch",
+        "en": "English",
         "sectionDescription": "Wähle die Sprache für die Oberfläche.",
         "sectionTitle": "Sprache",
         "save": "Sprache speichern",
         "savedTitle": "Sprache gespeichert",
-        "savedDescription": "Sprache erfolgreich geändert"
+        "savedDescription": "Sprache erfolgreich geändert",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
     },
     "nav": {
         "admin": "Admin",
@@ -86,6 +92,10 @@
             "emailSent": "Die Reset-E-Mail wurde versendet."
         },
         "login": {
+            "eyebrow": "Dein Marketplace-Konto",
+            "welcomeBack": "Schön, dass du da bist.",
+            "newHere": "Neu hier?",
+            "discoverRegistration": "Zur Registrierung",
             "description": "Bitte melde dich in deinem Account an",
             "forgotPassword": "Passwort vergessen?",
             "login": "Einloggen",
@@ -101,6 +111,18 @@
             "passkeyUnsupported": "Dein Browser unterstützt Passkeys nicht.",
             "twoFactorCodeRequired": "Bitte gib deinen 2FA-Code ein.",
             "twoFactorCodeIncomplete": "Bitte gib den vollständigen 2FA-Code ein."
+        },
+        "register": {
+            "eyebrow": "Bald für dich da",
+            "title": "Dein Zugang zum Marketplace.",
+            "description": "Ein Konto für deine Apps und Erweiterungen rund um RentnerProxy.",
+            "previewTitle": "Registrierung kommt bald",
+            "previewDescription": "Hier siehst du bereits die Vorschau. Die Felder sind noch deaktiviert; es werden keine Daten erfasst und kein Konto angelegt.",
+            "accountDetails": "Vorschau der Kontodaten",
+            "email": "E-Mail-Adresse",
+            "emailPlaceholder": "Deine E-Mail-Adresse",
+            "comingSoon": "Noch nicht verfügbar",
+            "alreadyRegistered": "Du hast bereits ein Konto?"
         },
         "passwordReset": {
             "validating": "Reset-Link wird geprüft …",
@@ -763,7 +785,8 @@
         },
         "footer": {
             "terms": "Nutzungsbedingungen",
-            "privacy": "Datenschutz"
+            "privacy": "Datenschutz",
+            "imprint": "Impressum"
         }
     },
     "notifications": {
@@ -978,7 +1001,6 @@
         "footerDescription": "Offizielle Apps für dein RentnerProxy. Ein Zuhause für alles, was dein Setup als Nächstes braucht.",
         "footerExplore": "Entdecken",
         "footerLegal": "Rechtliches",
-        "footerLanguage": "Sprache",
-        "backToTop": "Nach oben"
+        "footerLanguage": "Sprache"
     }
 }

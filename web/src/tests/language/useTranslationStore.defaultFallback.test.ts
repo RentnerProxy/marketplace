@@ -13,13 +13,13 @@ describe('useTranslationStore Standard-Fallback', function () {
     it('fällt bei unbekannter Browser-Sprache auf die Standardsprache zurück', async function () {
         const storage = {
             getItem: vi.fn(function () {
-                return 'fr'
+                return 'sv'
             }),
             setItem: vi.fn(),
         }
         stubTestGlobal('window', {
             localStorage: storage,
-            navigator: { language: 'fr-FR' },
+            navigator: { language: 'sv-SE' },
         })
         stubTestGlobal('document', { documentElement: { lang: '' } })
 

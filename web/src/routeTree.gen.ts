@@ -18,10 +18,12 @@ import { Route as UpdateInProgressRouteImport } from './routes/update-in-progres
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedUserRouteRouteImport } from './routes/_authenticated/user/route'
 import { Route as PublicForgotPasswordRouteImport } from './routes/_public/forgot-password'
+import { Route as PublicImprintRouteImport } from './routes/_public/imprint'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicMaintenanceRouteImport } from './routes/_public/maintenance'
 import { Route as PublicPasswordResetRouteImport } from './routes/_public/password-reset'
 import { Route as PublicPrivacyRouteImport } from './routes/_public/privacy'
+import { Route as PublicRegisterRouteImport } from './routes/_public/register'
 import { Route as PublicTermsRouteImport } from './routes/_public/terms'
 import { Route as AuthenticatedAdminAuditLogsRouteImport } from './routes/_authenticated/admin/audit-logs'
 import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
@@ -79,6 +81,11 @@ const PublicForgotPasswordRoute = PublicForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => PublicRouteRoute,
 } as any)
+const PublicImprintRoute = PublicImprintRouteImport.update({
+  id: '/imprint',
+  path: '/imprint',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
 const PublicLoginRoute = PublicLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -97,6 +104,11 @@ const PublicPasswordResetRoute = PublicPasswordResetRouteImport.update({
 const PublicPrivacyRoute = PublicPrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
+const PublicRegisterRoute = PublicRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
   getParentRoute: () => PublicRouteRoute,
 } as any)
 const PublicTermsRoute = PublicTermsRouteImport.update({
@@ -179,10 +191,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/user': typeof AuthenticatedUserRouteRouteWithChildren
   '/forgot-password': typeof PublicForgotPasswordRoute
+  '/imprint': typeof PublicImprintRoute
   '/login': typeof PublicLoginRoute
   '/maintenance': typeof PublicMaintenanceRoute
   '/password-reset': typeof PublicPasswordResetRoute
   '/privacy': typeof PublicPrivacyRoute
+  '/register': typeof PublicRegisterRoute
   '/terms': typeof PublicTermsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
@@ -205,10 +219,12 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/user': typeof AuthenticatedUserRouteRouteWithChildren
   '/forgot-password': typeof PublicForgotPasswordRoute
+  '/imprint': typeof PublicImprintRoute
   '/login': typeof PublicLoginRoute
   '/maintenance': typeof PublicMaintenanceRoute
   '/password-reset': typeof PublicPasswordResetRoute
   '/privacy': typeof PublicPrivacyRoute
+  '/register': typeof PublicRegisterRoute
   '/terms': typeof PublicTermsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
@@ -234,10 +250,12 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/user': typeof AuthenticatedUserRouteRouteWithChildren
   '/_public/forgot-password': typeof PublicForgotPasswordRoute
+  '/_public/imprint': typeof PublicImprintRoute
   '/_public/login': typeof PublicLoginRoute
   '/_public/maintenance': typeof PublicMaintenanceRoute
   '/_public/password-reset': typeof PublicPasswordResetRoute
   '/_public/privacy': typeof PublicPrivacyRoute
+  '/_public/register': typeof PublicRegisterRoute
   '/_public/terms': typeof PublicTermsRoute
   '/_authenticated/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
@@ -262,10 +280,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/user'
     | '/forgot-password'
+    | '/imprint'
     | '/login'
     | '/maintenance'
     | '/password-reset'
     | '/privacy'
+    | '/register'
     | '/terms'
     | '/admin/audit-logs'
     | '/admin/backups'
@@ -288,10 +308,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/user'
     | '/forgot-password'
+    | '/imprint'
     | '/login'
     | '/maintenance'
     | '/password-reset'
     | '/privacy'
+    | '/register'
     | '/terms'
     | '/admin/audit-logs'
     | '/admin/backups'
@@ -316,10 +338,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/user'
     | '/_public/forgot-password'
+    | '/_public/imprint'
     | '/_public/login'
     | '/_public/maintenance'
     | '/_public/password-reset'
     | '/_public/privacy'
+    | '/_public/register'
     | '/_public/terms'
     | '/_authenticated/admin/audit-logs'
     | '/_authenticated/admin/backups'
@@ -414,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicForgotPasswordRouteImport
       parentRoute: typeof PublicRouteRoute
     }
+    '/_public/imprint': {
+      id: '/_public/imprint'
+      path: '/imprint'
+      fullPath: '/imprint'
+      preLoaderRoute: typeof PublicImprintRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
     '/_public/login': {
       id: '/_public/login'
       path: '/login'
@@ -440,6 +471,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PublicPrivacyRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/register': {
+      id: '/_public/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof PublicRegisterRouteImport
       parentRoute: typeof PublicRouteRoute
     }
     '/_public/terms': {
@@ -590,19 +628,23 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface PublicRouteRouteChildren {
   PublicForgotPasswordRoute: typeof PublicForgotPasswordRoute
+  PublicImprintRoute: typeof PublicImprintRoute
   PublicLoginRoute: typeof PublicLoginRoute
   PublicMaintenanceRoute: typeof PublicMaintenanceRoute
   PublicPasswordResetRoute: typeof PublicPasswordResetRoute
   PublicPrivacyRoute: typeof PublicPrivacyRoute
+  PublicRegisterRoute: typeof PublicRegisterRoute
   PublicTermsRoute: typeof PublicTermsRoute
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
   PublicForgotPasswordRoute: PublicForgotPasswordRoute,
+  PublicImprintRoute: PublicImprintRoute,
   PublicLoginRoute: PublicLoginRoute,
   PublicMaintenanceRoute: PublicMaintenanceRoute,
   PublicPasswordResetRoute: PublicPasswordResetRoute,
   PublicPrivacyRoute: PublicPrivacyRoute,
+  PublicRegisterRoute: PublicRegisterRoute,
   PublicTermsRoute: PublicTermsRoute,
 }
 

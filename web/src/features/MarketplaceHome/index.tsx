@@ -8,6 +8,7 @@ import {
     Network,
     ShieldCheck,
 } from 'lucide-react'
+import CardWave from '@/shared/Brand/CardWave.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
 
@@ -140,10 +141,11 @@ export default function MarketplaceHome() {
                     ].map(({ id, Icon, number }) => (
                         <article
                             key={id}
-                            className="rounded-3xl border border-[#06120f]/10 bg-white p-7 shadow-[0_8px_32px_rgba(6,18,15,0.035)] sm:p-8"
+                            className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-marketplace-void px-7 py-10 text-white shadow-[0_16px_40px_rgba(6,18,15,0.12)] sm:px-8 sm:py-11"
                         >
+                            <CardWave />
                             <div className="mb-7 flex items-start justify-between gap-4">
-                                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-marketplace-void text-primary">
+                                <div className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
                                     <Icon
                                         aria-hidden="true"
                                         className="h-6 w-6"
@@ -151,18 +153,18 @@ export default function MarketplaceHome() {
                                 </div>
                                 <span
                                     aria-hidden="true"
-                                    className="font-display text-3xl text-[#d5e2da]"
+                                    className="font-display text-3xl text-primary/25"
                                 >
                                     {number}
                                 </span>
                             </div>
-                            <span className="rounded-full bg-[#e9fff0] px-2.5 py-1 text-[11px] font-semibold text-[#0d6d2b]">
+                            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a3ffb8]">
                                 {t('common.planned')}
                             </span>
-                            <h3 className="mt-4 text-xl font-bold tracking-tight">
+                            <h3 className="mt-4 text-2xl tracking-tight">
                                 {t(`marketplace.apps.${id}.title`)}
                             </h3>
-                            <p className="mt-3 text-sm leading-7 text-[#52675d]">
+                            <p className="mt-3 text-sm leading-7 text-[#c1d2c9]">
                                 {t(`marketplace.apps.${id}.description`)}
                             </p>
                         </article>

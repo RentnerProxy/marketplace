@@ -14,6 +14,12 @@ import {
 const LANGUAGE_RESOURCE_LOADERS: Record<AppLanguage, () => Promise<unknown>> = {
     de: () => import('@/language/Locales/de.json'),
     en: () => import('@/language/Locales/en.json'),
+    es: () => import('@/language/Locales/es.json'),
+    fr: () => import('@/language/Locales/fr.json'),
+    it: () => import('@/language/Locales/it.json'),
+    pt: () => import('@/language/Locales/pt.json'),
+    nl: () => import('@/language/Locales/nl.json'),
+    pl: () => import('@/language/Locales/pl.json'),
 }
 
 const subscribers = new Set<() => void>()
@@ -62,7 +68,7 @@ void useI18next(
 )
     .init({
         lng: initialLanguage,
-        fallbackLng: FALLBACK_LANGUAGE,
+        fallbackLng: 'en',
         supportedLngs: AVAILABLE_LANGUAGES,
         interpolation: {
             escapeValue: false,

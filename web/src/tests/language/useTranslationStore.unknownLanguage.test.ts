@@ -19,7 +19,7 @@ describe('useTranslationStore unbekannte Sprache', function () {
         stubTestGlobal('document', { documentElement })
 
         await import('@/language/useTranslationStore.ts')
-        i18nextMock.handlers.languageChanged?.('fr')
+        i18nextMock.handlers.languageChanged?.('sv')
 
         expect(documentElement.lang).toBe('de')
     })

@@ -1,3 +1,4 @@
+import { AVAILABLE_LANGUAGES } from '@/config/language.config.ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import { stubTestGlobal } from '@/tests/shared/bunTestStubs.ts'
 import {
@@ -39,5 +40,13 @@ describe('useTranslationStore gespeicherte Sprache', function () {
         expect(storage.setItem).toHaveBeenCalledWith('app-language', 'de')
         expect(i18nextMock.api.changeLanguage).toHaveBeenCalledWith('de')
         expect(documentElement.lang).toBe('de')
+        for (const language of AVAILABLE_LANGUAGES) {
+            // eslint-disable-next-line no-await-in-loop -- Shared i18next transitions must complete in order.
+            await store.setLanguage(language)
+            expect(storage.setItem).toHaveBeenLastCalledWith('app-language', language)
+            expect(i18nextMock.api.changeLanguage).toHaveBeenLastCalledWith(language)
+            expect(documentElement.lang).toBe(language)
+        }
+
     })
 })

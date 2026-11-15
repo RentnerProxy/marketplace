@@ -8,6 +8,7 @@ import {
 } from '@/tests/layouts/hook-harness.ts'
 import type { LoginRedirectReason } from '@/lib/Routes/Types/route-redirect.types.ts'
 import { DEFAULT_IMAGE_SRC } from '@/lib/Images/imageFallbacks.ts'
+import { PROJECT_CONFIG } from '@/config/app.config.ts'
 
 let settings: { companyName?: string; logoSrc?: string } | undefined
 const navigate = vi.fn(async () => {})
@@ -58,9 +59,23 @@ it('provides default login branding and distinguishes custom logos from the defa
         logoSrc: '/custom-logo.png',
         hasCustomLogo: true,
     })
-    settings.logoSrc = DEFAULT_IMAGE_SRC
-    expect(useHeader().state.hasCustomLogo).toBe(false)
+    for (const logoSrc of [DEFAULT_IMAGE_SRC, '/rentnerproxy-logo.png']) {
+        settings.logoSrc = logoSrc
+        expect(useHeader().state.hasCustomLogo).toBe(false)
+    }
 })
+
+it.each(['', '   ', '\t\n'])(
+    'falls back from blank company metadata while preserving a custom logo: %j',
+    (companyName) => {
+        settings = { companyName, logoSrc: '/custom-logo.png' }
+        expect(useHeader().state).toEqual({
+            companyName: PROJECT_CONFIG.defaultName,
+            logoSrc: '/custom-logo.png',
+            hasCustomLogo: true,
+        })
+    },
+)
 
 it.each([
     'password-reset-token-missing',

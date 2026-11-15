@@ -6,20 +6,19 @@ import { PROJECT_CONFIG } from '@/config/app.config.ts'
 
 export default function useLoginHeaderLogic(): LoginHeaderLogicReturn {
     const { data: systemSettings } = useQuery(systemSettingsQueryOptions())
-    const logoSrc =
-        !systemSettings?.logoSrc || systemSettings.logoSrc === DEFAULT_IMAGE_SRC
-            ? '/rentnerproxy-logo.png'
-            : systemSettings.logoSrc
+    const configuredLogo = systemSettings?.logoSrc
+    const hasCustomLogo = Boolean(
+        configuredLogo &&
+        configuredLogo !== DEFAULT_IMAGE_SRC &&
+        configuredLogo !== '/rentnerproxy-logo.png',
+    )
 
     return {
         state: {
             companyName:
-                systemSettings?.companyName ?? PROJECT_CONFIG.defaultName,
-            logoSrc,
-            hasCustomLogo: Boolean(
-                systemSettings?.logoSrc &&
-                systemSettings.logoSrc !== DEFAULT_IMAGE_SRC,
-            ),
+                systemSettings?.companyName?.trim() || PROJECT_CONFIG.defaultName,
+            logoSrc: hasCustomLogo && configuredLogo ? configuredLogo : '/rentnerproxy-logo.png',
+            hasCustomLogo,
         },
     }
 }

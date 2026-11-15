@@ -1,3 +1,4 @@
+import { CALENDAR_LOCALES } from '@/config/language-library.config.ts'
 import { RangeCalendar } from '@rentnerkev/calendar'
 import { TextInput } from '@rentnerkev/inputs'
 import { CustomSelect } from '@rentnerkev/select'
@@ -59,7 +60,7 @@ function TableColumnFilterInput<TData extends RowData>({
         return (
             <RangeCalendar
                 controlSize="sm"
-                locale={language}
+                locale={CALENDAR_LOCALES[language]}
                 value={[value.from ?? null, value.to ?? null]}
                 onChange={(calendarValue) =>
                     column.setFilterValue(

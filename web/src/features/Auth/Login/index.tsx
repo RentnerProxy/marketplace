@@ -1,4 +1,5 @@
 import useLoginLogic from './Hooks/useLoginLogic.ts'
+import CardWave from '@/shared/Brand/CardWave.tsx'
 import { LoginHeader } from './Components/LoginHeader.tsx'
 import { Fingerprint, LoaderCircle, Lock, User } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
@@ -13,11 +14,8 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
 
     return (
         <div className="flex w-full items-center justify-center">
-            <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border-dark bg-surface-dark p-6 sm:p-8">
-                <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-primary"
-                />
+            <div className="relative isolate w-full max-w-lg overflow-hidden rounded-[2rem] border border-white/15 bg-white px-7 py-10 text-marketplace-void shadow-[0_24px_100px_rgba(0,0,0,0.2)] sm:p-10">
+                <CardWave />
                 {state.requiresTwoFactor ? (
                     <TwoFactorForm
                         code={state.twoFactorCode}
@@ -44,6 +42,16 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                     <TextInput
                                         id={field.name}
                                         label={t('marketplace.usernameLabel')}
+                                        customDesign={{
+                                            bg: 'bg-[#f5f8f6]',
+                                            border: 'border-[#cbd9d0]',
+                                            text: 'text-marketplace-void',
+                                            labelText: 'text-marketplace-void',
+                                            placeholder: 'placeholder:text-[#607468]',
+                                            iconColor: 'text-[#607468]',
+                                            counterText: 'text-[#607468]',
+                                            counterBg: 'bg-[#f5f8f6]',
+                                        }}
                                         autoComplete="username"
                                         value={field.state.value}
                                         required
@@ -63,6 +71,16 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                 children={(field) => (
                                     <PasswordInput
                                         label={t('marketplace.passwordLabel')}
+                                        customDesign={{
+                                            bg: 'bg-[#f5f8f6]',
+                                            border: 'border-[#cbd9d0]',
+                                            text: 'text-marketplace-void',
+                                            labelText: 'text-marketplace-void',
+                                            placeholder: 'placeholder:text-[#607468]',
+                                            iconColor: 'text-[#607468]',
+                                            counterText: 'text-[#607468]',
+                                            counterBg: 'bg-[#f5f8f6]',
+                                        }}
                                         autoComplete="current-password"
                                         value={field.state.value}
                                         onValueChange={field.handleChange}
@@ -78,7 +96,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
 
                             <p
                                 id="login-recovery-hint"
-                                className="text-xs leading-6 text-secondary-text"
+                                className="text-xs leading-6 text-[#52675d]"
                             >
                                 {t('marketplace.recoveryHint')}
                             </p>
@@ -87,7 +105,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                 <Link
                                     to="/forgot-password"
                                     aria-describedby="login-recovery-hint"
-                                    className="text-sm font-medium text-primary hover:text-primary-hover hover:underline"
+                                    className="text-sm font-medium text-[#0d6d2b] hover:text-marketplace-void hover:underline"
                                 >
                                     {t('auth.login.forgotPassword')}
                                 </Link>
@@ -96,17 +114,17 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                             <button
                                 type="submit"
                                 disabled={state.isLoading}
-                                className="mt-6 flex w-full justify-center rounded-md cursor-pointer bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+                                className="mt-6 flex w-full justify-center rounded-xl cursor-pointer bg-primary px-4 py-3.5 text-sm font-bold text-marketplace-void shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {state.isLoading
                                     ? t('auth.login.loggingIn')
                                     : t('auth.login.login')}
                             </button>
 
-                            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.12em] text-secondary-text">
-                                <span className="h-px flex-1 bg-border-dark" />
+                            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.12em] text-[#52675d]">
+                                <span className="h-px flex-1 bg-[#dce6df]" />
                                 {t('auth.login.or')}
-                                <span className="h-px flex-1 bg-border-dark" />
+                                <span className="h-px flex-1 bg-[#dce6df]" />
                             </div>
 
                             <p
@@ -121,7 +139,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                 disabled={state.isPasskeyLoading}
                                 onClick={handler.handlePasskeyLogin}
                                 aria-describedby="passkey-login-description"
-                                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-border-dark bg-input-dark px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-input-dark/80 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#cbd9d0] bg-[#f5f8f6] px-4 py-3.5 text-sm font-semibold text-marketplace-void transition-colors hover:border-[#0d6d2b] hover:bg-[#e9fff0] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {state.isPasskeyLoading ? (
                                     <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -134,6 +152,12 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                     : t('auth.login.passkeyLogin')}
                             </button>
                         </form>
+                        <p className="mt-7 border-t border-[#dce6df] pt-6 text-center text-sm text-[#52675d]">
+                            {t('auth.login.newHere')}{' '}
+                            <Link to="/register" className="font-bold text-[#0d6d2b] underline-offset-4 hover:underline">
+                                {t('auth.login.discoverRegistration')}
+                            </Link>
+                        </p>
                     </>
                 )}
             </div>

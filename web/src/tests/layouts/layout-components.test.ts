@@ -122,17 +122,10 @@ vi.mock(
     }),
 )
 vi.mock('@/layouts/PublicLayout/Hooks/useFooterLogic.ts', () => ({
-    default: () => ({
-        state: {
-            availableLanguages: ['de', 'en'],
-            companyName: 'Example Company',
-            currentYear: 2026,
-            isChangingLanguage: requesting,
-            language: 'de',
-            appVersion: '1.2.3',
-        },
-        handler: { handleLanguageChange: action },
-    }),
+    default: () => ({ state: { companyName: 'Example Company', currentYear: 2026, appVersion: '1.2.3' } }),
+}))
+vi.mock('@/layouts/PublicLayout/Components/LanguageSwitcher.tsx', () => ({
+    default: () => createElement('button', { 'aria-label': 'Language selector' }, 'Deutsch'),
 }))
 const { default: Main } =
     await import('@/layouts/AuthenticatedLayout/Components/AuthenticatedMain.tsx')
@@ -292,18 +285,18 @@ it.each([false, true])(
     },
 )
 
-it('renders public content with legal navigation, language selection and version', () => {
+it('keeps legal navigation and version in the footer while language selection is in the header', () => {
     const html = renderToStaticMarkup(createElement(PublicLayout))
     expect(html).toContain('Route content')
     expect(html).toContain('href="/privacy"')
-    expect(html).toContain('href="/terms"')
+    expect(html).toContain('href="/imprint"')
     expect(html).toContain('2026 Example Company')
-    expect(html).toContain('aria-pressed="true"')
+    expect(html).toContain('Language selector')
     expect(html).toContain('1.2.3')
-    callbacks(Footer(), 'onClick')[1]?.()
-    expect(action).toHaveBeenCalledWith('en')
-    requesting = true
-    expect(renderToStaticMarkup(createElement(Footer))).toContain('disabled=""')
+    const footerHtml = renderToStaticMarkup(createElement(Footer))
+    expect(footerHtml).not.toContain('Language selector')
+    expect(footerHtml).not.toContain('aria-pressed')
+    expect(footerHtml).not.toContain('href="#main-content"')
 })
 
 it.each([false, true])(

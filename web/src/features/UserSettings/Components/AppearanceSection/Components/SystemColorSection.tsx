@@ -1,3 +1,4 @@
+import { PICKER_LOCALES } from '@/config/language-library.config.ts'
 import { CustomColorPicker } from '@rentnerkev/picker'
 import { RotateCcw } from 'lucide-react'
 import useSystemColorLogic from '@/features/UserSettings/Components/AppearanceSection/Hooks/useSystemColorLogic.ts'
@@ -29,7 +30,7 @@ export default function SystemColorSection() {
                     value={state.selectedPrimaryColor}
                     onValueChange={handler.handlePrimaryColorChange}
                     onValidityChange={handler.handlePrimaryColorValidityChange}
-                    locale={language}
+                    locale={PICKER_LOCALES[language]}
                     disabled={state.isSavingPrimaryColor}
                     placeholder="#13ecd6"
                     format="hex"

@@ -13,7 +13,7 @@ describe('useTranslationStore Browser-Fallback', function () {
     it('fällt bei ungültigem Storage auf die Browser-Sprache zurück', async function () {
         const storage = {
             getItem: vi.fn(function () {
-                return 'fr'
+                return 'sv'
             }),
             setItem: vi.fn(),
         }
