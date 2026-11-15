@@ -1,0 +1,74 @@
+name: Bug report
+description: Report a reproducible problem in RentnerProxy Marketplace.
+labels:
+    - bug
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Search existing issues first. Marketplace is an early public preview; distinguish missing planned features from regressions.
+              Do not disclose vulnerabilities here. Follow [SECURITY.md](https://github.com/RentnerProxy/marketplace/blob/main/SECURITY.md).
+              Never attach real environment files, credentials, session tokens, setup links, encryption keys, or production data.
+    - type: input
+      id: version
+      attributes:
+          label: Version or commit
+          description: Include the image tag or digest, or the commit you tested.
+      validations:
+          required: true
+    - type: dropdown
+      id: area
+      attributes:
+          label: Affected area
+          options:
+              - Public pages or blog
+              - Authentication or administrator setup
+              - Admin interface
+              - Files, backups or recovery
+              - Rust core
+              - Docker or deployment
+              - CI or tooling
+              - Other
+      validations:
+          required: true
+    - type: textarea
+      id: reproduction
+      attributes:
+          label: Reproduction steps
+          description: Give the smallest reproducible example using synthetic data.
+      validations:
+          required: true
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected behavior
+      validations:
+          required: true
+    - type: textarea
+      id: actual
+      attributes:
+          label: Actual behavior
+      validations:
+          required: true
+    - type: textarea
+      id: environment
+      attributes:
+          label: Environment
+          description: Include deployment type, operating system, architecture, and browser version where relevant.
+      validations:
+          required: true
+    - type: textarea
+      id: logs
+      attributes:
+          label: Sanitized logs or additional context
+          description: Remove secrets, setup URLs, personal information, and production data before posting.
+          render: shell
+    - type: checkboxes
+      id: confirmation
+      attributes:
+          label: Confirmation
+          options:
+              - label: I searched existing issues and removed sensitive information.
+                required: true
+              - label: I am not reporting a security vulnerability publicly.
+                required: true

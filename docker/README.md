@@ -1,50 +1,50 @@
-# Appliance betreiben
+# Operating the appliance
 
-Die Produktion besteht aus einem Image und einem Dienst. Der native Rust-Prozess `marketplace-appliance` überwacht PostgreSQL, Valkey, Bun-Webserver und Bun-Worker gemeinsam. Die normale Konfiguration steht vollständig in `.env.example`; Datenbankname, interne Ports, Dateipfade, Valkey-Zugang und Absendername werden mit dem Image ausgeliefert. SMTP bleibt für die Mail-Queue erforderlich. Erforderliche Einstellungen werden vor dem Datenbankstart geprüft; die fachliche Konfigurationsprüfung und das vorhandene Schema-Bootstrap bleiben in den TypeScript-App-Einstiegspunkten. `MAIL_FROM` fällt bei leerem Wert auf `SMTP_USER` zurück.
+Production uses one image and one service. The native Rust process `marketplace-appliance` supervises PostgreSQL, Valkey, the Bun web server, and the Bun worker together. All standard configuration is listed in `.env.example`; the image supplies the database name, internal ports, file paths, Valkey access settings, and sender name. SMTP is still required for the mail queue. Required settings are checked before the database starts; application configuration validation and the existing schema bootstrap remain in the TypeScript application entrypoints. When empty, `MAIL_FROM` falls back to `SMTP_USER`.
 
-## Daten und Sicherungen
+## Data and backups
 
-- `/data/postgresql/18/docker`: dauerhafter PostgreSQL-18-Cluster, ausschließlich vom PostgreSQL-Benutzer lesbar.
-- `/data/storage/public` und `/data/storage/private`: App-Dateien, Eigentümer UID 1000.
-- `/data/backups`: verschlüsselte App-Backups einschließlich Datenbank und optionaler App-Dateien; Hostpfad aus `BACKUP_PATH`, Eigentümer UID 1000, Modus 0700.
-- `/run/marketplace`: kurzlebige Sockets und gehashte Valkey-ACL, keine dauerhafte Ablage.
+- `/data/postgresql/18/docker`: persistent PostgreSQL 18 cluster, readable only by the PostgreSQL user.
+- `/data/storage/public` and `/data/storage/private`: application files, owned by UID 1000.
+- `/data/backups`: encrypted application backups containing the database and, optionally, application files; the host path comes from `BACKUP_PATH`, with owner UID 1000 and mode 0700.
+- `/run/marketplace`: temporary sockets and hashed Valkey ACL data; not persistent storage.
 
-Die integrierte Backup-Verwaltung verwendet `pg_dump` und `pg_restore` aus derselben PostgreSQL-Hauptversion. Regelmäßig ein vollständiges Backup mit App-Dateien erstellen und in einer getrennten Installation mit demselben `AUTH_ENCRYPTION_KEY` über die Wiederherstellungsfunktion prüfen. Schlüssel und externe Backup-Kopie gehören außerhalb des ausgefallenen Hosts aufbewahrt. Ein Kopieren eines laufenden PostgreSQL-Verzeichnisses ersetzt kein konsistentes Backup.
+The integrated backup manager uses `pg_dump` and `pg_restore` from the same PostgreSQL major version. Regularly create a full backup including application files and verify it through the restore feature in a separate installation using the same `AUTH_ENCRYPTION_KEY`. Keep the key and an external backup copy off the host being protected. Copying a running PostgreSQL directory does not replace a consistent backup.
 
-## Wartung bei Startfehlern
+## Maintenance after startup failures
 
-Im laufenden Dienst öffnet `docker compose exec rentnerproxy-marketplace appliance-psql` eine Datenbanksitzung mit den konfigurierten Zugangsdaten, ohne das Passwort in Argumenten auszugeben. Mit `-d postgres` lässt sich die Verwaltungsdatenbank wählen.
+While the service is running, `docker compose exec marketplace appliance-psql` opens a database session using the configured credentials without exposing the password in command arguments. Use `-d postgres` to select the administrative database.
 
-Wenn die App nicht startet, zunächst `docker compose logs rentnerproxy-marketplace` prüfen. Der Modus `maintenance` startet ausschließlich einen vorhandenen PostgreSQL-18-Cluster und die interne Bereitschaftsprüfung. Er initialisiert keine Datenbank, startet keine App, synchronisiert keine Rechte und führt keine Migrationen aus. Vorher sämtliche anderen Container stoppen, die dieses Datenvolume verwenden:
+If the application does not start, first inspect `docker compose logs marketplace`. The `maintenance` mode starts only an existing PostgreSQL 18 cluster and the internal readiness check. It does not initialize a database, start the application, synchronize permissions, or run migrations. Stop every other container using this data volume first:
 
 ```bash
-docker compose stop rentnerproxy-marketplace
-docker compose run -d --no-deps --name rentnerproxy-marketplace-maintenance rentnerproxy-marketplace maintenance
+docker compose stop marketplace
+docker compose run -d --no-deps --name rentnerproxy-marketplace-maintenance marketplace maintenance
 docker exec -it rentnerproxy-marketplace-maintenance appliance-psql
-# Nach der Wartung den ausschließlich dafür gestarteten Container beenden:
+# After maintenance, stop the container started specifically for this purpose:
 docker stop --time 60 rentnerproxy-marketplace-maintenance
 docker rm rentnerproxy-marketplace-maintenance
 docker compose up -d
 ```
 
-Für Wartung mit einem früheren Release zuerst dessen exaktes kompatibles Image in Compose wählen. Niemals zwei PostgreSQL-Server mit demselben Datenverzeichnis starten. Ein ungültiger oder fremder Cluster wird auch im Wartungsmodus abgewiesen; er wird nicht automatisch ersetzt, konvertiert oder umberechtigt. Beschädigte Daten nur anhand einer geschützten Kopie und mit passender PostgreSQL-Version untersuchen.
+For maintenance with an earlier release, first select its exact compatible image in Compose. Never start two PostgreSQL servers against the same data directory. Maintenance mode also rejects an invalid or foreign cluster; it does not automatically replace, convert, or change ownership of that cluster. Investigate damaged data only from a protected copy and with the matching PostgreSQL version.
 
-## Umstieg von der bisherigen Compose-Datei
+## Migrating from the previous Compose file
 
-Die alten Datenbank-, App- und Backup-Volumes werden nicht automatisch in `tanstackdummy_data` verschoben. Vor dem Umstieg ein vollständiges verschlüsseltes App-Backup mit Dateispeicher erzeugen, außerhalb der bisherigen Volumes sichern und eine Wiederherstellung prüfen. `AUTH_ENCRYPTION_KEY`, Datenbankzugang und SMTP-Konfiguration unverändert übernehmen; `APP_ORIGIN` wird zu `ORIGIN` und `BACKUP_PATH` auf den gewünschten Hostpfad gesetzt.
+Existing database, application, and backup volumes are not automatically moved into `marketplace_data`. Before migrating, create a full encrypted application backup including file storage, save it outside the existing volumes, and verify a restore. Preserve `AUTH_ENCRYPTION_KEY`, database credentials, and SMTP configuration; replace `APP_ORIGIN` with `ORIGIN` and set `BACKUP_PATH` to the intended host path.
 
-Danach mit der alten Compose-Datei alle bisherigen Dienste geordnet stoppen und die alten Volumes für einen möglichen Rückweg behalten. Anschließend mit der neuen Compose-Datei die Appliance starten, über den Setup-Link einen vorläufigen Admin anlegen und das gesicherte Archiv über die integrierte Wiederherstellung importieren. Benutzer, Berechtigungen und Dateien anschließend prüfen. Die alten Container erst danach entfernen; dabei niemals `down --volumes` oder Volume-Pruning verwenden. Dieser Umstieg ist ein geplanter Backup-/Restore-Schritt mit Wartungsfenster, kein gewöhnliches `pull && up`.
+Then use the old Compose file to stop all existing services cleanly, retaining the old volumes for a possible rollback. Start the appliance with the new Compose file, create a temporary administrator through the setup link, and import the saved archive through the integrated restore feature. Verify users, permissions, and files afterward. Only then remove the old containers; never use `down --volumes` or volume pruning during this process. This migration is a planned backup and restore operation requiring a maintenance window, not a routine `pull && up` update.
 
-## Updates und Fehlerverhalten
+## Updates and failure behavior
 
-Für reguläre Updates dieselben Volumes und Secrets verwenden. Vorher laufende Wiederherstellungen abschließen lassen und ein geprüftes Backup anlegen. `docker compose pull && docker compose up -d` ersetzt ausschließlich das Image. Für reproduzierbare Updates und Rollbacks einen konkreten Release-Tag oder Digest verwenden; `latest` ist nur der bewegliche Standardkanal. Der Rückweg muss zu Datenbankschema und Datenformat passen.
+For routine updates, retain the same volumes and secrets. Let any running restores finish and create a verified backup first. `docker compose pull && docker compose up -d` replaces only the image. Use a specific release tag or digest for reproducible updates and rollbacks; `latest` is the moving stable channel. The central Compose file pins `v1.0.0-alpha.1`. Any rollback must remain compatible with the database schema and data format.
 
-Die Stoppschonfrist von `4h10m` ist eine Obergrenze zum Schutz der bestehenden vierstündigen Backup-/Restore-Frist und keine feste Wartezeit. Ohne laufende Jobs beenden sich die Verbraucher ohne zusätzliche Schonfrist. Der Webserver reicht das Stoppsignal sofort an den internen App-Server weiter. Nach dem HTTP- und Core-Drain schließt die App ihre Queue-Produzenten und Valkey-Verbindungen, damit offene Sockets und Reconnect-Timer den Prozess nicht am Leben halten. Laufende Backup-/Restore-Prozessoren und ihre nativen Helfer dürfen weiterhin abschließen; PostgreSQL und Valkey bleiben bis zum Ende dieses Drains verfügbar. Während des Stopps ist die Appliance erwartungsgemäß nicht mehr bereit (`unhealthy`).
+The `4h10m` stop grace period is an upper bound that protects the existing four-hour backup and restore deadline, not a fixed wait. With no active jobs, consumers exit without an additional grace period. The web server immediately forwards the stop signal to the internal application server. After HTTP and core operations drain, the application closes its queue producers and Valkey connections so open sockets and reconnect timers cannot keep the process alive. Active backup and restore processors and their native helpers may still finish; PostgreSQL and Valkey remain available until this drain completes. The appliance is expected to become unready (`unhealthy`) while stopping.
 
-Nach der internen Drain-Frist erzwingt der Prozessmanager einen Stop; ein explizites `docker kill`, zu kurze manuelle Stop-Timeouts oder Hostausfall können diesen Schutz umgehen. Bei PostgreSQL-Major-Upgrades sind ein eigener Upgradeplan, verifiziertes Backup und ein geprüfter Rückweg erforderlich; dieses Image bleibt bei PostgreSQL 18.
+After the internal drain deadline, the process manager forces a stop; an explicit `docker kill`, a manual stop timeout that is too short, or a host failure can bypass this protection. PostgreSQL major upgrades require a separate upgrade plan, a verified backup, and a tested rollback path; this image remains on PostgreSQL 18.
 
-Die Logkonsole hält maximal 300 bereinigte Zeilen je Dienst für höchstens eine Stunde im Arbeitsspeicher. Die echte Containerausgabe enthält den vollständigen ersten Setup-Link. Docker-Logrotation wird auf dem Host über die Docker-Daemon-Konfiguration eingerichtet.
+The log console keeps at most 300 sanitized lines per service in memory for up to one hour. The actual container output includes the complete initial setup link. Configure Docker log rotation on the host through the Docker daemon configuration.
 
-Die ausschließlich an `127.0.0.1:3004` gebundene Rust-Telemetrie liefert `/core/health` mit Version, PID, Laufzeit und Status des tatsächlich laufenden Core-Prozesses. `/logs?service=core` liefert den bereinigten Supervisor-Verlauf; die Dienste `webserver`, `worker`, `postgresql` und `valkey` bleiben verfügbar. `/health` prüft die tatsächlich benötigten Dienste. PostgreSQL wird beim Stoppen mit SIGINT für einen schnellen geordneten Shutdown beendet, nachdem Webserver und Worker ihren Drain abgeschlossen haben.
+Rust telemetry, bound exclusively to `127.0.0.1:3004`, exposes `/core/health` with the version, PID, uptime, and status of the actual running core process. `/logs?service=core` returns sanitized supervisor history; the `webserver`, `worker`, `postgresql`, and `valkey` services remain available. `/health` checks the services actually required. During shutdown, PostgreSQL receives SIGINT for a fast, orderly shutdown after the web server and worker have finished draining.
 
-Für lokale Entwicklung startet `marketplace-appliance serve` ausschließlich diese Loopback-Telemetrie, ohne Datenbank, Initialisierung oder App-Bootstrap. Die isolierte Prüfung `bun run test:deployment` verwendet einen eigenen benannten Testdatenträger und synthetische App-/Worker-Einstiegspunkte. Sie führt keine Drizzle- oder Anwendungsmigration aus.
+For local development, `marketplace-appliance serve` starts only this loopback telemetry, without a database, initialization, or application bootstrap. The isolated `bun run test:deployment` check uses its own named test volume and synthetic application and worker entrypoints. It does not run Drizzle or application migrations.

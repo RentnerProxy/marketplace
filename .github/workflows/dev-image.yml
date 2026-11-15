@@ -1,0 +1,183 @@
+name: Dev Image
+on:
+    workflow_dispatch:
+permissions: {}
+concurrency:
+    group: dev-image
+    cancel-in-progress: false
+env:
+    BUN_VERSION: 1.4.4
+jobs:
+    prepare:
+        name: Prepare dev identity
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: read
+        outputs:
+            revision: ${{ steps.identity.outputs.revision }}
+            image: ${{ steps.identity.outputs.image }}
+            version: ${{ steps.identity.outputs.version }}
+            immutable_tag: ${{ steps.identity.outputs.immutable_tag }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.workflow_sha }}
+                  persist-credentials: false
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: ${{ env.BUN_VERSION }}
+            - name: Require an official manual main run
+              id: identity
+              run: bun --no-env-file .github/scripts/deploy/dev-image.ts prepare
+    verify:
+        name: Verify Marketplace
+        needs: prepare
+        permissions:
+            contents: read
+        uses: ./.github/workflows/ci.yml
+    audit:
+        name: Audit Marketplace dependencies
+        needs: prepare
+        permissions:
+            contents: read
+        uses: ./.github/workflows/dependency-security.yml
+    build:
+        name: Build and assess linux/amd64
+        needs: [prepare, verify, audit]
+        runs-on: ubuntu-latest
+        timeout-minutes: 45
+        permissions:
+            contents: read
+        outputs:
+            digest: ${{ steps.evidence.outputs.digest }}
+            archive_sha256: ${{ steps.evidence.outputs.archive_sha256 }}
+            evidence_sha256: ${{ steps.evidence.outputs.evidence_sha256 }}
+            image_id: ${{ steps.load.outputs.image_id }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ needs.prepare.outputs.revision }}
+                  persist-credentials: false
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: ${{ env.BUN_VERSION }}
+            - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.0.0
+            - name: Install OCI transport from signed Ubuntu repositories
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install --yes --no-install-recommends skopeo
+            - name: Prepare isolated candidate directory
+              run: mkdir -p "$RUNNER_TEMP/marketplace-dev-candidate"
+            - name: Build the complete dev appliance without publication credentials
+              id: build
+              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.0.0
+              with:
+                  context: .
+                  file: ./Dockerfile
+                  target: production
+                  platforms: linux/amd64
+                  push: false
+                  load: false
+                  outputs: type=oci,dest=${{ runner.temp }}/marketplace-dev-candidate/candidate-image.tar
+                  provenance: false
+                  sbom: false
+                  tags: marketplace-dev-candidate:${{ github.run_id }}-${{ github.run_attempt }}
+                  build-args: APP_VERSION=${{ needs.prepare.outputs.version }}
+                  labels: |
+                      org.opencontainers.image.title=RentnerProxy Marketplace Dev
+                      org.opencontainers.image.description=Manual main build for testing; not a Marketplace release.
+                      org.opencontainers.image.source=https://github.com/RentnerProxy/marketplace
+                      org.opencontainers.image.revision=${{ needs.prepare.outputs.revision }}
+                      org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            - name: Import and bind the final archive for runtime checks
+              id: load
+              env:
+                  CANDIDATE_DIRECTORY: ${{ runner.temp }}/marketplace-dev-candidate
+              run: bash .github/scripts/deploy/load-dev-image.sh
+            - name: Install checksum-verified image scanner
+              run: bash .github/scripts/security/install-trivy.sh
+            - name: Scan the exact dev archive
+              env:
+                  CANDIDATE_DIRECTORY: ${{ runner.temp }}/marketplace-dev-candidate
+                  TRIVY_BINARY: ${{ runner.temp }}/trivy
+                  SCAN_ARCHIVE_SHA256: ${{ steps.load.outputs.archive_sha256 }}
+              run: bash .github/scripts/deploy/scan-dev-image.sh
+            - name: Verify isolated dev appliance startup, recovery and cleanup
+              env:
+                  RUNTIME_IMAGE_ID: ${{ steps.load.outputs.runtime_image_id }}
+              run: bun --no-env-file run test:deployment
+            - name: Verify native TypeScript and Rust contracts
+              run: bash .github/scripts/ci/core-integration.sh
+            - name: Seal the assessed OCI candidate
+              id: evidence
+              env:
+                  IMAGE_ID: ${{ steps.load.outputs.image_id }}
+                  TESTED_ARCHIVE_SHA256: ${{ steps.load.outputs.archive_sha256 }}
+                  CANDIDATE_DIRECTORY: ${{ runner.temp }}/marketplace-dev-candidate
+              run: bash .github/scripts/deploy/seal-dev-image.sh
+            - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: marketplace-dev-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: |
+                      ${{ runner.temp }}/marketplace-dev-candidate/candidate-image.tar
+                      ${{ runner.temp }}/marketplace-dev-candidate/candidate.json
+                  if-no-files-found: error
+                  retention-days: 7
+                  compression-level: 0
+    publish-image:
+        name: Publish assessed dev image
+        needs: [prepare, verify, audit, build]
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        environment: container-publishing
+        permissions:
+            contents: read
+            packages: write
+        env:
+            IMAGE_ID: ${{ needs.build.outputs.image_id }}
+            EXPECTED_DIGEST: ${{ needs.build.outputs.digest }}
+            EXPECTED_ARCHIVE_SHA256: ${{ needs.build.outputs.archive_sha256 }}
+            EXPECTED_EVIDENCE_SHA256: ${{ needs.build.outputs.evidence_sha256 }}
+        steps:
+            - name: Select isolated artifact directory
+              run: printf 'CANDIDATE_DIRECTORY=%s/marketplace-dev-candidate\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.workflow_sha }}
+                  persist-credentials: false
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: ${{ env.BUN_VERSION }}
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  name: marketplace-dev-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ env.CANDIDATE_DIRECTORY }}
+            - name: Install OCI transport from signed Ubuntu repositories
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install --yes --no-install-recommends skopeo
+            - name: Verify artifact hashes and immutable image identity
+              run: bash .github/scripts/deploy/verify-dev-image.sh
+            - name: Install checksum-verified image scanner
+              run: bash .github/scripts/security/install-trivy.sh
+            - name: Independently rescan candidate data without executing it
+              env:
+                  TRIVY_BINARY: ${{ runner.temp }}/trivy
+                  SCAN_ARCHIVE_SHA256: ${{ needs.build.outputs.archive_sha256 }}
+              run: |
+                  bash .github/scripts/deploy/scan-dev-image.sh
+                  bun --no-env-file .github/scripts/deploy/dev-image.ts assess
+            - name: Publish the exact assessed digest to dev tags
+              env:
+                  REGISTRY_TOKEN: ${{ github.token }}
+                  REGISTRY_USER: ${{ github.actor }}
+              run: bash .github/scripts/deploy/publish-dev-image.sh
+            - name: Retain verifiable publication evidence
+              if: always()
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: dependency-publish-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/marketplace-dev-candidate/*.json
+                  if-no-files-found: warn
+                  retention-days: 30

@@ -168,6 +168,16 @@ test.each(['image', 'release'])(
                 contents: 'write',
             })
         } else {
+            const oci = steps.findIndex((step) =>
+                step.run?.includes(
+                    'bash .github/scripts/ci/verify-oci-scan.sh',
+                ),
+            )
+            expect(oci).toBeGreaterThan(scan)
+            expect(oci).toBeLessThan(lifecycle)
+            expect(steps[oci]?.env?.IMAGE_ID).toBe(
+                '${{ steps.build.outputs.imageid }}',
+            )
             expect(job.permissions).toEqual({ contents: 'read' })
             expect(steps.some((step) => step.id === 'publish')).toBe(false)
         }
