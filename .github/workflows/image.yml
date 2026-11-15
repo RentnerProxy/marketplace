@@ -42,6 +42,14 @@ jobs:
                   IMAGE_ID: ${{ steps.build.outputs.imageid }}
                   TRIVY_BINARY: ${{ runner.temp }}/trivy
               run: bash .github/scripts/security/scan-image.sh "$IMAGE_ID"
+            - name: Verify OCI scanner compatibility with the built appliance
+              env:
+                  IMAGE_ID: ${{ steps.build.outputs.imageid }}
+                  TRIVY_BINARY: ${{ runner.temp }}/trivy
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install --yes --no-install-recommends skopeo
+                  bash .github/scripts/ci/verify-oci-scan.sh
             - name: Verify isolated appliance startup, recovery and cleanup
               env:
                   RUNTIME_IMAGE_ID: ${{ steps.build.outputs.imageid }}

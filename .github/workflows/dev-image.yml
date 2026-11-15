@@ -101,7 +101,8 @@ jobs:
               env:
                   CANDIDATE_DIRECTORY: ${{ runner.temp }}/marketplace-dev-candidate
                   TRIVY_BINARY: ${{ runner.temp }}/trivy
-              run: bash .github/scripts/security/scan-image.sh "$CANDIDATE_DIRECTORY/candidate-image.tar" --input
+                  SCAN_ARCHIVE_SHA256: ${{ steps.load.outputs.archive_sha256 }}
+              run: bash .github/scripts/deploy/scan-dev-image.sh
             - name: Verify isolated dev appliance startup, recovery and cleanup
               env:
                   RUNTIME_IMAGE_ID: ${{ steps.load.outputs.runtime_image_id }}
@@ -163,8 +164,9 @@ jobs:
             - name: Independently rescan candidate data without executing it
               env:
                   TRIVY_BINARY: ${{ runner.temp }}/trivy
+                  SCAN_ARCHIVE_SHA256: ${{ needs.build.outputs.archive_sha256 }}
               run: |
-                  bash .github/scripts/security/scan-image.sh "$CANDIDATE_DIRECTORY/candidate-image.tar" --input
+                  bash .github/scripts/deploy/scan-dev-image.sh
                   bun --no-env-file .github/scripts/deploy/dev-image.ts assess
             - name: Publish the exact assessed digest to dev tags
               env:

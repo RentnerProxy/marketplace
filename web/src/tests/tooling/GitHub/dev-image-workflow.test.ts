@@ -56,7 +56,7 @@ test('dev candidate is built without push rights and sealed after its exact imag
     })
     const scan = build.findIndex((step) =>
         String(step.run).startsWith(
-            'bash .github/scripts/security/scan-image.sh',
+            'bash .github/scripts/deploy/scan-dev-image.sh',
         ),
     )
     const smoke = build.findIndex(
@@ -72,7 +72,9 @@ test('dev candidate is built without push rights and sealed after its exact imag
     expect(smoke).toBeGreaterThan(scan)
     expect(native).toBeGreaterThan(smoke)
     expect(seal).toBeGreaterThan(native)
-    expect(String(build[scan]!.run)).toContain('candidate-image.tar" --input')
+    expect(record(build[scan]!.env).SCAN_ARCHIVE_SHA256).toBe(
+        '${{ steps.load.outputs.archive_sha256 }}',
+    )
     expect(record(build[smoke]!.env).RUNTIME_IMAGE_ID).toBe(
         '${{ steps.load.outputs.runtime_image_id }}',
     )
@@ -98,6 +100,9 @@ test('publisher verifies and rescans data before exposing the token and always r
     )
     expect(verify).toBeGreaterThan(0)
     expect(scan).toBeGreaterThan(verify)
+    expect(record(publish[scan]!.env).SCAN_ARCHIVE_SHA256).toBe(
+        '${{ needs.build.outputs.archive_sha256 }}',
+    )
     expect(push).toBeGreaterThan(scan)
     expect(record(publish[push]!.env).REGISTRY_TOKEN).toBe(
         '${{ github.token }}',
