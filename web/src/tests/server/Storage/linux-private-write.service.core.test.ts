@@ -655,7 +655,7 @@ describe.skipIf(process.platform !== 'linux')(
 
         it('drains a sibling identity check before failed validation closes capabilities or starts cleanup', async () => {
             const sibling = Promise.withResolvers<void>()
-            const siblingOpened = Promise.withResolvers<void>()
+            const siblingStatStarted = Promise.withResolvers<void>()
             const failedCheckClosed = Promise.withResolvers<void>()
             const handles: Awaited<ReturnType<typeof fileSystem.open>>[] = []
             const walks = new Map<number, number>()
@@ -682,7 +682,6 @@ describe.skipIf(process.platform !== 'linux')(
                 const name = path.basename(source)
                 if (!validating && name === 'private') root = handle
                 if (!validating && name === 'images') parent = handle
-                if (walk === 2 && name === 'images') siblingOpened.resolve()
                 const close = handle.close.bind(handle)
                 vi.spyOn(handle, 'close').mockImplementationOnce(async () => {
                     if (handle === root || handle === parent) ownedClosed = true
@@ -702,9 +701,12 @@ describe.skipIf(process.platform !== 'linux')(
                     new Error('Synthetic root identity failure'),
                 )
                 const stat = parent.stat.bind(parent)
-                vi.spyOn(parent, 'stat').mockReturnValueOnce(
-                    sibling.promise.then(() => stat({ bigint: true })),
-                )
+                vi.spyOn(parent, 'stat').mockImplementationOnce((
+                    (options: Parameters<FileHandle['stat']>[0]) => {
+                        siblingStatStarted.resolve()
+                        return sibling.promise.then(() => stat(options))
+                    }
+                ) as FileHandle['stat'])
             }).then(
                 () => {
                     returned = true
@@ -717,7 +719,7 @@ describe.skipIf(process.platform !== 'linux')(
             )
             try {
                 await Promise.all([
-                    siblingOpened.promise,
+                    siblingStatStarted.promise,
                     failedCheckClosed.promise,
                 ])
                 // Drain ready continuations without advancing a clock or releasing I/O.
