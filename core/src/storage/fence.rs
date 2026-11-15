@@ -283,6 +283,17 @@ fn change_time(file: &File) -> CoreResult<i64> {
     Ok(unsafe { information.assume_init() }.ChangeTime)
 }
 
+fn check_unlinked(directory: &Directory, name: &str, metadata: &Metadata) -> CoreResult<()> {
+    // Even a successful path stat can observe zero links when unlink wins
+    // after name resolution. Ignore removal only while the name is absent;
+    // a replacement under that name must still fail closed.
+    if metadata.nlink() == 0 {
+        directory.handle.symlink_metadata(name)?;
+        return Err(invalid());
+    }
+    Ok(())
+}
+
 fn read_control(
     directory: &Directory,
     name: &str,
@@ -291,6 +302,7 @@ fn read_control(
 ) -> CoreResult<Value> {
     directory.assert()?;
     let before = directory.handle.symlink_metadata(name)?;
+    check_unlinked(directory, name, &before)?;
     if !before.is_file()
         || before.is_symlink()
         || before.nlink() != 1
@@ -313,12 +325,7 @@ fn read_control(
     let result = (|| {
         hook("openedRead")?;
         let opened = file.metadata()?;
-        // A concurrently released shared lease is ignorable only if its name
-        // is also absent. A replacement under the old name remains uncertain.
-        if opened.nlink() == 0 {
-            directory.handle.symlink_metadata(name)?;
-            return Err(invalid());
-        }
+        check_unlinked(directory, name, &opened)?;
         if !opened.is_file() || !unchanged(&before, &opened)? || !mode(&opened, 0o600) {
             return Err(invalid());
         }
@@ -334,10 +341,7 @@ fn read_control(
             return Err(invalid());
         }
         let after = file.metadata()?;
-        if after.nlink() == 0 {
-            directory.handle.symlink_metadata(name)?;
-            return Err(invalid());
-        }
+        check_unlinked(directory, name, &after)?;
         if !unchanged(&before, &after)? {
             return Err(invalid());
         }
@@ -351,6 +355,7 @@ fn read_control(
     let record = result?;
     close?;
     let at_path = directory.handle.symlink_metadata(name)?;
+    check_unlinked(directory, name, &at_path)?;
     if !at_path.is_file()
         || at_path.is_symlink()
         || !unchanged(&before, &at_path)?

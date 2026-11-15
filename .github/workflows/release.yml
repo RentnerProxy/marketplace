@@ -31,8 +31,33 @@ jobs:
               env:
                   RELEASE_TAG: ${{ github.ref_name }}
               run: bun --no-env-file .github/scripts/release/release-blog.ts
-    verify:
+    announce:
+        name: Announce release build
         needs: content
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+                  fetch-depth: 0
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: 1.4.4
+            - name: Validate exact official tag
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.ref_name }}
+              run: bash .github/scripts/release/validate-tag.sh
+            - name: Show building banner until the tested image is ready
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.ref_name }}
+              run: bun --no-env-file .github/scripts/release/publish-release.ts building
+    verify:
+        needs: announce
         uses: ./.github/workflows/ci.yml
     publish:
         name: Publish tested appliance
@@ -128,3 +153,34 @@ jobs:
                   RELEASE_TAG: ${{ github.ref_name }}
                   RELEASE_IMAGE: ${{ needs.publish.outputs.image }}
               run: bun --no-env-file .github/scripts/release/publish-release.ts
+            - name: Publish downloadable changelog
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.ref_name }}
+              run: gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/Marketplace-$RELEASE_TAG-CHANGELOG.md" --repo "$GITHUB_REPOSITORY" --clobber
+    failed:
+        name: Report interrupted release build
+        needs: [content, announce, verify, publish, notes]
+        if: ${{ always() && needs.announce.result == 'success' && (needs.verify.result == 'failure' || needs.publish.result == 'failure' || needs.notes.result == 'failure') }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+                  fetch-depth: 0
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: 1.4.4
+            - name: Validate exact official tag
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.ref_name }}
+              run: bash .github/scripts/release/validate-tag.sh
+            - name: Keep an honest failure status until a successful retry
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.ref_name }}
+              run: bun --no-env-file .github/scripts/release/publish-release.ts failed
