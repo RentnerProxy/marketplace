@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose an improvement to RentnerProxy Marketplace.
+labels:
+    - enhancement
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Search existing requests and describe the underlying problem. The catalog and registration are still in preparation; do not assume planned features are already available.
+              Discuss substantial architecture changes before implementation.
+    - type: textarea
+      id: problem
+      attributes:
+          label: Problem or use case
+          description: Who is affected, and what are they trying to accomplish?
+      validations:
+          required: true
+    - type: textarea
+      id: proposal
+      attributes:
+          label: Proposed behavior
+          description: Describe the expected outcome without assuming a particular implementation.
+      validations:
+          required: true
+    - type: textarea
+      id: alternatives
+      attributes:
+          label: Alternatives or workarounds
+    - type: textarea
+      id: context
+      attributes:
+          label: Additional context
+          description: Include relevant links or constraints; do not include private data.
+    - type: checkboxes
+      id: confirmation
+      attributes:
+          label: Confirmation
+          options:
+              - label: I searched existing issues for the same request.
+                required: true

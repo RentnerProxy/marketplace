@@ -72,6 +72,14 @@ The <!-- project:dataVolume -->`marketplace_data`<!-- /project --> volume contai
 
 For updates, retain `.env`, keys and volumes, verify a complete backup, select the intended verified image version, and run `docker compose pull && docker compose up -d`. Rolling back an image does not undo schema changes. PostgreSQL remains on major version 18; other major versions and incomplete data directories are rejected. Valkey is ephemeral: outstanding setup and verification flows restart after data loss, while queues and schedules are reconciled from durable application data. See [docker/README.md](docker/README.md) for operating and migration procedures.
 
+## Manual development images
+
+The [Dev Image workflow](.github/workflows/dev-image.yml) can be started manually on `main` in the official repository. It builds `linux/amd64` only and publishes `ghcr.io/rentnerproxy/marketplace:dev` plus a unique `dev-<12-character-commit>-<run-id>-<attempt>` tag. These are testing images, separate from Alpha, Beta and Stable releases. Starting this workflow publishes an image; merging a pull request does not start it.
+
+The workflow runs the existing TypeScript, Rust and appliance CI, Bun/Cargo advisory audits, and the dev candidate's vulnerability, isolated lifecycle and native integration checks. A separate publisher verifies the sealed OCI archive and image identity, rescans its contents without executing the candidate, and copies the assessed digest without rebuilding. If `main` advances before publication, start a new run.
+
+Publication uses the `container-publishing` environment, restricted to the `main` branch. The run retains `dependency-publish-evidence-<run-id>-<attempt>` for 30 days. Its `identity.json` and `assessment.json` identify the tested revision, immutable digest, actual platform and Marketplace checks. Only a completed `publication.json` confirms that both remote tags resolved to that digest. The workflow creates no Git tag or GitHub Release and does not deploy the Marketplace.
+
 ## Capabilities
 
 - Public Marketplace preview, planned official apps and an interactive development workflow.
@@ -122,6 +130,12 @@ web/src/features/<Area>/<Feature>/
 ```
 
 Create directories and files only when needed. Larger components keep their own hooks and types under `Components/<Name>/`. Views contain JSX, with logic in hooks. Backend logic lives in `web/src/server`, UI-free helpers in `web/src/lib`, shared UI in `web/src/shared`, and tests mirror those paths under `web/src/tests`. Public pages use `PublicLayout`; protected pages use `AuthenticatedLayout`. See `web/src/features/Admin/PermissionManagement` for an example.
+
+## Contributing and support
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for development, verification, pull requests and general questions. Use the [bug and feature forms](https://github.com/RentnerProxy/marketplace/issues/new/choose) for actionable requests. Participation follows [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+Report vulnerabilities privately through the route in [SECURITY.md](SECURITY.md). Do not include credentials, private setup links or production data in public reports.
 
 ## License
 

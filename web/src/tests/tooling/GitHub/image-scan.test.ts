@@ -27,7 +27,7 @@ function shellPath(path: string) {
         : normalized
 }
 
-async function executeScan(status: number) {
+async function executeScan(status: number, archive: boolean) {
     const directory = await mkdtemp(join(tmpdir(), 'marketplace-image-scan-'))
     try {
         await writeFile(
@@ -44,6 +44,7 @@ async function executeScan(status: number) {
                 '--norc',
                 shellPath(script),
                 'sha256:' + 'a'.repeat(64),
+                ...(archive ? ['--input'] : []),
             ],
             {
                 cwd: directory,
@@ -74,13 +75,14 @@ async function executeScan(status: number) {
     }
 }
 
-shellTest.each([0, 23])(
-    'anonymous image scan preserves scanner exit %s',
-    async (status) => {
-        const result = await executeScan(status)
+shellTest.each([[0, false], [23, false], [0, true], [23, true]] as const)(
+    'anonymous image scan preserves scanner exit %s (archive: %s)',
+    async (status, archive) => {
+        const result = await executeScan(status, archive)
         expect(result.code).toBe(status)
         expect(result.stderr).toBe('')
         expect(result.args[0]).toBe('image')
+        expect(result.args.includes('--input')).toBe(archive)
         expect(result.args.at(-1)).toBe('sha256:' + 'a'.repeat(64))
         for (const [flag, value] of [
             ['--scanners', 'vuln'],
