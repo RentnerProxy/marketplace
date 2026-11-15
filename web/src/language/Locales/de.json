@@ -63,7 +63,7 @@
             "confirmPasswordPlaceholder": "Passwort wiederholen",
             "checkingSetupLink": "Setup-Link wird geprüft …",
             "setupLinkRequired": "Den Setup-Link findest du in den App-Logs",
-            "setupLinkDescription": "Öffne in Komodo die Stack-Logs und wähle den Dienst „app“. Kopiere den neuesten Setup-Link vollständig und öffne ihn im Browser. Der Link ist zehn Minuten gültig und wird bis zum Abschluss der Ersteinrichtung automatisch erneuert.",
+            "setupLinkDescription": "Bei lokaler Entwicklung findest du den Setup-Link im Terminal von bun run dev. Bei einer Bereitstellung über Komodo öffne die Stack-Logs und wähle den Dienst „app“. Kopiere den neuesten Setup-Link vollständig und öffne ihn im Browser. Der Link ist zehn Minuten gültig und wird bis zum Abschluss der Ersteinrichtung automatisch erneuert.",
             "personalInfoTitle": "Persönliche Daten",
             "personalInfoDescription": "Diese Angaben sind optional und können später geändert werden.",
             "create": "Superuser anlegen",

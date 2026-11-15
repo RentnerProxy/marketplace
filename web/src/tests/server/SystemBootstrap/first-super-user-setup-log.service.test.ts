@@ -62,6 +62,34 @@ afterEach(function () {
 })
 
 describe('automatischer First-Superuser-Link in den App-Logs', function () {
+    it('does not start bootstrap work when startup was already aborted', async function () {
+        const controller = new AbortController()
+        controller.abort()
+        await startFirstSuperUserSetupLogService('http://localhost:3000', controller.signal)
+        expect(status).not.toHaveBeenCalled()
+        expect(createAccess).not.toHaveBeenCalled()
+        expect(output).toBe('')
+    })
+
+    it('suppresses a late initial link and renewal after shutdown during startup', async function () {
+        const controller = new AbortController()
+        const pending = Promise.withResolvers<string>()
+        const accessStarted = Promise.withResolvers<void>()
+        createAccess.mockImplementationOnce(function () {
+            accessStarted.resolve()
+            return pending.promise
+        })
+        const starting = startFirstSuperUserSetupLogService('http://localhost:3000', controller.signal)
+        await accessStarted.promise
+        controller.abort()
+        pending.resolve(token)
+        const monitor = await starting
+        monitors.push(monitor)
+        vi.advanceTimersByTime(600_000)
+        expect(output).toBe('')
+        expect(createMissingAccess).not.toHaveBeenCalled()
+    })
+
     it('gibt beim Start einer leeren Installation eine vollständige kopierbare Fragment-URL aus', async function () {
         await start()
 

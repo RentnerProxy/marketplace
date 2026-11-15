@@ -63,7 +63,7 @@
             "confirmPasswordPlaceholder": "Repeat password",
             "checkingSetupLink": "Checking setup link …",
             "setupLinkRequired": "Find the setup link in the app logs",
-            "setupLinkDescription": "In Komodo, open the stack logs and select the “app” service. Copy the entire latest setup link and open it in your browser. The link is valid for ten minutes and is renewed automatically until initial setup is complete.",
+            "setupLinkDescription": "For local development, find the setup link in the bun run dev terminal. For a Komodo deployment, open the stack logs and select the “app” service. Copy the entire latest setup link and open it in your browser. The link is valid for ten minutes and is renewed automatically until initial setup is complete.",
             "personalInfoTitle": "Personal information",
             "personalInfoDescription": "These details are optional and can be changed later.",
             "create": "Create superuser",

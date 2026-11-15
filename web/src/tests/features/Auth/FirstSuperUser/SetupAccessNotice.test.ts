@@ -27,7 +27,7 @@ import SetupAccessNotice from '@/features/Auth/FirstSuperUser/Components/SetupAc
 
 describe('Hinweis auf den Setup-Link in den App-Logs', function () {
     it.each(['de', 'en'] as const)(
-        'führt ohne erforderlichen Terminalbefehl zu den App-Logs in %s',
+        'führt zu den lokalen Terminal- oder Komodo-Logs in %s',
         function (locale) {
             language = locale
             const translation = locale === 'de' ? de : en
@@ -38,6 +38,7 @@ describe('Hinweis auf den Setup-Link in den App-Logs', function () {
             expect(html).toContain(
                 translation.auth.firstSetup.setupLinkRequired,
             )
+            expect(html).toContain('bun run dev')
             expect(html).toContain('Komodo')
             expect(html).toContain('app')
             expect(html).toContain(locale === 'de' ? 'Browser' : 'browser')

@@ -10,13 +10,14 @@ import {
 
 const SETUP_LOG_CHECK_INTERVAL_MS = 30_000
 
-export async function startFirstSuperUserSetupLogService(origin: string) {
+export async function startFirstSuperUserSetupLogService(origin: string, signal?: AbortSignal) {
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
 
     function stop() {
         stopped = true
         if (timer) clearTimeout(timer)
+        signal?.removeEventListener('abort', stop)
     }
 
     async function refresh(replaceExisting = false) {
@@ -44,7 +45,7 @@ export async function startFirstSuperUserSetupLogService(origin: string) {
             url.hash = `access=${token}`
             const minutes = FIRST_SUPERUSER_SETUP_ACCESS_TTL_SECONDS / 60
 
-            // The bootstrap URL is intentionally handed to the operator through container stdout only.
+            // The bootstrap URL is intentionally handed to the operator through process stdout only.
             writeLogLineService(
                 process.stdout,
                 [
@@ -73,6 +74,8 @@ export async function startFirstSuperUserSetupLogService(origin: string) {
         }
     }
 
+    if (signal?.aborted) return { stop }
+    signal?.addEventListener('abort', stop, { once: true })
     await refresh(true)
     return { stop }
 }

@@ -6,16 +6,24 @@ import {
     getRealtimeHostnameService,
     getRealtimePortService,
 } from '@/server/Realtime/environment.service.ts'
-import {
-    handleRealtimePublishBridge,
-    setRealtimeServer,
-} from '@/websockets/Server/realtimeServer.ts'
-import {
-    handleRealtimeUpgrade,
-    realtimeWebSocketHandler,
-} from '@/websockets/Server/realtimeWebSocket.ts'
-import { startRealtimeValkeySubscriber } from '@/websockets/Server/realtimeValkey.ts'
-import { logInfo } from '@/server/Logging/logger.ts'
+import { logError, logInfo } from '@/server/Logging/logger.ts'
+import { parseDevelopmentSetupEnvironmentService } from '@/server/Runtime/development-setup-environment.service.ts'
+import { closeAppConnectionsService } from '@/server/Runtime/app-connections.service.ts'
+
+const environment = parseDevelopmentSetupEnvironmentService(process.env)
+process.env.DATABASE_URL = environment.DATABASE_URL
+process.env.VALKEY_URL = environment.VALKEY_URL
+const setupAbort = new AbortController()
+
+const { handleRealtimePublishBridge, setRealtimeServer } = await import(
+    '@/websockets/Server/realtimeServer.ts'
+)
+const { handleRealtimeUpgrade, realtimeWebSocketHandler } = await import(
+    '@/websockets/Server/realtimeWebSocket.ts'
+)
+const { startRealtimeValkeySubscriber } = await import(
+    '@/websockets/Server/realtimeValkey.ts'
+)
 
 const DEV_REALTIME_PUBLISH_SECRET = 'xwf'
 
@@ -64,7 +72,40 @@ const server = Bun.serve({
 
 setRealtimeServer(server)
 logInfo('realtime.server_started', { port })
-await startRealtimeValkeySubscriber(server)
+const subscriber = await startRealtimeValkeySubscriber(server)
+let shutdownStarted = false
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.once(signal, function () {
+        if (shutdownStarted) return
+        shutdownStarted = true
+        setupAbort.abort()
+        void shutdown().then(
+            () => process.exit(0),
+            function (error) {
+                logError('development.shutdown_failed', error)
+                process.exit(1)
+            },
+        )
+    })
+}
+
+async function shutdown() {
+    const { db } = await import('@/db/index.ts')
+    const results = await Promise.allSettled([
+        Promise.resolve().then(() => server.stop(true)),
+        Promise.resolve().then(() => closeAppConnectionsService()),
+        Promise.resolve().then(() => db.$client.close({ timeout: 1 })),
+        Promise.resolve().then(() => subscriber?.disconnect()),
+    ])
+    if (results.some((result) => result.status === 'rejected')) {
+        throw new Error('Development-Verbindungen konnten nicht vollständig beendet werden.')
+    }
+}
+
+const { startFirstSuperUserSetupLogService } = await import(
+    '@/server/SystemBootstrap/first-super-user-setup-log.service.ts'
+)
+await startFirstSuperUserSetupLogService(environment.ORIGIN, setupAbort.signal)
 
 const realtimeDevUrl = new URL(
     REALTIME_WS_PATH,
