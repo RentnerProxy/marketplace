@@ -12,6 +12,15 @@ import {
     findElement,
     invoke,
 } from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
+import { marketplaceBlogChannels, marketplaceBlogPreviewPosts } from '@/features/MarketplaceBlog/marketplace-blog.config.ts'
+
+const previewChannels = [...marketplaceBlogChannels]
+const previewPosts = [...marketplaceBlogPreviewPosts]
+vi.mock('@/features/MarketplaceBlog/marketplace-blog.config.ts', () => ({
+    marketplaceBlogChannels: previewChannels,
+    marketplaceBlogPreviewPosts: previewPosts,
+    marketplaceBlogPublishedPosts: [],
+}))
 
 vi.mock('react', () => hookReact)
 vi.mock('@/language/useTranslationStore.ts', () => ({

@@ -214,7 +214,7 @@ test('Bun and Docker toolchain pins agree and actions are maintained through Dep
         (entry) => entry['package-ecosystem'] === 'docker-compose',
     )
     expect(await read('docker-compose.yml')).toContain(
-        'ghcr.io/rentnerproxy/marketplace:latest',
+        'ghcr.io/rentnerproxy/marketplace:v1.0.0-alpha.1',
     )
     expect(compose?.groups).toBeUndefined()
     expect(compose?.ignore).toEqual([

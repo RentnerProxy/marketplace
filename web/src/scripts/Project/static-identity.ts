@@ -152,8 +152,8 @@ function replaceProvisioningSql(content: string, config: ProjectIdentity) {
 function replaceCompose(content: string, config: ProjectIdentity) {
     const replacements: Array<readonly [RegExp, string, string, number]> = [
         [
-            /^(\s*image:\s*)[^\r\n]+:latest[ \t]*$/gmu,
-            `$1${escapeReplacement(config.imageRepository)}:latest`,
+            /^(\s*image:\s*)[^@\s]+:([A-Za-z0-9_][A-Za-z0-9_.-]{0,127})[ \t]*$/gmu,
+            `$1${escapeReplacement(config.imageRepository)}:$2`,
             'production imageRepository',
             1,
         ],

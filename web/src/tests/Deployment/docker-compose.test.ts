@@ -20,7 +20,7 @@ describe('self-contained appliance deployment', function () {
         expect(compose).toEqual({
             services: {
                 [project.id]: {
-                    image: project.imageRepository + ':latest',
+                    image: project.imageRepository + ':v1.0.0-alpha.1',
                     restart: 'unless-stopped',
                     init: true,
                     stop_grace_period: '4h10m',

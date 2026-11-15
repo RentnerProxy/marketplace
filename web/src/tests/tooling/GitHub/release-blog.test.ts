@@ -29,6 +29,13 @@ function fixture() {
 }
 
 describe('checked-in release changelog gate', () => {
+    test('accepts the prepared first alpha as the exact release content without publishing it', async () => {
+        const post = await loadReleaseChangelog('v1.0.0-alpha.1')
+        expect(post.releaseTag).toBe('v1.0.0-alpha.1')
+        expect(post.version).toBe('1.0.0-alpha.1')
+        expect(post.id).toBe('marketplace-v1-0-0-alpha-1')
+        expect(renderReleaseBlogNotes(post, '')).toContain('Public registration remains closed')
+    })
     test('accepts exact-tag published English content and renders it with generated changes', () => {
         const post = requireReleaseChangelog([fixture()], 'v1.2.3')
         expect(post.content.en.title).toBe('Account security improvements')

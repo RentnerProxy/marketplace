@@ -1,6 +1,6 @@
 services:
     marketplace:
-        image: ghcr.io/rentnerproxy/marketplace:latest
+        image: ghcr.io/rentnerproxy/marketplace:v1.0.0-alpha.1
         restart: unless-stopped
         init: true
         stop_grace_period: 4h10m
