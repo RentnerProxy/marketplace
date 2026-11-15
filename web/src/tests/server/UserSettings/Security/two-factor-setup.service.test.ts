@@ -186,7 +186,7 @@ describe('TOTP setup authorization', function () {
         const plaintext = await decryptAuthSecret(pending.encryptedSetup)
         const changes = [
             plaintext.replace('two-factor-setup-v2', 'two-factor-setup-v1'),
-            plaintext.replace('{', '{"unexpected":true,'),
+            JSON.stringify({ ...JSON.parse(plaintext), unexpected: true }),
         ]
         await Promise.all(
             changes.map(async function (value) {

@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { spawnSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -71,6 +70,13 @@ afterEach(async function () {
     await rm(directory, { recursive: true, force: false })
 })
 
+// Independent Valkey ACL protocol vectors; abc is the standard SHA-256 test vector.
+const valkeyAclVectors = new Map([
+    ["", 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],
+    ["abc", 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'],
+    ["synthetic $() ; % \"' \\ unicode-ä-only", '06b020998b7a52d4b90b371c08d4f765236669bf140c705126072e2892b50ab8'],
+])
+
 async function executeSyntheticCommand(options: {
     password: string
     healthcheck?: boolean
@@ -81,7 +87,8 @@ async function executeSyntheticCommand(options: {
     const configuration = join(directory, 'valkey.conf')
     const expected = join(directory, 'expected.conf')
     const scriptPath = join(directory, 'startup.sh')
-    const digest = createHash('sha256').update(options.password).digest('hex')
+    const digest = valkeyAclVectors.get(options.password)
+    if (!digest) throw new Error('Unknown synthetic Valkey ACL vector')
     await writeFile(
         expected,
         [`user default reset on #${digest} ~* &* +@all`, ''].join('\n'),
@@ -141,7 +148,7 @@ async function executeSyntheticCommand(options: {
 
 describe('embedded Valkey authentication', function () {
     shellTest.each([
-        'synthetic-password',
+        'abc',
         'synthetic $() ; % "\' \\ unicode-ä-only',
     ])(
         'hashes the password exactly without shell injection, secret arguments or logging',
@@ -176,7 +183,7 @@ describe('embedded Valkey authentication', function () {
         'accepts only an authenticated PONG healthcheck',
         async function () {
             const result = await executeSyntheticCommand({
-                password: 'synthetic-password',
+                password: 'abc',
                 healthcheck: true,
             })
             expect(result.exitCode).toBe(0)
@@ -197,7 +204,7 @@ describe('embedded Valkey authentication', function () {
         'rejects unsuccessful CLI calls and non-PONG healthcheck replies',
         async function ({ reply, cliStatus }) {
             const result = await executeSyntheticCommand({
-                password: 'synthetic-password',
+                password: 'abc',
                 healthcheck: true,
                 reply,
                 cliStatus,

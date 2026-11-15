@@ -32,11 +32,6 @@ function dockerfileString(value: string) {
     return escapeReplacement(`"${escaped}"`)
 }
 
-function dotenvString(value: string) {
-    const escaped = value.replace(/`/gu, '\\`').replace(/\$/gu, '\\$')
-    return escapeReplacement(`\`${escaped}\``)
-}
-
 function countMatches(content: string, pattern: RegExp) {
     if (!pattern.global) {
         throw new Error('Statische Projektmuster müssen global sein.')
@@ -197,8 +192,8 @@ function replaceEnvDev(content: string, config: ProjectIdentity) {
     )
     next = replaceOnce(
         next,
-        /^(MAIL_FROM_NAME=).+$/gmu,
-        `$1${dotenvString(config.defaultName)}`,
+        /^(MAIL_FROM_NAME=)[^\r\n]*$/gmu,
+        '$1',
         'development mail sender name',
     )
     return next

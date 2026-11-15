@@ -1,4 +1,5 @@
 import { createTransport } from 'nodemailer'
+import { PROJECT_CONFIG } from '@/config/app.config.ts'
 
 import type { SendSmtpMailInput } from './Types/mail-client.types.ts'
 import { getNormalizedMailEnv, getRequiredMailEnv } from './mailEnv.ts'
@@ -19,13 +20,10 @@ function getSmtpSecure() {
 
 function getMailFrom() {
     const from = getRequiredMailEnv('MAIL_FROM')
-    const fromName = getNormalizedMailEnv('MAIL_FROM_NAME')
+    const fromName =
+        getNormalizedMailEnv('MAIL_FROM_NAME') ?? PROJECT_CONFIG.defaultName
 
-    if (!fromName) {
-        return from
-    }
-
-    return `"${fromName}" <${from}>`
+    return { name: fromName, address: from }
 }
 
 function createMailTransporter() {

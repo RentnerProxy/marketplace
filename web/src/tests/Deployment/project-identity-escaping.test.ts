@@ -29,10 +29,6 @@ function doubleQuoted(value: string) {
         .replace(/\$/gu, '\\$')
 }
 
-function dotenvQuoted(value: string) {
-    return value.replace(/`/gu, '\\`').replace(/\$/gu, '\\$')
-}
-
 async function readWithBunEnvFile(content: string) {
     const directory = await mkdtemp(join(tmpdir(), 'project-identity-dotenv-'))
     if (
@@ -141,11 +137,8 @@ describe('project identity escaping', function () {
             await source('.env.dev.example'),
             renamed,
         )
-        expect(dotenv).toContain(
-            `MAIL_FROM_NAME=\`${dotenvQuoted(renamed.defaultName)}\``,
-        )
         const parsedDotenv = await readWithBunEnvFile(dotenv)
-        expect(parsedDotenv).toBe(renamed.defaultName)
+        expect(parsedDotenv).toBe('')
 
         expect(() =>
             renderProjectIdentityFile(
@@ -154,5 +147,78 @@ describe('project identity escaping', function () {
                 renamed,
             ),
         ).toThrow('nicht für Identitätssync freigegeben')
+    })
+
+    it.each([
+        'Portal\\',
+        'Portal\\\\',
+        'Portal` mit Backtick',
+        'Portal\\` mit Backslash und Backtick',
+        'Portal\\$PROJECT_ENV_EXPANSION',
+        'Portal\\\\$PROJECT_ENV_EXPANSION',
+        'Portal\\n mit literaler Sequenz',
+        'Portal # Kommentarzeichen',
+        '"Portal mit führendem Anführungszeichen',
+        "'Portal mit führendem Apostroph",
+        '`Portal mit führendem Backtick',
+        'Portal "mit" allen \'drei\' `Zeichen` # und Backslash\\',
+        'Portal ${PROJECT_ENV_EXPANSION:-anderer Name} und $PROJECT_ENV_EXPANSION',
+    ])(
+        'keeps the literal name %s out of dotenv across renames',
+        async function (defaultName) {
+            const original = await source('.env.dev.example')
+            const identity = { ...renamed, defaultName }
+            const rendered = renderProjectIdentityFile(
+                '.env.dev.example',
+                original,
+                identity,
+            )
+            expect(await readWithBunEnvFile(rendered)).toBe('')
+            expect(rendered).not.toContain(defaultName)
+            expect(rendered).toContain('MAIL_FROM_NAME=\n')
+            const manifest = renderProjectIdentityFile(
+                'web/public/manifest.json',
+                await source('web/public/manifest.json'),
+                identity,
+            )
+            expect(JSON.parse(manifest)).toMatchObject({
+                name: defaultName,
+                short_name: defaultName,
+            })
+            const dockerfile = renderProjectIdentityFile(
+                'Dockerfile',
+                await source('Dockerfile'),
+                identity,
+            )
+            expect(dockerfile).toContain(
+                `MAIL_FROM_NAME="${doubleQuoted(defaultName)}"`,
+            )
+            expect(
+                renderProjectIdentityFile('.env.dev.example', rendered, identity),
+            ).toBe(rendered)
+            const restored = renderProjectIdentityFile(
+                '.env.dev.example',
+                rendered,
+                renamed,
+            )
+            expect(await readWithBunEnvFile(restored)).toBe('')
+            expect(restored).toBe(
+                renderProjectIdentityFile('.env.dev.example', original, renamed),
+            )
+        },
+    )
+
+    it('clears legacy generated mail names without changing an actual environment file', async function () {
+        const original = (await source('.env.dev.example')).replace(
+            /^MAIL_FROM_NAME=$/gmu,
+            'MAIL_FROM_NAME=Legacy generated name',
+        )
+        const rendered = renderProjectIdentityFile(
+            '.env.dev.example',
+            original,
+            renamed,
+        )
+        expect(await readWithBunEnvFile(rendered)).toBe('')
+        expect(rendered).not.toContain('Legacy generated name')
     })
 })

@@ -4,10 +4,14 @@ import type {
     DependabotEligibilityInput,
 } from './Types/dependabot-policy.types.ts'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
 function object(value: unknown): Record<string, unknown> {
-    if (!value || typeof value !== 'object' || Array.isArray(value))
+    if (!isRecord(value))
         throw new Error('Missing structured API or metadata object')
-    return value as Record<string, unknown>
+    return value
 }
 
 function text(value: unknown): string {

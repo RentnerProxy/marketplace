@@ -29,7 +29,7 @@ vi.mock('nodemailer', function () {
 vi.mock('@/lib/Mail/mailEnv.ts', function () {
     return {
         getNormalizedMailEnv: vi.fn(function (key: string) {
-            return mocks.environment[key]
+            return mocks.environment[key]?.trim() || null
         }),
         getRequiredMailEnv: vi.fn(function (key: string) {
             const value = mocks.environment[key]
@@ -54,6 +54,7 @@ describe('Nodemailer-Transport', function () {
     beforeEach(function () {
         vi.clearAllMocks()
         mocks.environment.SMTP_SECURE = 'false'
+        mocks.environment.MAIL_FROM_NAME = ''
     })
 
     it('erzwingt STARTTLS und begrenzte Netzwerk-Timeouts', async function () {
@@ -78,6 +79,34 @@ describe('Nodemailer-Transport', function () {
 
         expect(createTransport).toHaveBeenCalledWith(
             expect.objectContaining({ secure: true, requireTLS: false }),
+        )
+    })
+
+    it.each(['', '   ', undefined])(
+        'inherits the project sender name when its override is %s',
+        async function (override) {
+            if (override === undefined) delete mocks.environment.MAIL_FROM_NAME
+            else mocks.environment.MAIL_FROM_NAME = override
+            await sendWithSmtp(mailInput)
+            expect(mocks.sendMail).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    from: {
+                        name: PROJECT_CONFIG.defaultName,
+                        address: 'no-reply@example.test',
+                    },
+                }),
+            )
+        },
+    )
+
+    it('preserves an explicit sender name through the structured mail address', async function () {
+        const name = 'O\'Neil "Portal" `Mail` # \\ $SMTP_USER'
+        mocks.environment.MAIL_FROM_NAME = name
+        await sendWithSmtp(mailInput)
+        expect(mocks.sendMail).toHaveBeenCalledWith(
+            expect.objectContaining({
+                from: { name, address: 'no-reply@example.test' },
+            }),
         )
     })
 })

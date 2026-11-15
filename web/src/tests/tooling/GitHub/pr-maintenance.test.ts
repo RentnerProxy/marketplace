@@ -5,6 +5,7 @@ import {
     arrayPages,
     createGitHubRequest,
     GitHubRequestError,
+    record,
 } from '../../../../../.github/scripts/automation/github.ts'
 import { maintainPullRequests } from '../../../../../.github/scripts/automation/pr-maintenance.ts'
 import type { GitHubRequest } from '../../../../../.github/scripts/automation/Types/pr-maintenance.types.ts'
@@ -401,4 +402,11 @@ test('the privileged workflow executes only trusted main with a repository-scope
     for (const step of steps) {
         if (step.uses) expect(step.uses).toMatch(/@[a-f0-9]{40}$/)
     }
+})
+
+test('API record validation preserves accepted objects and rejects non-object containers', () => {
+    const object = { state: 'open' }
+    expect(record(object)).toBe(object)
+    for (const value of [null, undefined, [], 'object', 0, false])
+        expect(() => record(value)).toThrow('Invalid GitHub API object')
 })
