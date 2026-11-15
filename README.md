@@ -27,7 +27,7 @@ Project identity is configured in `web/src/config/app.config.ts` and synchronize
 ## Requirements
 
 - Bun 1.4.4 or later; the project version is declared in `package.json`. `bun run format` and `bun run format:check` use the native `bun fmt` formatter with the settings in `bunfig.toml`.
-- Rust 1.99.1 with Cargo, rustfmt and Clippy for local development. The production image already includes the compiled core.
+- Rust 1.100.0 with Cargo, rustfmt and Clippy for local development. The production image already includes the compiled core.
 - PostgreSQL and Valkey, preferably current stable versions.
 - PostgreSQL `pg_dump` and `pg_restore` tools matching the database major version for backups. They are included in the production image.
 - SMTP access for system email.

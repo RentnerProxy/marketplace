@@ -85,7 +85,7 @@ Public integration suites live directly in that directory; tests of private
 functions live under `core/tests/unit/`. Only conditional module references
 remain in `core/src/`; production files contain no embedded test functions.
 
-Rust 1.99.1 is pinned in `rust-toolchain.toml`. Commands run from the repository
+Rust 1.100.0 is pinned in `rust-toolchain.toml`. Commands run from the repository
 root select this toolchain even if a different default version is active locally.
 Local coverage additionally requires `cargo-llvm-cov` and the Rust component
 `llvm-tools-preview`; GitHub CI installs the required coverage tools.
