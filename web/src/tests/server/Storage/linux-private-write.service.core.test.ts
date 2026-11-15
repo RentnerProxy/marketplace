@@ -701,12 +701,12 @@ describe.skipIf(process.platform !== 'linux')(
                     new Error('Synthetic root identity failure'),
                 )
                 const stat = parent.stat.bind(parent)
-                vi.spyOn(parent, 'stat').mockImplementationOnce((
-                    (options: Parameters<FileHandle['stat']>[0]) => {
-                        siblingStatStarted.resolve()
-                        return sibling.promise.then(() => stat(options))
-                    }
-                ) as FileHandle['stat'])
+                vi.spyOn(parent, 'stat').mockImplementationOnce(((
+                    options: Parameters<FileHandle['stat']>[0],
+                ) => {
+                    siblingStatStarted.resolve()
+                    return sibling.promise.then(() => stat(options))
+                }) as FileHandle['stat'])
             }).then(
                 () => {
                     returned = true
