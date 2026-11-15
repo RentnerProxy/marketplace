@@ -124,6 +124,7 @@ COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/web/drizzle ./web/drizzle
 COPY --from=builder /app/package.json ./package.json
+COPY LICENSE /app/LICENSE
 COPY --from=builder /app/web ./web
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=core-builder /native/ /usr/local/bin/
