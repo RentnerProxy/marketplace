@@ -113,17 +113,21 @@ test('publisher verifies and rescans data before exposing the token and always r
         'dependency-publish-evidence-${{ github.run_id }}-${{ github.run_attempt }}',
     )
     const handoff = await read('.github/scripts/deploy/verify-dev-image.sh')
+    expect(handoff.indexOf('dev-image.ts hashes')).toBeGreaterThanOrEqual(0)
     expect(handoff.indexOf('dev-image.ts hashes')).toBeLessThan(
         handoff.indexOf('skopeo inspect'),
     )
     const shell = await read('.github/scripts/deploy/publish-dev-image.sh')
     expect(shell).toContain('copy --all --preserve-digests')
+    expect(shell.indexOf('dev-image.ts ready')).toBeGreaterThanOrEqual(0)
     expect(shell.indexOf('dev-image.ts ready')).toBeLessThan(
         shell.indexOf('skopeo login'),
     )
+    expect(shell.indexOf('current_main=')).toBeGreaterThanOrEqual(0)
     expect(shell.indexOf('current_main=')).toBeLessThan(
         shell.indexOf('skopeo login'),
     )
+    expect(shell.indexOf('REMOTE_DEV_DIGEST')).toBeGreaterThanOrEqual(0)
     expect(shell.indexOf('REMOTE_DEV_DIGEST')).toBeLessThan(
         shell.indexOf('dev-image.ts published'),
     )

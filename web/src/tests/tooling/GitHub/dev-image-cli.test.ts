@@ -37,6 +37,7 @@ async function fixture(
             diff_ids: ['sha256:' + hash('fixture-layer')],
         },
         config: {
+            Healthcheck: { Test: ['CMD', 'container-healthcheck.sh'] },
             Labels: {
                 'org.opencontainers.image.revision': revision,
                 'org.opencontainers.image.version':
@@ -219,5 +220,21 @@ test('CLI rejects external directories, a different workflow SHA, forged assessm
         const value = JSON.parse(await readFile(path, 'utf8'))
         await writeFile(path, JSON.stringify({ ...value, published: true }))
         expect((await execute('ready')).code).not.toBe(0)
+    })
+})
+
+test('CLI rejects a normalized configuration that drops raw Docker healthcheck data', async () => {
+    await fixture(async ({ directory, execute }) => {
+        const path = join(directory, 'config.json')
+        const config = JSON.parse(await readFile(path, 'utf8'))
+        delete config.config.Healthcheck
+        await writeFile(path, JSON.stringify(config))
+        const result = await execute('loaded')
+        expect(result.code).not.toBe(0)
+        expect(result.stderr).toContain('Raw OCI config digest mismatch')
+        expect((await execute('verify')).code).not.toBe(0)
+        expect(await Bun.file(join(directory, 'identity.json')).exists()).toBe(
+            false,
+        )
     })
 })

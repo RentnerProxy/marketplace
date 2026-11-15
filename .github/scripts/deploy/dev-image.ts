@@ -115,6 +115,11 @@ async function actualImage() {
     const configDigest = record(record(manifest).config).digest
     if (typeof configDigest !== 'string')
         throw new Error('Missing OCI config digest')
+    if (
+        'sha256:' + (await hashFile(join(directory(), 'config.json'))) !==
+        configDigest
+    )
+        throw new Error('Raw OCI config digest mismatch')
     return {
         archiveSha256: await hashFile(join(directory(), 'candidate-image.tar')),
         manifestDigest:

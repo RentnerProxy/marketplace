@@ -153,6 +153,7 @@ function fixture() {
         os: 'linux',
         architecture: 'amd64',
         config: {
+            Healthcheck: { Test: ['CMD', 'container-healthcheck.sh'] },
             Labels: {
                 'org.opencontainers.image.revision': revision,
                 'org.opencontainers.image.version': identity.version,
@@ -329,6 +330,61 @@ test.each([{ os: 'windows' }, { architecture: 'arm64' }, { config: {} }])(
     },
 )
 
+test.each([
+    { value: undefined },
+    { value: { Test: ['NONE'] } },
+    { value: { Test: ['CMD', 'container-healthcheck.sh'], Disabled: true } },
+    { value: { Test: ['CMD', '/other-healthcheck'] } },
+    { value: { Test: ['CMD-SHELL', 'container-healthcheck.sh'] } },
+])(
+    'rejects missing, disabled or alternate Marketplace healthchecks: %j',
+    ({ value }) => {
+        const { identity, actual, config } = fixture()
+        expect(() =>
+            createDevCandidate(identity, {
+                ...actual,
+                config: {
+                    ...config,
+                    config: { ...config.config, Healthcheck: value },
+                },
+            }),
+        ).toThrow()
+    },
+)
+
+test.each([
+    { value: undefined },
+    { value: { Test: ['NONE'] } },
+    { value: { Test: ['CMD'] } },
+    { value: { Test: ['CMD-SHELL', '  '] } },
+    { value: { Test: ['CMD', '/healthcheck'], Disabled: true } },
+])(
+    'rejects disabled or missing expected loaded healthchecks: %j',
+    ({ value }) => {
+        const { config, inspected } = loadedFixture()
+        expect(() =>
+            verifyDevLoadedImage(
+                {
+                    ...config,
+                    config: { ...config.config, Healthcheck: value },
+                },
+                inspected,
+            ),
+        ).toThrow()
+    },
+)
+
+test('loaded image helper accepts an enabled shell healthcheck', () => {
+    const { config, inspected } = loadedFixture()
+    const Healthcheck = { Test: ['CMD-SHELL', '/healthcheck || exit 1'] }
+    expect(
+        verifyDevLoadedImage(
+            { ...config, config: { ...config.config, Healthcheck } },
+            { ...inspected, Config: { ...inspected.Config, Healthcheck } },
+        ),
+    ).toBe(manifestDigest)
+})
+
 test.each(['revision', 'version', 'source', 'title'])(
     'rejects actual label mismatch for %s even when evidence is unchanged',
     (label) => {
@@ -337,6 +393,7 @@ test.each(['revision', 'version', 'source', 'title'])(
         const changed = {
             ...config,
             config: {
+                ...config.config,
                 Labels: {
                     ...config.config.Labels,
                     [`org.opencontainers.image.${label}`]: 'forged',

@@ -63,6 +63,19 @@ export function verifyDevLoadedImage(
     const loadedConfig = record(loaded.Config)
     const expectedRoot = record(expected.rootfs)
     const loadedRoot = record(loaded.RootFS)
+    const healthcheck = record(expectedConfig.Healthcheck)
+    if (
+        healthcheck.Disabled === true ||
+        !Array.isArray(healthcheck.Test) ||
+        !['CMD', 'CMD-SHELL'].includes(healthcheck.Test[0]) ||
+        healthcheck.Test.length < 2 ||
+        !healthcheck.Test.slice(1).every(
+            (command) =>
+                typeof command === 'string' && command.trim().length > 0,
+        )
+    ) {
+        throw new Error('Loaded Dev image requires an enabled OCI healthcheck')
+    }
     if (
         expected.os !== 'linux' ||
         expected.architecture !== 'amd64' ||
@@ -180,10 +193,14 @@ export function createDevCandidate(
     }
     for (const layer of manifest.layers) digest(record(layer).digest)
     const config = record(actual.config)
-    const labels = record(record(config.config).Labels)
+    const runtimeConfig = record(config.config)
+    const labels = record(runtimeConfig.Labels)
+    const healthcheck = record(runtimeConfig.Healthcheck)
     if (
         config.os !== 'linux' ||
         config.architecture !== 'amd64' ||
+        healthcheck.Disabled === true ||
+        !equal(healthcheck.Test, ['CMD', 'container-healthcheck.sh']) ||
         labels['org.opencontainers.image.revision'] !== identity.revision ||
         labels['org.opencontainers.image.version'] !== identity.version ||
         labels['org.opencontainers.image.source'] !==

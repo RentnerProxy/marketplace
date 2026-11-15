@@ -23,7 +23,7 @@ bun run dev
 
 Before starting development, create a private local configuration from [.env.dev.example](.env.dev.example). Configure an isolated development database, Valkey, and `AUTH_ENCRYPTION_KEY`. Keep that key unchanged for existing data. Configure a test SMTP service when exercising the mail worker. Initialize or migrate only the intended development database; `bun run dev` does not grant permission to alter a real deployment.
 
-Never read, print, commit, or attach real environment files, credentials, session tokens, setup links, encryption keys, or production data. Share only sanitized reproductions and synthetic fixtures.
+Use only an isolated development environment for contribution work; never access production credentials, environment files, setup links or data. Keep your local environment files, credentials, session tokens and encryption keys private. You may open a local development setup link privately on your own machine. Never commit, attach or share any setup link or other sensitive data. Share only sanitized reproductions and synthetic fixtures.
 
 ## Code and generated files
 
