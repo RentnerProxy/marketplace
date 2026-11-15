@@ -122,10 +122,21 @@ vi.mock(
     }),
 )
 vi.mock('@/layouts/PublicLayout/Hooks/useFooterLogic.ts', () => ({
-    default: () => ({ state: { companyName: 'Example Company', currentYear: 2026, appVersion: '1.2.3' } }),
+    default: () => ({
+        state: {
+            companyName: 'Example Company',
+            currentYear: 2026,
+            appVersion: '1.2.3',
+        },
+    }),
 }))
 vi.mock('@/layouts/PublicLayout/Components/LanguageSwitcher.tsx', () => ({
-    default: () => createElement('button', { 'aria-label': 'Language selector' }, 'Deutsch'),
+    default: () =>
+        createElement(
+            'button',
+            { 'aria-label': 'Language selector' },
+            'Deutsch',
+        ),
 }))
 const { default: Main } =
     await import('@/layouts/AuthenticatedLayout/Components/AuthenticatedMain.tsx')

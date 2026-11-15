@@ -16,8 +16,12 @@ export default function useLoginHeaderLogic(): LoginHeaderLogicReturn {
     return {
         state: {
             companyName:
-                systemSettings?.companyName?.trim() || PROJECT_CONFIG.defaultName,
-            logoSrc: hasCustomLogo && configuredLogo ? configuredLogo : '/rentnerproxy-logo.png',
+                systemSettings?.companyName?.trim() ||
+                PROJECT_CONFIG.defaultName,
+            logoSrc:
+                hasCustomLogo && configuredLogo
+                    ? configuredLogo
+                    : '/rentnerproxy-logo.png',
             hasCustomLogo,
         },
     }

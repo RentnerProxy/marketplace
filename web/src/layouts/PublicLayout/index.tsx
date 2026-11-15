@@ -23,7 +23,10 @@ export default function PublicLayout({ children }: { children?: ReactNode }) {
                         className="flex min-w-0 items-center gap-3"
                         aria-label={t('marketplace.home')}
                     >
-                        <MarketplaceLogo className="w-48 sm:w-56" sizes="(min-width: 640px) 224px, 192px" />
+                        <MarketplaceLogo
+                            className="w-48 sm:w-56"
+                            sizes="(min-width: 640px) 224px, 192px"
+                        />
                     </Link>
                     <nav
                         aria-label={t('marketplace.accountNavigation')}
@@ -35,7 +38,11 @@ export default function PublicLayout({ children }: { children?: ReactNode }) {
                         >
                             {t('marketplace.login')}
                         </Link>
-                        <Link to="/register" title={t('marketplace.registrationSoon')} className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-marketplace-void transition-colors hover:bg-primary-hover sm:px-4 sm:text-sm">
+                        <Link
+                            to="/register"
+                            title={t('marketplace.registrationSoon')}
+                            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-marketplace-void transition-colors hover:bg-primary-hover sm:px-4 sm:text-sm"
+                        >
                             {t('marketplace.register')}
                         </Link>
                         <LanguageSwitcher />

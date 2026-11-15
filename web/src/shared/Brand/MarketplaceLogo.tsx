@@ -1,7 +1,10 @@
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import type { MarketplaceLogoProps } from './Types/marketplace-logo.types.ts'
 
-export default function MarketplaceLogo({ className, sizes = '280px' }: MarketplaceLogoProps) {
+export default function MarketplaceLogo({
+    className,
+    sizes = '280px',
+}: MarketplaceLogoProps) {
     return (
         <img
             src="/brand/marketplace-logo-640.webp"

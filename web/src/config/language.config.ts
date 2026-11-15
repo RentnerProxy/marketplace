@@ -11,7 +11,14 @@ import polishFlag from '@/assets/flags/pl.svg'
 export const FALLBACK_LANGUAGE: AppLanguage = 'de'
 
 export const AVAILABLE_LANGUAGES = [
-    'en', 'de', 'es', 'fr', 'it', 'pt', 'nl', 'pl',
+    'en',
+    'de',
+    'es',
+    'fr',
+    'it',
+    'pt',
+    'nl',
+    'pl',
 ] as const satisfies ReadonlyArray<AppLanguage>
 
 export const LANGUAGE_NATIVE_NAMES: Record<AppLanguage, string> = {

@@ -47,7 +47,8 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                             border: 'border-[#cbd9d0]',
                                             text: 'text-marketplace-void',
                                             labelText: 'text-marketplace-void',
-                                            placeholder: 'placeholder:text-[#607468]',
+                                            placeholder:
+                                                'placeholder:text-[#607468]',
                                             iconColor: 'text-[#607468]',
                                             counterText: 'text-[#607468]',
                                             counterBg: 'bg-[#f5f8f6]',
@@ -76,7 +77,8 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                             border: 'border-[#cbd9d0]',
                                             text: 'text-marketplace-void',
                                             labelText: 'text-marketplace-void',
-                                            placeholder: 'placeholder:text-[#607468]',
+                                            placeholder:
+                                                'placeholder:text-[#607468]',
                                             iconColor: 'text-[#607468]',
                                             counterText: 'text-[#607468]',
                                             counterBg: 'bg-[#f5f8f6]',
@@ -154,7 +156,10 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                         </form>
                         <p className="mt-7 border-t border-[#dce6df] pt-6 text-center text-sm text-[#52675d]">
                             {t('auth.login.newHere')}{' '}
-                            <Link to="/register" className="font-bold text-[#0d6d2b] underline-offset-4 hover:underline">
+                            <Link
+                                to="/register"
+                                className="font-bold text-[#0d6d2b] underline-offset-4 hover:underline"
+                            >
                                 {t('auth.login.discoverRegistration')}
                             </Link>
                         </p>

@@ -24,7 +24,10 @@ beforeEach(() => {
 
 it('provides native language options and skips selecting the already active language', async () => {
     const result = renderHook(useSwitcher)
-    expect(result.state.options.map((option) => option.value)).toEqual(['de', 'en'])
+    expect(result.state.options.map((option) => option.value)).toEqual([
+        'de',
+        'en',
+    ])
     await result.handler.handleLanguageChange('de')
     expect(setLanguage).not.toHaveBeenCalled()
 })

@@ -156,7 +156,9 @@ describe('authentication page states', function () {
         const html = renderToStaticMarkup(createElement(Register))
         expect(html).toContain('auth.register.previewTitle')
         expect(html).toContain('auth.register.previewDescription')
-        expect(html).toContain('<fieldset disabled="" aria-describedby="registration-preview-notice"')
+        expect(html).toContain(
+            '<fieldset disabled="" aria-describedby="registration-preview-notice"',
+        )
         expect(html).toContain('type="submit" disabled=""')
         expect(html).toContain('type="email"')
         expect(html).toContain('type="password"')

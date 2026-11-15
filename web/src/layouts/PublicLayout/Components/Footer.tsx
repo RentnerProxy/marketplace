@@ -11,9 +11,21 @@ export default function Footer() {
 
     return (
         <footer className="relative overflow-hidden bg-marketplace-void text-white">
-            <svg aria-hidden="true" focusable="false" viewBox="0 0 1440 120" preserveAspectRatio="none" className="marketplace-wave pointer-events-none absolute inset-x-0 top-0 h-16 w-full sm:h-24">
-                <path d="M0 75C220 19 468 29 720 71S1190 127 1440 55V0H0Z" fill="#0fb33a" />
-                <path d="M0 64C220 8 468 18 720 60S1190 116 1440 44V0H0Z" fill="#f7faf8" />
+            <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 1440 120"
+                preserveAspectRatio="none"
+                className="marketplace-wave pointer-events-none absolute inset-x-0 top-0 h-16 w-full sm:h-24"
+            >
+                <path
+                    d="M0 75C220 19 468 29 720 71S1190 127 1440 55V0H0Z"
+                    fill="#0fb33a"
+                />
+                <path
+                    d="M0 64C220 8 468 18 720 60S1190 116 1440 44V0H0Z"
+                    fill="#f7faf8"
+                />
             </svg>
             <div
                 aria-hidden="true"
@@ -27,7 +39,10 @@ export default function Footer() {
                             aria-label={state.companyName}
                             className="inline-flex items-center gap-3"
                         >
-                            <MarketplaceLogo className="w-64 sm:w-72" sizes="(min-width: 640px) 288px, 256px" />
+                            <MarketplaceLogo
+                                className="w-64 sm:w-72"
+                                sizes="(min-width: 640px) 288px, 256px"
+                            />
                         </Link>
                         <p className="mt-7 max-w-lg font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
                             {t('marketplace.footerHeadline')}
@@ -94,7 +109,9 @@ export default function Footer() {
                     <span>
                         © {state.currentYear} {state.companyName}
                     </span>
-                    <span className="font-mono text-[10px]">{state.appVersion}</span>
+                    <span className="font-mono text-[10px]">
+                        {state.appVersion}
+                    </span>
                 </div>
             </div>
         </footer>

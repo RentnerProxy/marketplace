@@ -7,7 +7,9 @@ import type { LanguageSwitcherLogicReturn } from '../Types/language-switcher-log
 
 export default function useLanguageSwitcherLogic(): LanguageSwitcherLogicReturn {
     const { availableLanguages, language, setLanguage } = useTranslationStore()
-    const [pendingLanguage, setPendingLanguage] = useState<AppLanguage | null>(null)
+    const [pendingLanguage, setPendingLanguage] = useState<AppLanguage | null>(
+        null,
+    )
     const isChangingLanguage = pendingLanguage !== null
 
     async function handleLanguageChange(nextLanguage: AppLanguage) {
@@ -26,7 +28,10 @@ export default function useLanguageSwitcherLogic(): LanguageSwitcherLogicReturn 
     return {
         state: {
             language,
-            options: availableLanguages.map((value) => ({ value, label: LANGUAGE_NATIVE_NAMES[value] })),
+            options: availableLanguages.map((value) => ({
+                value,
+                label: LANGUAGE_NATIVE_NAMES[value],
+            })),
             isChangingLanguage,
         },
         handler: { handleLanguageChange },

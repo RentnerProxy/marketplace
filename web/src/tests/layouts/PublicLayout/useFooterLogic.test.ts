@@ -3,7 +3,8 @@ import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import { hookReact, renderHook, resetHooks } from '../hook-harness.ts'
 
 vi.mock('react', () => hookReact)
-const { default: useFooter } = await import('@/layouts/PublicLayout/Hooks/useFooterLogic.ts')
+const { default: useFooter } =
+    await import('@/layouts/PublicLayout/Hooks/useFooterLogic.ts')
 beforeEach(resetHooks)
 
 it('keeps the version and current year beside the project name', () => {

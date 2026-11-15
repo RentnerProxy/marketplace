@@ -43,10 +43,14 @@ describe('useTranslationStore gespeicherte Sprache', function () {
         for (const language of AVAILABLE_LANGUAGES) {
             // eslint-disable-next-line no-await-in-loop -- Shared i18next transitions must complete in order.
             await store.setLanguage(language)
-            expect(storage.setItem).toHaveBeenLastCalledWith('app-language', language)
-            expect(i18nextMock.api.changeLanguage).toHaveBeenLastCalledWith(language)
+            expect(storage.setItem).toHaveBeenLastCalledWith(
+                'app-language',
+                language,
+            )
+            expect(i18nextMock.api.changeLanguage).toHaveBeenLastCalledWith(
+                language,
+            )
             expect(documentElement.lang).toBe(language)
         }
-
     })
 })

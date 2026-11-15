@@ -17,7 +17,11 @@ import TanStackQueryDevtools from '@/integrations/TanstackQuery/devtools.tsx'
 import appCss from '@/styles.css?url'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import TransferOverlay from '@/shared/TransferOverlay/index.tsx'
-import { CALENDAR_LOCALES, SELECT_LOCALES, TOAST_LOCALES } from '@/config/language-library.config.ts'
+import {
+    CALENDAR_LOCALES,
+    SELECT_LOCALES,
+    TOAST_LOCALES,
+} from '@/config/language-library.config.ts'
 
 import type { ReactNode } from 'react'
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
