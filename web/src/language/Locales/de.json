@@ -1,0 +1,1118 @@
+{
+    "common": {
+        "active": "Aktiv",
+        "activate": "Aktivieren",
+        "actions": "Aktionen",
+        "all": "Alle",
+        "approve": "Annehmen",
+        "backToLogin": "Zurück zum Login",
+        "cancel": "Abbrechen",
+        "clickToCopy": "Zum Kopieren klicken",
+        "copied": "Kopiert!",
+        "deactivate": "Deaktivieren",
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "error": "Fehler",
+        "field": "Feld",
+        "inactive": "Inaktiv",
+        "logout": "Logout",
+        "loggingOut": "Logout...",
+        "no": "Nein",
+        "planned": "Geplant",
+        "reject": "Ablehnen",
+        "removeSelection": "Auswahl entfernen",
+        "rights": "Rechte",
+        "save": "Speichern",
+        "saving": "Speichert...",
+        "status": "Status",
+        "yes": "Ja",
+        "zoom": "Zoom"
+    },
+    "language": {
+        "de": "Deutsch",
+        "en": "English",
+        "sectionDescription": "Wähle die Sprache für die Oberfläche.",
+        "sectionTitle": "Sprache",
+        "save": "Sprache speichern",
+        "savedTitle": "Sprache gespeichert",
+        "savedDescription": "Sprache erfolgreich geändert",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
+    },
+    "nav": {
+        "admin": "Admin",
+        "collapse": "Navigation einklappen",
+        "dashboard": "Dashboard",
+        "expand": "Navigation ausklappen",
+        "navigation": "Navigation",
+        "overview": "Übersicht",
+        "permissions": "Rechte",
+        "systemSettings": "Systemeinstellungen",
+        "user": "User",
+        "userManagement": "Userverwaltung",
+        "auditLogs": "Audit Logs",
+        "backups": "Backups"
+    },
+    "auth": {
+        "passwordPolicy": "Das Passwort muss zwischen {{min}} und {{max}} Zeichen lang sein.",
+        "firstSetup": {
+            "title": "Ersten Superuser anlegen",
+            "description": "Richte den ersten Account ein. Die benötigten Systemdaten und Berechtigungen werden dabei automatisch geprüft und ergänzt.",
+            "accountTitle": "Zugangsdaten",
+            "accountDescription": "Diese Daten verwendest du anschließend für den Login.",
+            "emailPlaceholder": "E-Mail-Adresse",
+            "passwordPlaceholder": "Passwort",
+            "confirmPasswordPlaceholder": "Passwort wiederholen",
+            "checkingSetupLink": "Setup-Link wird geprüft …",
+            "setupLinkRequired": "Den Setup-Link findest du in den App-Logs",
+            "setupLinkDescription": "Bei lokaler Entwicklung findest du den Setup-Link im Terminal von bun run dev. Bei einer Bereitstellung über Komodo öffne die Stack-Logs und wähle den Dienst „app“. Kopiere den neuesten Setup-Link vollständig und öffne ihn im Browser. Der Link ist zehn Minuten gültig und wird bis zum Abschluss der Ersteinrichtung automatisch erneuert.",
+            "personalInfoTitle": "Persönliche Daten",
+            "personalInfoDescription": "Diese Angaben sind optional und können später geändert werden.",
+            "create": "Superuser anlegen",
+            "creating": "Superuser wird angelegt...",
+            "created": "Der erste Superuser wurde angelegt. Du kannst dich jetzt anmelden.",
+            "createError": "Der erste Superuser konnte nicht angelegt werden.",
+            "alreadyCompleted": "Die Ersteinrichtung wurde bereits abgeschlossen.",
+            "invalidSetupToken": "Der Setup-Link ist ungültig oder abgelaufen. Öffne den neuesten Link aus den App-Logs.",
+            "invalidData": "Bitte prüfe deine Eingaben.",
+            "invalidUsername": "Der Benutzername muss zwischen 1 und 50 Zeichen lang sein.",
+            "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
+            "passwordMismatch": "Die Passwörter stimmen nicht überein."
+        },
+        "forgotPassword": {
+            "description": "Gib deine E-Mail-Adresse ein, um dein Passwort zurückzusetzen.",
+            "emailPlaceholder": "Deine E-Mail-Adresse",
+            "requestLink": "Link anfordern",
+            "requesting": "Wird angefordert...",
+            "title": "Passwort vergessen",
+            "emailSent": "Die Reset-E-Mail wurde versendet."
+        },
+        "login": {
+            "eyebrow": "Dein Marketplace-Konto",
+            "welcomeBack": "Schön, dass du da bist.",
+            "newHere": "Neu hier?",
+            "discoverRegistration": "Zur Registrierung",
+            "description": "Bitte melde dich in deinem Account an",
+            "forgotPassword": "Passwort vergessen?",
+            "login": "Einloggen",
+            "loggingIn": "Wird angemeldet...",
+            "passwordPlaceholder": "Passwort",
+            "title": "Login",
+            "usernamePlaceholder": "Dein Benutzername",
+            "failed": "Login fehlgeschlagen",
+            "or": "oder",
+            "passkeyFailed": "Passkey-Login fehlgeschlagen",
+            "passkeyLogin": "Mit Passkey anmelden",
+            "passkeyLoggingIn": "Passkey wird geprüft...",
+            "passkeyUnsupported": "Dein Browser unterstützt Passkeys nicht.",
+            "twoFactorCodeRequired": "Bitte gib deinen 2FA-Code ein.",
+            "twoFactorCodeIncomplete": "Bitte gib den vollständigen 2FA-Code ein."
+        },
+        "register": {
+            "eyebrow": "Bald für dich da",
+            "title": "Dein Zugang zum Marketplace.",
+            "description": "Ein Konto für deine Apps und Erweiterungen rund um RentnerProxy.",
+            "previewTitle": "Registrierung kommt bald",
+            "previewDescription": "Hier siehst du bereits die Vorschau. Die Felder sind noch deaktiviert; es werden keine Daten erfasst und kein Konto angelegt.",
+            "accountDetails": "Vorschau der Kontodaten",
+            "email": "E-Mail-Adresse",
+            "emailPlaceholder": "Deine E-Mail-Adresse",
+            "comingSoon": "Noch nicht verfügbar",
+            "alreadyRegistered": "Du hast bereits ein Konto?"
+        },
+        "passwordReset": {
+            "validating": "Reset-Link wird geprüft …",
+            "validationError": "Der Reset-Link konnte gerade nicht geprüft werden. Bitte versuche es erneut.",
+            "retryValidation": "Link erneut prüfen",
+            "missingLinkTitle": "Reset-Link fehlt",
+            "missingLinkDescription": "Bitte fordere einen neuen Passwort-Reset-Link an.",
+            "invalidLinkTitle": "Reset-Link ungültig",
+            "invalidLinkDescription": "Der Passwort-Reset-Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.",
+            "newPasswordTitle": "Neues Passwort",
+            "newPasswordDescription": "Lege ein neues Passwort für deinen Account fest.",
+            "newPasswordPlaceholder": "Neues Passwort",
+            "confirmPasswordPlaceholder": "Passwort wiederholen",
+            "saving": "Wird gespeichert...",
+            "save": "Passwort speichern",
+            "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+            "updated": "Dein Passwort wurde aktualisiert. Melde dich jetzt im selben Browser an.",
+            "updatedTitle": "Passwort gespeichert",
+            "updateError": "Passwort konnte nicht aktualisiert werden."
+        },
+        "privacy": {
+            "title": "Datenschutz",
+            "placeholder": "Platzhalter für die Datenschutzerklärung."
+        },
+        "terms": {
+            "title": "Nutzungsbedingungen",
+            "placeholder": "Platzhalter für die Nutzungsbedingungen."
+        },
+        "twoFactor": {
+            "codeLabel": "Sechsstelliger Bestätigungscode",
+            "description": "Bitte gib den 6-stelligen Code aus deiner Authenticator-App ein.",
+            "rememberDevice": "Dieses Gerät speichern",
+            "rememberDeviceDescription": "Beim nächsten Login auf diesem Browser ist kein 2FA-Code nötig. Der Token ist 30 Tage gültig.",
+            "title": "Zwei-Faktor-Authentifizierung"
+        }
+    },
+    "safeDelete": {
+        "close": "Dialog schließen",
+        "confirming": "Löscht...",
+        "description": "Diese Aktion kann nicht rückgängig gemacht werden.",
+        "title": "Löschen bestätigen"
+    },
+    "userSettings": {
+        "account": "Account",
+        "appearance": "Darstellung",
+        "background": {
+            "choose": "Hintergrund auswählen",
+            "custom": "Eigener Hintergrund",
+            "darkness": "Hintergrund abdunkeln",
+            "description": "Empfohlen: Full HD mit 1920 x 1080 px. Das Bild wird als background.webp gespeichert und auf allen Seiten angezeigt.",
+            "empty": "Kein Bild ausgewählt",
+            "preview": "Vorschau eigener Hintergrund",
+            "remove": "Hintergrund entfernen",
+            "removing": "Entfernt...",
+            "save": "Hintergrund speichern",
+            "saveBrightness": "Helligkeit speichern",
+            "zoom": "Hintergrund-Zoom",
+            "zoomValue": "{{zoom}}x"
+        },
+        "close": "Benutzereinstellungen schließen",
+        "color": {
+            "description": "Diese Farbe wird für Buttons, aktive Navigation und Akzente verwendet.",
+            "primaryButton": "Primärer Button",
+            "reset": "Zurücksetzen",
+            "save": "Farbe speichern",
+            "secondaryButton": "Sekundärer Button",
+            "title": "Systemfarbe"
+        },
+        "font": {
+            "family": {
+                "inter": "Inter",
+                "mono": "Mono",
+                "serif": "Serif",
+                "system": "System"
+            },
+            "familyDescription": "Wähle die Schriftart für die Oberfläche.",
+            "familyTitle": "Schriftart",
+            "preview": "Vorschau",
+            "previewText": "Öfters gehe ich Eis essen und laufe dabei über den Fluss.",
+            "saveFamily": "Schriftart speichern",
+            "saveSize": "Schriftgröße speichern",
+            "size": "Schriftgröße",
+            "sizeDescription": "Passe die Grundgröße der Oberfläche an.",
+            "sizePreview": "Kleine Vorschau",
+            "sizeTitle": "Schriftgröße",
+            "sizeValue": "{{size}}px"
+        },
+        "theme": {
+            "dark": "Dark Mode",
+            "description": "Wähle das Haupt-Farbschema für die Oberfläche.",
+            "light": "Light Mode",
+            "save": "Theme speichern",
+            "saved": "Das Theme wurde erfolgreich gespeichert!",
+            "title": "Haupt-Theme"
+        },
+        "header": {
+            "subtitle": "Einstellungen für {{username}}",
+            "title": "Benutzereinstellungen"
+        },
+        "personalInfo": {
+            "city": "Wohnort",
+            "description": "Diese Angaben sind optional.",
+            "firstName": "Vorname",
+            "houseNumber": "Hausnummer",
+            "lastName": "Nachname",
+            "postalCode": "Postleitzahl",
+            "save": "Daten speichern",
+            "street": "Straße",
+            "title": "Persönliche Daten"
+        },
+        "profileImage": {
+            "choose": "Bild auswählen",
+            "description": "Wähle ein Bild aus und schneide es passend zu.",
+            "empty": "Kein neues Profilbild ausgewählt.",
+            "save": "Profilbild speichern",
+            "title": "Profilbild",
+            "userId": "User ID: {{userId}}"
+        },
+        "security": {
+            "label": "Sicherheit",
+            "2faActive": "2FA ist für deinen Account aktiv.",
+            "2faConfirm": "Bestätigen",
+            "2faDescription": "Optionaler Login-Schutz per Authenticator-App.",
+            "2faDisable": "2FA deaktivieren",
+            "2faDisabling": "Deaktiviert...",
+            "2faEnable": "2FA aktivieren",
+            "2faPreparing": "Wird vorbereitet...",
+            "2faScan": "Scanne den QR-Code mit deiner Authenticator-App und bestätige danach den 6-stelligen Code.",
+            "2faTitle": "Zwei-Faktor-Authentifizierung",
+            "copyFailed": "Kopieren fehlgeschlagen.",
+            "passwordDescription": "Du bekommst eine E-Mail, über die du dein Passwort neu setzen kannst.",
+            "passwordReset": "Passwort-Reset senden",
+            "passwordSending": "Wird versendet...",
+            "passwordTitle": "Passwort",
+            "passkeyAdd": "Passkey hinzufügen",
+            "passkeyAdding": "Passkey wird hinzugefügt...",
+            "passkeyBackedUp": "Synchronisiert",
+            "passkeyCreatedAt": "Erstellt",
+            "passkeyDelete": "Entfernen",
+            "passkeyLastUsedAt": "Zuletzt genutzt",
+            "passkeySingleDevice": "Nur dieses Gerät",
+            "passkeyUnsupported": "Dein Browser unterstützt Passkeys nicht.",
+            "passkeysDescription": "Melde dich ohne Passwort über Windows Hello, Touch ID, Sicherheitsschlüssel oder einen synchronisierten Passkey an.",
+            "passkeysEmpty": "Noch kein Passkey eingerichtet.",
+            "passkeysLoading": "Passkeys werden geladen...",
+            "passkeysTitle": "Passkeys",
+            "signInAgainAllDevices": "Die Sicherheitsänderung wurde gespeichert. Bitte melde dich auf allen Geräten erneut an.",
+            "signInAgain": "Erneut anmelden",
+            "reauthenticationDescription": "Bestätige diese Sicherheitsänderung erneut. Eine bestehende Sitzung allein reicht dafür nicht aus.",
+            "reauthenticationPasswordLabel": "Aktuelles Passwort",
+            "reauthenticationPasswordPlaceholder": "Aktuelles Passwort eingeben",
+            "reauthenticationTotpDescription": "Gib einen unbenutzten Code aus deiner Authenticator-App ein. Nach einer Bestätigung warte auf den nächsten Code.",
+            "reauthenticationTotpLabel": "Aktueller 2FA-Code",
+            "reauthenticationTotpPlaceholder": "123456",
+            "checking": "Prüft...",
+            "secret": "Secret: {{secret}}"
+        },
+        "settingsLabel": "Benutzereinstellungen"
+    },
+    "admin": {
+        "auditLogs": {
+            "pageTitle": "Audit Logs",
+            "pageDescription": "Übersicht der protokollierten Systemereignisse.",
+            "entriesTitle": "Einträge",
+            "entriesDescription": "Die zuletzt erfassten Aktionen aus dem Audit-Log.",
+            "emptyDiff": "Für diesen Eintrag wurden keine Detailwerte gespeichert.",
+            "oldValue": "- Alt",
+            "newValue": "+ Neu",
+            "action": "Aktion",
+            "user": "Benutzer",
+            "message": "Nachricht",
+            "method": "Methode",
+            "route": "Route",
+            "created": "Erstellt",
+            "details": "Details",
+            "showDetails": "Audit-Details anzeigen",
+            "system": "System",
+            "searchPlaceholder": "Audit Logs suchen...",
+            "userFilterPlaceholder": "Benutzer filtern...",
+            "messageFilterPlaceholder": "Nachricht filtern...",
+            "routeFilterPlaceholder": "Route filtern...",
+            "createdFilterPlaceholder": "Erstellt von/bis",
+            "entryCount": "{{count}} Einträge",
+            "itemLabel": "Einträgen"
+        },
+        "dashboard": {
+            "title": "Admin Dashboard",
+            "loggedIn": "Du bist als Admin angemeldet.",
+            "description": "Aktueller Status der zentralen Dienste.",
+            "console": {
+                "open": "Konsole öffnen",
+                "opened": "Konsole geöffnet",
+                "title": "{{service}} · Konsole",
+                "emptyTitle": "Dienstkonsole",
+                "noSelection": "Nichts ist ausgewählt. Bitte wähle oben einen Dienst aus.",
+                "pendingSource": "Dienstprotokoll",
+                "containerSource": "Container-Ausgabe · stdout, stderr und Statusprüfungen",
+                "applicationSource": "Entwicklungsbetrieb · Anwendungslogs und Statusprüfungen",
+                "connectionSource": "Entwicklungsbetrieb · Verbindungsereignisse und Statusprüfungen",
+                "live": "Live · alle 2 Sekunden",
+                "connecting": "Wird verbunden",
+                "disconnected": "Verbindung unterbrochen",
+                "scrollDownTooltip": "Klicken, um nach unten zu scrollen.",
+                "jumpToLatest": "Zu den neuesten Logs springen · {{count}} ungelesen",
+                "close": "Konsole schließen",
+                "output": "Schreibgeschützte Konsolenausgabe",
+                "readOnly": "Nur lesen",
+                "entryCount": "Einträge: {{count}} · maximal 300",
+                "loading": "Konsolenausgabe wird geladen …",
+                "empty": "Noch keine Ereignisse. Neue Meldungen erscheinen hier automatisch.",
+                "unavailable": "Die Konsolenausgabe ist derzeit nicht erreichbar.",
+                "loadError": "Die Aktualisierung ist unterbrochen. Vorhandene Einträge bleiben lesbar; die Verbindung wird automatisch erneut geprüft.",
+                "incompleteHistory": "Ein Teil des Logverlaufs ist derzeit nicht erreichbar. Verfügbare Ereignisse bleiben sichtbar.",
+                "shortLabel": "Konsole",
+                "openService": "Konsole für {{service}} öffnen",
+                "closeService": "Konsole für {{service}} schließen"
+            },
+            "services": {
+                "webserver": "Webserver",
+                "worker": "Worker",
+                "postgresql": "PostgreSQL",
+                "valkey": "Valkey",
+                "core": "Rust Core",
+                "websocket": "WebSocket-Server"
+            },
+            "status": {
+                "running": "Läuft",
+                "starting": "Startet",
+                "connecting": "Verbindet",
+                "down": "Nicht erreichbar",
+                "error": "Fehler",
+                "checking": "Wird geprüft",
+                "unknown": "Status unbekannt"
+            },
+            "details": {
+                "responding": "Der Webserver beantwortet Anfragen.",
+                "heartbeatCurrent": "Der Worker meldet einen gesunden Zustand.",
+                "connectionAvailable": "Die Verbindung wurde erfolgreich geprüft.",
+                "workerStarting": "Der Worker wird gestartet.",
+                "connectionPending": "Die Verbindung wird aufgebaut.",
+                "heartbeatMissing": "Es liegt kein aktueller Worker-Heartbeat vor.",
+                "heartbeatExpired": "Der letzte Worker-Heartbeat ist veraltet.",
+                "connectionClosed": "Die Verbindung ist unterbrochen.",
+                "checkFailed": "Die Statusprüfung ist fehlgeschlagen.",
+                "timeout": "Die Statusprüfung hat zu lange gedauert.",
+                "workerUnhealthy": "Der Worker meldet einen Fehler.",
+                "heartbeatInvalid": "Der Worker-Heartbeat ist ungültig.",
+                "checking": "Der Status wird geprüft.",
+                "statusUnavailable": "Der Status lässt sich derzeit nicht prüfen.",
+                "workerStatusUnavailable": "Der Worker-Status kann derzeit nicht über Valkey abgerufen werden.",
+                "rateLimitUnavailable": "Valkey konnte für die Statusabfrage nicht erreicht werden.",
+                "coreResponding": "Der Rust-Core beantwortet Anfragen.",
+                "websocketResponding": "Die WebSocket-Schnittstelle antwortet.",
+                "websocketUnavailable": "Die WebSocket-Schnittstelle ist nicht erreichbar."
+            },
+            "coreVersion": "Version {{version}}",
+            "groups": {
+                "application": {
+                    "title": "Anwendung",
+                    "description": "Weboberfläche und Live-Verbindungen"
+                },
+                "processing": {
+                    "title": "Verarbeitung",
+                    "description": "Hintergrundaufgaben und Kernfunktionen"
+                },
+                "infrastructure": {
+                    "title": "Infrastruktur",
+                    "description": "Datenbank und Zwischenspeicher"
+                }
+            }
+        },
+        "systemSettings": {
+            "companyLogo": "Firmenlogo",
+            "companyLogoDescription": "Das Logo wird quadratisch zugeschnitten und als WebP gespeichert.",
+            "companyName": "Firmenname",
+            "companyNameDescription": "Dieser Name wird oben links in der Navigation angezeigt.",
+            "companyNameSaved": "Firmenname wurde gespeichert.",
+            "companyNameSaveError": "Firmenname konnte nicht gespeichert werden.",
+            "description": "Logo, Firmenname und spätere Systemoptionen verwalten.",
+            "extensionMinutes": "Verschiebung in Minuten",
+            "extensionMinutesInvalid": "Bitte gib eine ganze Zahl zwischen 1 und 120 Minuten ein.",
+            "extensionRequest": "Verschiebungsantrag",
+            "extensionRequestDescription": "{{username}} bittet um eine Verschiebung.",
+            "logoAlt": "Systemlogo",
+            "logoChoose": "Logo auswählen",
+            "logoMissing": "Bitte wähle zuerst ein Logo aus und richte den Zuschnitt aus.",
+            "logoPreview": "Logo-Vorschau",
+            "logoSaved": "Logo wurde gespeichert.",
+            "logoSave": "Logo speichern",
+            "logoSaveError": "Logo konnte nicht gespeichert werden.",
+            "logoUploaded": "Logo wurde hochgeladen.",
+            "logoUploadFailed": "Logo konnte nicht hochgeladen werden.",
+            "logoUploadTitle": "Systemlogo",
+            "maintenance": "Wartungsmodus",
+            "maintenanceDescription": "Plant den Start der Wartung und sperrt ab dann Benutzer ohne Wartungsfreigabe.",
+            "maintenanceDisabled": "Wartungsmodus wurde deaktiviert.",
+            "maintenancePlanned": "Wartungsmodus wurde geplant.",
+            "maintenanceSaveError": "Wartungsmodus konnte nicht gespeichert werden.",
+            "maintenanceStartRequired": "Bitte wähle einen gültigen Startzeitpunkt aus.",
+            "maintenanceToastTitle": "Wartungsmodus",
+            "extensionRequestMissing": "Es gibt keinen offenen Antrag.",
+            "extensionRequestResolved": "Der Antrag wurde bearbeitet.",
+            "extensionRequestResolveError": "Der Antrag konnte nicht bearbeitet werden.",
+            "plan": "Planen",
+            "preview": "Vorschau",
+            "startAt": "Startzeitpunkt",
+            "startAtPlaceholder": "Startzeitpunkt auswählen",
+            "title": "Systemeinstellungen",
+            "toastTitle": "Systemeinstellungen"
+        },
+        "backups": {
+            "title": "Backups",
+            "description": "Automatische und manuelle Sicherungen von PostgreSQL und App-Storage verwalten.",
+            "settingsTitle": "Automatische Sicherung",
+            "settingsDescription": "Zeitplan und Aufbewahrung für automatische Sicherungen festlegen.",
+            "automaticEnabled": "Automatische Backups aktivieren",
+            "scheduleTime": "Tägliche Startzeit",
+            "scheduleTitle": "Zeitplan",
+            "scheduleType": "Ausführung",
+            "weekdays": "Wochentage",
+            "intervalHours": "Alle wie viele Stunden?",
+            "intervalWeeks": "Alle wie viele Wochen?",
+            "intervalWeekday": "Wochentag",
+            "schedule": {
+                "daily": "Täglich",
+                "weekdays": "An ausgewählten Wochentagen",
+                "interval-hours": "Alle X Stunden",
+                "interval-weeks": "Alle X Wochen"
+            },
+            "weekday": {
+                "0": "So",
+                "1": "Mo",
+                "2": "Di",
+                "3": "Mi",
+                "4": "Do",
+                "5": "Fr",
+                "6": "Sa"
+            },
+            "weekdayLong": {
+                "0": "Sonntag",
+                "1": "Montag",
+                "2": "Dienstag",
+                "3": "Mittwoch",
+                "4": "Donnerstag",
+                "5": "Freitag",
+                "6": "Samstag"
+            },
+            "retentionDays": "Aufbewahrung in Tagen",
+            "retentionCount": "Maximale Anzahl",
+            "retentionTitle": "Aufbewahrung und Inhalt",
+            "retentionMode": "Backups aufbewahren nach",
+            "retention": {
+                "count": "Anzahl der Backups",
+                "days": "Alter in Tagen",
+                "both": "Anzahl und Alter"
+            },
+            "includeStorage": "App-Storage mit Bildern und Dateien mitsichern",
+            "includeStorageDescription": "Sichert zusätzlich alle hochgeladenen Bilder und Dateien aus dem App-Storage.",
+            "settingsSaved": "Backup-Einstellungen wurden gespeichert.",
+            "backupCreationFailed": "Das Backup konnte nicht erstellt werden.",
+            "createNow": "Jetzt sichern",
+            "import": "Importieren",
+            "importing": "Importiert...",
+            "importFailed": "Das Backup konnte nicht importiert werden.",
+            "historyTitle": "Backup-Verlauf",
+            "table": {
+                "file": "Backup-Datei",
+                "createdAt": "Erstellt am",
+                "trigger": "Auslöser",
+                "size": "Größe",
+                "storage": "App-Storage",
+                "searchPlaceholder": "Backups durchsuchen...",
+                "itemLabel": "Backups",
+                "entryCount": "{{count}} Backups"
+            },
+            "trigger": {
+                "manual": "Manuell",
+                "scheduled": "Automatisch",
+                "import": "Import",
+                "restore-safety": "Sicherung",
+                "restore": "Wiederherstellung"
+            },
+            "nextBackupIn": "Nächste automatische Sicherung in {{time}}",
+            "nextBackupCalculating": "Nächster Sicherungstermin wird ermittelt …",
+            "stats": {
+                "total": "Gesamt",
+                "successful": "Erfolgreich",
+                "failed": "Fehlgeschlagen",
+                "imported": "Importiert",
+                "restored": "Wiederhergestellt"
+            },
+            "loading": "Backups werden geladen...",
+            "empty": "Es wurden noch keine Backups erstellt.",
+            "preparing": "Backup wird vorbereitet",
+            "download": "Exportieren",
+            "encryptedFormatRequired": "Dieses unverschlüsselte Backupformat wird nicht mehr unterstützt. Erstelle ein neues Backup.",
+            "restore": "Wiederherstellen",
+            "restoreMissing": "Es wurde kein Backup ausgewählt.",
+            "restoreQueued": "Die harte Wiederherstellung wurde eingeplant.",
+            "restoreWarning": "Achtung: Es wird kein zusätzliches Backup-Archiv erstellt. Vor dem Überschreiben legt das System einen temporären Rücksetzpunkt für die Datenbank und – falls im Backup enthalten – den App-Storage an. Tritt ein Fehler auf, wird der vorherige Stand automatisch wiederhergestellt; lassen sich der Rollback oder die sichere Bereinigung der Rücksetzpunkte nicht vollständig bestätigen, bleibt das System gesperrt. Nach einem erfolgreichen Restore ist eine Rückkehr nur durch die Wiederherstellung eines anderen, etwa neueren Backups möglich. Vorhandene Backup-Archive werden niemals überschrieben. Gib WIEDERHERSTELLEN ein, um fortzufahren.",
+            "restoreConfirm": "Wiederherstellung starten",
+            "delete": "Backup löschen",
+            "deleteTitle": "Backup löschen",
+            "deleteDescription": "Das Backup wird dauerhaft vom Speicherziel entfernt.",
+            "deleteQuestion": "Möchtest du das Backup „{{fileName}}“ wirklich dauerhaft löschen?",
+            "unknownBackup": "Unbekanntes Backup",
+            "restoreConfirmationLabel": "WIEDERHERSTELLEN zur Bestätigung eingeben",
+            "progress": {
+                "backupDownload": "Backup erstellen und herunterladen",
+                "backupImport": "Backup importieren",
+                "manualTitle": "Manuelles Backup",
+                "scheduledTitle": "Geplantes Backup",
+                "phaseQueued": "Backup wartet auf die Verarbeitung …",
+                "phasePreparing": "Datenbank wird gesichert …",
+                "phaseCollecting": "App-Storage wird erfasst …",
+                "phaseArchiving": "Daten werden in das Backup geschrieben …",
+                "phaseVerifying": "Backup wird geprüft …",
+                "phaseFinalizing": "Backup wird abgeschlossen …",
+                "completed": "Backup vollständig gesichert",
+                "downloadUnavailable": "Das fertige Backup konnte nicht heruntergeladen werden."
+            },
+            "status": {
+                "queued": "Eingeplant",
+                "running": "Läuft",
+                "completed": "Abgeschlossen",
+                "failed": "Fehlgeschlagen"
+            },
+            "restoreWarningPrivateBackgroundCoverage": "Historische Archive mit Manifest v2 setzen private Hintergrundbilder nicht auf den Sicherungszeitpunkt zurück: vorhandene Bilder bleiben erhalten, nur fehlende werden ergänzt. Archive mit Manifest v3 stellen den vollständigen Bildbestand wieder her, auch wenn er leer war."
+        },
+        "permissions": {
+            "title": "Rechteverwaltung",
+            "description": "Standardrechte, Rechte-Presets und individuelle Benutzerrechte zentral verwalten.",
+            "overviewLoadError": "Die Rechteverwaltung konnte nicht geladen werden.",
+            "retry": "Erneut versuchen",
+            "tabs": {
+                "defaults": "Standardrechte",
+                "presets": "Presets",
+                "users": "Benutzerrechte"
+            },
+            "catalog": {
+                "adminDashboard": {
+                    "name": "Admin Dashboard",
+                    "description": "Darf das Admin Dashboard öffnen."
+                },
+                "userManagement": {
+                    "name": "Userverwaltung",
+                    "description": "Darf Benutzerkonten verwalten."
+                },
+                "systemSettings": {
+                    "name": "Systemeinstellungen",
+                    "description": "Darf Logo, Firmenname und Systemoptionen verwalten."
+                },
+                "maintenanceBypass": {
+                    "name": "Wartungsmodus umgehen",
+                    "description": "Bleibt auch bei aktivem Wartungsmodus eingeloggt."
+                },
+                "superUser": {
+                    "name": "Superuser",
+                    "description": "Darf Benutzerrechte, Rechte-Presets und Standardrechte verwalten."
+                },
+                "userDashboard": {
+                    "name": "User Dashboard",
+                    "description": "Darf das User Dashboard öffnen."
+                },
+                "auditLogs": {
+                    "name": "Audit Logs",
+                    "description": "Darf die Audit Logs öffnen."
+                },
+                "backups": {
+                    "name": "Backups",
+                    "description": "Darf Backups konfigurieren, exportieren und wiederherstellen."
+                }
+            },
+            "checklist": {
+                "loading": "Rechte werden geladen...",
+                "empty": "Keine Rechte verfügbar.",
+                "superUser": "Kritisches Recht"
+            },
+            "defaults": {
+                "title": "Standardrechte für neue Benutzer",
+                "description": "Diese Rechte werden automatisch zugewiesen, sobald ein neuer Benutzer angelegt wird.",
+                "hint": "Änderungen gelten nur für künftig angelegte Benutzer. Bestehende Benutzerrechte bleiben unverändert; das Superuser-Recht kann nie automatisch vergeben werden.",
+                "save": "Standardrechte speichern",
+                "saved": "Standardrechte wurden gespeichert.",
+                "saveError": "Standardrechte konnten nicht gespeichert werden."
+            },
+            "presets": {
+                "createTitle": "Preset anlegen",
+                "editTitle": "Preset bearbeiten",
+                "formDescription": "Bündele häufig verwendete Rechte für eine schnelle Zuweisung.",
+                "nameLabel": "Name",
+                "descriptionLabel": "Beschreibung",
+                "permissionsLabel": "Enthaltene Rechte",
+                "save": "Preset speichern",
+                "created": "Rechte-Preset wurde angelegt.",
+                "updated": "Rechte-Preset wurde aktualisiert.",
+                "deleted": "Rechte-Preset wurde gelöscht.",
+                "saveError": "Rechte-Preset konnte nicht gespeichert werden.",
+                "deleteError": "Rechte-Preset konnte nicht gelöscht werden.",
+                "listTitle": "Rechte-Presets",
+                "listDescription": "Vorbereitete Rechtepakete für die individuelle Benutzerverwaltung.",
+                "newPreset": "Neues Preset",
+                "empty": "Noch keine Rechte-Presets vorhanden.",
+                "permissionCount": "{{count}} Rechte",
+                "noDescription": "Keine Beschreibung gepflegt.",
+                "editAriaLabel": "Rechte-Preset bearbeiten",
+                "deleteAriaLabel": "Rechte-Preset löschen",
+                "deleteTitle": "Preset löschen",
+                "deleteQuestion": "Bist du sicher, dass du das Preset \"{{name}}\" löschen willst?",
+                "delete": "Preset löschen"
+            },
+            "users": {
+                "listTitle": "Benutzer auswählen",
+                "listDescription": "Suche einen Benutzer, um dessen Rechte einzeln zu verwalten.",
+                "searchPlaceholder": "Benutzer oder E-Mail suchen...",
+                "loadError": "Benutzer konnten nicht geladen werden.",
+                "loading": "Benutzer werden geladen...",
+                "empty": "Keine Benutzer gefunden.",
+                "superUser": "Superuser",
+                "inactive": "Deaktiviert",
+                "currentUser": "Du",
+                "permissionCount": "{{count}} Rechte",
+                "total": "{{count}} Benutzer",
+                "previous": "Vorherige Seite",
+                "next": "Nächste Seite",
+                "pagination": "Seite {{current}} von {{total}}",
+                "noSelectionTitle": "Benutzer auswählen",
+                "noSelectionDescription": "Wähle links einen Benutzer aus, um dessen Rechte zu bearbeiten.",
+                "unsavedChanges": "Ungespeicherte Änderungen",
+                "presetLabel": "Rechte-Preset",
+                "presetPlaceholder": "Preset auswählen",
+                "applyPreset": "Preset hinzufügen",
+                "presetHint": "Beim Auswählen werden die Preset-Rechte direkt ergänzt. Gespeichert wird erst über den Speichern-Button.",
+                "appliedPresets": "Aktive Presets",
+                "appliedPresetHint": "Die markierten Rechte kommen aus den aktiven Presets. Einzelne Rechte kannst du weiterhin anpassen.",
+                "noAppliedPresets": "Noch kein Preset angewendet.",
+                "presetApplied": "Aus Preset",
+                "permissionsTitle": "Individuelle Rechte",
+                "permissionsDescription": "Lege fest, welche Bereiche dieser Benutzer öffnen darf.",
+                "save": "Benutzerrechte speichern",
+                "saved": "Benutzerrechte wurden gespeichert.",
+                "saveError": "Benutzerrechte konnten nicht gespeichert werden."
+            }
+        },
+        "users": {
+            "deleteQuestion": "Bist du sicher, dass du den Benutzer \"{{username}}\" löschen willst?",
+            "description": "Benutzer anlegen und bestehende Accounts verwalten.",
+            "title": "Userverwaltung",
+            "tableTitle": "Benutzer",
+            "tableDescription": "Alle angelegten Accounts im System.",
+            "createTitle": "Benutzer anlegen",
+            "createDescription": "Username und E-Mail erfassen, Einladungs-E-Mail wird versendet.",
+            "editTitle": "Benutzer bearbeiten",
+            "editDescription": "Allgemeine Account- und Profildaten verwalten.",
+            "accountTitle": "Account",
+            "accountDescription": "Basisdaten für Login und Kontakt.",
+            "additionalInfoTitle": "Zusätzliche Informationen",
+            "additionalInfoDescription": "Optionale Profil- und Adressdaten.",
+            "permissionsTitle": "Rechte",
+            "permissionsDescription": "Lege fest, welche Bereiche der Benutzer öffnen darf.",
+            "permissionsLoading": "Rechte werden geladen...",
+            "loading": "Benutzer werden geladen...",
+            "superuser": "Superuser",
+            "rightsCount": "{{count}} Rechte",
+            "username": "Username",
+            "email": "E-Mail",
+            "created": "Erstellt",
+            "deactivated": "Deaktiviert",
+            "searchPlaceholder": "Benutzer suchen...",
+            "usernameFilterPlaceholder": "Username filtern...",
+            "emailFilterPlaceholder": "E-Mail filtern...",
+            "permissionFilterPlaceholder": "Recht",
+            "createdFilterPlaceholder": "Erstellt von/bis",
+            "userCount": "{{count}} Benutzer",
+            "itemLabel": "Benutzern",
+            "create": "Anlegen",
+            "createdAndInvited": "Benutzer wurde angelegt und die Einladungs-E-Mail wurde versendet.",
+            "createError": "Benutzer konnte nicht angelegt werden.",
+            "updated": "Benutzer wurde aktualisiert.",
+            "updateError": "Benutzer konnte nicht aktualisiert werden.",
+            "deleted": "Benutzer wurde gelöscht.",
+            "deleteError": "Benutzer konnte nicht gelöscht werden.",
+            "statusUpdated": "Status wurde aktualisiert.",
+            "statusUpdateError": "Status konnte nicht aktualisiert werden.",
+            "passwordResetSent": "Passwort-Reset-Mail wurde versendet.",
+            "passwordResetError": "Passwort-Reset-Mail konnte nicht versendet werden.",
+            "editForbidden": "Nur Superuser dürfen andere Superuser bearbeiten.",
+            "editForbiddenShort": "Nur Superuser dürfen Superuser bearbeiten",
+            "deleteSelfForbidden": "Du kannst deinen eigenen Benutzer nicht löschen.",
+            "deleteSelfForbiddenShort": "Du kannst deinen eigenen Benutzer nicht löschen",
+            "deleteForbidden": "Nur Superuser dürfen andere Superuser löschen.",
+            "deleteForbiddenShort": "Nur Superuser dürfen Superuser löschen",
+            "deactivateSelfForbidden": "Du kannst deinen eigenen Benutzer nicht deaktivieren.",
+            "deactivateSelfForbiddenShort": "Du kannst deinen eigenen Benutzer nicht deaktivieren",
+            "statusForbidden": "Nur Superuser dürfen den Status von Superusern ändern.",
+            "statusForbiddenShort": "Nur Superuser dürfen den Status von Superusern ändern",
+            "passwordResetForbidden": "Nur Superuser dürfen Passwort-Resets für Superuser auslösen.",
+            "passwordResetForbiddenShort": "Nur Superuser dürfen Passwort-Resets für Superuser auslösen",
+            "passwordResetInactiveShort": "Für deaktivierte Benutzer kann kein Passwort-Reset versendet werden",
+            "editAriaLabel": "Benutzer bearbeiten",
+            "toggleStatusAriaLabel": "Benutzer aktivieren oder deaktivieren",
+            "passwordResetAriaLabel": "Passwort für Benutzer zurücksetzen",
+            "deleteAriaLabel": "Benutzer löschen",
+            "closeModalAriaLabel": "Modal schließen"
+        }
+    },
+    "maintenance": {
+        "bannerDescription": "Sobald die Zeit abläuft, wird der Wartungsmodus aktiv und dein Zugriff wird pausiert.",
+        "expandBanner": "Wartungshinweis öffnen",
+        "extensionPlaceholder": "Warum soll der Start verschoben werden?",
+        "pendingRequest": "Offene Anfrage von {{username}}.",
+        "pendingOwnRequest": "Deine Verschiebungsanfrage wird gerade geprüft.",
+        "adminExtensionRequested": "{{username}} hat eine Verschiebung des Wartungsstarts angefragt.",
+        "maintenanceIn": "Wartung in",
+        "minimizeBanner": "Wartungshinweis minimieren",
+        "requestExtension": "Verschiebung anfragen",
+        "requestSent": "Sendet...",
+        "startsIn": "Wartung startet in {{time}}",
+        "title": "Wartungsmodus",
+        "description": "Das System ist aktuell für Benutzer ohne Wartungsfreigabe gesperrt.",
+        "startedAt": "Gestartet am",
+        "bypassNotice": "Dein Benutzer darf den Wartungsmodus umgehen. Du kannst die Anwendung weiterhin nutzen.",
+        "extensionInfo": "Verschiebungen können nur vor dem Start über den Hinweis im eingeloggten Bereich angefragt werden.",
+        "extensionApproved": "Deine Verschiebungsanfrage wurde angenommen.",
+        "extensionRejected": "Deine Anfrage wurde abgelehnt."
+    },
+    "restoreProgress": {
+        "title": "Systemwiederherstellung läuft",
+        "description": "Das System ersetzt gerade Datenbank und gesicherte Dateien durch den ausgewählten Backup-Stand.",
+        "recoveryRequiredTitle": "Systemwiederherstellung gesperrt",
+        "recoveryRequiredDescription": "Die automatische Wiederherstellung konnte nicht sicher abgeschlossen werden.",
+        "loading": "Restore-Status wird geladen …",
+        "bytes": "{{processed}} von {{total}} wiederhergestellt",
+        "keepOpenNotice": "Lass diese Seite geöffnet. Sie aktualisiert sich automatisch; du musst nichts schließen oder neu laden.",
+        "completedNotice": "Die Wiederherstellung ist abgeschlossen. Du wirst in Kürze automatisch weitergeleitet.",
+        "failedNotice": "Die Wiederherstellung ist fehlgeschlagen. Falls bereits Daten ersetzt wurden, wurde der automatische Rollback bestätigt. Weitere Details findest du als Administrator beim zugehörigen Backup-Lauf.",
+        "recoveryRequiredNotice": "Der automatische Rollback oder die sichere Bereinigung der Rücksetzpunkte konnte nicht vollständig bestätigt werden. Das System bleibt deshalb gesperrt. Ein Administrator oder Betreiber muss den Zustand prüfen und die Wiederherstellung sicher abschließen.",
+        "idleNotice": "Aktuell läuft keine Wiederherstellung. Du wirst automatisch weitergeleitet.",
+        "statusUnavailable": "Der aktuelle Status konnte vorübergehend nicht geladen werden. Die Seite versucht es automatisch erneut.",
+        "status": {
+            "idle": "Keine Wiederherstellung aktiv",
+            "completed": "Wiederherstellung abgeschlossen",
+            "failed": "Wiederherstellung fehlgeschlagen",
+            "recoveryRequired": "Manueller Eingriff erforderlich"
+        },
+        "phase": {
+            "preparing": "Wiederherstellung wird vorbereitet …",
+            "validating": "Backup wird vollständig geprüft …",
+            "creatingRecovery": "Wiederherstellungspunkt wird erstellt …",
+            "replacingStorage": "App-Storage wird ersetzt …",
+            "restoringDatabase": "Datenbank wird wiederhergestellt …",
+            "finalizing": "Wiederherstellung wird abgeschlossen …",
+            "rollingBack": "Automatischer Rollback wird versucht …"
+        }
+    },
+    "layout": {
+        "topbar": {
+            "defaultTitle": "Übersicht",
+            "defaultDescription": "Dein aktueller Bereich im Überblick."
+        },
+        "footer": {
+            "terms": "Nutzungsbedingungen",
+            "privacy": "Datenschutz",
+            "imprint": "Impressum"
+        }
+    },
+    "notifications": {
+        "title": "Benachrichtigungen",
+        "open": "Benachrichtigungen öffnen",
+        "markAllRead": "Alle gelesen",
+        "markRead": "Als gelesen markieren",
+        "updateError": "Die Benachrichtigung konnte nicht aktualisiert werden.",
+        "tabs": {
+            "unread": "Ungelesen",
+            "read": "Gelesen"
+        },
+        "empty": {
+            "unread": {
+                "title": "Keine ungelesenen Benachrichtigungen",
+                "description": "Aktuell ist alles gelesen."
+            },
+            "read": {
+                "title": "Keine gelesenen Benachrichtigungen",
+                "description": "Hier erscheinen Benachrichtigungen, nachdem du sie gelesen hast."
+            }
+        }
+    },
+    "user": {
+        "dashboard": {
+            "title": "User Dashboard",
+            "loggedIn": "Du bist als Benutzer angemeldet."
+        }
+    },
+    "shared": {
+        "calendar": {
+            "keyboardHelp": "Mit Pfeiltasten navigieren."
+        },
+        "addressSearch": {
+            "noSuggestions": "Keine Vorschläge gefunden.",
+            "placeholder": "Adresse suchen"
+        },
+        "notFound": {
+            "title": "Seite nicht gefunden",
+            "description": "Hoppla! Die angeforderte Seite existiert nicht oder wurde verschoben. Vielleicht hast du dich bei der URL vertippt?",
+            "backToDashboard": "Zurück zum Dashboard"
+        },
+        "routeError": {
+            "title": "Diese Seite konnte nicht geladen werden",
+            "descriptions": {
+                "authorization": "Deine Sitzung ist abgelaufen oder dir fehlt die Berechtigung für diesen Bereich.",
+                "generic": "Beim Anzeigen dieser Seite ist ein unerwarteter Fehler aufgetreten.",
+                "moduleLoad": "Eine benötigte Datei konnte nicht geladen werden. Das passiert häufig nach einer Aktualisierung der Anwendung.",
+                "network": "Die Verbindung zum Server wurde unterbrochen. Prüfe deine Internetverbindung und versuche es erneut.",
+                "notFound": "Der angeforderte Inhalt wurde nicht gefunden oder ist nicht mehr verfügbar.",
+                "server": "Der Server konnte die Anfrage nicht verarbeiten. Versuche es in Kürze erneut."
+            },
+            "cause": "Ursache",
+            "technicalDetails": "Technische Details",
+            "copyDetails": "Details kopieren",
+            "copied": "Details kopiert",
+            "filePath": "Datei-Pfad",
+            "retry": "Erneut versuchen",
+            "reload": "Seite neu laden"
+        },
+        "table": {
+            "rowsPerPage": "Rows pro Seite",
+            "pageInfo": "Seite {{currentPage}} / {{totalPages}}",
+            "rowRange": "Zeige {{firstRowNumber}}-{{lastRowNumber}} von {{filteredRowsCount}} {{itemLabel}}",
+            "amount": "Anzahl",
+            "columnFilters": "Spaltenfilter",
+            "toggleColumnFilters": "Spaltenfilter ein- oder ausblenden",
+            "firstPage": "Erste Seite",
+            "previousPage": "Vorherige Seite",
+            "nextPage": "Nächste Seite",
+            "lastPage": "Letzte Seite",
+            "filterPlaceholder": "Filtern...",
+            "filterColumnPlaceholder": "{{column}} filtern...",
+            "dateRangePlaceholder": "Von/Bis"
+        },
+        "transfer": {
+            "progress": "{{progress}}% · {{transferredBytes}} / {{totalBytes}}",
+            "backupProgress": "{{progress}}% · {{transferredBytes}} von {{totalBytes}} gesichert",
+            "preparing": "Backup wird auf dem Server vorbereitet …",
+            "backupDone": "Backup fertig",
+            "backupFailed": "Backup fehlgeschlagen",
+            "backupRunning": "Backup wird erstellt",
+            "uploadDone": "Upload fertig",
+            "downloadDone": "Download fertig",
+            "uploadFailed": "Upload fehlgeschlagen",
+            "downloadFailed": "Download fehlgeschlagen",
+            "uploadRunning": "Upload läuft",
+            "downloadRunning": "Download läuft",
+            "dismiss": "Transfer ausblenden"
+        }
+    },
+    "toast": {
+        "appearanceSaved": "Hintergrund-Darstellung wurde gespeichert.",
+        "backgroundDeleted": "Hintergrundbild wurde entfernt.",
+        "backgroundUploadFailed": "Hintergrundbild konnte nicht hochgeladen werden.",
+        "backgroundMissing": "Bitte wähle zuerst ein Hintergrundbild aus.",
+        "backgroundSaved": "Hintergrundbild wurde gespeichert.",
+        "loginMissingPermissions": "Du wurdest wieder ausgeloggt, weil dein Benutzer keine Rechte hat.",
+        "loginSuccess": "Erfolgreich angemeldet. Willkommen zurück!",
+        "logoutSuccess": "Du wurdest erfolgreich abgemeldet.",
+        "maintenanceInvalidReason": "Bitte gib eine Begründung mit mindestens 10 Zeichen ein.",
+        "maintenanceRequestSent": "Deine Anfrage wurde gesendet.",
+        "maintenanceRequestFailed": "Die Anfrage konnte nicht gesendet werden.",
+        "passwordResetSent": "Die Passwort-Reset-E-Mail wurde versendet.",
+        "passkeyAdded": "Passkey wurde hinzugefügt. Bitte melde dich auf allen Geräten erneut an.",
+        "passkeyDeleted": "Passkey wurde entfernt. Bitte melde dich auf allen Geräten erneut an.",
+        "personalInfoSaved": "Userdaten wurden gespeichert.",
+        "primaryColorReset": "Systemfarbe wurde zurückgesetzt.",
+        "primaryColorSaved": "Systemfarbe wurde gespeichert.",
+        "primaryColorInvalid": "Bitte wähle eine gültige Systemfarbe.",
+        "fontFamilySaved": "Schriftart wurde gespeichert.",
+        "fontSizeSaved": "Schriftgröße wurde gespeichert.",
+        "profileImageSaved": "Profilbild wurde gespeichert.",
+        "profileImageUploadFailed": "Profilbild konnte nicht hochgeladen werden.",
+        "twoFactorDisabled": "2FA wurde deaktiviert. Bitte melde dich auf allen Geräten erneut an.",
+        "twoFactorEnabled": "2FA wurde aktiviert. Bitte melde dich auf allen Geräten erneut an und verwende dafür den nächsten neuen 2FA-Code.",
+        "usernameChanged": "Dein Benutzername wurde zu {{username}} geändert.",
+        "permissionsAdded": "Du hast neue Rechte bekommen: {{permissions}}.",
+        "permissionsAddedTitle": "Neue Rechte",
+        "accountDeleted": "Dein Benutzer wurde gelöscht. Du wirst abgemeldet.",
+        "accountBlocked": "Dein Benutzer wurde gesperrt. Du wirst abgemeldet.",
+        "sessionEndedTitle": "Session beendet"
+    },
+    "mailTemplates": {
+        "footer": "Diese E-Mail wurde automatisch erstellt.",
+        "auth": {
+            "instruction": "Wähle ein neues Passwort für dein Konto.",
+            "action": "Passwort setzen",
+            "linkHint": "Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:",
+            "ignore": "Wenn du diese E-Mail nicht angefordert hast, kannst du sie ignorieren."
+        },
+        "failedLogin": {
+            "headline": "Fehlgeschlagener Anmeldeversuch",
+            "greeting": "Hallo",
+            "intro": "für dein Konto wurde ein fehlgeschlagener Anmeldeversuch erkannt.",
+            "details": "Details zum Anmeldeversuch",
+            "timestamp": "Zeitpunkt",
+            "ip": "IP-Adresse",
+            "location": "Standort",
+            "device": "Gerät",
+            "browser": "Browser",
+            "unknown": "Unbekannt",
+            "unknownLocation": "Nicht ermittelbar",
+            "mapAction": "Standort auf Karte anzeigen",
+            "mapText": "Standort auf der Karte",
+            "guidance": "Wenn du das nicht warst, ändere bitte dein Passwort und prüfe deine Sicherheitseinstellungen."
+        }
+    },
+    "securityChangeMail": {
+        "subject": "Sicherheitsänderung",
+        "headline": "Sicherheit deines Kontos",
+        "timestamp": "Zeitpunkt (UTC)",
+        "guidance": "Wenn du diese Änderung nicht veranlasst hast, öffne die Anwendung selbst über deine bekannte Adresse und verständige deine Administration.",
+        "changes": {
+            "password_changed": "Das Passwort für dein Konto wurde geändert.",
+            "totp_enabled": "Die Zwei-Faktor-Authentifizierung (2FA) wurde für dein Konto aktiviert.",
+            "totp_disabled": "Die Zwei-Faktor-Authentifizierung (2FA) wurde für dein Konto deaktiviert.",
+            "passkey_added": "Ein Passkey wurde zu deinem Konto hinzugefügt.",
+            "passkey_removed": "Ein Passkey wurde aus deinem Konto entfernt."
+        }
+    },
+    "marketplace": {
+        "skipToContent": "Zum Inhalt springen",
+        "home": "Zur Marketplace-Startseite",
+        "adminLogin": "Verwaltung",
+        "description": "Monitoring, DNS, Sicherheit und mehr. Hier entsteht der Ort für Apps, mit denen du dein RentnerProxy-Setup erweiterst.",
+        "followDevelopment": "Entwicklung verfolgen",
+        "availability": "Du siehst eine Vorschau. Downloads, Veröffentlichungen und die öffentliche Registrierung folgen später.",
+        "inPreparation": "In Vorbereitung",
+        "outlook": "Die ersten offiziellen Apps",
+        "outlookNote": "Geplant. Noch nicht zur Installation verfügbar.",
+        "loginDescription": "Melde dich an, um den Marketplace zu verwalten.",
+        "usernameLabel": "Benutzername",
+        "passwordLabel": "Passwort",
+        "recoveryHint": "Der Zugang ist derzeit für bestehende Verwaltungskonten vorgesehen.",
+        "passkeyDescription": "Melde dich mit einem bereits für dein Konto eingerichteten Passkey an.",
+        "apps": {
+            "monitoring": {
+                "title": "Monitoring",
+                "description": "Dein Setup im Blick: Monitoring als offizielle Erweiterung."
+            },
+            "docker": {
+                "title": "Docker Discovery",
+                "description": "Docker-Dienste entdecken und mit RentnerProxy verbinden."
+            },
+            "loadBalancer": {
+                "title": "Load Balancer",
+                "description": "Anfragen gezielt auf mehrere Upstreams verteilen."
+            },
+            "dns": {
+                "title": "DNS",
+                "description": "Cloudflare, deSEC und Hetzner: DNS-01 und dynamisches DNS."
+            },
+            "oidc": {
+                "title": "OpenID Connect",
+                "description": "Identitätsanbieter über OpenID Connect anbinden."
+            },
+            "crowdsec": {
+                "title": "CrowdSec",
+                "description": "CrowdSec als Erweiterung für dein Sicherheitskonzept."
+            }
+        },
+        "tagline": "Dein RentnerProxy. Noch mehr Möglichkeiten.",
+        "browseApps": "Apps entdecken",
+        "outlookEyebrow": "Das kommt als Nächstes",
+        "heroEyebrow": "Offizielle Apps. Dein nächstes Upgrade.",
+        "accountNavigation": "Kontozugang",
+        "login": "Login",
+        "register": "Registrieren",
+        "registrationSoon": "Registrieren – bald verfügbar",
+        "footerHeadline": "Mehr drin. Mehr du.",
+        "footerDescription": "Offizielle Apps für dein RentnerProxy. Ein Zuhause für alles, was dein Setup als Nächstes braucht.",
+        "footerExplore": "Entdecken",
+        "footerLegal": "Rechtliches",
+        "footerLanguage": "Sprache",
+        "navigation": {
+            "label": "Hauptnavigation",
+            "apps": "Apps",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "Der App-Katalog",
+            "title": "Apps für dein RentnerProxy.",
+            "description": "Hier bekommen offizielle Apps und Erweiterungen ihr Zuhause. Entdecke, was für deinen Stack geplant ist.",
+            "note": "Alle Einträge sind geplant. Die Apps können noch nicht heruntergeladen oder installiert werden.",
+            "backToFlow": "So soll der Marketplace funktionieren"
+        },
+        "blog": {
+            "eyebrow": "Aus dem Marketplace",
+            "title": "Neues. Updates. Was kommt.",
+            "description": "Neuigkeiten und Changelogs zum zentral betriebenen RentnerProxy Marketplace – von neuen Funktionen bis zu Verbesserungen für dein Konto.",
+            "note": "Der Blog ist vorbereitet. Erste Beiträge und Changelogs folgen; aktuell sind noch keine Artikel veröffentlicht.",
+            "changelogTitle": "Was sich im Marketplace ändert",
+            "changelogDescription": "Hier dokumentieren wir künftig neue Funktionen, Verbesserungen und Fehlerbehebungen am zentralen Marketplace. Es geht um den Dienst, bei dem du dein Konto hast.",
+            "newsTitle": "Vom App-Code bis zur Freigabe",
+            "newsDescription": "Wie Vorlage, Entwicklung und Prüfung zusammenspielen sollen – und wie freigegebene Apps später optional über deine Plattform zu dir kommen.",
+            "backHome": "Zur Marketplace-Startseite",
+            "featuredLabel": "Beitragsvorschau",
+            "featuredTitle": "Ein Marketplace. Für alle deine Apps.",
+            "featuredSummary": "Hier beginnt der gemeinsame Ort für RentnerProxy-Apps. Künftig berichten wir über neue Möglichkeiten, den Stand der Entwicklung und Änderungen am Marketplace.",
+            "centralTitle": "Ein zentraler Dienst",
+            "centralDescription": "Der Marketplace wird von RentnerProxy betrieben. Nutzer sollen dort ihr Konto anlegen; Neuigkeiten und Changelogs beziehen sich auf diesen gemeinsamen Dienst.",
+            "centralAccount": "Ein Marketplace-Konto",
+            "centralUpdates": "Änderungen am zentralen Dienst",
+            "optionalApps": "Apps optional über deine Plattform",
+            "archiveTitle": "Versionen & Updates",
+            "filterLabel": "Release-Kanal filtern",
+            "filters": {
+                "all": "Alle Versionen",
+                "changelog": "Changelogs",
+                "news": "Neuigkeiten",
+                "stable": "Stable",
+                "beta": "Beta",
+                "alpha": "Alpha"
+            },
+            "previewLabel": "Vorschau",
+            "comingSoon": "Beitrag folgt",
+            "emptyChannel": "Für diesen Kanal ist noch keine Version veröffentlicht.",
+            "versionPending": "Version folgt",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alpha: die ersten Schritte",
+                    "summary": "Hier findest du künftig erste Marketplace-Versionen und Einblicke in neue Funktionen, die noch in Entwicklung sind."
+                },
+                "beta": {
+                    "title": "Beta: gemeinsam weiterentwickeln",
+                    "summary": "Geplant sind Beta-Versionen mit neuen Möglichkeiten, Verbesserungen und Änderungen am zentralen Marketplace."
+                },
+                "stable": {
+                    "title": "Stable: für den Alltag bereit",
+                    "summary": "Hier erscheinen künftig freigegebene stabile Marketplace-Versionen mit ihren Änderungen und Changelogs."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "Von der Idee in deinen Stack",
+            "title": "Deine Idee. Der Weg zur App.",
+            "description": "So soll aus einer Erweiterung eine verfügbare App werden: entwickeln, einreichen, prüfen lassen und optional über die Plattform installieren.",
+            "hint": "Wähle eine Station und entdecke ihre Rolle.",
+            "preview": "Geplanter Ablauf: App-Vorlage, Einreichung, Freigabe und Installation sind noch nicht verfügbar.",
+            "feedback": "Rückfragen & Überarbeitung",
+            "detailLabel": "Station {{number}} von {{total}}",
+            "relatedApps": "Geplante Apps ansehen",
+            "roles": {
+                "developer": "Entwickler",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Deine Plattform"
+            },
+            "legend": {
+                "development": "Entwicklung & Einreichung",
+                "review": "Prüfung & Rückfragen",
+                "release": "Freigabe & Installation"
+            },
+            "steps": {
+                "template": {
+                    "title": "App-Vorlage",
+                    "caption": "Der Ausgangspunkt",
+                    "description": "Eine offizielle App-Vorlage soll die Grundstruktur und die Anbindung an RentnerProxy bereitstellen. Sie wird später als Startpunkt für eigene Apps verfügbar sein."
+                },
+                "develop": {
+                    "title": "App entwickeln",
+                    "caption": "Code & Tests",
+                    "description": "Auf Basis der Vorlage wird die App entwickelt, lokal getestet und für eine erste Version vorbereitet. Apps sollen eigenständig installierbar und unabhängig von Plattform-Updates aktualisierbar sein."
+                },
+                "submit": {
+                    "title": "App einreichen",
+                    "caption": "Bereit zur Prüfung",
+                    "description": "Die fertige App soll im Marketplace registriert und mit Beschreibung und Versionsangaben zur Prüfung eingereicht werden. Die Einreichung ist noch keine Veröffentlichung."
+                },
+                "review": {
+                    "title": "Prüfung",
+                    "caption": "RentnerProxy schaut hin",
+                    "description": "RentnerProxy soll die eingereichte App vor der Freigabe prüfen. Bei Rückfragen oder nötigen Änderungen geht sie zurück an die Entwicklung."
+                },
+                "publish": {
+                    "title": "Freigabe",
+                    "caption": "Im Marketplace sichtbar",
+                    "description": "Nach erfolgreicher Prüfung und Freigabe soll die App im Marketplace veröffentlicht werden. Erst dann wird die freigegebene Version für Nutzer verfügbar."
+                },
+                "install": {
+                    "title": "Optional installieren",
+                    "caption": "Dein Stack entscheidet",
+                    "description": "Nutzer sollen freigegebene Apps über ihre RentnerProxy-Plattform auswählen und optional herunterladen und installieren können. App-Updates sollen unabhängig von Plattform-Updates möglich sein."
+                }
+            }
+        }
+    }
+}

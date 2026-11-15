@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+reviews:
+    profile: chill
+    request_changes_workflow: false
+    path_filters:
+        - '!bun.lock'
+        - '!core/Cargo.lock'
+        - '!web/drizzle/**'
+        - '!web/src/routeTree.gen.ts'
+    path_instructions:
+        - path: 'web/src/**'
+          instructions: |
+              Review correctness, authorization, client/server boundaries, validation and failure
+              handling. Formatting belongs to Bun fmt and lint rules to Oxlint.
+        - path: 'core/**'
+          instructions: |
+              Review Rust correctness, lifecycle, resource cleanup, concurrency and input validation.
+        - path: '.github/**'
+          instructions: |
+              Check least privilege, pinned actions, untrusted PR boundaries, exact commit identity,
+              secret redaction and disposable fixture cleanup. Never suggest reading real .env files.

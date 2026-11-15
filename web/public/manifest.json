@@ -1,0 +1,15 @@
+{
+    "short_name": "RentnerProxy Marketplace",
+    "name": "RentnerProxy Marketplace",
+    "icons": [
+        {
+            "src": "/rentnerproxy-logo.png",
+            "sizes": "1254x1254",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#0d6d2b",
+    "background_color": "#ffffff"
+}

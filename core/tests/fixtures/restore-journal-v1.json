@@ -1,0 +1,90 @@
+{
+    "producer": "Node.js node:crypto HKDF/HMAC independent fixture",
+    "masterKeyBase64": "ExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExM=",
+    "keyBase64": "IK7cwUMrL8dmZehRwyCA/V5iTy20uNN08iJjVUsfpIE=",
+    "binding": {
+        "restoreRunId": "c19d5271-40d5-46c1-8489-3004f95258ba",
+        "actorUserId": "8541b5ba-e72a-43be-84b2-f21270b26f76",
+        "sourceBackupId": "5e251056-9a71-4f3c-9730-6b0387998381",
+        "sourceChecksumSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "includesStorage": true
+    },
+    "records": [
+        {
+            "version": 1,
+            "purpose": "restore-journal-v1",
+            "algorithm": "hmac-sha256",
+            "restoreRunId": "c19d5271-40d5-46c1-8489-3004f95258ba",
+            "actorUserId": "8541b5ba-e72a-43be-84b2-f21270b26f76",
+            "sourceBackupId": "5e251056-9a71-4f3c-9730-6b0387998381",
+            "sourceChecksumSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "includesStorage": true,
+            "sequence": 1,
+            "event": "started",
+            "occurredAt": "2026-09-06T10:20:30.123Z",
+            "previousHmacSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+            "hmacSha256": "fea4d3ef9cf0f8af6aa2718bdcc6109b70d1b7cb8fb154ebfa57ee5944bd01c1"
+        },
+        {
+            "version": 1,
+            "purpose": "restore-journal-v1",
+            "algorithm": "hmac-sha256",
+            "restoreRunId": "c19d5271-40d5-46c1-8489-3004f95258ba",
+            "actorUserId": "8541b5ba-e72a-43be-84b2-f21270b26f76",
+            "sourceBackupId": "5e251056-9a71-4f3c-9730-6b0387998381",
+            "sourceChecksumSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "includesStorage": true,
+            "sequence": 2,
+            "event": "rewind-ready",
+            "occurredAt": "2026-09-06T10:20:30.123Z",
+            "previousHmacSha256": "fea4d3ef9cf0f8af6aa2718bdcc6109b70d1b7cb8fb154ebfa57ee5944bd01c1",
+            "hmacSha256": "8486644cf85c5e0ecdf4da66074c2949d970eeba7a18cb867fccf4f1edbd3675"
+        },
+        {
+            "version": 1,
+            "purpose": "restore-journal-v1",
+            "algorithm": "hmac-sha256",
+            "restoreRunId": "c19d5271-40d5-46c1-8489-3004f95258ba",
+            "actorUserId": "8541b5ba-e72a-43be-84b2-f21270b26f76",
+            "sourceBackupId": "5e251056-9a71-4f3c-9730-6b0387998381",
+            "sourceChecksumSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "includesStorage": true,
+            "sequence": 3,
+            "event": "applied",
+            "occurredAt": "2026-09-06T10:20:30.123Z",
+            "previousHmacSha256": "8486644cf85c5e0ecdf4da66074c2949d970eeba7a18cb867fccf4f1edbd3675",
+            "hmacSha256": "9e27b03c106b10678908fca9e9a1c7955cbeec29756f14f48ba094369dbfc22b"
+        },
+        {
+            "version": 1,
+            "purpose": "restore-journal-v1",
+            "algorithm": "hmac-sha256",
+            "restoreRunId": "c19d5271-40d5-46c1-8489-3004f95258ba",
+            "actorUserId": "8541b5ba-e72a-43be-84b2-f21270b26f76",
+            "sourceBackupId": "5e251056-9a71-4f3c-9730-6b0387998381",
+            "sourceChecksumSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "includesStorage": true,
+            "sequence": 4,
+            "event": "completed",
+            "occurredAt": "2026-09-06T10:20:30.123Z",
+            "previousHmacSha256": "9e27b03c106b10678908fca9e9a1c7955cbeec29756f14f48ba094369dbfc22b",
+            "hmacSha256": "c2a6b5e88961d329840bc6b8cef26c52782bf719990b26e05b789995e24357f8"
+        },
+        {
+            "version": 1,
+            "purpose": "restore-journal-v1",
+            "algorithm": "hmac-sha256",
+            "restoreRunId": "c19d5271-40d5-46c1-8489-3004f95258ba",
+            "actorUserId": "8541b5ba-e72a-43be-84b2-f21270b26f76",
+            "sourceBackupId": "5e251056-9a71-4f3c-9730-6b0387998381",
+            "sourceChecksumSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "includesStorage": true,
+            "sequence": 5,
+            "event": "recovery-required",
+            "occurredAt": "2026-09-06T10:20:30.123Z",
+            "previousHmacSha256": "c2a6b5e88961d329840bc6b8cef26c52782bf719990b26e05b789995e24357f8",
+            "hmacSha256": "62e7505b20391f70afd8a9b0b524fb0d6bcfc0d2e0d8d357f3294f1297c0124b"
+        }
+    ],
+    "contentBase64": "eyJ2ZXJzaW9uIjoxLCJwdXJwb3NlIjoicmVzdG9yZS1qb3VybmFsLXYxIiwiYWxnb3JpdGhtIjoiaG1hYy1zaGEyNTYiLCJyZXN0b3JlUnVuSWQiOiJjMTlkNTI3MS00MGQ1LTQ2YzEtODQ4OS0zMDA0Zjk1MjU4YmEiLCJhY3RvclVzZXJJZCI6Ijg1NDFiNWJhLWU3MmEtNDNiZS04NGIyLWYyMTI3MGIyNmY3NiIsInNvdXJjZUJhY2t1cElkIjoiNWUyNTEwNTYtOWE3MS00ZjNjLTk3MzAtNmIwMzg3OTk4MzgxIiwic291cmNlQ2hlY2tzdW1TaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiaW5jbHVkZXNTdG9yYWdlIjp0cnVlLCJzZXF1ZW5jZSI6MSwiZXZlbnQiOiJzdGFydGVkIiwib2NjdXJyZWRBdCI6IjIwMjYtMDktMDZUMTA6MjA6MzAuMTIzWiIsInByZXZpb3VzSG1hY1NoYTI1NiI6IjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAiLCJobWFjU2hhMjU2IjoiZmVhNGQzZWY5Y2YwZjhhZjZhYTI3MThiZGNjNjEwOWI3MGQxYjdjYjhmYjE1NGViZmE1N2VlNTk0NGJkMDFjMSJ9CnsidmVyc2lvbiI6MSwicHVycG9zZSI6InJlc3RvcmUtam91cm5hbC12MSIsImFsZ29yaXRobSI6ImhtYWMtc2hhMjU2IiwicmVzdG9yZVJ1bklkIjoiYzE5ZDUyNzEtNDBkNS00NmMxLTg0ODktMzAwNGY5NTI1OGJhIiwiYWN0b3JVc2VySWQiOiI4NTQxYjViYS1lNzJhLTQzYmUtODRiMi1mMjEyNzBiMjZmNzYiLCJzb3VyY2VCYWNrdXBJZCI6IjVlMjUxMDU2LTlhNzEtNGYzYy05NzMwLTZiMDM4Nzk5ODM4MSIsInNvdXJjZUNoZWNrc3VtU2hhMjU2IjoiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImluY2x1ZGVzU3RvcmFnZSI6dHJ1ZSwic2VxdWVuY2UiOjIsImV2ZW50IjoicmV3aW5kLXJlYWR5Iiwib2NjdXJyZWRBdCI6IjIwMjYtMDktMDZUMTA6MjA6MzAuMTIzWiIsInByZXZpb3VzSG1hY1NoYTI1NiI6ImZlYTRkM2VmOWNmMGY4YWY2YWEyNzE4YmRjYzYxMDliNzBkMWI3Y2I4ZmIxNTRlYmZhNTdlZTU5NDRiZDAxYzEiLCJobWFjU2hhMjU2IjoiODQ4NjY0NGNmODVjNWUwZWNkZjRkYTY2MDc0YzI5NDlkOTcwZWViYTdhMThjYjg2N2ZjY2Y0ZjFlZGJkMzY3NSJ9CnsidmVyc2lvbiI6MSwicHVycG9zZSI6InJlc3RvcmUtam91cm5hbC12MSIsImFsZ29yaXRobSI6ImhtYWMtc2hhMjU2IiwicmVzdG9yZVJ1bklkIjoiYzE5ZDUyNzEtNDBkNS00NmMxLTg0ODktMzAwNGY5NTI1OGJhIiwiYWN0b3JVc2VySWQiOiI4NTQxYjViYS1lNzJhLTQzYmUtODRiMi1mMjEyNzBiMjZmNzYiLCJzb3VyY2VCYWNrdXBJZCI6IjVlMjUxMDU2LTlhNzEtNGYzYy05NzMwLTZiMDM4Nzk5ODM4MSIsInNvdXJjZUNoZWNrc3VtU2hhMjU2IjoiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImluY2x1ZGVzU3RvcmFnZSI6dHJ1ZSwic2VxdWVuY2UiOjMsImV2ZW50IjoiYXBwbGllZCIsIm9jY3VycmVkQXQiOiIyMDI2LTA5LTA2VDEwOjIwOjMwLjEyM1oiLCJwcmV2aW91c0htYWNTaGEyNTYiOiI4NDg2NjQ0Y2Y4NWM1ZTBlY2RmNGRhNjYwNzRjMjk0OWQ5NzBlZWJhN2ExOGNiODY3ZmNjZjRmMWVkYmQzNjc1IiwiaG1hY1NoYTI1NiI6IjllMjdiMDNjMTA2YjEwNjc4OTA4ZmNhOWU5YTFjNzk1NWNiZWVjMjk3NTZmMTRmNDhiYTA5NDM2OWRiZmMyMmIifQp7InZlcnNpb24iOjEsInB1cnBvc2UiOiJyZXN0b3JlLWpvdXJuYWwtdjEiLCJhbGdvcml0aG0iOiJobWFjLXNoYTI1NiIsInJlc3RvcmVSdW5JZCI6ImMxOWQ1MjcxLTQwZDUtNDZjMS04NDg5LTMwMDRmOTUyNThiYSIsImFjdG9yVXNlcklkIjoiODU0MWI1YmEtZTcyYS00M2JlLTg0YjItZjIxMjcwYjI2Zjc2Iiwic291cmNlQmFja3VwSWQiOiI1ZTI1MTA1Ni05YTcxLTRmM2MtOTczMC02YjAzODc5OTgzODEiLCJzb3VyY2VDaGVja3N1bVNoYTI1NiI6ImJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJpbmNsdWRlc1N0b3JhZ2UiOnRydWUsInNlcXVlbmNlIjo0LCJldmVudCI6ImNvbXBsZXRlZCIsIm9jY3VycmVkQXQiOiIyMDI2LTA5LTA2VDEwOjIwOjMwLjEyM1oiLCJwcmV2aW91c0htYWNTaGEyNTYiOiI5ZTI3YjAzYzEwNmIxMDY3ODkwOGZjYTllOWExYzc5NTVjYmVlYzI5NzU2ZjE0ZjQ4YmEwOTQzNjlkYmZjMjJiIiwiaG1hY1NoYTI1NiI6ImMyYTZiNWU4ODk2MWQzMjk4NDBiYzZiOGNlZjI2YzUyNzgyYmY3MTk5OTBiMjZlMDViNzg5OTk1ZTI0MzU3ZjgifQp7InZlcnNpb24iOjEsInB1cnBvc2UiOiJyZXN0b3JlLWpvdXJuYWwtdjEiLCJhbGdvcml0aG0iOiJobWFjLXNoYTI1NiIsInJlc3RvcmVSdW5JZCI6ImMxOWQ1MjcxLTQwZDUtNDZjMS04NDg5LTMwMDRmOTUyNThiYSIsImFjdG9yVXNlcklkIjoiODU0MWI1YmEtZTcyYS00M2JlLTg0YjItZjIxMjcwYjI2Zjc2Iiwic291cmNlQmFja3VwSWQiOiI1ZTI1MTA1Ni05YTcxLTRmM2MtOTczMC02YjAzODc5OTgzODEiLCJzb3VyY2VDaGVja3N1bVNoYTI1NiI6ImJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJpbmNsdWRlc1N0b3JhZ2UiOnRydWUsInNlcXVlbmNlIjo1LCJldmVudCI6InJlY292ZXJ5LXJlcXVpcmVkIiwib2NjdXJyZWRBdCI6IjIwMjYtMDktMDZUMTA6MjA6MzAuMTIzWiIsInByZXZpb3VzSG1hY1NoYTI1NiI6ImMyYTZiNWU4ODk2MWQzMjk4NDBiYzZiOGNlZjI2YzUyNzgyYmY3MTk5OTBiMjZlMDViNzg5OTk1ZTI0MzU3ZjgiLCJobWFjU2hhMjU2IjoiNjJlNzUwNWIyMDM5MWY3MGFmZDhhOWIwYjUyNGZiMGQ2YmNmYzBkMmUwZDhkMzU3ZjMyOTRmMTI5N2MwMTI0YiJ9Cg=="
+}

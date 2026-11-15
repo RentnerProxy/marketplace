@@ -1,0 +1,1118 @@
+{
+    "common": {
+        "active": "Active",
+        "activate": "Activate",
+        "actions": "Actions",
+        "all": "All",
+        "approve": "Approve",
+        "backToLogin": "Back to login",
+        "cancel": "Cancel",
+        "clickToCopy": "Click to copy",
+        "copied": "Copied!",
+        "deactivate": "Deactivate",
+        "delete": "Delete",
+        "edit": "Edit",
+        "error": "Error",
+        "field": "Field",
+        "inactive": "Inactive",
+        "logout": "Logout",
+        "loggingOut": "Logging out...",
+        "no": "No",
+        "planned": "Planned",
+        "reject": "Reject",
+        "removeSelection": "Remove selection",
+        "rights": "Permissions",
+        "save": "Save",
+        "saving": "Saving...",
+        "status": "Status",
+        "yes": "Yes",
+        "zoom": "Zoom"
+    },
+    "language": {
+        "de": "Deutsch",
+        "en": "English",
+        "sectionDescription": "Choose the language for the interface.",
+        "sectionTitle": "Language",
+        "save": "Save language",
+        "savedTitle": "Language saved",
+        "savedDescription": "Language changed successfully",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
+    },
+    "nav": {
+        "admin": "Admin",
+        "collapse": "Collapse navigation",
+        "dashboard": "Dashboard",
+        "expand": "Expand navigation",
+        "navigation": "Navigation",
+        "overview": "Overview",
+        "permissions": "Permissions",
+        "systemSettings": "System Settings",
+        "user": "User",
+        "userManagement": "User management",
+        "auditLogs": "Audit Logs",
+        "backups": "Backups"
+    },
+    "auth": {
+        "passwordPolicy": "The password must contain between {{min}} and {{max}} characters.",
+        "firstSetup": {
+            "title": "Create first superuser",
+            "description": "Set up the first account. Required system data and permissions are checked and added automatically.",
+            "accountTitle": "Login details",
+            "accountDescription": "You will use these details to log in afterwards.",
+            "emailPlaceholder": "Email address",
+            "passwordPlaceholder": "Password",
+            "confirmPasswordPlaceholder": "Repeat password",
+            "checkingSetupLink": "Checking setup link …",
+            "setupLinkRequired": "Find the setup link in the app logs",
+            "setupLinkDescription": "For local development, find the setup link in the bun run dev terminal. For a Komodo deployment, open the stack logs and select the “app” service. Copy the entire latest setup link and open it in your browser. The link is valid for ten minutes and is renewed automatically until initial setup is complete.",
+            "personalInfoTitle": "Personal information",
+            "personalInfoDescription": "These details are optional and can be changed later.",
+            "create": "Create superuser",
+            "creating": "Creating superuser...",
+            "created": "The first superuser was created. You can now log in.",
+            "createError": "The first superuser could not be created.",
+            "alreadyCompleted": "Initial setup has already been completed.",
+            "invalidSetupToken": "The setup link is invalid or has expired. Open the latest link from the app logs.",
+            "invalidData": "Please check your input.",
+            "invalidUsername": "The username must be between 1 and 50 characters long.",
+            "invalidEmail": "Please enter a valid email address.",
+            "passwordMismatch": "The passwords do not match."
+        },
+        "forgotPassword": {
+            "description": "Enter your email address to reset your password.",
+            "emailPlaceholder": "Your email address",
+            "requestLink": "Request link",
+            "requesting": "Requesting...",
+            "title": "Forgot password",
+            "emailSent": "The reset email was sent."
+        },
+        "login": {
+            "eyebrow": "Your marketplace account",
+            "welcomeBack": "Good to have you back.",
+            "newHere": "New here?",
+            "discoverRegistration": "Explore registration",
+            "description": "Please sign in to your account",
+            "forgotPassword": "Forgot password?",
+            "login": "Log in",
+            "loggingIn": "Logging in...",
+            "passwordPlaceholder": "Password",
+            "title": "Login",
+            "usernamePlaceholder": "Your username",
+            "failed": "Login failed",
+            "or": "or",
+            "passkeyFailed": "Passkey login failed",
+            "passkeyLogin": "Log in with passkey",
+            "passkeyLoggingIn": "Checking passkey...",
+            "passkeyUnsupported": "Your browser does not support passkeys.",
+            "twoFactorCodeRequired": "Please enter your 2FA code.",
+            "twoFactorCodeIncomplete": "Please enter the complete 2FA code."
+        },
+        "register": {
+            "eyebrow": "Coming your way",
+            "title": "Your way into the marketplace.",
+            "description": "One account for your RentnerProxy apps and extensions.",
+            "previewTitle": "Registration is coming soon",
+            "previewDescription": "This is a preview. The fields are disabled; no information is collected and no account is created.",
+            "accountDetails": "Account details preview",
+            "email": "Email address",
+            "emailPlaceholder": "Your email address",
+            "comingSoon": "Not available yet",
+            "alreadyRegistered": "Already have an account?"
+        },
+        "passwordReset": {
+            "validating": "Checking reset link …",
+            "validationError": "The reset link could not be checked right now. Please try again.",
+            "retryValidation": "Check link again",
+            "missingLinkTitle": "Reset link missing",
+            "missingLinkDescription": "Please request a new password reset link.",
+            "invalidLinkTitle": "Invalid reset link",
+            "invalidLinkDescription": "The password reset link is invalid or has expired. Please request a new link.",
+            "newPasswordTitle": "New password",
+            "newPasswordDescription": "Set a new password for your account.",
+            "newPasswordPlaceholder": "New password",
+            "confirmPasswordPlaceholder": "Repeat password",
+            "saving": "Saving...",
+            "save": "Save password",
+            "passwordMismatch": "The passwords do not match.",
+            "updated": "Your password was updated. Log in now using this same browser.",
+            "updatedTitle": "Password saved",
+            "updateError": "The password could not be updated."
+        },
+        "privacy": {
+            "title": "Privacy policy",
+            "placeholder": "Placeholder for the privacy policy."
+        },
+        "terms": {
+            "title": "Terms of use",
+            "placeholder": "Placeholder for the terms of use."
+        },
+        "twoFactor": {
+            "codeLabel": "Six-digit verification code",
+            "description": "Please enter the 6-digit code from your authenticator app.",
+            "rememberDevice": "Remember this device",
+            "rememberDeviceDescription": "Next time you log in on this browser, no 2FA code is required. The token is valid for 30 days.",
+            "title": "Two-factor authentication"
+        }
+    },
+    "safeDelete": {
+        "close": "Close dialog",
+        "confirming": "Deleting...",
+        "description": "This action cannot be undone.",
+        "title": "Confirm deletion"
+    },
+    "userSettings": {
+        "account": "Account",
+        "appearance": "Appearance",
+        "background": {
+            "choose": "Choose background",
+            "custom": "Custom Background",
+            "darkness": "Darken background",
+            "description": "Recommended: Full HD with 1920 x 1080 px. The image is saved as background.webp and displayed on every page.",
+            "empty": "No image selected",
+            "preview": "Custom background preview",
+            "remove": "Remove background",
+            "removing": "Removing...",
+            "save": "Save background",
+            "saveBrightness": "Save brightness",
+            "zoom": "Background zoom",
+            "zoomValue": "{{zoom}}x"
+        },
+        "close": "Close User Settings",
+        "color": {
+            "description": "This color is used for buttons, active navigation and accents.",
+            "primaryButton": "Primary Button",
+            "reset": "Reset",
+            "save": "Save color",
+            "secondaryButton": "Secondary Button",
+            "title": "System color"
+        },
+        "font": {
+            "family": {
+                "inter": "Inter",
+                "mono": "Mono",
+                "serif": "Serif",
+                "system": "System"
+            },
+            "familyDescription": "Choose the font family for the interface.",
+            "familyTitle": "Font family",
+            "preview": "Preview",
+            "previewText": "Often I go out for ice cream and walk across the river.",
+            "saveFamily": "Save font family",
+            "saveSize": "Save font size",
+            "size": "Font size",
+            "sizeDescription": "Adjust the base size of the interface.",
+            "sizePreview": "Small preview",
+            "sizeTitle": "Font size",
+            "sizeValue": "{{size}}px"
+        },
+        "theme": {
+            "dark": "Dark mode",
+            "description": "Choose the main color scheme for the interface.",
+            "light": "Light mode",
+            "save": "Save theme",
+            "saved": "The theme was saved successfully!",
+            "title": "Main theme"
+        },
+        "header": {
+            "subtitle": "Settings for {{username}}",
+            "title": "User Settings"
+        },
+        "personalInfo": {
+            "city": "City",
+            "description": "These details are optional.",
+            "firstName": "First name",
+            "houseNumber": "House number",
+            "lastName": "Last name",
+            "postalCode": "Postal code",
+            "save": "Save details",
+            "street": "Street",
+            "title": "Personal details"
+        },
+        "profileImage": {
+            "choose": "Choose image",
+            "description": "Select an image and crop it to fit.",
+            "empty": "No new profile image selected.",
+            "save": "Save profile image",
+            "title": "Profile image",
+            "userId": "User ID: {{userId}}"
+        },
+        "security": {
+            "label": "Security",
+            "2faActive": "2FA is active for your account.",
+            "2faConfirm": "Confirm",
+            "2faDescription": "Optional login protection with an authenticator app.",
+            "2faDisable": "Disable 2FA",
+            "2faDisabling": "Disabling...",
+            "2faEnable": "Enable 2FA",
+            "2faPreparing": "Preparing...",
+            "2faScan": "Scan the QR code with your authenticator app, then confirm the 6-digit code.",
+            "2faTitle": "Two-factor authentication",
+            "copyFailed": "Copy failed.",
+            "passwordDescription": "You will receive an email that lets you reset your password.",
+            "passwordReset": "Send password reset",
+            "passwordSending": "Sending...",
+            "passwordTitle": "Password",
+            "passkeyAdd": "Add passkey",
+            "passkeyAdding": "Adding passkey...",
+            "passkeyBackedUp": "Synced",
+            "passkeyCreatedAt": "Created",
+            "passkeyDelete": "Remove",
+            "passkeyLastUsedAt": "Last used",
+            "passkeySingleDevice": "This device only",
+            "passkeyUnsupported": "Your browser does not support passkeys.",
+            "passkeysDescription": "Sign in without a password using Windows Hello, Touch ID, a security key or a synced passkey.",
+            "passkeysEmpty": "No passkey has been added yet.",
+            "passkeysLoading": "Loading passkeys...",
+            "passkeysTitle": "Passkeys",
+            "signInAgainAllDevices": "Your security change was saved. Please sign in again on all your devices.",
+            "signInAgain": "Sign in again",
+            "reauthenticationDescription": "Confirm this security change again. An existing session alone is not sufficient.",
+            "reauthenticationPasswordLabel": "Current password",
+            "reauthenticationPasswordPlaceholder": "Enter current password",
+            "reauthenticationTotpDescription": "Enter an unused code from your authenticator app. After a confirmation, wait for the next code.",
+            "reauthenticationTotpLabel": "Current 2FA code",
+            "reauthenticationTotpPlaceholder": "123456",
+            "checking": "Checking...",
+            "secret": "Secret: {{secret}}"
+        },
+        "settingsLabel": "User Settings"
+    },
+    "admin": {
+        "auditLogs": {
+            "pageTitle": "Audit logs",
+            "pageDescription": "Overview of logged system events.",
+            "entriesTitle": "Entries",
+            "entriesDescription": "The most recently recorded actions from the audit log.",
+            "emptyDiff": "No detail values were saved for this entry.",
+            "oldValue": "- Old",
+            "newValue": "+ New",
+            "action": "Action",
+            "user": "User",
+            "message": "Message",
+            "method": "Method",
+            "route": "Route",
+            "created": "Created",
+            "details": "Details",
+            "showDetails": "Show audit details",
+            "system": "System",
+            "searchPlaceholder": "Search audit logs...",
+            "userFilterPlaceholder": "Filter users...",
+            "messageFilterPlaceholder": "Filter messages...",
+            "routeFilterPlaceholder": "Filter routes...",
+            "createdFilterPlaceholder": "Created from/to",
+            "entryCount": "{{count}} entries",
+            "itemLabel": "entries"
+        },
+        "dashboard": {
+            "title": "Admin dashboard",
+            "loggedIn": "You are logged in as an admin.",
+            "description": "Current status of the core services.",
+            "console": {
+                "open": "Open console",
+                "opened": "Console open",
+                "title": "{{service}} · Console",
+                "emptyTitle": "Service console",
+                "noSelection": "Nothing is selected. Please select a service above.",
+                "pendingSource": "Service log",
+                "containerSource": "Container output · stdout, stderr and health checks",
+                "applicationSource": "Development · application logs and health checks",
+                "connectionSource": "Development · connection events and health checks",
+                "live": "Live · every 2 seconds",
+                "connecting": "Connecting",
+                "disconnected": "Disconnected",
+                "scrollDownTooltip": "Click to scroll down.",
+                "jumpToLatest": "Jump to the latest logs · {{count}} unread",
+                "close": "Close console",
+                "output": "Read-only console output",
+                "readOnly": "Read only",
+                "entryCount": "Entries: {{count}} · up to 300",
+                "loading": "Loading console output …",
+                "empty": "No events yet. New messages will appear here automatically.",
+                "unavailable": "Console output is currently unavailable.",
+                "loadError": "Updates are interrupted. Existing entries remain readable; the connection will be checked again automatically.",
+                "incompleteHistory": "Part of the log history is currently unavailable. Available events remain visible.",
+                "shortLabel": "Console",
+                "openService": "Open console for {{service}}",
+                "closeService": "Close console for {{service}}"
+            },
+            "services": {
+                "webserver": "Web server",
+                "worker": "Worker",
+                "postgresql": "PostgreSQL",
+                "valkey": "Valkey",
+                "core": "Rust Core",
+                "websocket": "WebSocket server"
+            },
+            "status": {
+                "running": "Running",
+                "starting": "Starting",
+                "connecting": "Connecting",
+                "down": "Unavailable",
+                "error": "Error",
+                "checking": "Checking",
+                "unknown": "Status unknown"
+            },
+            "details": {
+                "responding": "The web server is responding to requests.",
+                "heartbeatCurrent": "The worker reports a healthy state.",
+                "connectionAvailable": "The connection was checked successfully.",
+                "workerStarting": "The worker is starting.",
+                "connectionPending": "The connection is being established.",
+                "heartbeatMissing": "No current worker heartbeat is available.",
+                "heartbeatExpired": "The last worker heartbeat is stale.",
+                "connectionClosed": "The connection has been interrupted.",
+                "checkFailed": "The health check failed.",
+                "timeout": "The health check took too long.",
+                "workerUnhealthy": "The worker reports an error.",
+                "heartbeatInvalid": "The worker heartbeat is invalid.",
+                "checking": "The status is being checked.",
+                "statusUnavailable": "The status cannot be checked right now.",
+                "workerStatusUnavailable": "The worker status cannot currently be retrieved through Valkey.",
+                "rateLimitUnavailable": "Valkey could not be reached for the status request.",
+                "coreResponding": "The Rust core is responding to requests.",
+                "websocketResponding": "The WebSocket endpoint is responding.",
+                "websocketUnavailable": "The WebSocket endpoint is unavailable."
+            },
+            "coreVersion": "Version {{version}}",
+            "groups": {
+                "application": {
+                    "title": "Application",
+                    "description": "Web interface and live connections"
+                },
+                "processing": {
+                    "title": "Processing",
+                    "description": "Background jobs and core operations"
+                },
+                "infrastructure": {
+                    "title": "Infrastructure",
+                    "description": "Database and cache"
+                }
+            }
+        },
+        "systemSettings": {
+            "companyLogo": "Company Logo",
+            "companyLogoDescription": "The logo is cropped square and saved as WebP.",
+            "companyName": "Company Name",
+            "companyNameDescription": "This name is shown at the top left of the navigation.",
+            "companyNameSaved": "Company Name was saved.",
+            "companyNameSaveError": "Company Name could not be saved.",
+            "description": "Manage logo, company name and future system options.",
+            "extensionMinutes": "Extension in minutes",
+            "extensionMinutesInvalid": "Please enter a whole number between 1 and 120 minutes.",
+            "extensionRequest": "Extension request",
+            "extensionRequestDescription": "{{username}} asks for a postponement.",
+            "logoAlt": "System Logo",
+            "logoChoose": "Choose logo",
+            "logoMissing": "Please choose a logo first and align the crop.",
+            "logoPreview": "Logo preview",
+            "logoSaved": "Logo was saved.",
+            "logoSave": "Save logo",
+            "logoSaveError": "Logo could not be saved.",
+            "logoUploaded": "Logo was uploaded.",
+            "logoUploadFailed": "Logo could not be uploaded.",
+            "logoUploadTitle": "System logo",
+            "maintenance": "Maintenance mode",
+            "maintenanceDescription": "Schedules the start of maintenance and blocks users without maintenance access from that point.",
+            "maintenanceDisabled": "Maintenance mode was disabled.",
+            "maintenancePlanned": "Maintenance mode was scheduled.",
+            "maintenanceSaveError": "Maintenance mode could not be saved.",
+            "maintenanceStartRequired": "Please choose a valid start time.",
+            "maintenanceToastTitle": "Maintenance mode",
+            "extensionRequestMissing": "There is no open request.",
+            "extensionRequestResolved": "The request was processed.",
+            "extensionRequestResolveError": "The request could not be processed.",
+            "plan": "Schedule",
+            "preview": "Preview",
+            "startAt": "Start time",
+            "startAtPlaceholder": "Choose start time",
+            "title": "System settings",
+            "toastTitle": "System Settings"
+        },
+        "backups": {
+            "title": "Backups",
+            "description": "Manage automatic and manual PostgreSQL and app storage backups.",
+            "settingsTitle": "Automatic backup",
+            "settingsDescription": "Configure schedule and retention for automatic backups.",
+            "automaticEnabled": "Enable automatic backups",
+            "scheduleTime": "Daily start time",
+            "scheduleTitle": "Schedule",
+            "scheduleType": "Execution",
+            "weekdays": "Weekdays",
+            "intervalHours": "Every how many hours?",
+            "intervalWeeks": "Every how many weeks?",
+            "intervalWeekday": "Weekday",
+            "schedule": {
+                "daily": "Daily",
+                "weekdays": "On selected weekdays",
+                "interval-hours": "Every X hours",
+                "interval-weeks": "Every X weeks"
+            },
+            "weekday": {
+                "0": "Sun",
+                "1": "Mon",
+                "2": "Tue",
+                "3": "Wed",
+                "4": "Thu",
+                "5": "Fri",
+                "6": "Sat"
+            },
+            "weekdayLong": {
+                "0": "Sunday",
+                "1": "Monday",
+                "2": "Tuesday",
+                "3": "Wednesday",
+                "4": "Thursday",
+                "5": "Friday",
+                "6": "Saturday"
+            },
+            "retentionDays": "Retention in days",
+            "retentionCount": "Maximum count",
+            "retentionTitle": "Retention and content",
+            "retentionMode": "Retain backups by",
+            "retention": {
+                "count": "Number of backups",
+                "days": "Age in days",
+                "both": "Count and age"
+            },
+            "includeStorage": "Include app storage containing images and files",
+            "includeStorageDescription": "Also includes all uploaded images and files from app storage.",
+            "settingsSaved": "Backup settings were saved.",
+            "backupCreationFailed": "The backup could not be created.",
+            "createNow": "Back up now",
+            "import": "Import",
+            "importing": "Importing...",
+            "importFailed": "The backup could not be imported.",
+            "historyTitle": "Backup history",
+            "table": {
+                "file": "Backup file",
+                "createdAt": "Created at",
+                "trigger": "Trigger",
+                "size": "Size",
+                "storage": "App storage",
+                "searchPlaceholder": "Search backups...",
+                "itemLabel": "backups",
+                "entryCount": "{{count}} backups"
+            },
+            "trigger": {
+                "manual": "Manual",
+                "scheduled": "Automatic",
+                "import": "Import",
+                "restore-safety": "Safety backup",
+                "restore": "Restore"
+            },
+            "nextBackupIn": "Next automatic backup in {{time}}",
+            "nextBackupCalculating": "Calculating next backup time …",
+            "stats": {
+                "total": "Total",
+                "successful": "Successful",
+                "failed": "Failed",
+                "imported": "Imported",
+                "restored": "Restored"
+            },
+            "loading": "Loading backups...",
+            "empty": "No backups have been created yet.",
+            "preparing": "Preparing backup",
+            "download": "Export",
+            "encryptedFormatRequired": "This unencrypted backup format is no longer supported. Create a new backup.",
+            "restore": "Restore",
+            "restoreMissing": "No backup was selected.",
+            "restoreQueued": "The hard restore was queued.",
+            "restoreWarning": "Warning: No additional backup archive will be created. Before overwriting data, the system creates a temporary recovery point for the database and, when included in the backup, the app storage. If an error occurs, the previous state is restored automatically; if the rollback or safe cleanup of the recovery points cannot be fully confirmed, the system remains locked. After a successful restore, returning to another state requires restoring a different backup, such as a newer one. Existing backup archives are never overwritten. Enter WIEDERHERSTELLEN to continue.",
+            "restoreConfirm": "Start restore",
+            "delete": "Delete backup",
+            "deleteTitle": "Delete backup",
+            "deleteDescription": "The backup will be permanently removed from its storage target.",
+            "deleteQuestion": "Do you really want to permanently delete the backup “{{fileName}}”?",
+            "unknownBackup": "Unknown backup",
+            "restoreConfirmationLabel": "Enter WIEDERHERSTELLEN to confirm",
+            "progress": {
+                "backupDownload": "Create and download backup",
+                "backupImport": "Import backup",
+                "manualTitle": "Manual backup",
+                "scheduledTitle": "Scheduled backup",
+                "phaseQueued": "Backup is waiting to be processed …",
+                "phasePreparing": "Database is being backed up …",
+                "phaseCollecting": "App storage is being collected …",
+                "phaseArchiving": "Data is being written to the backup …",
+                "phaseVerifying": "Backup is being verified …",
+                "phaseFinalizing": "Backup is being finalized …",
+                "completed": "Backup fully secured",
+                "downloadUnavailable": "The completed backup could not be downloaded."
+            },
+            "status": {
+                "queued": "Queued",
+                "running": "Running",
+                "completed": "Completed",
+                "failed": "Failed"
+            },
+            "restoreWarningPrivateBackgroundCoverage": "Historical archives with manifest v2 do not reset private backgrounds to the backup date: existing images are kept and only missing images are added. Archives with manifest v3 restore the complete image snapshot, including an empty snapshot."
+        },
+        "permissions": {
+            "title": "Permission management",
+            "description": "Manage default permissions, permission presets, and individual user permissions in one place.",
+            "overviewLoadError": "Permission management could not be loaded.",
+            "retry": "Try again",
+            "tabs": {
+                "defaults": "Default permissions",
+                "presets": "Presets",
+                "users": "User permissions"
+            },
+            "catalog": {
+                "adminDashboard": {
+                    "name": "Admin dashboard",
+                    "description": "Can open the admin dashboard."
+                },
+                "userManagement": {
+                    "name": "User management",
+                    "description": "Can manage user accounts."
+                },
+                "systemSettings": {
+                    "name": "System settings",
+                    "description": "Can manage the logo, company name, and system options."
+                },
+                "maintenanceBypass": {
+                    "name": "Bypass maintenance mode",
+                    "description": "Remains signed in while maintenance mode is active."
+                },
+                "superUser": {
+                    "name": "Superuser",
+                    "description": "Can manage user permissions, permission presets, and default permissions."
+                },
+                "userDashboard": {
+                    "name": "User dashboard",
+                    "description": "Can open the user dashboard."
+                },
+                "auditLogs": {
+                    "name": "Audit logs",
+                    "description": "Can open the audit logs."
+                },
+                "backups": {
+                    "name": "Backups",
+                    "description": "Can configure, export, and restore backups."
+                }
+            },
+            "checklist": {
+                "loading": "Loading permissions...",
+                "empty": "No permissions available.",
+                "superUser": "Critical permission"
+            },
+            "defaults": {
+                "title": "Default permissions for new users",
+                "description": "These permissions are assigned automatically whenever a new user is created.",
+                "hint": "Changes only apply to users created in the future. Existing user permissions remain unchanged, and the superuser permission can never be assigned automatically.",
+                "save": "Save default permissions",
+                "saved": "Default permissions were saved.",
+                "saveError": "Default permissions could not be saved."
+            },
+            "presets": {
+                "createTitle": "Create preset",
+                "editTitle": "Edit preset",
+                "formDescription": "Bundle frequently used permissions for quick assignment.",
+                "nameLabel": "Name",
+                "descriptionLabel": "Description",
+                "permissionsLabel": "Included permissions",
+                "save": "Save preset",
+                "created": "The permission preset was created.",
+                "updated": "The permission preset was updated.",
+                "deleted": "The permission preset was deleted.",
+                "saveError": "The permission preset could not be saved.",
+                "deleteError": "The permission preset could not be deleted.",
+                "listTitle": "Permission presets",
+                "listDescription": "Prepared permission bundles for individual user management.",
+                "newPreset": "New preset",
+                "empty": "No permission presets yet.",
+                "permissionCount": "{{count}} permissions",
+                "noDescription": "No description provided.",
+                "editAriaLabel": "Edit permission preset",
+                "deleteAriaLabel": "Delete permission preset",
+                "deleteTitle": "Delete preset",
+                "deleteQuestion": "Are you sure you want to delete the preset \"{{name}}\"?",
+                "delete": "Delete preset"
+            },
+            "users": {
+                "listTitle": "Select user",
+                "listDescription": "Search for a user to manage their permissions individually.",
+                "searchPlaceholder": "Search users or email addresses...",
+                "loadError": "Users could not be loaded.",
+                "loading": "Loading users...",
+                "empty": "No users found.",
+                "superUser": "Superuser",
+                "inactive": "Deactivated",
+                "currentUser": "You",
+                "permissionCount": "{{count}} permissions",
+                "total": "{{count}} users",
+                "previous": "Previous page",
+                "next": "Next page",
+                "pagination": "Page {{current}} of {{total}}",
+                "noSelectionTitle": "Select a user",
+                "noSelectionDescription": "Select a user on the left to edit their permissions.",
+                "unsavedChanges": "Unsaved changes",
+                "presetLabel": "Permission preset",
+                "presetPlaceholder": "Select preset",
+                "applyPreset": "Add preset",
+                "presetHint": "Selecting a preset adds its permissions immediately. Changes are only persisted after saving.",
+                "appliedPresets": "Applied presets",
+                "appliedPresetHint": "Marked permissions come from the applied presets. You can still adjust individual permissions.",
+                "noAppliedPresets": "No preset applied yet.",
+                "presetApplied": "From preset",
+                "permissionsTitle": "Individual permissions",
+                "permissionsDescription": "Define which areas this user is allowed to access.",
+                "save": "Save user permissions",
+                "saved": "User permissions were saved.",
+                "saveError": "User permissions could not be saved."
+            }
+        },
+        "users": {
+            "deleteQuestion": "Are you sure you want to delete the user \"{{username}}\"?",
+            "description": "Create users and manage existing accounts.",
+            "title": "User management",
+            "tableTitle": "Users",
+            "tableDescription": "All accounts created in the system.",
+            "createTitle": "Create user",
+            "createDescription": "Enter username and email, an invitation email will be sent.",
+            "editTitle": "Edit user",
+            "editDescription": "Manage general account and profile data.",
+            "accountTitle": "Account",
+            "accountDescription": "Basic data for login and contact.",
+            "additionalInfoTitle": "Additional information",
+            "additionalInfoDescription": "Optional profile and address data.",
+            "permissionsTitle": "Permissions",
+            "permissionsDescription": "Define which areas the user is allowed to access.",
+            "permissionsLoading": "Loading permissions...",
+            "loading": "Loading users...",
+            "superuser": "Superuser",
+            "rightsCount": "{{count}} permissions",
+            "username": "Username",
+            "email": "Email",
+            "created": "Created",
+            "deactivated": "Deactivated",
+            "searchPlaceholder": "Search users...",
+            "usernameFilterPlaceholder": "Filter usernames...",
+            "emailFilterPlaceholder": "Filter email addresses...",
+            "permissionFilterPlaceholder": "Permission",
+            "createdFilterPlaceholder": "Created from/to",
+            "userCount": "{{count}} users",
+            "itemLabel": "users",
+            "create": "Create",
+            "createdAndInvited": "The user was created and the invitation email was sent.",
+            "createError": "The user could not be created.",
+            "updated": "The user was updated.",
+            "updateError": "The user could not be updated.",
+            "deleted": "The user was deleted.",
+            "deleteError": "The user could not be deleted.",
+            "statusUpdated": "The status was updated.",
+            "statusUpdateError": "The status could not be updated.",
+            "passwordResetSent": "The password reset email was sent.",
+            "passwordResetError": "The password reset email could not be sent.",
+            "editForbidden": "Only superusers may edit other superusers.",
+            "editForbiddenShort": "Only superusers may edit superusers",
+            "deleteSelfForbidden": "You cannot delete your own user.",
+            "deleteSelfForbiddenShort": "You cannot delete your own user",
+            "deleteForbidden": "Only superusers may delete other superusers.",
+            "deleteForbiddenShort": "Only superusers may delete superusers",
+            "deactivateSelfForbidden": "You cannot deactivate your own user.",
+            "deactivateSelfForbiddenShort": "You cannot deactivate your own user",
+            "statusForbidden": "Only superusers may change the status of superusers.",
+            "statusForbiddenShort": "Only superusers may change the status of superusers",
+            "passwordResetForbidden": "Only superusers may trigger password resets for superusers.",
+            "passwordResetForbiddenShort": "Only superusers may trigger password resets for superusers",
+            "passwordResetInactiveShort": "Password resets cannot be sent for deactivated users",
+            "editAriaLabel": "Edit user",
+            "toggleStatusAriaLabel": "Activate or deactivate user",
+            "passwordResetAriaLabel": "Reset user password",
+            "deleteAriaLabel": "Delete user",
+            "closeModalAriaLabel": "Close modal"
+        }
+    },
+    "maintenance": {
+        "bannerDescription": "When the time runs out, maintenance mode becomes active and your access is paused.",
+        "expandBanner": "Open maintenance notice",
+        "extensionPlaceholder": "Why should the start be postponed?",
+        "pendingRequest": "Open request from {{username}}.",
+        "pendingOwnRequest": "Your postponement request is being reviewed.",
+        "adminExtensionRequested": "{{username}} requested a postponement of the maintenance start.",
+        "maintenanceIn": "Maintenance in",
+        "minimizeBanner": "Minimize maintenance notice",
+        "requestExtension": "Request postponement",
+        "requestSent": "Sending...",
+        "startsIn": "Maintenance starts in {{time}}",
+        "title": "Maintenance mode",
+        "description": "The system is currently locked for users without maintenance access.",
+        "startedAt": "Started at",
+        "bypassNotice": "Your user is allowed to bypass maintenance mode. You can continue to use the application.",
+        "extensionInfo": "Rescheduling can only be requested before the start via the notice in the logged-in area.",
+        "extensionApproved": "Your postponement request was approved.",
+        "extensionRejected": "Your request was rejected."
+    },
+    "restoreProgress": {
+        "title": "System restore in progress",
+        "description": "The system is replacing the database and backed-up files with the selected backup state.",
+        "recoveryRequiredTitle": "System restore locked",
+        "recoveryRequiredDescription": "The automatic restore could not be completed safely.",
+        "loading": "Loading restore status …",
+        "bytes": "{{processed}} of {{total}} restored",
+        "keepOpenNotice": "Keep this page open. It updates automatically; you do not need to close or reload anything.",
+        "completedNotice": "The restore is complete. You will be redirected automatically in a moment.",
+        "failedNotice": "The restore failed. If data had already been replaced, the automatic rollback was confirmed. Administrators can find further details on the related backup run.",
+        "recoveryRequiredNotice": "The automatic rollback or safe cleanup of the recovery points could not be fully confirmed. The system therefore remains locked. An administrator or operator must inspect the state and complete the recovery safely.",
+        "idleNotice": "No restore is currently running. You will be redirected automatically.",
+        "statusUnavailable": "The current status could not be loaded temporarily. This page will retry automatically.",
+        "status": {
+            "idle": "No active restore",
+            "completed": "Restore completed",
+            "failed": "Restore failed",
+            "recoveryRequired": "Manual intervention required"
+        },
+        "phase": {
+            "preparing": "Preparing the restore …",
+            "validating": "Validating the complete backup …",
+            "creatingRecovery": "Creating a recovery point …",
+            "replacingStorage": "Replacing app storage …",
+            "restoringDatabase": "Restoring the database …",
+            "finalizing": "Finalizing the restore …",
+            "rollingBack": "Attempting an automatic rollback …"
+        }
+    },
+    "layout": {
+        "topbar": {
+            "defaultTitle": "Overview",
+            "defaultDescription": "An overview of your current area."
+        },
+        "footer": {
+            "terms": "Terms of use",
+            "privacy": "Privacy policy",
+            "imprint": "Imprint"
+        }
+    },
+    "notifications": {
+        "title": "Notifications",
+        "open": "Open notifications",
+        "markAllRead": "Mark all read",
+        "markRead": "Mark as read",
+        "updateError": "The notification could not be updated.",
+        "tabs": {
+            "unread": "Unread",
+            "read": "Read"
+        },
+        "empty": {
+            "unread": {
+                "title": "No unread notifications",
+                "description": "You are all caught up."
+            },
+            "read": {
+                "title": "No read notifications",
+                "description": "Notifications appear here after you have read them."
+            }
+        }
+    },
+    "user": {
+        "dashboard": {
+            "title": "User dashboard",
+            "loggedIn": "You are logged in as a user."
+        }
+    },
+    "shared": {
+        "calendar": {
+            "keyboardHelp": "Navigate with arrow keys."
+        },
+        "addressSearch": {
+            "noSuggestions": "No suggestions found.",
+            "placeholder": "Search address"
+        },
+        "notFound": {
+            "title": "Page not found",
+            "description": "Oops! The requested page does not exist or has been moved. Maybe you made a typo in the URL?",
+            "backToDashboard": "Back to dashboard"
+        },
+        "routeError": {
+            "title": "This page could not be loaded",
+            "descriptions": {
+                "authorization": "Your session has expired or you do not have permission to access this area.",
+                "generic": "An unexpected error occurred while displaying this page.",
+                "moduleLoad": "A required file could not be loaded. This often happens after an application update.",
+                "network": "The connection to the server was interrupted. Check your internet connection and try again.",
+                "notFound": "The requested content was not found or is no longer available.",
+                "server": "The server could not process the request. Please try again shortly."
+            },
+            "cause": "Cause",
+            "technicalDetails": "Technical details",
+            "copyDetails": "Copy details",
+            "copied": "Details copied",
+            "filePath": "File path",
+            "retry": "Try again",
+            "reload": "Reload page"
+        },
+        "table": {
+            "rowsPerPage": "Rows per page",
+            "pageInfo": "Page {{currentPage}} / {{totalPages}}",
+            "rowRange": "Showing {{firstRowNumber}}-{{lastRowNumber}} of {{filteredRowsCount}} {{itemLabel}}",
+            "amount": "Amount",
+            "columnFilters": "Column filters",
+            "toggleColumnFilters": "Show or hide column filters",
+            "firstPage": "First page",
+            "previousPage": "Previous page",
+            "nextPage": "Next page",
+            "lastPage": "Last page",
+            "filterPlaceholder": "Filter...",
+            "filterColumnPlaceholder": "Filter {{column}}...",
+            "dateRangePlaceholder": "From/to"
+        },
+        "transfer": {
+            "progress": "{{progress}}% · {{transferredBytes}} / {{totalBytes}}",
+            "backupProgress": "{{progress}}% · {{transferredBytes}} of {{totalBytes}} secured",
+            "preparing": "Backup is being prepared on the server …",
+            "backupDone": "Backup complete",
+            "backupFailed": "Backup failed",
+            "backupRunning": "Backup is being created",
+            "uploadDone": "Upload complete",
+            "downloadDone": "Download complete",
+            "uploadFailed": "Upload failed",
+            "downloadFailed": "Download failed",
+            "uploadRunning": "Upload in progress",
+            "downloadRunning": "Download in progress",
+            "dismiss": "Dismiss transfer"
+        }
+    },
+    "toast": {
+        "appearanceSaved": "Background appearance was saved.",
+        "backgroundDeleted": "Background image was removed.",
+        "backgroundUploadFailed": "Background image could not be uploaded.",
+        "backgroundMissing": "Please choose a background image first.",
+        "backgroundSaved": "Background image was saved.",
+        "loginMissingPermissions": "You were logged out again because your user has no permissions.",
+        "loginSuccess": "Successfully logged in. Welcome back!",
+        "logoutSuccess": "You have been logged out successfully.",
+        "maintenanceInvalidReason": "Please enter a reason with at least 10 characters.",
+        "maintenanceRequestSent": "Your request was sent.",
+        "maintenanceRequestFailed": "The request could not be sent.",
+        "passwordResetSent": "The password reset email was sent.",
+        "passkeyAdded": "Passkey was added. Please sign in again on all your devices.",
+        "passkeyDeleted": "Passkey was removed. Please sign in again on all your devices.",
+        "personalInfoSaved": "User details were saved.",
+        "primaryColorReset": "System color was reset.",
+        "primaryColorSaved": "System color was saved.",
+        "primaryColorInvalid": "Please choose a valid system color.",
+        "fontFamilySaved": "Font family was saved.",
+        "fontSizeSaved": "Font size was saved.",
+        "profileImageSaved": "Profile image was saved.",
+        "profileImageUploadFailed": "Profile image could not be uploaded.",
+        "twoFactorDisabled": "2FA was disabled. Please sign in again on all your devices.",
+        "twoFactorEnabled": "2FA was enabled. Please sign in again on all your devices using the next new 2FA code.",
+        "usernameChanged": "Your username was changed to {{username}}.",
+        "permissionsAdded": "You received new permissions: {{permissions}}.",
+        "permissionsAddedTitle": "New permissions",
+        "accountDeleted": "Your user was deleted. You will be logged out.",
+        "accountBlocked": "Your user was blocked. You will be logged out.",
+        "sessionEndedTitle": "Session ended"
+    },
+    "mailTemplates": {
+        "footer": "This email was generated automatically.",
+        "auth": {
+            "instruction": "Choose a new password for your account.",
+            "action": "Set password",
+            "linkHint": "If the button does not work, copy this link into your browser:",
+            "ignore": "If you did not request this email, you can ignore it."
+        },
+        "failedLogin": {
+            "headline": "Unsuccessful sign-in attempt",
+            "greeting": "Hello",
+            "intro": "an unsuccessful sign-in attempt was detected for your account.",
+            "details": "Sign-in attempt details",
+            "timestamp": "Time",
+            "ip": "IP address",
+            "location": "Location",
+            "device": "Device",
+            "browser": "Browser",
+            "unknown": "Unknown",
+            "unknownLocation": "Unavailable",
+            "mapAction": "View location on map",
+            "mapText": "Location on map",
+            "guidance": "If this was not you, change your password and review your security settings."
+        }
+    },
+    "securityChangeMail": {
+        "subject": "Security change",
+        "headline": "Your account security",
+        "timestamp": "Time (UTC)",
+        "guidance": "If you did not make this change, open the application yourself using your known address and contact your administrator.",
+        "changes": {
+            "password_changed": "The password for your account was changed.",
+            "totp_enabled": "Two-factor authentication (2FA) was enabled for your account.",
+            "totp_disabled": "Two-factor authentication (2FA) was disabled for your account.",
+            "passkey_added": "A passkey was added to your account.",
+            "passkey_removed": "A passkey was removed from your account."
+        }
+    },
+    "marketplace": {
+        "skipToContent": "Skip to content",
+        "home": "Marketplace home",
+        "adminLogin": "Administration",
+        "description": "Monitoring, DNS, security and more. The future home for apps that take your RentnerProxy setup further.",
+        "followDevelopment": "Follow development",
+        "availability": "You're viewing a preview. Downloads, publishing and public registration are coming later.",
+        "inPreparation": "In preparation",
+        "outlook": "The first official apps",
+        "outlookNote": "Planned. Not yet available to install.",
+        "loginDescription": "Sign in to manage the marketplace.",
+        "usernameLabel": "Username",
+        "passwordLabel": "Password",
+        "recoveryHint": "Access is currently intended for existing administration accounts.",
+        "passkeyDescription": "Sign in with a passkey that is already set up for your account.",
+        "apps": {
+            "monitoring": {
+                "title": "Monitoring",
+                "description": "Keep an eye on your setup with an official monitoring extension."
+            },
+            "docker": {
+                "title": "Docker Discovery",
+                "description": "Discover Docker services and connect them to RentnerProxy."
+            },
+            "loadBalancer": {
+                "title": "Load Balancer",
+                "description": "Distribute requests across multiple upstreams."
+            },
+            "dns": {
+                "title": "DNS",
+                "description": "Cloudflare, deSEC, and Hetzner: DNS-01 and dynamic DNS."
+            },
+            "oidc": {
+                "title": "OpenID Connect",
+                "description": "Connect identity providers through OpenID Connect."
+            },
+            "crowdsec": {
+                "title": "CrowdSec",
+                "description": "A CrowdSec extension for your security setup."
+            }
+        },
+        "tagline": "Your RentnerProxy. Even more possibilities.",
+        "browseApps": "Explore apps",
+        "outlookEyebrow": "Coming up next",
+        "heroEyebrow": "Official apps. Your next upgrade.",
+        "accountNavigation": "Account access",
+        "login": "Login",
+        "register": "Register",
+        "registrationSoon": "Registration – coming soon",
+        "footerHeadline": "More possibilities. More you.",
+        "footerDescription": "Official apps for your RentnerProxy. A home for whatever your setup needs next.",
+        "footerExplore": "Explore",
+        "footerLegal": "Legal",
+        "footerLanguage": "Language",
+        "navigation": {
+            "label": "Main navigation",
+            "apps": "Apps",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "The app catalog",
+            "title": "Apps for your RentnerProxy.",
+            "description": "A home for official apps and extensions. Discover what's planned for your stack.",
+            "note": "Every listing is planned. These apps cannot be downloaded or installed yet.",
+            "backToFlow": "How the marketplace is planned to work"
+        },
+        "blog": {
+            "eyebrow": "From the marketplace",
+            "title": "News. Updates. What's next.",
+            "description": "News and changelogs for the centrally operated RentnerProxy Marketplace, from new features to improvements for your account.",
+            "note": "The blog is ready for future posts and changelogs. No articles have been published yet.",
+            "changelogTitle": "What changes in the marketplace",
+            "changelogDescription": "The future home for new features, improvements and fixes to the central marketplace: the service where you have your account.",
+            "newsTitle": "From app code to approval",
+            "newsDescription": "How templates, development and reviews are planned to fit together, and how approved apps will later reach you optionally through your platform.",
+            "backHome": "Back to marketplace home",
+            "featuredLabel": "Post preview",
+            "featuredTitle": "One marketplace. For all your apps.",
+            "featuredSummary": "The shared home for RentnerProxy apps starts here. Future posts will cover new possibilities, development progress and changes to the marketplace.",
+            "centralTitle": "One central service",
+            "centralDescription": "The marketplace is operated by RentnerProxy. Users are intended to create their accounts there; news and changelogs cover this shared service.",
+            "centralAccount": "One marketplace account",
+            "centralUpdates": "Changes to the central service",
+            "optionalApps": "Optional apps through your platform",
+            "archiveTitle": "Versions & updates",
+            "filterLabel": "Filter release channel",
+            "filters": {
+                "all": "All versions",
+                "changelog": "Changelogs",
+                "news": "News",
+                "stable": "Stable",
+                "beta": "Beta",
+                "alpha": "Alpha"
+            },
+            "previewLabel": "Preview",
+            "comingSoon": "Post coming soon",
+            "emptyChannel": "No version has been published in this channel yet.",
+            "versionPending": "Version coming soon",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alpha: the first steps",
+                    "summary": "The future home for early marketplace versions and previews of features still in development."
+                },
+                "beta": {
+                    "title": "Beta: building it together",
+                    "summary": "Planned beta versions will bring new possibilities, improvements and changes to the central marketplace."
+                },
+                "stable": {
+                    "title": "Stable: ready for everyday use",
+                    "summary": "Future approved stable marketplace versions will appear here with their changes and changelogs."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "From an idea to your stack",
+            "title": "Your idea. The path to an app.",
+            "description": "How an extension is planned to become an available app: build it, submit it, get it reviewed and optionally install it through the platform.",
+            "hint": "Select a stage to discover its role.",
+            "preview": "Planned workflow: the app template, submissions, approval and installation are not available yet.",
+            "feedback": "Questions & revisions",
+            "detailLabel": "Stage {{number}} of {{total}}",
+            "relatedApps": "See planned apps",
+            "roles": {
+                "developer": "Developer",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Your platform"
+            },
+            "legend": {
+                "development": "Development & submission",
+                "review": "Review & questions",
+                "release": "Approval & installation"
+            },
+            "steps": {
+                "template": {
+                    "title": "App template",
+                    "caption": "The starting point",
+                    "description": "An official app template is planned to provide the basic structure and connection to RentnerProxy. It will become the starting point for building your own apps."
+                },
+                "develop": {
+                    "title": "Build the app",
+                    "caption": "Code & tests",
+                    "description": "Build and test the app locally using the template, then prepare its first version. Apps are intended to be installed and updated independently of platform updates."
+                },
+                "submit": {
+                    "title": "Submit the app",
+                    "caption": "Ready for review",
+                    "description": "The finished app is planned to be registered in the marketplace and submitted for review with a description and version details. Submitting an app does not publish it."
+                },
+                "review": {
+                    "title": "Review",
+                    "caption": "RentnerProxy takes a look",
+                    "description": "RentnerProxy is planned to review submitted apps before approval. Questions or required changes send the app back to development."
+                },
+                "publish": {
+                    "title": "Approval",
+                    "caption": "Visible in the marketplace",
+                    "description": "After a successful review and approval, the app is planned to be published in the marketplace. Only then does the approved version become available to users."
+                },
+                "install": {
+                    "title": "Install optionally",
+                    "caption": "Your stack decides",
+                    "description": "Users are intended to choose approved apps through their RentnerProxy platform, then optionally download and install them. App updates are planned to work independently of platform updates."
+                }
+            }
+        }
+    }
+}

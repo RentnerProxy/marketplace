@@ -1,0 +1,620 @@
+{
+    "common": {
+        "active": "Actief",
+        "actions": "Acties",
+        "all": "Alle",
+        "cancel": "Annuleren",
+        "delete": "Verwijderen",
+        "edit": "Bewerken",
+        "error": "Fout",
+        "inactive": "Inactief",
+        "logout": "Afmelden",
+        "rights": "Machtigingen",
+        "save": "Opslaan",
+        "saving": "Opslaan...",
+        "status": "Status",
+        "zoom": "Zoomen",
+        "activate": "Activeren",
+        "approve": "Goedkeuren",
+        "backToLogin": "Terug naar aanmelden",
+        "clickToCopy": "Klik om te kopiëren",
+        "copied": "Gekopieerd!",
+        "deactivate": "Deactiveren",
+        "field": "Veld",
+        "loggingOut": "Afmelden...",
+        "no": "Nee",
+        "planned": "Gepland",
+        "reject": "Afwijzen",
+        "removeSelection": "Selectie wissen",
+        "yes": "Ja"
+    },
+    "language": {
+        "de": "Deutsch",
+        "en": "English",
+        "sectionTitle": "Taal",
+        "sectionDescription": "Kies de taal van de interface.",
+        "save": "Taal opslaan",
+        "savedTitle": "Taal opgeslagen",
+        "savedDescription": "De taal is gewijzigd.",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
+    },
+    "nav": {
+        "collapse": "Navigatie inklappen",
+        "expand": "Navigatie uitklappen",
+        "overview": "Overzicht",
+        "permissions": "Machtigingen",
+        "user": "Gebruiker",
+        "backups": "Back-ups",
+        "admin": "Beheer",
+        "dashboard": "Dashboard",
+        "navigation": "Navigatie",
+        "systemSettings": "Systeeminstellingen",
+        "userManagement": "Gebruikersbeheer",
+        "auditLogs": "Auditlogboeken"
+    },
+    "auth": {
+        "firstSetup": {
+            "emailPlaceholder": "E-mailadres",
+            "passwordPlaceholder": "Wachtwoord",
+            "passwordMismatch": "De wachtwoorden komen niet overeen.",
+            "title": "Eerste supergebruiker aanmaken",
+            "description": "Stel het eerste account in. Vereiste systeemgegevens en machtigingen worden automatisch gecontroleerd en toegevoegd.",
+            "accountTitle": "Aanmeldgegevens",
+            "accountDescription": "Je gebruikt deze gegevens om je later aan te melden.",
+            "confirmPasswordPlaceholder": "Herhaal het wachtwoord",
+            "checkingSetupLink": "Installatielink controleren…",
+            "setupLinkRequired": "Zoek de installatielink in de app-logboeken",
+            "setupLinkDescription": "Zoek bij lokale ontwikkeling de installatielink in de terminal van bun run dev. Open bij een Komodo-installatie de stacklogboeken en kies de service ‘app’. Kopieer de volledige nieuwste link en open deze in je browser. De link is tien minuten geldig en wordt automatisch vernieuwd totdat de eerste installatie is voltooid.",
+            "personalInfoTitle": "Persoonlijke gegevens",
+            "personalInfoDescription": "Deze gegevens zijn optioneel en kunnen later worden gewijzigd.",
+            "create": "Supergebruiker aanmaken",
+            "creating": "Supergebruiker aanmaken...",
+            "created": "De eerste supergebruiker is aangemaakt. Je kunt je nu aanmelden.",
+            "createError": "De eerste supergebruiker kon niet worden aangemaakt.",
+            "alreadyCompleted": "De eerste installatie is al voltooid.",
+            "invalidSetupToken": "De installatielink is ongeldig of verlopen. Open de nieuwste link uit de app-logboeken.",
+            "invalidData": "Controleer je invoer.",
+            "invalidUsername": "De gebruikersnaam moet tussen 1 en 50 tekens bevatten.",
+            "invalidEmail": "Voer een geldig e-mailadres in."
+        },
+        "forgotPassword": {
+            "requesting": "Aanvragen...",
+            "description": "Voer je e-mailadres in om je wachtwoord opnieuw in te stellen.",
+            "emailPlaceholder": "Je e-mailadres",
+            "requestLink": "Link aanvragen",
+            "title": "Wachtwoord vergeten",
+            "emailSent": "De e-mail voor wachtwoordherstel is verzonden."
+        },
+        "login": {
+            "passwordPlaceholder": "Wachtwoord",
+            "title": "Aanmelden",
+            "eyebrow": "Je marketplace-account",
+            "welcomeBack": "Fijn dat je er weer bent.",
+            "newHere": "Nieuw hier?",
+            "discoverRegistration": "Meer over registreren",
+            "description": "Meld je aan bij je account.",
+            "forgotPassword": "Wachtwoord vergeten?",
+            "login": "Aanmelden",
+            "loggingIn": "Aanmelden...",
+            "usernamePlaceholder": "Je gebruikersnaam",
+            "failed": "Aanmelden mislukt",
+            "or": "of",
+            "passkeyFailed": "Aanmelden met toegangssleutel mislukt",
+            "passkeyLogin": "Aanmelden met toegangssleutel",
+            "passkeyLoggingIn": "Toegangssleutel controleren...",
+            "passkeyUnsupported": "Je browser ondersteunt geen toegangssleutels.",
+            "twoFactorCodeRequired": "Voer je 2FA-code in.",
+            "twoFactorCodeIncomplete": "Voer de volledige 2FA-code in."
+        },
+        "register": {
+            "email": "E-mailadres",
+            "eyebrow": "Binnenkort voor jou",
+            "title": "Jouw toegang tot de marketplace.",
+            "description": "Eén account voor je RentnerProxy-apps en uitbreidingen.",
+            "previewTitle": "Registratie is binnenkort beschikbaar",
+            "previewDescription": "Dit is een voorbeeld. De velden zijn uitgeschakeld; er worden geen gegevens verzameld en er wordt geen account aangemaakt.",
+            "accountDetails": "Voorbeeld van accountgegevens",
+            "emailPlaceholder": "Je e-mailadres",
+            "comingSoon": "Nog niet beschikbaar",
+            "alreadyRegistered": "Heb je al een account?"
+        },
+        "passwordReset": {
+            "newPasswordTitle": "Nieuw wachtwoord",
+            "newPasswordPlaceholder": "Nieuw wachtwoord",
+            "saving": "Opslaan...",
+            "passwordMismatch": "De wachtwoorden komen niet overeen.",
+            "validating": "Herstellink controleren…",
+            "validationError": "De herstellink kon niet worden gecontroleerd. Probeer het opnieuw.",
+            "retryValidation": "Link opnieuw controleren",
+            "missingLinkTitle": "Herstellink ontbreekt",
+            "missingLinkDescription": "Vraag een nieuwe link voor wachtwoordherstel aan.",
+            "invalidLinkTitle": "Ongeldige herstellink",
+            "invalidLinkDescription": "De herstellink is ongeldig of verlopen. Vraag een nieuwe aan.",
+            "newPasswordDescription": "Stel een nieuw wachtwoord voor je account in.",
+            "confirmPasswordPlaceholder": "Herhaal het wachtwoord",
+            "save": "Wachtwoord opslaan",
+            "updated": "Je wachtwoord is gewijzigd. Meld je nu aan in dezelfde browser.",
+            "updatedTitle": "Wachtwoord opgeslagen",
+            "updateError": "Het wachtwoord kon niet worden gewijzigd."
+        },
+        "twoFactor": {
+            "title": "Tweefactorauthenticatie",
+            "codeLabel": "Zescijferige verificatiecode",
+            "description": "Voer de zescijferige code uit je authenticator-app in.",
+            "rememberDevice": "Dit apparaat onthouden",
+            "rememberDeviceDescription": "De volgende keer dat je je in deze browser aanmeldt, is geen 2FA-code nodig. Het token is 30 dagen geldig."
+        },
+        "passwordPolicy": "Het wachtwoord moet tussen {{min}} en {{max}} tekens bevatten.",
+        "privacy": {
+            "title": "Privacybeleid",
+            "placeholder": "Tijdelijke tekst voor het privacybeleid."
+        },
+        "terms": {
+            "title": "Gebruiksvoorwaarden",
+            "placeholder": "Tijdelijke tekst voor de gebruiksvoorwaarden."
+        }
+    },
+    "safeDelete": {
+        "close": "Dialoogvenster sluiten",
+        "confirming": "Verwijderen…",
+        "description": "Deze actie kan niet ongedaan worden gemaakt.",
+        "title": "Verwijderen bevestigen"
+    },
+    "userSettings": {
+        "account": "Account",
+        "appearance": "Weergave",
+        "color": {
+            "reset": "Herstellen",
+            "primaryButton": "Primaire knop",
+            "save": "Kleur opslaan",
+            "secondaryButton": "Secundaire knop",
+            "title": "Systeemkleur"
+        },
+        "font": {
+            "family": {
+                "system": "Systeem",
+                "inter": "Inter",
+                "mono": "Mono",
+                "serif": "Serif"
+            },
+            "preview": "Voorbeeld",
+            "familyTitle": "Lettertype",
+            "saveFamily": "Lettertype opslaan",
+            "saveSize": "Tekstgrootte opslaan",
+            "size": "Tekstgrootte",
+            "sizeTitle": "Tekstgrootte",
+            "sizePreview": "Klein voorbeeld",
+            "sizeValue": "{{size}}px"
+        },
+        "security": {
+            "label": "Beveiliging",
+            "2faConfirm": "Bevestigen",
+            "2faDisable": "2FA uitschakelen",
+            "2faTitle": "Tweefactorauthenticatie",
+            "passwordTitle": "Wachtwoord",
+            "passkeyAdd": "Passkey toevoegen",
+            "passkeyCreatedAt": "Aangemaakt",
+            "passkeyDelete": "Verwijderen",
+            "passkeysTitle": "Passkeys",
+            "reauthenticationTotpPlaceholder": "123456",
+            "2faDisabling": "Uitschakelen...",
+            "passwordSending": "Verzenden...",
+            "signInAgain": "Opnieuw aanmelden",
+            "2faEnable": "2FA inschakelen",
+            "2faPreparing": "Voorbereiden...",
+            "copyFailed": "Kopiëren mislukt.",
+            "passwordReset": "Wachtwoordherstel versturen",
+            "passkeyAdding": "Toegangssleutel toevoegen...",
+            "passkeyBackedUp": "Gesynchroniseerd",
+            "passkeyLastUsedAt": "Laatst gebruikt",
+            "passkeySingleDevice": "Alleen dit apparaat",
+            "passkeysLoading": "Toegangssleutels laden...",
+            "reauthenticationPasswordLabel": "Huidig wachtwoord",
+            "reauthenticationPasswordPlaceholder": "Voer je huidige wachtwoord in",
+            "reauthenticationTotpLabel": "Huidige 2FA-code",
+            "checking": "Controleren...",
+            "secret": "Geheim: {{secret}}"
+        },
+        "header": {
+            "title": "Gebruikersinstellingen",
+            "subtitle": "Instellingen voor {{username}}"
+        },
+        "settingsLabel": "Gebruikersinstellingen",
+        "background": {
+            "choose": "Achtergrond kiezen",
+            "custom": "Eigen achtergrond",
+            "darkness": "Achtergrond donkerder maken",
+            "empty": "Geen afbeelding geselecteerd",
+            "preview": "Voorbeeld van eigen achtergrond",
+            "remove": "Achtergrond verwijderen",
+            "removing": "Verwijderen...",
+            "save": "Achtergrond opslaan",
+            "saveBrightness": "Helderheid opslaan",
+            "zoom": "Achtergrondzoom",
+            "zoomValue": "{{zoom}}x"
+        },
+        "close": "Gebruikersinstellingen sluiten",
+        "theme": {
+            "dark": "Donkere modus",
+            "light": "Lichte modus",
+            "save": "Thema opslaan",
+            "title": "Hoofdthema"
+        },
+        "personalInfo": {
+            "city": "Plaats",
+            "firstName": "Voornaam",
+            "houseNumber": "Huisnummer",
+            "lastName": "Achternaam",
+            "postalCode": "Postcode",
+            "save": "Gegevens opslaan",
+            "street": "Straat",
+            "title": "Persoonlijke gegevens"
+        },
+        "profileImage": {
+            "choose": "Afbeelding kiezen",
+            "save": "Profielfoto opslaan",
+            "title": "Profielfoto",
+            "userId": "Gebruikers-ID: {{userId}}"
+        }
+    },
+    "admin": {
+        "auditLogs": {
+            "action": "Actie",
+            "user": "Gebruiker",
+            "method": "Methode",
+            "created": "Aangemaakt",
+            "details": "Details",
+            "system": "Systeem",
+            "pageTitle": "Auditlogboeken",
+            "entriesTitle": "Vermeldingen",
+            "oldValue": "- Oud",
+            "newValue": "+ Nieuw",
+            "message": "Bericht",
+            "route": "Route",
+            "showDetails": "Auditdetails tonen",
+            "searchPlaceholder": "Auditlogboeken doorzoeken...",
+            "userFilterPlaceholder": "Gebruikers filteren...",
+            "messageFilterPlaceholder": "Berichten filteren...",
+            "routeFilterPlaceholder": "Routes filteren...",
+            "createdFilterPlaceholder": "Aangemaakt van/tot",
+            "entryCount": "{{count}} vermeldingen",
+            "itemLabel": "vermeldingen"
+        },
+        "dashboard": {
+            "console": {
+                "connecting": "Verbinden",
+                "disconnected": "Losgekoppeld",
+                "readOnly": "Alleen-lezen",
+                "open": "Console openen",
+                "opened": "Console geopend",
+                "title": "{{service}} · Console",
+                "emptyTitle": "Serviceconsole",
+                "pendingSource": "Servicelogboek",
+                "close": "Console sluiten",
+                "output": "Alleen-lezen console-uitvoer",
+                "shortLabel": "Console"
+            },
+            "services": {
+                "valkey": "Valkey",
+                "websocket": "WebSocket-server",
+                "webserver": "Webserver",
+                "worker": "Achtergrondproces",
+                "postgresql": "PostgreSQL",
+                "core": "Rust-kern"
+            },
+            "status": {
+                "running": "Actief",
+                "starting": "Wordt gestart",
+                "connecting": "Verbinden",
+                "down": "Niet beschikbaar",
+                "error": "Fout",
+                "checking": "Controleren"
+            },
+            "groups": {
+                "application": {
+                    "title": "Applicatie"
+                }
+            },
+            "title": "Beheerdersdashboard"
+        },
+        "systemSettings": {
+            "plan": "Planning",
+            "preview": "Voorbeeld"
+        },
+        "backups": {
+            "title": "Back-ups",
+            "automaticEnabled": "Automatische back-ups inschakelen",
+            "scheduleTitle": "Planning",
+            "weekday": {
+                "0": "Zo",
+                "1": "Ma",
+                "2": "Di",
+                "3": "Wo",
+                "4": "Do",
+                "5": "Vr",
+                "6": "Za"
+            },
+            "import": "Importeren",
+            "historyTitle": "Back-upgeschiedenis",
+            "table": {
+                "trigger": "Aanleiding",
+                "size": "Grootte",
+                "itemLabel": "back-ups"
+            },
+            "trigger": {
+                "manual": "Handmatig",
+                "import": "Importeren"
+            },
+            "stats": {
+                "failed": "Mislukt",
+                "imported": "geïmporteerd"
+            },
+            "delete": "Back-up verwijderen",
+            "deleteTitle": "Back-up verwijderen",
+            "status": {
+                "queued": "In wachtrij",
+                "running": "Actief",
+                "completed": "Voltooid",
+                "failed": "Mislukt"
+            }
+        },
+        "permissions": {
+            "retry": "Opnieuw proberen",
+            "catalog": {
+                "backups": {
+                    "name": "Back-ups"
+                },
+                "auditLogs": {
+                    "name": "Auditlogboeken"
+                },
+                "adminDashboard": {
+                    "name": "Beheerdersdashboard"
+                }
+            },
+            "presets": {
+                "nameLabel": "Naam",
+                "descriptionLabel": "Beschrijving"
+            },
+            "users": {
+                "total": "{{count}} gebruikers",
+                "previous": "Vorige pagina",
+                "next": "Volgende pagina",
+                "unsavedChanges": "Niet-opgeslagen wijzigingen",
+                "loading": "Gebruikers laden"
+            }
+        },
+        "users": {
+            "tableTitle": "Gebruikers",
+            "createTitle": "Gebruiker aanmaken",
+            "accountTitle": "Account",
+            "permissionsTitle": "Rechten",
+            "username": "Gebruikersnaam",
+            "email": "E-mail",
+            "created": "Aangemaakt",
+            "userCount": "{{count}} gebruikers",
+            "itemLabel": "gebruikers",
+            "create": "Aanmaken",
+            "updateError": "De gebruiker kon niet worden bijgewerkt.",
+            "loading": "Gebruikers laden",
+            "searchPlaceholder": "Gebruikers zoeken",
+            "createdFilterPlaceholder": "Aangemaakt van/tot"
+        }
+    },
+    "layout": {
+        "topbar": {
+            "defaultTitle": "Overzicht",
+            "defaultDescription": "Een overzicht van je huidige omgeving."
+        },
+        "footer": {
+            "terms": "Gebruiksvoorwaarden",
+            "privacy": "Privacybeleid",
+            "imprint": "Colofon"
+        }
+    },
+    "notifications": {
+        "title": "Meldingen"
+    },
+    "shared": {
+        "routeError": {
+            "retry": "Opnieuw proberen"
+        },
+        "table": {
+            "rowsPerPage": "Rijen per pagina",
+            "previousPage": "Vorige pagina",
+            "nextPage": "Volgende pagina",
+            "filterPlaceholder": "Filteren…",
+            "filterColumnPlaceholder": "{{column}} filteren…"
+        },
+        "transfer": {
+            "backupFailed": "Back-up mislukt"
+        },
+        "notFound": {
+            "title": "Pagina niet gevonden."
+        }
+    },
+    "mailTemplates": {
+        "failedLogin": {
+            "ip": "IP-adres",
+            "unknown": "Onbekend",
+            "unknownLocation": "Niet beschikbaar"
+        }
+    },
+    "securityChangeMail": {
+        "timestamp": "Tijd (UTC)"
+    },
+    "marketplace": {
+        "adminLogin": "Beheer",
+        "usernameLabel": "Gebruikersnaam",
+        "passwordLabel": "Wachtwoord",
+        "apps": {
+            "monitoring": {
+                "title": "Monitoring",
+                "description": "Houd je installatie in de gaten met een officiële monitoringuitbreiding."
+            },
+            "docker": {
+                "title": "Docker Discovery",
+                "description": "Ontdek Docker-services en koppel ze aan RentnerProxy."
+            },
+            "dns": {
+                "title": "DNS",
+                "description": "Cloudflare, deSEC en Hetzner: DNS-01 en dynamische DNS."
+            },
+            "crowdsec": {
+                "title": "CrowdSec",
+                "description": "Een CrowdSec-uitbreiding voor de beveiliging van je installatie."
+            },
+            "loadBalancer": {
+                "title": "Loadbalancer",
+                "description": "Verdeel aanvragen over meerdere upstreamservers."
+            },
+            "oidc": {
+                "title": "OpenID Connect",
+                "description": "Koppel identiteitsproviders via OpenID Connect."
+            }
+        },
+        "login": "Aanmelden",
+        "footerLanguage": "Taal",
+        "skipToContent": "Naar inhoud",
+        "home": "Marketplace-startpagina",
+        "description": "Monitoring, DNS, beveiliging en meer. De toekomstige plek voor apps die je RentnerProxy-installatie verder brengen.",
+        "followDevelopment": "Ontwikkeling volgen",
+        "availability": "Je bekijkt een voorbeeld. Downloaden, publiceren en openbare registratie volgen later.",
+        "inPreparation": "In voorbereiding",
+        "outlook": "De eerste officiële apps",
+        "outlookNote": "Gepland. Nog niet beschikbaar om te installeren.",
+        "loginDescription": "Meld je aan om de marketplace te beheren.",
+        "recoveryHint": "Toegang is momenteel bedoeld voor bestaande beheerdersaccounts.",
+        "passkeyDescription": "Meld je aan met een toegangssleutel die al voor je account is ingesteld.",
+        "tagline": "Jouw RentnerProxy. Nog meer mogelijkheden.",
+        "browseApps": "Apps ontdekken",
+        "outlookEyebrow": "Binnenkort",
+        "heroEyebrow": "Officiële apps. Jouw volgende upgrade.",
+        "accountNavigation": "Accounttoegang",
+        "register": "Registreren",
+        "registrationSoon": "Registratie binnenkort beschikbaar",
+        "footerHeadline": "Meer mogelijkheden. Meer jij.",
+        "footerDescription": "Officiële apps voor jouw RentnerProxy. Een plek voor alles wat je installatie straks nodig heeft.",
+        "footerExplore": "Ontdekken",
+        "footerLegal": "Juridisch",
+        "navigation": {
+            "label": "Hoofdnavigatie",
+            "apps": "Apps",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "De appcatalogus",
+            "title": "Apps voor jouw RentnerProxy.",
+            "description": "Een plek voor officiële apps en uitbreidingen. Ontdek wat er voor je installatie is gepland.",
+            "note": "Alle vermeldingen zijn gepland. Je kunt deze apps nog niet downloaden of installeren.",
+            "backToFlow": "Hoe de marketplace moet gaan werken"
+        },
+        "blog": {
+            "eyebrow": "Vanuit de marketplace",
+            "title": "Nieuws. Updates. Wat eraan komt.",
+            "description": "Nieuws en wijzigingslogboeken voor de centraal beheerde RentnerProxy Marketplace, van nieuwe functies tot verbeteringen voor je account.",
+            "note": "De blog staat klaar voor toekomstige berichten en wijzigingslogboeken. Er zijn nog geen artikelen gepubliceerd.",
+            "changelogTitle": "Wat er verandert in de marketplace",
+            "changelogDescription": "De toekomstige plek voor nieuwe functies, verbeteringen en oplossingen voor de centrale marketplace: de dienst waar je je account hebt.",
+            "newsTitle": "Van app-code tot goedkeuring",
+            "newsDescription": "Hoe sjablonen, ontwikkeling en beoordelingen op elkaar moeten aansluiten en hoe goedgekeurde apps later naar wens via je platform beschikbaar komen.",
+            "backHome": "Terug naar de marketplace-startpagina",
+            "featuredLabel": "Voorbeeld van bericht",
+            "featuredTitle": "Eén marketplace. Voor al je apps.",
+            "featuredSummary": "De gezamenlijke plek voor RentnerProxy-apps begint hier. Toekomstige berichten gaan over nieuwe mogelijkheden, de voortgang van de ontwikkeling en wijzigingen in de marketplace.",
+            "centralTitle": "Eén centrale dienst",
+            "centralDescription": "De marketplace wordt beheerd door RentnerProxy. Gebruikers moeten daar hun account kunnen aanmaken; nieuws en wijzigingslogboeken gaan over deze gezamenlijke dienst.",
+            "centralAccount": "Eén marketplace-account",
+            "centralUpdates": "Wijzigingen aan de centrale dienst",
+            "optionalApps": "Optionele apps via je platform",
+            "archiveTitle": "Versies en updates",
+            "filterLabel": "Releasekanaal filteren",
+            "filters": {
+                "all": "Alle versies",
+                "changelog": "Wijzigingslogboeken",
+                "news": "Nieuws",
+                "stable": "Stabiel",
+                "beta": "Bèta",
+                "alpha": "Alfa"
+            },
+            "previewLabel": "Voorbeeld",
+            "comingSoon": "Bericht volgt binnenkort",
+            "emptyChannel": "Er is nog geen versie in dit kanaal gepubliceerd.",
+            "versionPending": "Versie volgt binnenkort",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alfa: de eerste stappen",
+                    "summary": "De toekomstige plek voor vroege marketplace-versies en voorbeelden van functies die nog in ontwikkeling zijn."
+                },
+                "beta": {
+                    "title": "Bèta: samen verder bouwen",
+                    "summary": "Geplande bètaversies brengen nieuwe mogelijkheden, verbeteringen en wijzigingen in de centrale marketplace."
+                },
+                "stable": {
+                    "title": "Stabiel: klaar voor dagelijks gebruik",
+                    "summary": "Toekomstige goedgekeurde stabiele marketplace-versies verschijnen hier met hun wijzigingen en wijzigingslogboeken."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "Van een idee naar je installatie",
+            "title": "Jouw idee. De weg naar een app.",
+            "description": "Zo moet een uitbreiding een beschikbare app worden: ontwikkelen, indienen, laten beoordelen en eventueel via het platform installeren.",
+            "hint": "Kies een stap om de rol ervan te ontdekken.",
+            "preview": "Geplande werkwijze: het app-sjabloon, indienen, goedkeuring en installatie zijn nog niet beschikbaar.",
+            "feedback": "Vragen en aanpassingen",
+            "detailLabel": "Stap {{number}} van {{total}}",
+            "relatedApps": "Geplande apps bekijken",
+            "roles": {
+                "developer": "Ontwikkelaar",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Jouw platform"
+            },
+            "legend": {
+                "development": "Ontwikkeling en indiening",
+                "review": "Beoordeling en vragen",
+                "release": "Goedkeuring en installatie"
+            },
+            "steps": {
+                "template": {
+                    "title": "App-sjabloon",
+                    "caption": "Het beginpunt",
+                    "description": "Een officieel app-sjabloon moet de basisstructuur en koppeling met RentnerProxy bieden. Het wordt het beginpunt voor het bouwen van je eigen apps."
+                },
+                "develop": {
+                    "title": "De app ontwikkelen",
+                    "caption": "Code en tests",
+                    "description": "Ontwikkel en test de app lokaal met het sjabloon en bereid daarna de eerste versie voor. Apps moeten onafhankelijk van platformupdates kunnen worden geïnstalleerd en bijgewerkt."
+                },
+                "submit": {
+                    "title": "De app indienen",
+                    "caption": "Klaar voor beoordeling",
+                    "description": "De voltooide app moet in de marketplace worden geregistreerd en met een beschrijving en versiegegevens ter beoordeling worden ingediend. Een app indienen publiceert deze nog niet."
+                },
+                "review": {
+                    "title": "Beoordeling",
+                    "caption": "RentnerProxy kijkt mee",
+                    "description": "RentnerProxy moet ingediende apps beoordelen voordat ze worden goedgekeurd. Vragen of vereiste wijzigingen sturen de app terug naar de ontwikkeling."
+                },
+                "publish": {
+                    "title": "Goedkeuring",
+                    "caption": "Zichtbaar in de marketplace",
+                    "description": "Na een geslaagde beoordeling en goedkeuring moet de app in de marketplace worden gepubliceerd. Pas dan wordt de goedgekeurde versie beschikbaar voor gebruikers."
+                },
+                "install": {
+                    "title": "Optioneel installeren",
+                    "caption": "Jouw installatie beslist",
+                    "description": "Gebruikers moeten goedgekeurde apps via hun RentnerProxy-platform kunnen kiezen en vervolgens naar wens downloaden en installeren. App-updates moeten onafhankelijk van platformupdates werken."
+                }
+            }
+        }
+    },
+    "maintenance": {
+        "requestSent": "Verzenden..."
+    }
+}

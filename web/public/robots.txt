@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /api/
+Disallow: /_serverFn/
+
+Sitemap: https://market.rentner.dev/sitemap.xml

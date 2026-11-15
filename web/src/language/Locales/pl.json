@@ -1,0 +1,620 @@
+{
+    "common": {
+        "active": "Aktywne",
+        "actions": "Działania",
+        "all": "Wszystkie",
+        "cancel": "Anuluj",
+        "delete": "Usuń",
+        "edit": "Edytuj",
+        "error": "Błąd",
+        "inactive": "Nieaktywne",
+        "logout": "Wyloguj się",
+        "rights": "Uprawnienia",
+        "save": "Zapisz",
+        "saving": "Zapisywanie...",
+        "status": "Stan",
+        "zoom": "Powiększenie",
+        "activate": "Aktywuj",
+        "approve": "Zatwierdź",
+        "backToLogin": "Wróć do logowania",
+        "clickToCopy": "Kliknij, aby skopiować",
+        "copied": "Skopiowano!",
+        "deactivate": "Dezaktywuj",
+        "field": "Pole",
+        "loggingOut": "Wylogowywanie...",
+        "no": "Nie",
+        "planned": "Planowane",
+        "reject": "Odrzuć",
+        "removeSelection": "Wyczyść wybór",
+        "yes": "Tak"
+    },
+    "language": {
+        "de": "Deutsch",
+        "en": "English",
+        "sectionTitle": "Język",
+        "sectionDescription": "Wybierz język interfejsu.",
+        "save": "Zapisz język",
+        "savedTitle": "Zapisano język",
+        "savedDescription": "Język został zmieniony.",
+        "es": "Español",
+        "fr": "Français",
+        "it": "Italiano",
+        "pt": "Português",
+        "nl": "Nederlands",
+        "pl": "Polski"
+    },
+    "nav": {
+        "collapse": "Zwiń nawigację",
+        "expand": "Rozwiń nawigację",
+        "overview": "Przegląd",
+        "permissions": "Uprawnienia",
+        "user": "Użytkownik",
+        "backups": "Kopie zapasowe",
+        "admin": "Administracja",
+        "dashboard": "Pulpit",
+        "navigation": "Nawigacja",
+        "systemSettings": "Ustawienia systemu",
+        "userManagement": "Zarządzanie użytkownikami",
+        "auditLogs": "Dzienniki audytu"
+    },
+    "auth": {
+        "firstSetup": {
+            "emailPlaceholder": "Adres e-mail",
+            "passwordPlaceholder": "Hasło",
+            "passwordMismatch": "Hasła nie są zgodne.",
+            "title": "Utwórz pierwszego superużytkownika",
+            "description": "Skonfiguruj pierwsze konto. Wymagane dane systemowe i uprawnienia zostaną sprawdzone i dodane automatycznie.",
+            "accountTitle": "Dane logowania",
+            "accountDescription": "Tych danych będziesz używać do logowania.",
+            "confirmPasswordPlaceholder": "Powtórz hasło",
+            "checkingSetupLink": "Sprawdzanie odnośnika konfiguracji…",
+            "setupLinkRequired": "Znajdź odnośnik konfiguracji w dziennikach aplikacji",
+            "setupLinkDescription": "Podczas lokalnego tworzenia aplikacji znajdź odnośnik konfiguracji w terminalu bun run dev. Przy wdrożeniu przez Komodo otwórz dzienniki stosu i wybierz usługę „app”. Skopiuj cały najnowszy odnośnik i otwórz go w przeglądarce. Jest ważny przez dziesięć minut i odnawia się automatycznie do zakończenia konfiguracji początkowej.",
+            "personalInfoTitle": "Dane osobowe",
+            "personalInfoDescription": "Te dane są opcjonalne i można je później zmienić.",
+            "create": "Utwórz superużytkownika",
+            "creating": "Tworzenie superużytkownika...",
+            "created": "Utworzono pierwszego superużytkownika. Możesz się teraz zalogować.",
+            "createError": "Nie udało się utworzyć pierwszego superużytkownika.",
+            "alreadyCompleted": "Konfiguracja początkowa została już zakończona.",
+            "invalidSetupToken": "Odnośnik konfiguracji jest nieprawidłowy lub wygasł. Otwórz najnowszy z dzienników aplikacji.",
+            "invalidData": "Sprawdź wprowadzone dane.",
+            "invalidUsername": "Nazwa użytkownika musi zawierać od 1 do 50 znaków.",
+            "invalidEmail": "Wprowadź prawidłowy adres e-mail."
+        },
+        "forgotPassword": {
+            "requesting": "Wysyłanie prośby...",
+            "description": "Wprowadź adres e-mail, aby zresetować hasło.",
+            "emailPlaceholder": "Twój adres e-mail",
+            "requestLink": "Poproś o odnośnik",
+            "title": "Nie pamiętam hasła",
+            "emailSent": "Wysłano wiadomość do resetowania hasła."
+        },
+        "login": {
+            "passwordPlaceholder": "Hasło",
+            "title": "Logowanie",
+            "eyebrow": "Twoje konto marketplace",
+            "welcomeBack": "Dobrze Cię znów widzieć.",
+            "newHere": "Jesteś tu pierwszy raz?",
+            "discoverRegistration": "Poznaj rejestrację",
+            "description": "Zaloguj się na swoje konto.",
+            "forgotPassword": "Nie pamiętasz hasła?",
+            "login": "Zaloguj się",
+            "loggingIn": "Logowanie...",
+            "usernamePlaceholder": "Twoja nazwa użytkownika",
+            "failed": "Logowanie nie powiodło się",
+            "or": "lub",
+            "passkeyFailed": "Logowanie kluczem dostępu nie powiodło się",
+            "passkeyLogin": "Zaloguj się kluczem dostępu",
+            "passkeyLoggingIn": "Sprawdzanie klucza dostępu...",
+            "passkeyUnsupported": "Twoja przeglądarka nie obsługuje kluczy dostępu.",
+            "twoFactorCodeRequired": "Wprowadź kod 2FA.",
+            "twoFactorCodeIncomplete": "Wprowadź pełny kod 2FA."
+        },
+        "register": {
+            "email": "Adres e-mail",
+            "eyebrow": "Już wkrótce dla Ciebie",
+            "title": "Twoja droga do marketplace.",
+            "description": "Jedno konto do aplikacji i rozszerzeń RentnerProxy.",
+            "previewTitle": "Rejestracja będzie wkrótce dostępna",
+            "previewDescription": "To jest podgląd. Pola są wyłączone; żadne dane nie są zbierane i żadne konto nie jest tworzone.",
+            "accountDetails": "Podgląd danych konta",
+            "emailPlaceholder": "Twój adres e-mail",
+            "comingSoon": "Jeszcze niedostępne",
+            "alreadyRegistered": "Masz już konto?"
+        },
+        "passwordReset": {
+            "newPasswordTitle": "Nowe hasło",
+            "newPasswordPlaceholder": "Nowe hasło",
+            "saving": "Zapisywanie...",
+            "passwordMismatch": "Hasła nie są zgodne.",
+            "validating": "Sprawdzanie odnośnika resetowania…",
+            "validationError": "Nie można teraz sprawdzić odnośnika. Spróbuj ponownie.",
+            "retryValidation": "Sprawdź odnośnik ponownie",
+            "missingLinkTitle": "Brak odnośnika resetowania",
+            "missingLinkDescription": "Poproś o nowy odnośnik resetowania hasła.",
+            "invalidLinkTitle": "Nieprawidłowy odnośnik resetowania",
+            "invalidLinkDescription": "Odnośnik jest nieprawidłowy lub wygasł. Poproś o nowy.",
+            "newPasswordDescription": "Ustaw nowe hasło do swojego konta.",
+            "confirmPasswordPlaceholder": "Powtórz hasło",
+            "save": "Zapisz hasło",
+            "updated": "Hasło zostało zmienione. Zaloguj się teraz w tej samej przeglądarce.",
+            "updatedTitle": "Hasło zapisane",
+            "updateError": "Nie udało się zmienić hasła."
+        },
+        "twoFactor": {
+            "title": "Uwierzytelnianie dwuskładnikowe",
+            "codeLabel": "Sześciocyfrowy kod weryfikacyjny",
+            "description": "Wprowadź sześciocyfrowy kod z aplikacji uwierzytelniającej.",
+            "rememberDevice": "Zapamiętaj to urządzenie",
+            "rememberDeviceDescription": "Przy następnym logowaniu w tej przeglądarce kod 2FA nie będzie wymagany. Token jest ważny przez 30 dni."
+        },
+        "passwordPolicy": "Hasło musi zawierać od {{min}} do {{max}} znaków.",
+        "privacy": {
+            "title": "Polityka prywatności",
+            "placeholder": "Tekst zastępczy polityki prywatności."
+        },
+        "terms": {
+            "title": "Warunki użytkowania",
+            "placeholder": "Tekst zastępczy warunków użytkowania."
+        }
+    },
+    "safeDelete": {
+        "close": "Zamknij okno dialogowe",
+        "confirming": "Usuwanie…",
+        "description": "Tej czynności nie można cofnąć.",
+        "title": "Potwierdź usunięcie"
+    },
+    "userSettings": {
+        "account": "Konto",
+        "appearance": "Wygląd",
+        "color": {
+            "reset": "Resetowanie",
+            "primaryButton": "Przycisk główny",
+            "save": "Zapisz kolor",
+            "secondaryButton": "Przycisk dodatkowy",
+            "title": "Kolor systemowy"
+        },
+        "font": {
+            "family": {
+                "system": "System",
+                "inter": "Inter",
+                "mono": "Mono",
+                "serif": "Serif"
+            },
+            "preview": "Podgląd",
+            "familyTitle": "Krój pisma",
+            "saveFamily": "Zapisz krój pisma",
+            "saveSize": "Zapisz rozmiar tekstu",
+            "size": "Rozmiar tekstu",
+            "sizeTitle": "Rozmiar tekstu",
+            "sizePreview": "Mały podgląd",
+            "sizeValue": "{{size}}px"
+        },
+        "security": {
+            "label": "Bezpieczeństwo",
+            "2faConfirm": "Potwierdź",
+            "2faDisable": "Wyłącz 2FA",
+            "2faTitle": "Uwierzytelnianie dwuskładnikowe",
+            "passwordTitle": "Hasło",
+            "passkeyAdd": "Dodaj klucz dostępu",
+            "passkeyCreatedAt": "Utworzono",
+            "passkeyDelete": "Usuń",
+            "passkeysTitle": "Klucze dostępu",
+            "reauthenticationTotpPlaceholder": "123456",
+            "2faDisabling": "Wyłączanie...",
+            "passwordSending": "Wysyłanie...",
+            "signInAgain": "Zaloguj się ponownie",
+            "2faEnable": "Włącz 2FA",
+            "2faPreparing": "Przygotowywanie...",
+            "copyFailed": "Kopiowanie nie powiodło się.",
+            "passwordReset": "Wyślij resetowanie hasła",
+            "passkeyAdding": "Dodawanie klucza dostępu...",
+            "passkeyBackedUp": "Zsynchronizowany",
+            "passkeyLastUsedAt": "Ostatnie użycie",
+            "passkeySingleDevice": "Tylko to urządzenie",
+            "passkeysLoading": "Wczytywanie kluczy dostępu...",
+            "reauthenticationPasswordLabel": "Obecne hasło",
+            "reauthenticationPasswordPlaceholder": "Wprowadź obecne hasło",
+            "reauthenticationTotpLabel": "Obecny kod 2FA",
+            "checking": "Sprawdzanie...",
+            "secret": "Sekret: {{secret}}"
+        },
+        "header": {
+            "title": "Ustawienia użytkownika",
+            "subtitle": "Ustawienia użytkownika {{username}}"
+        },
+        "settingsLabel": "Ustawienia użytkownika",
+        "background": {
+            "choose": "Wybierz tło",
+            "custom": "Własne tło",
+            "darkness": "Przyciemnij tło",
+            "empty": "Nie wybrano obrazu",
+            "preview": "Podgląd własnego tła",
+            "remove": "Usuń tło",
+            "removing": "Usuwanie...",
+            "save": "Zapisz tło",
+            "saveBrightness": "Zapisz jasność",
+            "zoom": "Powiększenie tła",
+            "zoomValue": "{{zoom}}x"
+        },
+        "close": "Zamknij ustawienia użytkownika",
+        "theme": {
+            "dark": "Tryb ciemny",
+            "light": "Tryb jasny",
+            "save": "Zapisz motyw",
+            "title": "Motyw główny"
+        },
+        "personalInfo": {
+            "city": "Miejscowość",
+            "firstName": "Imię",
+            "houseNumber": "Numer domu",
+            "lastName": "Nazwisko",
+            "postalCode": "Kod pocztowy",
+            "save": "Zapisz dane",
+            "street": "Ulica",
+            "title": "Dane osobowe"
+        },
+        "profileImage": {
+            "choose": "Wybierz obraz",
+            "save": "Zapisz zdjęcie profilowe",
+            "title": "Zdjęcie profilowe",
+            "userId": "ID użytkownika: {{userId}}"
+        }
+    },
+    "admin": {
+        "auditLogs": {
+            "action": "Działanie",
+            "user": "Użytkownik",
+            "method": "Metoda",
+            "created": "Utworzono",
+            "details": "Szczegóły",
+            "system": "System",
+            "pageTitle": "Dzienniki audytu",
+            "entriesTitle": "Wpisy",
+            "oldValue": "- Poprzednie",
+            "newValue": "+ Nowe",
+            "message": "Wiadomość",
+            "route": "Trasa",
+            "showDetails": "Pokaż szczegóły audytu",
+            "searchPlaceholder": "Szukaj w dziennikach audytu...",
+            "userFilterPlaceholder": "Filtruj użytkowników...",
+            "messageFilterPlaceholder": "Filtruj wiadomości...",
+            "routeFilterPlaceholder": "Filtruj trasy...",
+            "createdFilterPlaceholder": "Utworzono od/do",
+            "entryCount": "{{count}} wpisów",
+            "itemLabel": "wpisów"
+        },
+        "dashboard": {
+            "console": {
+                "connecting": "Łączenie",
+                "disconnected": "Rozłączono",
+                "readOnly": "Tylko do odczytu",
+                "open": "Otwórz konsolę",
+                "opened": "Konsola otwarta",
+                "title": "{{service}} · Konsola",
+                "emptyTitle": "Konsola usługi",
+                "pendingSource": "Dziennik usługi",
+                "close": "Zamknij konsolę",
+                "output": "Wynik konsoli tylko do odczytu",
+                "shortLabel": "Konsola"
+            },
+            "services": {
+                "valkey": "Valkey",
+                "websocket": "Serwer WebSocket",
+                "webserver": "Serwer WWW",
+                "worker": "Proces roboczy",
+                "postgresql": "PostgreSQL",
+                "core": "Rdzeń Rust"
+            },
+            "status": {
+                "running": "Działa",
+                "starting": "Uruchamianie",
+                "connecting": "Łączenie",
+                "down": "Niedostępne",
+                "error": "Błąd",
+                "checking": "Sprawdzanie"
+            },
+            "groups": {
+                "application": {
+                    "title": "Aplikacja"
+                }
+            },
+            "title": "Pulpit administracyjny"
+        },
+        "systemSettings": {
+            "plan": "Harmonogram",
+            "preview": "Podgląd"
+        },
+        "backups": {
+            "title": "Kopie zapasowe",
+            "automaticEnabled": "Włącz automatyczne kopie zapasowe",
+            "scheduleTitle": "Harmonogram",
+            "weekday": {
+                "0": "Niedz",
+                "1": "Pon",
+                "2": "Wt",
+                "3": "Śr",
+                "4": "Czw",
+                "5": "Pt",
+                "6": "Sob"
+            },
+            "import": "Importowanie",
+            "historyTitle": "Historia kopii zapasowych",
+            "table": {
+                "trigger": "Wyzwalacz",
+                "size": "Rozmiar",
+                "itemLabel": "kopii zapasowych"
+            },
+            "trigger": {
+                "manual": "Ręcznie",
+                "import": "Importowanie"
+            },
+            "stats": {
+                "failed": "Niepowodzenie",
+                "imported": "zaimportowano"
+            },
+            "delete": "Usuń kopię",
+            "deleteTitle": "Usuń kopię",
+            "status": {
+                "queued": "W kolejce",
+                "running": "Działa",
+                "completed": "Ukończona",
+                "failed": "Niepowodzenie"
+            }
+        },
+        "permissions": {
+            "retry": "Spróbuj ponownie",
+            "catalog": {
+                "backups": {
+                    "name": "Kopie zapasowe"
+                },
+                "auditLogs": {
+                    "name": "Dzienniki audytu"
+                },
+                "adminDashboard": {
+                    "name": "Pulpit administracyjny"
+                }
+            },
+            "presets": {
+                "nameLabel": "Nazwa",
+                "descriptionLabel": "Opis"
+            },
+            "users": {
+                "total": "{{count}} użytkownika",
+                "previous": "Poprzednia strona",
+                "next": "Następna strona",
+                "unsavedChanges": "Niezapisane zmiany",
+                "loading": "Wczytywanie użytkowników"
+            }
+        },
+        "users": {
+            "tableTitle": "Użytkownicy",
+            "createTitle": "Utwórz użytkownika",
+            "accountTitle": "Konto",
+            "permissionsTitle": "Uprawnienia",
+            "username": "Nazwa użytkownika",
+            "email": "E-mail",
+            "created": "Utworzono",
+            "userCount": "{{count}} użytkownika",
+            "itemLabel": "użytkownicy",
+            "create": "Utworzenie",
+            "updateError": "Nie udało się zaktualizować użytkownika.",
+            "loading": "Wczytywanie użytkowników",
+            "searchPlaceholder": "Szukaj użytkowników",
+            "createdFilterPlaceholder": "Utworzono od/do"
+        }
+    },
+    "layout": {
+        "topbar": {
+            "defaultTitle": "Przegląd",
+            "defaultDescription": "Przegląd bieżącego obszaru."
+        },
+        "footer": {
+            "terms": "Warunki użytkowania",
+            "privacy": "Polityka prywatności",
+            "imprint": "Informacje o wydawcy"
+        }
+    },
+    "notifications": {
+        "title": "Powiadomienia"
+    },
+    "shared": {
+        "routeError": {
+            "retry": "Spróbuj ponownie"
+        },
+        "table": {
+            "rowsPerPage": "Wiersze na stronę",
+            "previousPage": "Poprzednia strona",
+            "nextPage": "Następna strona",
+            "filterPlaceholder": "Filtruj…",
+            "filterColumnPlaceholder": "Filtruj: {{column}}…"
+        },
+        "transfer": {
+            "backupFailed": "Kopia nieudana"
+        },
+        "notFound": {
+            "title": "Nie znaleziono strony."
+        }
+    },
+    "mailTemplates": {
+        "failedLogin": {
+            "ip": "Adres IP",
+            "unknown": "Nieznany",
+            "unknownLocation": "Niedostępne"
+        }
+    },
+    "securityChangeMail": {
+        "timestamp": "Godzina (UTC)"
+    },
+    "marketplace": {
+        "adminLogin": "Administracja",
+        "usernameLabel": "Nazwa użytkownika",
+        "passwordLabel": "Hasło",
+        "apps": {
+            "monitoring": {
+                "title": "Monitoring",
+                "description": "Obserwuj swoją instalację dzięki oficjalnemu rozszerzeniu monitoringu."
+            },
+            "docker": {
+                "title": "Docker Discovery",
+                "description": "Wykrywaj usługi Docker i łącz je z RentnerProxy."
+            },
+            "dns": {
+                "title": "DNS",
+                "description": "Cloudflare, deSEC i Hetzner: DNS-01 i dynamiczny DNS."
+            },
+            "crowdsec": {
+                "title": "CrowdSec",
+                "description": "Rozszerzenie CrowdSec zwiększające bezpieczeństwo Twojej instalacji."
+            },
+            "loadBalancer": {
+                "title": "Równoważenie obciążenia",
+                "description": "Rozdzielaj żądania między wiele serwerów docelowych."
+            },
+            "oidc": {
+                "title": "OpenID Connect",
+                "description": "Łącz dostawców tożsamości przez OpenID Connect."
+            }
+        },
+        "login": "Zaloguj się",
+        "footerLanguage": "Język",
+        "skipToContent": "Przejdź do treści",
+        "home": "Strona główna marketplace",
+        "description": "Monitoring, DNS, bezpieczeństwo i wiele więcej. Przyszłe miejsce dla aplikacji, które rozszerzą możliwości Twojej instalacji RentnerProxy.",
+        "followDevelopment": "Śledź rozwój",
+        "availability": "Oglądasz podgląd. Pobieranie, publikowanie i publiczna rejestracja pojawią się później.",
+        "inPreparation": "W przygotowaniu",
+        "outlook": "Pierwsze oficjalne aplikacje",
+        "outlookNote": "Planowane. Nie można ich jeszcze zainstalować.",
+        "loginDescription": "Zaloguj się, aby zarządzać marketplace.",
+        "recoveryHint": "Dostęp jest obecnie przeznaczony dla istniejących kont administracyjnych.",
+        "passkeyDescription": "Zaloguj się kluczem dostępu skonfigurowanym wcześniej dla Twojego konta.",
+        "tagline": "Twój RentnerProxy. Jeszcze więcej możliwości.",
+        "browseApps": "Poznaj aplikacje",
+        "outlookEyebrow": "Już wkrótce",
+        "heroEyebrow": "Oficjalne aplikacje. Twój kolejny krok.",
+        "accountNavigation": "Dostęp do konta",
+        "register": "Zarejestruj się",
+        "registrationSoon": "Rejestracja już wkrótce",
+        "footerHeadline": "Więcej możliwości. Więcej Ciebie.",
+        "footerDescription": "Oficjalne aplikacje dla Twojego RentnerProxy. Miejsce na to, czego Twoja instalacja będzie potrzebować.",
+        "footerExplore": "Odkrywaj",
+        "footerLegal": "Informacje prawne",
+        "navigation": {
+            "label": "Nawigacja główna",
+            "apps": "Aplikacje",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "Katalog aplikacji",
+            "title": "Aplikacje dla Twojego RentnerProxy.",
+            "description": "Miejsce dla oficjalnych aplikacji i rozszerzeń. Zobacz, co planujemy dla Twojej instalacji.",
+            "note": "Wszystkie pozycje są planowane. Tych aplikacji nie można jeszcze pobrać ani zainstalować.",
+            "backToFlow": "Jak ma działać marketplace"
+        },
+        "blog": {
+            "eyebrow": "Z marketplace",
+            "title": "Nowości. Aktualizacje. Co dalej.",
+            "description": "Nowości i dzienniki zmian centralnie zarządzanego RentnerProxy Marketplace: od nowych funkcji po ulepszenia Twojego konta.",
+            "note": "Blog jest przygotowany na przyszłe wpisy i dzienniki zmian. Nie opublikowano jeszcze żadnych artykułów.",
+            "changelogTitle": "Co zmienia się w marketplace",
+            "changelogDescription": "Przyszłe miejsce na nowe funkcje, ulepszenia i poprawki centralnego marketplace: usługi, w której masz swoje konto.",
+            "newsTitle": "Od kodu aplikacji do zatwierdzenia",
+            "newsDescription": "Jak szablony, rozwój i przeglądy mają ze sobą współpracować oraz jak zatwierdzone aplikacje trafią później opcjonalnie do użytkowników przez ich platformę.",
+            "backHome": "Wróć na stronę główną marketplace",
+            "featuredLabel": "Podgląd wpisu",
+            "featuredTitle": "Jeden marketplace. Dla wszystkich Twoich aplikacji.",
+            "featuredSummary": "Tutaj zaczyna się wspólne miejsce dla aplikacji RentnerProxy. Przyszłe wpisy będą opisywać nowe możliwości, postępy prac i zmiany w marketplace.",
+            "centralTitle": "Jedna centralna usługa",
+            "centralDescription": "Marketplace jest obsługiwany przez RentnerProxy. Użytkownicy mają zakładać tam swoje konta, a nowości i dzienniki zmian dotyczą tej wspólnej usługi.",
+            "centralAccount": "Jedno konto marketplace",
+            "centralUpdates": "Zmiany w centralnej usłudze",
+            "optionalApps": "Opcjonalne aplikacje przez Twoją platformę",
+            "archiveTitle": "Wersje i aktualizacje",
+            "filterLabel": "Filtruj kanał wydań",
+            "filters": {
+                "all": "Wszystkie wersje",
+                "changelog": "Dzienniki zmian",
+                "news": "Nowości",
+                "stable": "Stabilne",
+                "beta": "Beta",
+                "alpha": "Alfa"
+            },
+            "previewLabel": "Podgląd",
+            "comingSoon": "Wpis już wkrótce",
+            "emptyChannel": "W tym kanale nie opublikowano jeszcze żadnej wersji.",
+            "versionPending": "Wersja już wkrótce",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alfa: pierwsze kroki",
+                    "summary": "Przyszłe miejsce na wczesne wersje marketplace i podglądy funkcji, które wciąż są rozwijane."
+                },
+                "beta": {
+                    "title": "Beta: rozwijamy razem",
+                    "summary": "Planowane wersje beta przyniosą nowe możliwości, ulepszenia i zmiany w centralnym marketplace."
+                },
+                "stable": {
+                    "title": "Stabilne: gotowe do codziennego użytku",
+                    "summary": "Przyszłe zatwierdzone stabilne wersje marketplace pojawią się tutaj wraz z opisem zmian i dziennikami zmian."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "Od pomysłu do Twojej instalacji",
+            "title": "Twój pomysł. Droga do aplikacji.",
+            "description": "Tak rozszerzenie ma stać się dostępną aplikacją: rozwój, zgłoszenie, przegląd i opcjonalna instalacja przez platformę.",
+            "hint": "Wybierz etap, aby poznać jego rolę.",
+            "preview": "Planowany proces: szablon aplikacji, zgłaszanie, zatwierdzanie i instalacja nie są jeszcze dostępne.",
+            "feedback": "Pytania i poprawki",
+            "detailLabel": "Etap {{number}} z {{total}}",
+            "relatedApps": "Zobacz planowane aplikacje",
+            "roles": {
+                "developer": "Programista",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Twoja platforma"
+            },
+            "legend": {
+                "development": "Rozwój i zgłoszenie",
+                "review": "Przegląd i pytania",
+                "release": "Zatwierdzenie i instalacja"
+            },
+            "steps": {
+                "template": {
+                    "title": "Szablon aplikacji",
+                    "caption": "Punkt wyjścia",
+                    "description": "Oficjalny szablon aplikacji ma zapewniać podstawową strukturę i połączenie z RentnerProxy. Będzie punktem wyjścia do tworzenia własnych aplikacji."
+                },
+                "develop": {
+                    "title": "Rozwiń aplikację",
+                    "caption": "Kod i testy",
+                    "description": "Rozwijaj i testuj aplikację lokalnie na podstawie szablonu, a następnie przygotuj jej pierwszą wersję. Aplikacje mają być instalowane i aktualizowane niezależnie od aktualizacji platformy."
+                },
+                "submit": {
+                    "title": "Zgłoś aplikację",
+                    "caption": "Gotowa do przeglądu",
+                    "description": "Gotowa aplikacja ma być rejestrowana w marketplace i zgłaszana do przeglądu wraz z opisem oraz informacjami o wersji. Zgłoszenie aplikacji nie oznacza jej publikacji."
+                },
+                "review": {
+                    "title": "Przegląd",
+                    "caption": "RentnerProxy sprawdza",
+                    "description": "RentnerProxy ma sprawdzać zgłoszone aplikacje przed zatwierdzeniem. Pytania lub wymagane zmiany kierują aplikację z powrotem do etapu rozwoju."
+                },
+                "publish": {
+                    "title": "Zatwierdzenie",
+                    "caption": "Widoczna w marketplace",
+                    "description": "Po pomyślnym przeglądzie i zatwierdzeniu aplikacja ma zostać opublikowana w marketplace. Dopiero wtedy zatwierdzona wersja będzie dostępna dla użytkowników."
+                },
+                "install": {
+                    "title": "Opcjonalna instalacja",
+                    "caption": "Twoja instalacja decyduje",
+                    "description": "Użytkownicy mają wybierać zatwierdzone aplikacje przez swoją platformę RentnerProxy, a następnie opcjonalnie je pobierać i instalować. Aktualizacje aplikacji mają działać niezależnie od aktualizacji platformy."
+                }
+            }
+        }
+    },
+    "maintenance": {
+        "requestSent": "Wysyłanie..."
+    }
+}

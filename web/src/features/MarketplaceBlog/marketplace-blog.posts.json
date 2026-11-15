@@ -1,0 +1,28 @@
+[
+    {
+        "kind": "published",
+        "id": "marketplace-v1-0-0-alpha-1",
+        "category": "changelog",
+        "releaseTag": "v1.0.0-alpha.1",
+        "version": "1.0.0-alpha.1",
+        "publishedAt": "2026-11-15",
+        "content": {
+            "en": {
+                "title": "RentnerProxy Marketplace v1.0.0-alpha.1: the first public preview",
+                "summary": "Our first alpha introduces the public Marketplace foundation: planned apps, the development workflow and a versioned blog. Public registration remains closed.",
+                "body": [
+                    "v1.0.0-alpha.1 introduces the public foundation of the RentnerProxy Marketplace. Explore the planned official apps, discover their path from development to approval and follow news in the versioned blog. The new design, language selector and public information pages bring that shared home to life.",
+                    "This alpha is a preview. Public registration remains closed; app downloads, installation and submissions are not available yet. The Marketplace is operated centrally by RentnerProxy. Next come the package and API contracts, followed by the gradual integration of official apps with the platform."
+                ]
+            },
+            "de": {
+                "title": "RentnerProxy Marketplace v1.0.0-alpha.1: die erste öffentliche Vorschau",
+                "summary": "Die erste Alpha legt das Fundament für den Marketplace: geplante Apps, der Entwicklungsablauf und ein Versionsblog. Die öffentliche Registrierung bleibt geschlossen.",
+                "body": [
+                    "Mit v1.0.0-alpha.1 beginnt die öffentliche Vorschau des RentnerProxy Marketplace. Du kannst die geplanten offiziellen Apps entdecken, ihren Weg von der Entwicklung bis zur Freigabe kennenlernen und Neuigkeiten direkt im Versionsblog verfolgen. Das neue Design, die Sprachauswahl und die öffentlichen Infoseiten bilden dafür die Grundlage.",
+                    "Diese Alpha ist eine Vorschau. Die öffentliche Registrierung bleibt geschlossen; App-Downloads, Installation und Einreichungen sind noch nicht verfügbar. Der Marketplace wird zentral von RentnerProxy betrieben. Als Nächstes folgen die Paket- und API-Verträge sowie die schrittweise Anbindung der offiziellen Apps an die Plattform."
+                ]
+            }
+        }
+    }
+]

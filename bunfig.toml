@@ -1,0 +1,41 @@
+[install]
+minimumReleaseAge = 86400
+minimumReleaseAgeExcludes = [
+    "@rentnerkev/calendar",
+    "@rentnerkev/inputs",
+    "@rentnerkev/picker",
+    "@rentnerkev/select",
+    "@rentnerkev/toasts",
+    "@rentnerkev/tooltips",
+]
+linker = "isolated"
+globalStore = false
+[test]
+root = "web/src/tests"
+pathIgnorePatterns = ["**/*.db.test.ts", "**/*.core.test.ts"]
+# Aggregate thresholds are enforced by web/src/scripts/test-coverage.ts.
+coverageReporter = ["text", "lcov"]
+coverageDir = ".tools/coverage"
+coveragePathIgnorePatterns = [
+    "**/web/src/tests/**",
+    "**/web/src/routeTree.gen.ts",
+]
+
+[fmt]
+semi = false
+singleQuote = true
+trailingComma = "all"
+tabWidth = 4
+useTabs = false
+printWidth = 80
+sortPackageJson = false
+ignorePatterns = [
+    "core/target/",
+    ".tools/",
+    "web/drizzle/",
+    "drizzle.config.ts",
+    ".output/",
+    "node_modules/",
+    "web/src/routeTree.gen.ts",
+    "bun.lock",
+]

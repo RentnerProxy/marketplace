@@ -1,0 +1,138 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "options": {
+        "typeAware": true
+    },
+    "categories": {
+        "correctness": "error",
+        "suspicious": "warn",
+        "perf": "warn"
+    },
+    "plugins": [
+        "typescript",
+        "react",
+        "import",
+        "unicorn",
+        "promise",
+        "node",
+        "oxc"
+    ],
+    "ignorePatterns": [
+        "core/target/**",
+        ".tools/**",
+        "web/drizzle/**",
+        "dist/**",
+        "build/**",
+        ".output/**",
+        ".tanstack/**",
+        ".vinxi/**",
+        "node_modules/**",
+        "web/src/routeTree.gen.ts"
+    ],
+    "rules": {
+        "typescript/no-explicit-any": "warn",
+        "typescript/no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_"
+            }
+        ],
+        "react/react-in-jsx-scope": "off",
+        "react/no-children-prop": "off",
+        "react/jsx-no-useless-fragment": "warn",
+        "import/no-cycle": "off",
+        "unicorn/filename-case": "off"
+    },
+    "overrides": [
+        {
+            "files": ["web/src/tests/**"],
+            "rules": {
+                "typescript/await-thenable": "off",
+                "typescript/no-base-to-string": "off",
+                "typescript/no-floating-promises": "off",
+                "typescript/no-misused-spread": "off",
+                "typescript/no-redundant-type-constituents": "off",
+                "typescript/no-unnecessary-type-assertion": "off",
+                "typescript/no-unsafe-type-assertion": "off",
+                "typescript/unbound-method": "off"
+            }
+        },
+        {
+            "files": [
+                "web/src/server/Storage/storage-mutation-barrier.service.ts",
+                "web/src/server/Storage/storage-mutation-barrier-response.service.ts"
+            ],
+            "rules": {
+                "typescript/await-thenable": "off"
+            }
+        },
+        {
+            "files": ["web/src/tests/Deployment/release-image.test.ts"],
+            "rules": {
+                "no-await-in-loop": "off"
+            }
+        },
+        {
+            "files": [
+                "web/src/tests/layouts/AuthenticatedLayout/session-activity.test.helpers.ts"
+            ],
+            "rules": {
+                "no-await-in-loop": "off"
+            }
+        },
+        {
+            "files": ["web/src/tests/shared/lazy-query.test.helpers.ts"],
+            "rules": {
+                "unicorn/no-thenable": "off"
+            }
+        },
+        {
+            "files": [".forgejo/scripts/release-image-reader.ts"],
+            "rules": {
+                "no-await-in-loop": "off"
+            }
+        },
+        {
+            "files": [
+                "web/src/server/Admin/Backups/archive-encryption-reader.service.ts"
+            ],
+            "rules": {
+                "no-await-in-loop": "off"
+            }
+        },
+        {
+            "files": [
+                "web/src/server/Admin/Backups/archive-encryption-writable.service.ts"
+            ],
+            "rules": {
+                "promise/no-callback-in-promise": "off",
+                "promise/no-promise-in-callback": "off"
+            }
+        },
+        {
+            "files": [
+                "web/src/server/Admin/Backups/archive-staging.service.ts"
+            ],
+            "rules": {
+                "promise/no-callback-in-promise": "off"
+            }
+        },
+        {
+            "files": [
+                "web/src/server/Admin/Backups/archive-entry-transform.service.ts"
+            ],
+            "rules": {
+                "promise/no-callback-in-promise": "off"
+            }
+        },
+        {
+            "files": [
+                "web/src/server/Admin/Backups/restore-journal-io.service.ts"
+            ],
+            "rules": {
+                "no-await-in-loop": "off"
+            }
+        }
+    ]
+}

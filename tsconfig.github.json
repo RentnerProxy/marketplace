@@ -1,0 +1,5 @@
+{
+    "extends": "./tsconfig.json",
+    "include": [".github/scripts/**/*.ts"],
+    "exclude": ["node_modules", "core/target"]
+}
