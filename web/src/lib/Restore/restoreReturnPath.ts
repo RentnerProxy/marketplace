@@ -9,7 +9,8 @@ import type {
     RestoreReturnRecord,
 } from '@/lib/Restore/Types/restore.types.ts'
 
-const RESTORE_RETURN_PATH_STORAGE_KEY = 'rentnerproxy-marketplace:restore-return-path:v2'
+const RESTORE_RETURN_PATH_STORAGE_KEY =
+    'rentnerproxy-marketplace:restore-return-path:v2'
 const RESTORE_RETURN_PATH_MAX_AGE_MS = 24 * 60 * 60_000
 const preRestoreUserIdSchema = z.uuidv7()
 const restoreReturnRecordSchema = z.object({

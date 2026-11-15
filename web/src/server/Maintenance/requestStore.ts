@@ -2,7 +2,8 @@ import type { PendingMaintenanceExtensionRequest } from './Types/maintenance.typ
 import { z } from 'zod'
 import { getValkeyConnection } from '@/server/Valkey/valkey.service.ts'
 
-const PENDING_REQUEST_KEY = 'rentnerproxy-marketplace:maintenance:extension-request'
+const PENDING_REQUEST_KEY =
+    'rentnerproxy-marketplace:maintenance:extension-request'
 const PENDING_REQUEST_TTL_SECONDS = 24 * 60 * 60
 const storedPendingMaintenanceExtensionRequestSchema = z
     .object({

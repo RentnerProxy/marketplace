@@ -23,7 +23,8 @@ import { logError, logInfo } from '@/server/Logging/logger.ts'
 import { tryWithExclusiveStorageMutationBarrier } from '@/server/Storage/storage-mutation-barrier.service.ts'
 import { forEachSequentially } from '@/lib/Promise/forEachSequentially.ts'
 
-const MAIL_RESTORE_QUIESCENCE_KEY = 'rentnerproxy-marketplace:mail:restore-quiescence:v1'
+const MAIL_RESTORE_QUIESCENCE_KEY =
+    'rentnerproxy-marketplace:mail:restore-quiescence:v1'
 const DEFAULT_ACTIVE_DRAIN_TIMEOUT_MS = 60_000
 const DEFAULT_ACTIVE_DRAIN_POLL_INTERVAL_MS = 100
 const DEFAULT_OWNER_LEASE_MS = 2 * 60_000

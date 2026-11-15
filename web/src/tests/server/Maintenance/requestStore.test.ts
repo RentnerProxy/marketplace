@@ -8,7 +8,8 @@ import {
 const valkeyState = (function () {
     return new Map<string, string>()
 })()
-const pendingRequestKey = 'rentnerproxy-marketplace:maintenance:extension-request'
+const pendingRequestKey =
+    'rentnerproxy-marketplace:maintenance:extension-request'
 
 vi.mock('@/server/Valkey/valkey.service.ts', function () {
     return {

@@ -24,7 +24,8 @@ export function renderProjectDocumentation(
         databaseNameAssignment: `\`POSTGRES_DB=${config.databaseName}\``,
         runtimeRoleAssignment: '`POSTGRES_USER=postgres`',
         mailQueue: '`rentnerproxy-marketplace-mail-v2`',
-        mailQuiescenceKey: '`rentnerproxy-marketplace:mail:restore-quiescence:v1`',
+        mailQuiescenceKey:
+            '`rentnerproxy-marketplace:mail:restore-quiescence:v1`',
         rolePasswordCommand: `\`docker compose exec ${config.id} appliance-psql\``,
         rolePassword: `\`\\password ${config.databaseRole}\``,
     }
