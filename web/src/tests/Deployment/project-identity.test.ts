@@ -60,20 +60,45 @@ afterEach(async () => {
 
 describe('central project identity', () => {
     it.each(['latest', 'alpha', 'v1.0.0-alpha.1', 'v1.0.0'])(
-        'preserves the operator-selected image tag %s during a project rename', async (tag) => {
-            const source = await readFile(join(repository, 'docker-compose.yml'), 'utf8')
-            const input = source.replace('ghcr.io/rentnerproxy/marketplace:v1.0.0-alpha.1', `registry.example.test:5000/team/old:${tag}`)
-            expect(input).toContain(`image: registry.example.test:5000/team/old:${tag}`)
-            const result = renderProjectIdentityFile('docker-compose.yml', input, validateProjectIdentity(renamed))
+        'preserves the operator-selected image tag %s during a project rename',
+        async (tag) => {
+            const source = await readFile(
+                join(repository, 'docker-compose.yml'),
+                'utf8',
+            )
+            const input = source.replace(
+                'ghcr.io/rentnerproxy/marketplace:v1.0.0-alpha.1',
+                `registry.example.test:5000/team/old:${tag}`,
+            )
+            expect(input).toContain(
+                `image: registry.example.test:5000/team/old:${tag}`,
+            )
+            const result = renderProjectIdentityFile(
+                'docker-compose.yml',
+                input,
+                validateProjectIdentity(renamed),
+            )
             expect(result).toContain(`image: ${renamed.imageRepository}:${tag}`)
             expect(result).not.toContain('registry.example.test:5000/team/old')
         },
     )
 
     it('refuses to silently turn a digest-pinned image into a tag during renaming', async () => {
-        const source = await readFile(join(repository, 'docker-compose.yml'), 'utf8')
-        const input = source.replace(':v1.0.0-alpha.1', '@sha256:' + 'a'.repeat(64))
-        expect(() => renderProjectIdentityFile('docker-compose.yml', input, validateProjectIdentity(renamed))).toThrow('production imageRepository')
+        const source = await readFile(
+            join(repository, 'docker-compose.yml'),
+            'utf8',
+        )
+        const input = source.replace(
+            ':v1.0.0-alpha.1',
+            '@sha256:' + 'a'.repeat(64),
+        )
+        expect(() =>
+            renderProjectIdentityFile(
+                'docker-compose.yml',
+                input,
+                validateProjectIdentity(renamed),
+            ),
+        ).toThrow('production imageRepository')
     })
 
     it('derives deployment names from the image repository without extra configuration', () => {
@@ -175,7 +200,9 @@ describe('central project identity', () => {
         )
         expect(sql).not.toContain(renamed.databaseName)
         expect(sql).toContain(renamed.databaseRole)
-        expect(compose).toContain(`image: ${renamed.imageRepository}:v1.0.0-alpha.1`)
+        expect(compose).toContain(
+            `image: ${renamed.imageRepository}:v1.0.0-alpha.1`,
+        )
         const dockerfile = await readFile(join(root, 'Dockerfile'), 'utf8')
         expect(dockerfile).toContain('POSTGRES_DB=' + renamed.databaseName)
         const productionEnvironment = await readFile(

@@ -34,7 +34,9 @@ describe('checked-in release changelog gate', () => {
         expect(post.releaseTag).toBe('v1.0.0-alpha.1')
         expect(post.version).toBe('1.0.0-alpha.1')
         expect(post.id).toBe('marketplace-v1-0-0-alpha-1')
-        expect(renderReleaseBlogNotes(post, '')).toContain('Public registration remains closed')
+        expect(renderReleaseBlogNotes(post, '')).toContain(
+            'Public registration remains closed',
+        )
     })
     test('accepts exact-tag published English content and renders it with generated changes', () => {
         const post = requireReleaseChangelog([fixture()], 'v1.2.3')

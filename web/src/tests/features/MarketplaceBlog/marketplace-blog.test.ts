@@ -12,7 +12,10 @@ import {
     findElement,
     invoke,
 } from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
-import { marketplaceBlogChannels, marketplaceBlogPreviewPosts } from '@/features/MarketplaceBlog/marketplace-blog.config.ts'
+import {
+    marketplaceBlogChannels,
+    marketplaceBlogPreviewPosts,
+} from '@/features/MarketplaceBlog/marketplace-blog.config.ts'
 
 const previewChannels = [...marketplaceBlogChannels]
 const previewPosts = [...marketplaceBlogPreviewPosts]
