@@ -99,6 +99,11 @@ mock.module('@/features/MarketplaceApps/index.tsx', () => ({
 mock.module('@/features/MarketplaceBlog/index.tsx', () => ({
     default: () => createElement('section', null, 'Marketplace blog screen'),
 }))
+for (const name of ['Imprint', 'Privacy', 'Register']) {
+    mock.module(`@/features/Auth/${name}/index.tsx`, () => ({
+        default: () => createElement('section', null, `${name} screen`),
+    }))
+}
 mock.module('@/features/Auth/Login/index.tsx', () => ({ default: LoginPage }))
 mock.module('@/features/Auth/FirstSuperUser/index.tsx', () => ({
     default: () => createElement('main', null, 'Setup screen'),
@@ -143,6 +148,9 @@ await import('@/routes/index.tsx')
 await import('@/routes/apps.tsx')
 await import('@/routes/blog.tsx')
 await import('@/routes/setup.tsx')
+await import('@/routes/imprint.tsx')
+await import('@/routes/privacy.tsx')
+await import('@/routes/register.tsx')
 
 function route(path: string) {
     const options = routes.get(path)
@@ -295,9 +303,13 @@ describe('Thin route boundary contracts', () => {
         { path: '/', content: 'Marketplace screen' },
         { path: '/apps', content: 'Marketplace apps screen' },
         { path: '/blog', content: 'Marketplace blog screen' },
+        { path: '/imprint', content: 'Imprint screen' },
+        { path: '/privacy', content: 'Privacy screen' },
+        { path: '/register', content: 'Register screen' },
     ])(
         'renders $path in the public shell without authentication, setup checks or data loading',
         ({ path, content }) => {
+            setupRequired = true
             const options = route(path)
             expect(options.beforeLoad).toBeUndefined()
             expect(options.loader).toBeUndefined()
@@ -310,10 +322,21 @@ describe('Thin route boundary contracts', () => {
         },
     )
 
+    it.each(['/', '/apps', '/blog', '/imprint', '/privacy'])(
+        'explicitly indexes only public page %s with its canonical URL',
+        (path) => {
+            const head = route(path).head!()
+            expect(head.meta).toContainEqual({ name: 'robots', content: 'index, follow, max-image-preview:large' })
+            expect(head.links).toContainEqual({ rel: 'canonical', href: `https://market.rentner.dev${path}` })
+            expect(route('/register').head).toBeUndefined()
+        },
+    )
+
     it('declares document metadata, asset links and a localized provider shell', () => {
         const options = route('__root')
         const head = options.head!()
         expect(head.meta).toContainEqual({ charSet: 'utf-8' })
+        expect(head.meta).toContainEqual({ name: 'robots', content: 'noindex, nofollow, nosnippet' })
         expect(head.meta).toContainEqual({ title: PROJECT_CONFIG.defaultName })
         expect(head.meta).toContainEqual({
             name: 'viewport',

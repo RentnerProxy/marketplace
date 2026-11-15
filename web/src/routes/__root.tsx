@@ -1,3 +1,4 @@
+import { marketplaceRobotsDirectives } from '@/config/seo.config.ts'
 import type { MyRouterContext } from '@/shared/Types/router-context.types.ts'
 import {
     HeadContent,
@@ -29,6 +30,7 @@ import { PROJECT_CONFIG } from '@/config/app.config.ts'
 export const Route = createRootRouteWithContext<MyRouterContext>()({
     head: () => ({
         meta: [
+            { name: 'robots', content: marketplaceRobotsDirectives.private },
             {
                 charSet: 'utf-8',
             },
@@ -95,7 +97,7 @@ function RootDocument({ children }: { children: ReactNode }) {
                         </SelectProvider>
                     </InputProvider>
                 </TooltipProvider>
-                <TanStackDevtools
+                {import.meta.env.DEV && <TanStackDevtools
                     config={{
                         position: 'bottom-right',
                     }}
@@ -106,7 +108,7 @@ function RootDocument({ children }: { children: ReactNode }) {
                         },
                         TanStackQueryDevtools,
                     ]}
-                />
+                />}
                 <Scripts />
             </body>
         </html>

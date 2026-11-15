@@ -1,5 +1,11 @@
 import { setResponseHeader } from '@tanstack/react-start/server'
 import { isPasswordResetPath } from '@/lib/Auth/passwordResetPath.ts'
+import { isFirstSuperUserSetupPath } from '@/features/Auth/FirstSuperUser/setupAccess.ts'
+import { marketplaceRobotsDirectives } from '@/config/seo.config.ts'
+import {
+    addMarketplaceIndexingHeadersService,
+    getMarketplaceRobotsDirectiveService,
+} from '@/server/Seo/indexing.service.ts'
 import {
     addPasswordResetPrivacyHeadersService,
     applyPasswordResetPrivacyHeadersService,
@@ -23,6 +29,26 @@ import { withSharedStorageMutationBarrierResponseService } from '@/server/Storag
 
 installStorageMutationBarrierFatalExitHandlerService()
 
+const searchVisibilityMiddleware = createMiddleware({ type: 'request' }).server(
+    async function ({ pathname, handlerType, next }) {
+        setResponseHeader('x-robots-tag', getMarketplaceRobotsDirectiveService(pathname, handlerType))
+        try {
+            const result = await next()
+            setResponseHeader('x-robots-tag', getMarketplaceRobotsDirectiveService(pathname, handlerType, result.response.status))
+            return {
+                ...result,
+                response: addMarketplaceIndexingHeadersService(result.response, pathname, handlerType),
+            }
+        } catch (error) {
+            setResponseHeader('x-robots-tag', marketplaceRobotsDirectives.private)
+            if (error instanceof Response) {
+                throw addMarketplaceIndexingHeadersService(error, pathname, handlerType)
+            }
+            throw error
+        }
+    },
+)
+
 const passwordResetPrivacyMiddleware = createMiddleware({
     type: 'request',
 }).server(async function ({ request, pathname, handlerType, next }) {
@@ -30,7 +56,7 @@ const passwordResetPrivacyMiddleware = createMiddleware({
     if (legacyRedirect) {
         return legacyRedirect
     }
-    if (!isPasswordResetPath(pathname) && handlerType !== 'serverFn') {
+    if (!isPasswordResetPath(pathname) && !isFirstSuperUserSetupPath(pathname) && handlerType !== 'serverFn') {
         return next()
     }
 
@@ -101,6 +127,7 @@ const serverFunctionCsrfMiddleware = createCsrfMiddleware({
 export const startInstance = createStart(function () {
     return {
         requestMiddleware: [
+            searchVisibilityMiddleware,
             passwordResetPrivacyMiddleware,
             restoreGateMiddleware,
             serverFunctionCsrfMiddleware,
