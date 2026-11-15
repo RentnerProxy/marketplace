@@ -32,4 +32,4 @@ digest=$(docker buildx imagetools inspect "$image" --format '{{.Manifest.Digest}
 [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
 [[ "$(docker buildx imagetools inspect "$channel_image" --format '{{.Manifest.Digest}}')" == "$digest" ]]
 printf 'image=ghcr.io/rentnerproxy/marketplace@%s\n' "$digest" >> "$GITHUB_OUTPUT"
-printf 'Published tested appliance: `%s` (`%s`, `%s`)\n' "$image" "$channel" "$digest" >> "$GITHUB_STEP_SUMMARY"
+printf 'Published tested appliance: %s (%s, %s)\n' "$image" "$channel" "$digest" >> "$GITHUB_STEP_SUMMARY"
