@@ -25,7 +25,7 @@ Projektangaben in `web/src/config/app.config.ts` anpassen und mit `bun run proje
 ## Voraussetzungen
 
 - Bun ab 1.4.4; die Projektversion steht in `package.json`. `bun run format` und `bun run format:check` verwenden den nativen Formatter `bun fmt` mit den Einstellungen aus `bunfig.toml`.
-- Rust 1.99.1 mit Cargo, rustfmt und Clippy für die lokale Entwicklung; im Produktionsimage ist der Core bereits enthalten.
+- Rust 1.100.0 mit Cargo, rustfmt und Clippy für die lokale Entwicklung; im Produktionsimage ist der Core bereits enthalten.
 - PostgreSQL und Valkey – möglichst aktuelle stabile Versionen.
 - PostgreSQL-Tools `pg_dump` und `pg_restore` in der Hauptversion der Datenbank für Backups; im Produktionsimage enthalten.
 - SMTP-Zugang für Systemmails.
