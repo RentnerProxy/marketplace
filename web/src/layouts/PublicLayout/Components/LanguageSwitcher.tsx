@@ -28,8 +28,7 @@ export default function LanguageSwitcher() {
                 content:
                     'min-w-52 rounded-2xl border border-white/15 bg-[#07120e] p-1.5 text-white shadow-[0_18px_60px_rgba(0,0,0,0.5)]',
                 viewport: 'p-0',
-                option:
-                    'min-h-11 rounded-xl py-2.5 pl-9 pr-3 text-sm font-medium tracking-normal normal-case text-white/85 transition-colors hover:bg-white/10 focus:bg-white/10 data-[state=checked]:bg-primary/15 data-[state=checked]:text-primary motion-reduce:transition-none',
+                option: 'min-h-11 rounded-xl py-2.5 pl-9 pr-3 text-sm font-medium tracking-normal normal-case text-white/85 transition-colors hover:bg-white/10 focus:bg-white/10 data-[state=checked]:bg-primary/15 data-[state=checked]:text-primary motion-reduce:transition-none',
                 optionIndicator: 'h-4 w-4 text-primary',
             }}
             renderValue={(options) =>
@@ -60,7 +59,9 @@ export default function LanguageSwitcher() {
                         height="16"
                         className="h-4 w-[22px] shrink-0 rounded-sm object-cover"
                     />
-                    <span lang={option.value} className="truncate">{option.label}</span>
+                    <span lang={option.value} className="truncate">
+                        {option.label}
+                    </span>
                 </span>
             )}
         />
