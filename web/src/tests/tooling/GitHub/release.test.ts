@@ -8,6 +8,26 @@ import { releaseIdentity } from '../../../../../.github/scripts/release/release-
 import { publishRelease } from '../../../../../.github/scripts/release/publish-release.ts'
 
 const image = 'ghcr.io/rentnerproxy/marketplace@sha256:' + 'a'.repeat(64)
+function changelog(tag = 'v1.2.3') {
+    return {
+        kind: 'published',
+        id: 'release-1-2-3',
+        category: 'changelog',
+        releaseTag: tag,
+        version: tag.slice(1),
+        publishedAt: '2026-11-15',
+        content: {
+            en: {
+                title: 'Marketplace account improvements',
+                summary: 'A clearer central service.',
+                body: [
+                    'Improved account controls.',
+                    'Fixed marketplace navigation.',
+                ],
+            },
+        },
+    }
+}
 
 describe('official release identity', () => {
     test('stable releases select latest', () => {
@@ -17,16 +37,17 @@ describe('official release identity', () => {
             channel: 'latest',
         })
     })
-    test.each(['v0.1.0-alpha.1', 'v1.0.0-beta.2', 'v2.0.0-rc.1'])(
-        'prerelease %s selects beta only',
-        (tag) => {
-            expect(releaseIdentity(tag)).toEqual({
-                tag,
-                prerelease: true,
-                channel: 'beta',
-            })
-        },
-    )
+    test.each([
+        ['v0.1.0-alpha.1', 'alpha'],
+        ['v1.0.0-beta.2', 'beta'],
+        ['v2.0.0-rc.1', 'rc'],
+    ])('prerelease %s selects its own %s channel', (tag, channel) => {
+        expect(releaseIdentity(tag)).toEqual({
+            tag,
+            prerelease: true,
+            channel,
+        })
+    })
     test.each([
         '1.2.3',
         'v01.2.3',
@@ -60,17 +81,32 @@ function fixture(existing?: unknown, refusal?: number) {
 describe('native GitHub releases', () => {
     test('creates a stable release with generated notes and exact image digest', async () => {
         const state = fixture()
-        await publishRelease(state.request, 'v1.2.3', image)
+        await publishRelease(
+            state.request,
+            'v1.2.3',
+            image,
+            changelog('v1.2.3'),
+        )
         expect(state.calls.at(-1)).toMatchObject({
             method: 'POST',
             path: '/repos/rentnerproxy/marketplace/releases',
             body: {
                 tag_name: 'v1.2.3',
+                name: 'Marketplace account improvements',
                 prerelease: false,
                 make_latest: 'true',
             },
         })
         expect(JSON.stringify(state.calls.at(-1)?.body)).toContain(image)
+        expect(JSON.stringify(state.calls.at(-1)?.body)).toContain(
+            'A clearer central service.',
+        )
+        expect(JSON.stringify(state.calls.at(-1)?.body)).toContain(
+            'Improved account controls.',
+        )
+        expect(JSON.stringify(state.calls.at(-1)?.body)).toContain(
+            'Fixed marketplace navigation.',
+        )
         expect(JSON.stringify(state.calls.at(-1)?.body)).toContain(
             'Generated changes',
         )
@@ -81,7 +117,12 @@ describe('native GitHub releases', () => {
             tag_name: 'v1.2.3-beta.1',
             body: 'Maintainer notes',
         })
-        await publishRelease(state.request, 'v1.2.3-beta.1', image)
+        await publishRelease(
+            state.request,
+            'v1.2.3-beta.1',
+            image,
+            changelog('v1.2.3-beta.1'),
+        )
         expect(state.calls.at(-1)).toMatchObject({
             method: 'PATCH',
             path: '/repos/rentnerproxy/marketplace/releases/42',
@@ -109,7 +150,12 @@ describe('native GitHub releases', () => {
                 after,
         }
         const state = fixture(existing)
-        await publishRelease(state.request, 'v1.2.3', image)
+        await publishRelease(
+            state.request,
+            'v1.2.3',
+            image,
+            changelog('v1.2.3'),
+        )
         const update = record(state.calls.at(-1)?.body)
         if (typeof update.body !== 'string')
             throw new Error('Expected a release body update')
@@ -121,7 +167,12 @@ describe('native GitHub releases', () => {
         expect(existing.name).toBe('Marketplace release — staged migration')
         expect(existing.draft).toBe(true)
         existing.body = update.body
-        await publishRelease(state.request, 'v1.2.3', image)
+        await publishRelease(
+            state.request,
+            'v1.2.3',
+            image,
+            changelog('v1.2.3'),
+        )
         expect(state.calls.at(-1)?.body).toEqual(update)
         expect(
             state.calls.some((call) => call.path.endsWith('/generate-notes')),
@@ -135,7 +186,12 @@ describe('native GitHub releases', () => {
             draft: false,
             name: 'Custom title',
         })
-        await publishRelease(state.request, 'v1.2.3', image)
+        await publishRelease(
+            state.request,
+            'v1.2.3',
+            image,
+            changelog('v1.2.3'),
+        )
         expect(state.calls.at(-1)?.body).toEqual({
             body: expect.stringMatching(/^Handwritten release notes\.\n/),
         })
@@ -148,21 +204,21 @@ describe('native GitHub releases', () => {
             body: '<!-- marketplace:appliance:start -->Manual content without an end marker',
         })
         await expect(
-            publishRelease(state.request, 'v1.2.3', image),
+            publishRelease(state.request, 'v1.2.3', image, changelog('v1.2.3')),
         ).rejects.toThrow('ambiguous')
         expect(state.calls).toHaveLength(1)
     })
     test('fails closed for unavailable release lookup', async () => {
         const state = fixture(undefined, 403)
         await expect(
-            publishRelease(state.request, 'v1.2.3', image),
+            publishRelease(state.request, 'v1.2.3', image, changelog('v1.2.3')),
         ).rejects.toThrow()
         expect(state.calls).toHaveLength(1)
     })
     test('rejects inconsistent existing release identity', async () => {
         const state = fixture({ id: 42, tag_name: 'v9.9.9' })
         await expect(
-            publishRelease(state.request, 'v1.2.3', image),
+            publishRelease(state.request, 'v1.2.3', image, changelog('v1.2.3')),
         ).rejects.toThrow()
         expect(state.calls).toHaveLength(1)
     })
@@ -173,8 +229,46 @@ describe('native GitHub releases', () => {
                 state.request,
                 'v1.2.3',
                 'ghcr.io/rentnerproxy/marketplace:latest',
+                changelog('v1.2.3'),
             ),
         ).rejects.toThrow()
         expect(state.calls).toHaveLength(0)
     })
 })
+
+test.each([
+    ['v1.2.3', 'latest'],
+    ['v1.2.3-alpha.1', 'alpha'],
+    ['v1.2.3-beta.1', 'beta'],
+    ['v1.2.3-rc.1', 'rc'],
+])(
+    'publisher channel CLI maps %s only to %s without Docker calls',
+    async (tag, channel) => {
+        const child = Bun.spawn(
+            [
+                process.execPath,
+                '--no-env-file',
+                '.github/scripts/release/release-identity.ts',
+            ],
+            {
+                env: { ...process.env, RELEASE_TAG: tag },
+                stdout: 'pipe',
+                stderr: 'pipe',
+                windowsHide: true,
+            },
+        )
+        const [status, output, errors] = await Promise.all([
+            child.exited,
+            new Response(child.stdout).text(),
+            new Response(child.stderr).text(),
+        ])
+        expect(status).toBe(0)
+        expect(errors).toBe('')
+        expect(output.trim()).toBe(channel ?? '')
+        if (tag?.includes('-alpha.')) {
+            expect(output).not.toContain('beta')
+            expect(output).not.toContain('latest')
+        }
+        if (tag?.includes('-rc.')) expect(output).not.toContain('latest')
+    },
+)

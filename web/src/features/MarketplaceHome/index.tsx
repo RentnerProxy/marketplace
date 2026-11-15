@@ -1,14 +1,6 @@
-import {
-    Activity,
-    ArrowDown,
-    ArrowUpRight,
-    Boxes,
-    Globe2,
-    KeyRound,
-    Network,
-    ShieldCheck,
-} from 'lucide-react'
-import CardWave from '@/shared/Brand/CardWave.tsx'
+import { Link } from '@tanstack/react-router'
+import { ArrowRight, ArrowUpRight } from 'lucide-react'
+import AppLifecycle from './Components/AppLifecycle/index.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
 
@@ -65,13 +57,16 @@ export default function MarketplaceHome() {
                         {t('marketplace.description')}
                     </p>
                     <div className="mt-8 flex flex-wrap justify-center gap-3">
-                        <a
-                            href="#marketplace-outlook"
+                        <Link
+                            to="/apps"
                             className="inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover"
                         >
                             {t('marketplace.browseApps')}
-                            <ArrowDown aria-hidden="true" className="h-4 w-4" />
-                        </a>
+                            <ArrowRight
+                                aria-hidden="true"
+                                className="h-4 w-4"
+                            />
+                        </Link>
                         <a
                             href={PROJECT_CONFIG.repositoryUrl}
                             target="_blank"
@@ -111,65 +106,25 @@ export default function MarketplaceHome() {
                 </svg>
             </section>
             <section
-                aria-labelledby="marketplace-outlook"
-                className="mx-auto max-w-[1440px] px-5 pb-24 pt-8 sm:px-8 sm:pb-32 sm:pt-16 lg:px-12"
+                id="marketplace-flow"
+                aria-labelledby="marketplace-flow-title"
+                className="mx-auto max-w-[1440px] scroll-mt-36 px-5 lg:scroll-mt-28 pb-24 pt-8 sm:px-8 sm:pb-32 sm:pt-16 lg:px-12"
             >
-                <div className="mb-10 flex flex-wrap items-end justify-between gap-5 sm:mb-12">
-                    <div>
-                        <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#0d6d2b]">
-                            {t('marketplace.outlookEyebrow')}
-                        </p>
-                        <h2
-                            id="marketplace-outlook"
-                            className="scroll-mt-8 max-w-3xl font-display text-4xl leading-[1.03] tracking-tight sm:text-5xl lg:text-6xl"
-                        >
-                            {t('marketplace.outlook')}
-                        </h2>
-                    </div>
-                    <p className="max-w-xs text-sm leading-6 text-[#52675d]">
-                        {t('marketplace.outlookNote')}
+                <div className="mb-10 max-w-3xl sm:mb-12">
+                    <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#0d6d2b]">
+                        {t('marketplace.flow.eyebrow')}
+                    </p>
+                    <h2
+                        id="marketplace-flow-title"
+                        className="font-display text-4xl leading-[1.03] tracking-tight sm:text-5xl lg:text-6xl"
+                    >
+                        {t('marketplace.flow.title')}
+                    </h2>
+                    <p className="mt-5 max-w-2xl text-sm leading-7 text-[#52675d] sm:text-base">
+                        {t('marketplace.flow.description')}
                     </p>
                 </div>
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {[
-                        { id: 'monitoring', Icon: Activity, number: '01' },
-                        { id: 'docker', Icon: Boxes, number: '02' },
-                        { id: 'loadBalancer', Icon: Network, number: '03' },
-                        { id: 'dns', Icon: Globe2, number: '04' },
-                        { id: 'oidc', Icon: KeyRound, number: '05' },
-                        { id: 'crowdsec', Icon: ShieldCheck, number: '06' },
-                    ].map(({ id, Icon, number }) => (
-                        <article
-                            key={id}
-                            className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-marketplace-void px-7 py-10 text-white shadow-[0_16px_40px_rgba(6,18,15,0.12)] sm:px-8 sm:py-11"
-                        >
-                            <CardWave />
-                            <div className="mb-7 flex items-start justify-between gap-4">
-                                <div className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
-                                    <Icon
-                                        aria-hidden="true"
-                                        className="h-6 w-6"
-                                    />
-                                </div>
-                                <span
-                                    aria-hidden="true"
-                                    className="font-display text-3xl text-primary/25"
-                                >
-                                    {number}
-                                </span>
-                            </div>
-                            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a3ffb8]">
-                                {t('common.planned')}
-                            </span>
-                            <h3 className="mt-4 text-2xl tracking-tight">
-                                {t(`marketplace.apps.${id}.title`)}
-                            </h3>
-                            <p className="mt-3 text-sm leading-7 text-[#c1d2c9]">
-                                {t(`marketplace.apps.${id}.description`)}
-                            </p>
-                        </article>
-                    ))}
-                </div>
+                <AppLifecycle />
             </section>
         </div>
     )

@@ -6,5 +6,16 @@ export function releaseIdentity(tag: string) {
     )
         throw new Error('Expected an official vSemVer release tag')
     const prerelease = tag.includes('-')
-    return { tag, prerelease, channel: prerelease ? 'beta' : 'latest' }
+    const channel = tag.includes('-alpha.')
+        ? 'alpha'
+        : tag.includes('-beta.')
+          ? 'beta'
+          : tag.includes('-rc.')
+            ? 'rc'
+            : 'latest'
+    return { tag, prerelease, channel }
+}
+
+if (import.meta.main) {
+    console.log(releaseIdentity(process.env.RELEASE_TAG ?? '').channel)
 }

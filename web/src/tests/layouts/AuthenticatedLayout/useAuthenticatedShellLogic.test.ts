@@ -147,6 +147,7 @@ it('uses user appearance and company branding and updates a scheduled countdown'
             fontFamily: 'inter',
             primaryColor: '#112233',
             customBackgroundDarkness: 30,
+            customBackgroundUpdatedAt: '2026-11-15T10:00:00.000Z',
         },
         permissions: [],
     }
@@ -164,6 +165,8 @@ it('uses user appearance and company branding and updates a scheduled countdown'
     const result = renderHook(useShell)
     expect(result.state.username).toBe('Kevin')
     expect(result.state.companyName).toBe('Example')
+    expect(result.state).not.toHaveProperty('customBackgroundSrc')
+    expect(result.state).not.toHaveProperty('customBackgroundDarkness')
     expect(result.state.profileImageSrc64).toContain('42')
     expect(result.state.showMaintenanceBanner).toBe(true)
     expect(result.state.millisecondsUntilMaintenance).toBe(5000)

@@ -4,6 +4,11 @@ import {
     record,
 } from '../automation/github.ts'
 import { releaseIdentity } from './release-identity.ts'
+import {
+    loadReleaseChangelog,
+    requireReleaseChangelog,
+    renderReleaseBlogNotes,
+} from './release-blog.ts'
 
 const IMAGE_START = '<!-- marketplace:appliance:start -->'
 const IMAGE_END = '<!-- marketplace:appliance:end -->'
@@ -24,8 +29,10 @@ export async function publishRelease(
     request: ReturnType<typeof createGitHubRequest>,
     tag: string,
     image: string,
+    changelog: unknown,
 ) {
     const identity = releaseIdentity(tag)
+    const post = requireReleaseChangelog([changelog], tag)
     if (
         !/^ghcr\.io\/rentnerproxy\/marketplace@sha256:[a-f0-9]{64}$/.test(image)
     )
@@ -63,8 +70,12 @@ export async function publishRelease(
         throw new Error('GitHub did not generate release notes')
     await request('POST', prefix, {
         tag_name: tag,
-        name: tag,
-        body: imageSection(notes.body, image, identity.channel),
+        name: post.content.en.title,
+        body: imageSection(
+            renderReleaseBlogNotes(post, notes.body),
+            image,
+            identity.channel,
+        ),
         draft: false,
         prerelease: identity.prerelease,
         make_latest: identity.prerelease ? 'false' : 'true',
@@ -76,13 +87,16 @@ if (import.meta.main) {
         throw new Error(
             'Release publication is limited to the Marketplace repository',
         )
+    const tag = process.env.RELEASE_TAG ?? ''
+    const changelog = await loadReleaseChangelog(tag)
     await publishRelease(
         createGitHubRequest(
             'RentnerProxy/marketplace',
             process.env.GH_TOKEN ?? '',
         ),
-        process.env.RELEASE_TAG ?? '',
+        tag,
         process.env.RELEASE_IMAGE ?? '',
+        changelog,
     )
     console.log('Native GitHub Release appliance metadata updated.')
 }

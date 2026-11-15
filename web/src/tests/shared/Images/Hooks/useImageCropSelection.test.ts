@@ -142,7 +142,6 @@ vi.mock('@/shared/TransferOverlay/Hooks/useTransferOverlayTasks.ts', () => ({
 import useImageCropSelection from '@/shared/Images/Hooks/useImageCropSelection.ts'
 import useSystemLogoUpload from '@/features/Admin/SystemSettings/Hooks/useSystemLogoUpload.ts'
 import useProfileImageSettingsLogic from '@/features/UserSettings/Components/Account/Hooks/useProfileImageSettingsLogic.ts'
-import useCustomBackgroundSelection from '@/features/UserSettings/Components/AppearanceSection/Hooks/useCustomBackgroundSelection.ts'
 
 function renderHook<T>(hook: () => T): T {
     stateCursor = 0
@@ -181,10 +180,6 @@ const secondSource = 'data:image/png;base64,BBBB'
 
 function profileHook() {
     return useProfileImageSettingsLogic('synthetic-user')
-}
-
-function backgroundHook() {
-    return useCustomBackgroundSelection('/saved.png')
 }
 
 beforeEach(function () {
@@ -378,29 +373,5 @@ describe('Bildauswahl bei den Feature-Eigentümern', function () {
             ]),
         ).toBe(123)
         expect(renderHook(profileHook).state.imageSrc).toBeNull()
-    })
-
-    it('erhält beim Hintergrund den Ref-Vertrag und die gespeicherte Vorschau nach Reset', function () {
-        let background = renderHook(backgroundHook)
-        expect(background.refs.containerRef.current).toBeNull()
-        expect(background.state.previewBackgroundSrc).toBe('/saved.png')
-        background.handler.handleSelectBackgroundImage(fixtureFile)
-        completeRead(0, firstSource)
-        background = renderHook(backgroundHook)
-        expect(background.state.previewBackgroundSrc).toBe(firstSource)
-        background.handler.handleBackgroundCropChange({ x: 4, y: 8 })
-        background.handler.handleBackgroundZoomChange(2)
-        background.handler.handleBackgroundCropComplete(null, fixturePixels)
-        background = renderHook(backgroundHook)
-        expect(background.state.backgroundCrop).toEqual({ x: 4, y: 8 })
-        expect(background.state.backgroundZoom).toBe(2)
-        expect(background.state.backgroundCroppedAreaPixels).toEqual(
-            fixturePixels,
-        )
-        background.handler.handleResetSelectedBackgroundImage()
-        background = renderHook(backgroundHook)
-        expect(background.state.backgroundImageSrc).toBeNull()
-        expect(background.state.backgroundCroppedAreaPixels).toBeNull()
-        expect(background.state.previewBackgroundSrc).toBe('/saved.png')
     })
 })

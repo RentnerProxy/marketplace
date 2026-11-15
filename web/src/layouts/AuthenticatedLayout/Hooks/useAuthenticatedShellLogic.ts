@@ -4,10 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { getCurrentBrowserPath } from '@/lib/Browser/browser.ts'
-import {
-    getProfileImageSrc,
-    getUserBackgroundSrc,
-} from '@/lib/Images/userImageUrls.ts'
+import { getProfileImageSrc } from '@/lib/Images/userImageUrls.ts'
 import {
     DEFAULT_FAVICON_SRC,
     DEFAULT_IMAGE_64_SRC,
@@ -21,7 +18,6 @@ import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import { hasPermission } from '@/lib/Permissions/permissions.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import {
-    DEFAULT_BACKGROUND_DARKNESS,
     DEFAULT_FONT_FAMILY,
     DEFAULT_FONT_SIZE,
     DEFAULT_PRIMARY_COLOR,
@@ -96,10 +92,6 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
     const fontSize = isUserFontSize(sessionData?.user?.fontSize)
         ? sessionData.user.fontSize
         : DEFAULT_FONT_SIZE
-
-    const customBackgroundDarkness =
-        sessionData?.user?.customBackgroundDarkness ??
-        DEFAULT_BACKGROUND_DARKNESS
 
     const permissions = sessionData?.permissions ?? EMPTY_PERMISSIONS
     const navigation = useAuthenticatedNavigation(permissions)
@@ -264,11 +256,6 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
             themeMode,
             fontFamily,
             fontSize,
-            customBackgroundSrc: getUserBackgroundSrc(
-                userId,
-                sessionData?.user?.customBackgroundUpdatedAt ?? null,
-            ),
-            customBackgroundDarkness,
             homeTo: navigation.state.homeTo,
             navigationSubtitle: navigation.state.subtitle,
             visibleNavItems: navigation.state.visibleNavItems,

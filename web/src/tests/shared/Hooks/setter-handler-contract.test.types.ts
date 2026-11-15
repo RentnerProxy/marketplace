@@ -11,8 +11,6 @@ import type {
 import type useSystemColorLogic from '@/features/UserSettings/Components/AppearanceSection/Hooks/useSystemColorLogic.ts'
 import type useMainThemeLogic from '@/features/UserSettings/Components/AppearanceSection/Hooks/useMainThemeLogic.ts'
 import type useFontsLogic from '@/features/UserSettings/Components/AppearanceSection/Hooks/useFontsLogic.ts'
-import type useCustomBackgroundSelection from '@/features/UserSettings/Components/AppearanceSection/Hooks/useCustomBackgroundSelection.ts'
-import type useCustomBackgroundAppearanceMutation from '@/features/UserSettings/Components/AppearanceSection/Hooks/useCustomBackgroundAppearanceMutation.ts'
 import type useNotificationsLogic from '@/features/Notifications/Hooks/useNotificationsLogic.ts'
 import type useProfileImageSettingsLogic from '@/features/UserSettings/Components/Account/Hooks/useProfileImageSettingsLogic.ts'
 import type usePersonalInfoSettingsLogic from '@/features/UserSettings/Components/Account/Hooks/usePersonalInfoSettingsLogic.ts'
@@ -55,24 +53,6 @@ export type SetterHandlerContracts = AssertAll<{
     useFontsLogic_handleFontFamilyChange: IsValueHandler<
         ReturnType<typeof useFontsLogic>['handler']['handleFontFamilyChange'],
         UserFontFamily
-    >
-    useCustomBackgroundSelection_handleBackgroundCropChange: IsValueHandler<
-        ReturnType<
-            typeof useCustomBackgroundSelection
-        >['handler']['handleBackgroundCropChange'],
-        ImageCropPosition
-    >
-    useCustomBackgroundSelection_handleBackgroundZoomChange: IsValueHandler<
-        ReturnType<
-            typeof useCustomBackgroundSelection
-        >['handler']['handleBackgroundZoomChange'],
-        number
-    >
-    useCustomBackgroundAppearanceMutation_handleBackgroundDarknessChange: IsValueHandler<
-        ReturnType<
-            typeof useCustomBackgroundAppearanceMutation
-        >['handler']['handleBackgroundDarknessChange'],
-        number
     >
     useNotificationsLogic_handleTabChange: IsValueHandler<
         ReturnType<typeof useNotificationsLogic>['handler']['handleTabChange'],

@@ -483,7 +483,7 @@
         "home": "Inicio del marketplace",
         "description": "Monitorización, DNS, seguridad y mucho más. El futuro hogar de las aplicaciones que llevarán tu instalación de RentnerProxy más lejos.",
         "followDevelopment": "Seguir el desarrollo",
-        "availability": "Todavía no disponible: el catálogo de aplicaciones, la instalación y el registro público llegarán en fases posteriores.",
+        "availability": "Estás viendo una vista previa. Las descargas, la publicación y el registro público llegarán más adelante.",
         "inPreparation": "En preparación",
         "outlook": "Las primeras aplicaciones oficiales",
         "outlookNote": "Previstas. Todavía no se pueden instalar.",
@@ -491,7 +491,7 @@
         "recoveryHint": "Por ahora, el acceso está destinado a las cuentas de administración existentes.",
         "passkeyDescription": "Inicia sesión con una clave de acceso ya configurada para tu cuenta.",
         "tagline": "Tu RentnerProxy. Aún más posibilidades.",
-        "browseApps": "Explorar aplicaciones previstas",
+        "browseApps": "Explorar aplicaciones",
         "outlookEyebrow": "Próximamente",
         "heroEyebrow": "Aplicaciones oficiales. Tu próxima mejora.",
         "accountNavigation": "Acceso a la cuenta",
@@ -500,7 +500,119 @@
         "footerHeadline": "Más posibilidades. Más tú.",
         "footerDescription": "Aplicaciones oficiales para tu RentnerProxy. Un lugar para todo lo que tu instalación necesite después.",
         "footerExplore": "Explorar",
-        "footerLegal": "Información legal"
+        "footerLegal": "Información legal",
+        "navigation": {
+            "label": "Navegación principal",
+            "apps": "Aplicaciones",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "El catálogo de aplicaciones",
+            "title": "Aplicaciones para tu RentnerProxy.",
+            "description": "Un hogar para aplicaciones y extensiones oficiales. Descubre lo que está previsto para tu stack.",
+            "note": "Todas las aplicaciones están previstas. Todavía no se pueden descargar ni instalar.",
+            "backToFlow": "Cómo está previsto que funcione el marketplace"
+        },
+        "blog": {
+            "eyebrow": "Desde el marketplace",
+            "title": "Novedades. Actualizaciones. Lo que viene.",
+            "description": "Noticias y registros de cambios del RentnerProxy Marketplace centralizado, desde nuevas funciones hasta mejoras para tu cuenta.",
+            "note": "El blog está preparado para futuras publicaciones y registros de cambios. Todavía no se ha publicado ningún artículo.",
+            "changelogTitle": "Qué cambia en el marketplace",
+            "changelogDescription": "El futuro espacio para nuevas funciones, mejoras y correcciones del marketplace central: el servicio donde tienes tu cuenta.",
+            "newsTitle": "Del código de la aplicación a la aprobación",
+            "newsDescription": "Cómo está previsto conectar las plantillas, el desarrollo y las revisiones, y cómo las aplicaciones aprobadas llegarán más adelante a ti de forma opcional a través de tu plataforma.",
+            "backHome": "Volver al inicio del marketplace",
+            "featuredLabel": "Vista previa del artículo",
+            "featuredTitle": "Un marketplace. Para todas tus aplicaciones.",
+            "featuredSummary": "Aquí comienza el espacio común para las aplicaciones de RentnerProxy. Las futuras publicaciones tratarán sobre nuevas posibilidades, avances del desarrollo y cambios en el marketplace.",
+            "centralTitle": "Un servicio central",
+            "centralDescription": "RentnerProxy gestiona el marketplace. Está previsto que los usuarios creen sus cuentas allí; las noticias y los registros de cambios se refieren a este servicio común.",
+            "centralAccount": "Una cuenta del marketplace",
+            "centralUpdates": "Cambios en el servicio central",
+            "optionalApps": "Aplicaciones opcionales a través de tu plataforma",
+            "archiveTitle": "Versiones y actualizaciones",
+            "filterLabel": "Filtrar canal de lanzamiento",
+            "filters": {
+                "all": "Todas las versiones",
+                "changelog": "Registros de cambios",
+                "news": "Novedades",
+                "stable": "Estable",
+                "beta": "Beta",
+                "alpha": "Alfa"
+            },
+            "previewLabel": "Vista previa",
+            "comingSoon": "Artículo próximamente",
+            "emptyChannel": "Todavía no se ha publicado ninguna versión en este canal.",
+            "versionPending": "Versión próximamente",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alfa: los primeros pasos",
+                    "summary": "El futuro espacio para las primeras versiones del marketplace y las vistas previas de funciones todavía en desarrollo."
+                },
+                "beta": {
+                    "title": "Beta: construyendo juntos",
+                    "summary": "Las versiones beta previstas traerán nuevas posibilidades, mejoras y cambios al marketplace central."
+                },
+                "stable": {
+                    "title": "Estable: listo para el día a día",
+                    "summary": "Las futuras versiones estables aprobadas del marketplace aparecerán aquí con sus cambios y registros de cambios."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "De una idea a tu stack",
+            "title": "Tu idea. El camino hacia una aplicación.",
+            "description": "Así está previsto que una extensión se convierta en una aplicación disponible: desarrollarla, enviarla, someterla a revisión e instalarla opcionalmente a través de la plataforma.",
+            "hint": "Selecciona una etapa para descubrir su función.",
+            "preview": "Flujo previsto: la plantilla, el envío, la aprobación y la instalación de aplicaciones todavía no están disponibles.",
+            "feedback": "Preguntas y revisiones",
+            "detailLabel": "Etapa {{number}} de {{total}}",
+            "relatedApps": "Ver aplicaciones previstas",
+            "roles": {
+                "developer": "Desarrollador",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Tu plataforma"
+            },
+            "legend": {
+                "development": "Desarrollo y envío",
+                "review": "Revisión y preguntas",
+                "release": "Aprobación e instalación"
+            },
+            "steps": {
+                "template": {
+                    "title": "Plantilla de aplicación",
+                    "caption": "El punto de partida",
+                    "description": "Está previsto que una plantilla oficial proporcione la estructura básica y la conexión con RentnerProxy. Más adelante será el punto de partida para crear tus propias aplicaciones."
+                },
+                "develop": {
+                    "title": "Desarrollar la aplicación",
+                    "caption": "Código y pruebas",
+                    "description": "Desarrolla y prueba la aplicación localmente a partir de la plantilla y prepara su primera versión. Las aplicaciones están pensadas para instalarse y actualizarse con independencia de las actualizaciones de la plataforma."
+                },
+                "submit": {
+                    "title": "Enviar la aplicación",
+                    "caption": "Lista para revisión",
+                    "description": "Está previsto registrar la aplicación terminada en el marketplace y enviarla para revisión con una descripción y los datos de la versión. Enviar una aplicación no la publica."
+                },
+                "review": {
+                    "title": "Revisión",
+                    "caption": "RentnerProxy la revisa",
+                    "description": "Está previsto que RentnerProxy revise las aplicaciones enviadas antes de aprobarlas. Las preguntas o los cambios necesarios devuelven la aplicación a la fase de desarrollo."
+                },
+                "publish": {
+                    "title": "Aprobación",
+                    "caption": "Visible en el marketplace",
+                    "description": "Está previsto publicar la aplicación en el marketplace tras superar la revisión y recibir la aprobación. Solo entonces estará disponible para los usuarios la versión aprobada."
+                },
+                "install": {
+                    "title": "Instalación opcional",
+                    "caption": "Tu stack decide",
+                    "description": "Los usuarios podrán elegir aplicaciones aprobadas a través de su plataforma RentnerProxy y descargarlas e instalarlas opcionalmente. Está previsto que las aplicaciones se actualicen con independencia de la plataforma."
+                }
+            }
+        }
     },
     "maintenance": {
         "requestSent": "Enviando..."

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 bash .github/scripts/release/validate-tag.sh
+bun --no-env-file .github/scripts/release/release-blog.ts
 [[ "$IMAGE_ID" =~ ^sha256:[a-f0-9]{64}$ ]]
 image="ghcr.io/rentnerproxy/marketplace:$RELEASE_TAG"
-channel=latest
-if [[ "$RELEASE_TAG" == *-* ]]; then channel=beta; fi
+channel=$(bun --no-env-file .github/scripts/release/release-identity.ts)
 channel_image="ghcr.io/rentnerproxy/marketplace:$channel"
 auth_directory=$(mktemp -d "$RUNNER_TEMP/marketplace-auth.XXXXXXXX")
 trap 'rm -rf -- "$auth_directory"' EXIT

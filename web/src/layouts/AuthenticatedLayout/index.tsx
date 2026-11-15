@@ -14,30 +14,6 @@ export default function AuthenticatedShell() {
             className={`app-theme-${state.themeMode} min-h-dvh bg-background-dark text-foreground`}
             style={state.shellStyle}
         >
-            {state.customBackgroundSrc && (
-                <div
-                    className="fixed bottom-0 right-0 top-0 z-0 bg-cover bg-center bg-no-repeat transition-[left] duration-300"
-                    style={{
-                        backgroundImage: `url("${state.customBackgroundSrc}")`,
-                        left: state.isCollapsed ? '5rem' : '18rem',
-                    }}
-                    aria-hidden="true"
-                />
-            )}
-            {state.customBackgroundSrc && (
-                <div
-                    className="fixed bottom-0 right-0 top-0 z-0 transition-[left] duration-300"
-                    style={{
-                        backgroundColor:
-                            state.themeMode === 'light'
-                                ? `rgba(241, 245, 249, ${state.customBackgroundDarkness / 100})`
-                                : `rgba(15, 16, 20, ${state.customBackgroundDarkness / 100})`,
-                        left: state.isCollapsed ? '5rem' : '18rem',
-                    }}
-                    aria-hidden="true"
-                />
-            )}
-
             <AuthenticatedSidebar
                 title={state.companyName}
                 subtitle={state.navigationSubtitle}

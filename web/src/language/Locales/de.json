@@ -954,7 +954,7 @@
         "adminLogin": "Verwaltung",
         "description": "Monitoring, DNS, Sicherheit und mehr. Hier entsteht der Ort für Apps, mit denen du dein RentnerProxy-Setup erweiterst.",
         "followDevelopment": "Entwicklung verfolgen",
-        "availability": "Noch nicht verfügbar: App-Katalog, Installation und öffentliche Registrierung folgen in weiteren Entwicklungsschritten.",
+        "availability": "Du siehst eine Vorschau. Downloads, Veröffentlichungen und die öffentliche Registrierung folgen später.",
         "inPreparation": "In Vorbereitung",
         "outlook": "Die ersten offiziellen Apps",
         "outlookNote": "Geplant. Noch nicht zur Installation verfügbar.",
@@ -990,7 +990,7 @@
             }
         },
         "tagline": "Dein RentnerProxy. Noch mehr Möglichkeiten.",
-        "browseApps": "Geplante Apps entdecken",
+        "browseApps": "Apps entdecken",
         "outlookEyebrow": "Das kommt als Nächstes",
         "heroEyebrow": "Offizielle Apps. Dein nächstes Upgrade.",
         "accountNavigation": "Kontozugang",
@@ -1001,6 +1001,118 @@
         "footerDescription": "Offizielle Apps für dein RentnerProxy. Ein Zuhause für alles, was dein Setup als Nächstes braucht.",
         "footerExplore": "Entdecken",
         "footerLegal": "Rechtliches",
-        "footerLanguage": "Sprache"
+        "footerLanguage": "Sprache",
+        "navigation": {
+            "label": "Hauptnavigation",
+            "apps": "Apps",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "Der App-Katalog",
+            "title": "Apps für dein RentnerProxy.",
+            "description": "Hier bekommen offizielle Apps und Erweiterungen ihr Zuhause. Entdecke, was für deinen Stack geplant ist.",
+            "note": "Alle Einträge sind geplant. Die Apps können noch nicht heruntergeladen oder installiert werden.",
+            "backToFlow": "So soll der Marketplace funktionieren"
+        },
+        "blog": {
+            "eyebrow": "Aus dem Marketplace",
+            "title": "Neues. Updates. Was kommt.",
+            "description": "Neuigkeiten und Changelogs zum zentral betriebenen RentnerProxy Marketplace – von neuen Funktionen bis zu Verbesserungen für dein Konto.",
+            "note": "Der Blog ist vorbereitet. Erste Beiträge und Changelogs folgen; aktuell sind noch keine Artikel veröffentlicht.",
+            "changelogTitle": "Was sich im Marketplace ändert",
+            "changelogDescription": "Hier dokumentieren wir künftig neue Funktionen, Verbesserungen und Fehlerbehebungen am zentralen Marketplace. Es geht um den Dienst, bei dem du dein Konto hast.",
+            "newsTitle": "Vom App-Code bis zur Freigabe",
+            "newsDescription": "Wie Vorlage, Entwicklung und Prüfung zusammenspielen sollen – und wie freigegebene Apps später optional über deine Plattform zu dir kommen.",
+            "backHome": "Zur Marketplace-Startseite",
+            "featuredLabel": "Beitragsvorschau",
+            "featuredTitle": "Ein Marketplace. Für alle deine Apps.",
+            "featuredSummary": "Hier beginnt der gemeinsame Ort für RentnerProxy-Apps. Künftig berichten wir über neue Möglichkeiten, den Stand der Entwicklung und Änderungen am Marketplace.",
+            "centralTitle": "Ein zentraler Dienst",
+            "centralDescription": "Der Marketplace wird von RentnerProxy betrieben. Nutzer sollen dort ihr Konto anlegen; Neuigkeiten und Changelogs beziehen sich auf diesen gemeinsamen Dienst.",
+            "centralAccount": "Ein Marketplace-Konto",
+            "centralUpdates": "Änderungen am zentralen Dienst",
+            "optionalApps": "Apps optional über deine Plattform",
+            "archiveTitle": "Versionen & Updates",
+            "filterLabel": "Release-Kanal filtern",
+            "filters": {
+                "all": "Alle Versionen",
+                "changelog": "Changelogs",
+                "news": "Neuigkeiten",
+                "stable": "Stable",
+                "beta": "Beta",
+                "alpha": "Alpha"
+            },
+            "previewLabel": "Vorschau",
+            "comingSoon": "Beitrag folgt",
+            "emptyChannel": "Für diesen Kanal ist noch keine Version veröffentlicht.",
+            "versionPending": "Version folgt",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alpha: die ersten Schritte",
+                    "summary": "Hier findest du künftig erste Marketplace-Versionen und Einblicke in neue Funktionen, die noch in Entwicklung sind."
+                },
+                "beta": {
+                    "title": "Beta: gemeinsam weiterentwickeln",
+                    "summary": "Geplant sind Beta-Versionen mit neuen Möglichkeiten, Verbesserungen und Änderungen am zentralen Marketplace."
+                },
+                "stable": {
+                    "title": "Stable: für den Alltag bereit",
+                    "summary": "Hier erscheinen künftig freigegebene stabile Marketplace-Versionen mit ihren Änderungen und Changelogs."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "Von der Idee in deinen Stack",
+            "title": "Deine Idee. Der Weg zur App.",
+            "description": "So soll aus einer Erweiterung eine verfügbare App werden: entwickeln, einreichen, prüfen lassen und optional über die Plattform installieren.",
+            "hint": "Wähle eine Station und entdecke ihre Rolle.",
+            "preview": "Geplanter Ablauf: App-Vorlage, Einreichung, Freigabe und Installation sind noch nicht verfügbar.",
+            "feedback": "Rückfragen & Überarbeitung",
+            "detailLabel": "Station {{number}} von {{total}}",
+            "relatedApps": "Geplante Apps ansehen",
+            "roles": {
+                "developer": "Entwickler",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Deine Plattform"
+            },
+            "legend": {
+                "development": "Entwicklung & Einreichung",
+                "review": "Prüfung & Rückfragen",
+                "release": "Freigabe & Installation"
+            },
+            "steps": {
+                "template": {
+                    "title": "App-Vorlage",
+                    "caption": "Der Ausgangspunkt",
+                    "description": "Eine offizielle App-Vorlage soll die Grundstruktur und die Anbindung an RentnerProxy bereitstellen. Sie wird später als Startpunkt für eigene Apps verfügbar sein."
+                },
+                "develop": {
+                    "title": "App entwickeln",
+                    "caption": "Code & Tests",
+                    "description": "Auf Basis der Vorlage wird die App entwickelt, lokal getestet und für eine erste Version vorbereitet. Apps sollen eigenständig installierbar und unabhängig von Plattform-Updates aktualisierbar sein."
+                },
+                "submit": {
+                    "title": "App einreichen",
+                    "caption": "Bereit zur Prüfung",
+                    "description": "Die fertige App soll im Marketplace registriert und mit Beschreibung und Versionsangaben zur Prüfung eingereicht werden. Die Einreichung ist noch keine Veröffentlichung."
+                },
+                "review": {
+                    "title": "Prüfung",
+                    "caption": "RentnerProxy schaut hin",
+                    "description": "RentnerProxy soll die eingereichte App vor der Freigabe prüfen. Bei Rückfragen oder nötigen Änderungen geht sie zurück an die Entwicklung."
+                },
+                "publish": {
+                    "title": "Freigabe",
+                    "caption": "Im Marketplace sichtbar",
+                    "description": "Nach erfolgreicher Prüfung und Freigabe soll die App im Marketplace veröffentlicht werden. Erst dann wird die freigegebene Version für Nutzer verfügbar."
+                },
+                "install": {
+                    "title": "Optional installieren",
+                    "caption": "Dein Stack entscheidet",
+                    "description": "Nutzer sollen freigegebene Apps über ihre RentnerProxy-Plattform auswählen und optional herunterladen und installieren können. App-Updates sollen unabhängig von Plattform-Updates möglich sein."
+                }
+            }
+        }
     }
 }

@@ -143,6 +143,20 @@ test.each(['image', 'release'])(
         if (name === 'release') {
             expect(job.environment).toBe('marketplace-release')
             expect(job.needs).toBe('verify')
+            expect(document.jobs.verify?.needs).toBe('content')
+            expect(document.jobs.content?.permissions).toEqual({
+                contents: 'read',
+            })
+            expect(document.jobs.content?.steps.at(-1)?.run).toBe(
+                'bun --no-env-file .github/scripts/release/release-blog.ts',
+            )
+            const contentGate = steps.findIndex(
+                (step) =>
+                    step.name ===
+                    'Revalidate release changelog before image build',
+            )
+            expect(contentGate).toBeGreaterThan(0)
+            expect(contentGate).toBeLessThan(build)
             const publish = steps.findIndex((step) => step.id === 'publish')
             expect(publish).toBeGreaterThan(contracts)
             expect(steps[publish]?.env?.IMAGE_ID).toBe(
@@ -224,4 +238,29 @@ test('Bun and Docker toolchain pins agree and actions are maintained through Dep
             timezone: 'Europe/Berlin',
         })
     }
+})
+
+test('image publisher resolves the validated tag through the authoritative channel mapper', async () => {
+    const source = await read('.github/scripts/release/publish-image.sh')
+    const mapping =
+        'channel=$(bun --no-env-file .github/scripts/release/release-identity.ts)'
+    expect(
+        source.indexOf('bash .github/scripts/release/validate-tag.sh'),
+    ).toBeLessThan(source.indexOf(mapping))
+    expect(
+        source.indexOf(
+            'bun --no-env-file .github/scripts/release/release-blog.ts',
+        ),
+    ).toBeLessThan(source.indexOf(mapping))
+    expect(source).toContain(mapping)
+    expect(source).toContain(
+        'channel_image="ghcr.io/rentnerproxy/marketplace:$channel"',
+    )
+    expect(source).toContain('docker tag "$IMAGE_ID" "$channel_image"')
+    expect(source).not.toContain('channel=beta')
+    expect(source).toContain(
+        'Version image already exists with different content; refusing overwrite.',
+    )
+    expect(source).toContain('trap ')
+    expect(source).toContain('imagetools inspect "$channel_image"')
 })

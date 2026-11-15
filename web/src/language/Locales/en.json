@@ -954,7 +954,7 @@
         "adminLogin": "Administration",
         "description": "Monitoring, DNS, security and more. The future home for apps that take your RentnerProxy setup further.",
         "followDevelopment": "Follow development",
-        "availability": "Not available yet: the app catalog, installation, and public registration will follow in later development stages.",
+        "availability": "You're viewing a preview. Downloads, publishing and public registration are coming later.",
         "inPreparation": "In preparation",
         "outlook": "The first official apps",
         "outlookNote": "Planned. Not yet available to install.",
@@ -990,7 +990,7 @@
             }
         },
         "tagline": "Your RentnerProxy. Even more possibilities.",
-        "browseApps": "Explore planned apps",
+        "browseApps": "Explore apps",
         "outlookEyebrow": "Coming up next",
         "heroEyebrow": "Official apps. Your next upgrade.",
         "accountNavigation": "Account access",
@@ -1001,6 +1001,118 @@
         "footerDescription": "Official apps for your RentnerProxy. A home for whatever your setup needs next.",
         "footerExplore": "Explore",
         "footerLegal": "Legal",
-        "footerLanguage": "Language"
+        "footerLanguage": "Language",
+        "navigation": {
+            "label": "Main navigation",
+            "apps": "Apps",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "The app catalog",
+            "title": "Apps for your RentnerProxy.",
+            "description": "A home for official apps and extensions. Discover what's planned for your stack.",
+            "note": "Every listing is planned. These apps cannot be downloaded or installed yet.",
+            "backToFlow": "How the marketplace is planned to work"
+        },
+        "blog": {
+            "eyebrow": "From the marketplace",
+            "title": "News. Updates. What's next.",
+            "description": "News and changelogs for the centrally operated RentnerProxy Marketplace, from new features to improvements for your account.",
+            "note": "The blog is ready for future posts and changelogs. No articles have been published yet.",
+            "changelogTitle": "What changes in the marketplace",
+            "changelogDescription": "The future home for new features, improvements and fixes to the central marketplace: the service where you have your account.",
+            "newsTitle": "From app code to approval",
+            "newsDescription": "How templates, development and reviews are planned to fit together, and how approved apps will later reach you optionally through your platform.",
+            "backHome": "Back to marketplace home",
+            "featuredLabel": "Post preview",
+            "featuredTitle": "One marketplace. For all your apps.",
+            "featuredSummary": "The shared home for RentnerProxy apps starts here. Future posts will cover new possibilities, development progress and changes to the marketplace.",
+            "centralTitle": "One central service",
+            "centralDescription": "The marketplace is operated by RentnerProxy. Users are intended to create their accounts there; news and changelogs cover this shared service.",
+            "centralAccount": "One marketplace account",
+            "centralUpdates": "Changes to the central service",
+            "optionalApps": "Optional apps through your platform",
+            "archiveTitle": "Versions & updates",
+            "filterLabel": "Filter release channel",
+            "filters": {
+                "all": "All versions",
+                "changelog": "Changelogs",
+                "news": "News",
+                "stable": "Stable",
+                "beta": "Beta",
+                "alpha": "Alpha"
+            },
+            "previewLabel": "Preview",
+            "comingSoon": "Post coming soon",
+            "emptyChannel": "No version has been published in this channel yet.",
+            "versionPending": "Version coming soon",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alpha: the first steps",
+                    "summary": "The future home for early marketplace versions and previews of features still in development."
+                },
+                "beta": {
+                    "title": "Beta: building it together",
+                    "summary": "Planned beta versions will bring new possibilities, improvements and changes to the central marketplace."
+                },
+                "stable": {
+                    "title": "Stable: ready for everyday use",
+                    "summary": "Future approved stable marketplace versions will appear here with their changes and changelogs."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "From an idea to your stack",
+            "title": "Your idea. The path to an app.",
+            "description": "How an extension is planned to become an available app: build it, submit it, get it reviewed and optionally install it through the platform.",
+            "hint": "Select a stage to discover its role.",
+            "preview": "Planned workflow: the app template, submissions, approval and installation are not available yet.",
+            "feedback": "Questions & revisions",
+            "detailLabel": "Stage {{number}} of {{total}}",
+            "relatedApps": "See planned apps",
+            "roles": {
+                "developer": "Developer",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Your platform"
+            },
+            "legend": {
+                "development": "Development & submission",
+                "review": "Review & questions",
+                "release": "Approval & installation"
+            },
+            "steps": {
+                "template": {
+                    "title": "App template",
+                    "caption": "The starting point",
+                    "description": "An official app template is planned to provide the basic structure and connection to RentnerProxy. It will become the starting point for building your own apps."
+                },
+                "develop": {
+                    "title": "Build the app",
+                    "caption": "Code & tests",
+                    "description": "Build and test the app locally using the template, then prepare its first version. Apps are intended to be installed and updated independently of platform updates."
+                },
+                "submit": {
+                    "title": "Submit the app",
+                    "caption": "Ready for review",
+                    "description": "The finished app is planned to be registered in the marketplace and submitted for review with a description and version details. Submitting an app does not publish it."
+                },
+                "review": {
+                    "title": "Review",
+                    "caption": "RentnerProxy takes a look",
+                    "description": "RentnerProxy is planned to review submitted apps before approval. Questions or required changes send the app back to development."
+                },
+                "publish": {
+                    "title": "Approval",
+                    "caption": "Visible in the marketplace",
+                    "description": "After a successful review and approval, the app is planned to be published in the marketplace. Only then does the approved version become available to users."
+                },
+                "install": {
+                    "title": "Install optionally",
+                    "caption": "Your stack decides",
+                    "description": "Users are intended to choose approved apps through their RentnerProxy platform, then optionally download and install them. App updates are planned to work independently of platform updates."
+                }
+            }
+        }
     }
 }

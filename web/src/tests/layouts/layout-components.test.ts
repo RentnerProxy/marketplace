@@ -95,8 +95,6 @@ vi.mock(
             state: {
                 themeMode: collapsed ? 'light' : 'dark',
                 shellStyle: {},
-                customBackgroundSrc: '/background.png',
-                customBackgroundDarkness: 30,
                 isCollapsed: collapsed,
                 companyName: 'Company',
                 navigationSubtitle: 'Overview',
@@ -311,7 +309,7 @@ it('keeps legal navigation and version in the footer while language selection is
 })
 
 it.each([false, true])(
-    'composes the authenticated shell with backgrounds, maintenance and backup progress, minimized=%s',
+    'composes the authenticated shell with maintenance and backup progress, minimized=%s',
     (isMinimized) => {
         minimized = isMinimized
         collapsed = isMinimized
@@ -319,8 +317,7 @@ it.each([false, true])(
         expect(html).toContain(
             isMinimized ? 'app-theme-light' : 'app-theme-dark',
         )
-        expect(html).toContain('/background.png')
-        expect(html).toContain(isMinimized ? 'left:5rem' : 'left:18rem')
+        expect(html).not.toContain('background-image:')
         expect(html).toContain('Backup progress bridge')
         expect(html).toContain('User settings dialog')
         expect(html).toContain('Route content')

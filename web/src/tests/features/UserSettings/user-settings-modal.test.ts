@@ -167,7 +167,6 @@ describe('User settings modal composition', () => {
             'FontsSection',
             'FontSizeSection',
             'SystemColorSection',
-            'CustomBackgroundSection',
         ])
         expect(
             elements(SecuritySection()).flatMap((element) =>

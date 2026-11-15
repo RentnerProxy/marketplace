@@ -483,7 +483,7 @@
         "home": "Strona główna marketplace",
         "description": "Monitoring, DNS, bezpieczeństwo i wiele więcej. Przyszłe miejsce dla aplikacji, które rozszerzą możliwości Twojej instalacji RentnerProxy.",
         "followDevelopment": "Śledź rozwój",
-        "availability": "Jeszcze niedostępne: katalog aplikacji, instalacja i publiczna rejestracja pojawią się na kolejnych etapach rozwoju.",
+        "availability": "Oglądasz podgląd. Pobieranie, publikowanie i publiczna rejestracja pojawią się później.",
         "inPreparation": "W przygotowaniu",
         "outlook": "Pierwsze oficjalne aplikacje",
         "outlookNote": "Planowane. Nie można ich jeszcze zainstalować.",
@@ -491,7 +491,7 @@
         "recoveryHint": "Dostęp jest obecnie przeznaczony dla istniejących kont administracyjnych.",
         "passkeyDescription": "Zaloguj się kluczem dostępu skonfigurowanym wcześniej dla Twojego konta.",
         "tagline": "Twój RentnerProxy. Jeszcze więcej możliwości.",
-        "browseApps": "Poznaj planowane aplikacje",
+        "browseApps": "Poznaj aplikacje",
         "outlookEyebrow": "Już wkrótce",
         "heroEyebrow": "Oficjalne aplikacje. Twój kolejny krok.",
         "accountNavigation": "Dostęp do konta",
@@ -500,7 +500,119 @@
         "footerHeadline": "Więcej możliwości. Więcej Ciebie.",
         "footerDescription": "Oficjalne aplikacje dla Twojego RentnerProxy. Miejsce na to, czego Twoja instalacja będzie potrzebować.",
         "footerExplore": "Odkrywaj",
-        "footerLegal": "Informacje prawne"
+        "footerLegal": "Informacje prawne",
+        "navigation": {
+            "label": "Nawigacja główna",
+            "apps": "Aplikacje",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "Katalog aplikacji",
+            "title": "Aplikacje dla Twojego RentnerProxy.",
+            "description": "Miejsce dla oficjalnych aplikacji i rozszerzeń. Zobacz, co planujemy dla Twojej instalacji.",
+            "note": "Wszystkie pozycje są planowane. Tych aplikacji nie można jeszcze pobrać ani zainstalować.",
+            "backToFlow": "Jak ma działać marketplace"
+        },
+        "blog": {
+            "eyebrow": "Z marketplace",
+            "title": "Nowości. Aktualizacje. Co dalej.",
+            "description": "Nowości i dzienniki zmian centralnie zarządzanego RentnerProxy Marketplace: od nowych funkcji po ulepszenia Twojego konta.",
+            "note": "Blog jest przygotowany na przyszłe wpisy i dzienniki zmian. Nie opublikowano jeszcze żadnych artykułów.",
+            "changelogTitle": "Co zmienia się w marketplace",
+            "changelogDescription": "Przyszłe miejsce na nowe funkcje, ulepszenia i poprawki centralnego marketplace: usługi, w której masz swoje konto.",
+            "newsTitle": "Od kodu aplikacji do zatwierdzenia",
+            "newsDescription": "Jak szablony, rozwój i przeglądy mają ze sobą współpracować oraz jak zatwierdzone aplikacje trafią później opcjonalnie do użytkowników przez ich platformę.",
+            "backHome": "Wróć na stronę główną marketplace",
+            "featuredLabel": "Podgląd wpisu",
+            "featuredTitle": "Jeden marketplace. Dla wszystkich Twoich aplikacji.",
+            "featuredSummary": "Tutaj zaczyna się wspólne miejsce dla aplikacji RentnerProxy. Przyszłe wpisy będą opisywać nowe możliwości, postępy prac i zmiany w marketplace.",
+            "centralTitle": "Jedna centralna usługa",
+            "centralDescription": "Marketplace jest obsługiwany przez RentnerProxy. Użytkownicy mają zakładać tam swoje konta, a nowości i dzienniki zmian dotyczą tej wspólnej usługi.",
+            "centralAccount": "Jedno konto marketplace",
+            "centralUpdates": "Zmiany w centralnej usłudze",
+            "optionalApps": "Opcjonalne aplikacje przez Twoją platformę",
+            "archiveTitle": "Wersje i aktualizacje",
+            "filterLabel": "Filtruj kanał wydań",
+            "filters": {
+                "all": "Wszystkie wersje",
+                "changelog": "Dzienniki zmian",
+                "news": "Nowości",
+                "stable": "Stabilne",
+                "beta": "Beta",
+                "alpha": "Alfa"
+            },
+            "previewLabel": "Podgląd",
+            "comingSoon": "Wpis już wkrótce",
+            "emptyChannel": "W tym kanale nie opublikowano jeszcze żadnej wersji.",
+            "versionPending": "Wersja już wkrótce",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alfa: pierwsze kroki",
+                    "summary": "Przyszłe miejsce na wczesne wersje marketplace i podglądy funkcji, które wciąż są rozwijane."
+                },
+                "beta": {
+                    "title": "Beta: rozwijamy razem",
+                    "summary": "Planowane wersje beta przyniosą nowe możliwości, ulepszenia i zmiany w centralnym marketplace."
+                },
+                "stable": {
+                    "title": "Stabilne: gotowe do codziennego użytku",
+                    "summary": "Przyszłe zatwierdzone stabilne wersje marketplace pojawią się tutaj wraz z opisem zmian i dziennikami zmian."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "Od pomysłu do Twojej instalacji",
+            "title": "Twój pomysł. Droga do aplikacji.",
+            "description": "Tak rozszerzenie ma stać się dostępną aplikacją: rozwój, zgłoszenie, przegląd i opcjonalna instalacja przez platformę.",
+            "hint": "Wybierz etap, aby poznać jego rolę.",
+            "preview": "Planowany proces: szablon aplikacji, zgłaszanie, zatwierdzanie i instalacja nie są jeszcze dostępne.",
+            "feedback": "Pytania i poprawki",
+            "detailLabel": "Etap {{number}} z {{total}}",
+            "relatedApps": "Zobacz planowane aplikacje",
+            "roles": {
+                "developer": "Programista",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Twoja platforma"
+            },
+            "legend": {
+                "development": "Rozwój i zgłoszenie",
+                "review": "Przegląd i pytania",
+                "release": "Zatwierdzenie i instalacja"
+            },
+            "steps": {
+                "template": {
+                    "title": "Szablon aplikacji",
+                    "caption": "Punkt wyjścia",
+                    "description": "Oficjalny szablon aplikacji ma zapewniać podstawową strukturę i połączenie z RentnerProxy. Będzie punktem wyjścia do tworzenia własnych aplikacji."
+                },
+                "develop": {
+                    "title": "Rozwiń aplikację",
+                    "caption": "Kod i testy",
+                    "description": "Rozwijaj i testuj aplikację lokalnie na podstawie szablonu, a następnie przygotuj jej pierwszą wersję. Aplikacje mają być instalowane i aktualizowane niezależnie od aktualizacji platformy."
+                },
+                "submit": {
+                    "title": "Zgłoś aplikację",
+                    "caption": "Gotowa do przeglądu",
+                    "description": "Gotowa aplikacja ma być rejestrowana w marketplace i zgłaszana do przeglądu wraz z opisem oraz informacjami o wersji. Zgłoszenie aplikacji nie oznacza jej publikacji."
+                },
+                "review": {
+                    "title": "Przegląd",
+                    "caption": "RentnerProxy sprawdza",
+                    "description": "RentnerProxy ma sprawdzać zgłoszone aplikacje przed zatwierdzeniem. Pytania lub wymagane zmiany kierują aplikację z powrotem do etapu rozwoju."
+                },
+                "publish": {
+                    "title": "Zatwierdzenie",
+                    "caption": "Widoczna w marketplace",
+                    "description": "Po pomyślnym przeglądzie i zatwierdzeniu aplikacja ma zostać opublikowana w marketplace. Dopiero wtedy zatwierdzona wersja będzie dostępna dla użytkowników."
+                },
+                "install": {
+                    "title": "Opcjonalna instalacja",
+                    "caption": "Twoja instalacja decyduje",
+                    "description": "Użytkownicy mają wybierać zatwierdzone aplikacje przez swoją platformę RentnerProxy, a następnie opcjonalnie je pobierać i instalować. Aktualizacje aplikacji mają działać niezależnie od aktualizacji platformy."
+                }
+            }
+        }
     },
     "maintenance": {
         "requestSent": "Wysyłanie..."

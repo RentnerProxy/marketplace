@@ -50,6 +50,12 @@ html {
     color-scheme: dark;
 }
 
+::selection {
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
+    text-shadow: none;
+}
+
 :focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
@@ -213,9 +219,15 @@ html {
     h1,
     h2,
     h3,
-    h4 {
+    h4,
+    h5,
+    h6,
+    .font-display {
         font-family: var(--font-display);
         font-weight: 400;
+        font-synthesis: none;
+        text-shadow: none;
+        overflow-wrap: break-word;
     }
 }
 
@@ -308,4 +320,64 @@ html {
     .marketplace-art {
         animation: none;
     }
+}
+
+@keyframes marketplace-flow-travel {
+    from {
+        stroke-dashoffset: 1;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+.marketplace-flow-travel {
+    animation: marketplace-flow-travel 3.5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .marketplace-flow-travel {
+        animation: none;
+    }
+}
+
+@layer base {
+    :where(
+            a[href],
+            button,
+            select,
+            summary,
+            label[for],
+            label:has(input[type='checkbox']),
+            label:has(input[type='radio']),
+            input[type='button'],
+            input[type='submit'],
+            input[type='reset'],
+            input[type='checkbox'],
+            input[type='radio'],
+            [role='button'],
+            [role='link'],
+            [role='tab'],
+            [role='option'],
+            [role='menuitem'],
+            [role='menuitemcheckbox'],
+            [role='menuitemradio'],
+            [role='checkbox'],
+            [role='radio'],
+            [role='switch']
+        ):not(:disabled):not([readonly]):not([aria-disabled='true']):not(
+            [aria-readonly='true']
+        ):not(:where(fieldset:disabled *)) {
+        cursor: pointer;
+    }
+}
+
+:where(h1, h2, h3, h4, h5, h6, .font-display):is(
+    .text-xs,
+    .text-sm,
+    .text-base,
+    .text-lg
+) {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-synthesis: none;
+    text-shadow: none;
 }

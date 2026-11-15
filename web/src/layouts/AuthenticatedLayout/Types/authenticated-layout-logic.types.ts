@@ -34,8 +34,6 @@ type AuthenticatedShellState = {
     themeMode: UserThemeMode
     fontFamily: UserFontFamily
     fontSize: UserFontSize
-    customBackgroundSrc: string | null
-    customBackgroundDarkness: number
     homeTo: AuthenticatedRoute
     navigationSubtitle: string
     visibleNavItems: Array<AuthenticatedNavItem>

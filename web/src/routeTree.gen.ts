@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as PublicRouteRouteImport } from './routes/_public/route'
+import { Route as AppsRouteImport } from './routes/apps'
+import { Route as BlogRouteImport } from './routes/blog'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as UpdateInProgressRouteImport } from './routes/update-in-progress'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
@@ -25,6 +27,7 @@ import { Route as PublicPasswordResetRouteImport } from './routes/_public/passwo
 import { Route as PublicPrivacyRouteImport } from './routes/_public/privacy'
 import { Route as PublicRegisterRouteImport } from './routes/_public/register'
 import { Route as PublicTermsRouteImport } from './routes/_public/terms'
+import { Route as BlogSlugRouteImport } from './routes/blog_/$slug'
 import { Route as AuthenticatedAdminAuditLogsRouteImport } from './routes/_authenticated/admin/audit-logs'
 import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
@@ -54,6 +57,16 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 } as any)
 const PublicRouteRoute = PublicRouteRouteImport.update({
   id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppsRoute = AppsRouteImport.update({
+  id: '/apps',
+  path: '/apps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetupRoute = SetupRouteImport.update({
@@ -115,6 +128,11 @@ const PublicTermsRoute = PublicTermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => PublicRouteRoute,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog_/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminAuditLogsRoute =
   AuthenticatedAdminAuditLogsRouteImport.update({
@@ -186,6 +204,8 @@ const ApiAdminBackupsImportRoute = ApiAdminBackupsImportRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/apps': typeof AppsRoute
+  '/blog': typeof BlogRoute
   '/setup': typeof SetupRoute
   '/update-in-progress': typeof UpdateInProgressRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -198,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PublicPrivacyRoute
   '/register': typeof PublicRegisterRoute
   '/terms': typeof PublicTermsRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -214,6 +235,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/apps': typeof AppsRoute
+  '/blog': typeof BlogRoute
   '/setup': typeof SetupRoute
   '/update-in-progress': typeof UpdateInProgressRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -226,6 +249,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PublicPrivacyRoute
   '/register': typeof PublicRegisterRoute
   '/terms': typeof PublicTermsRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -245,6 +269,8 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_public': typeof PublicRouteRouteWithChildren
   '/$': typeof SplatRoute
+  '/apps': typeof AppsRoute
+  '/blog': typeof BlogRoute
   '/setup': typeof SetupRoute
   '/update-in-progress': typeof UpdateInProgressRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -257,6 +283,7 @@ export interface FileRoutesById {
   '/_public/privacy': typeof PublicPrivacyRoute
   '/_public/register': typeof PublicRegisterRoute
   '/_public/terms': typeof PublicTermsRoute
+  '/blog_/$slug': typeof BlogSlugRoute
   '/_authenticated/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -275,6 +302,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
+    | '/apps'
+    | '/blog'
     | '/setup'
     | '/update-in-progress'
     | '/admin'
@@ -287,6 +316,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/register'
     | '/terms'
+    | '/blog/$slug'
     | '/admin/audit-logs'
     | '/admin/backups'
     | '/admin/dashboard'
@@ -303,6 +333,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/apps'
+    | '/blog'
     | '/setup'
     | '/update-in-progress'
     | '/admin'
@@ -315,6 +347,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/register'
     | '/terms'
+    | '/blog/$slug'
     | '/admin/audit-logs'
     | '/admin/backups'
     | '/admin/dashboard'
@@ -333,6 +366,8 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_public'
     | '/$'
+    | '/apps'
+    | '/blog'
     | '/setup'
     | '/update-in-progress'
     | '/_authenticated/admin'
@@ -345,6 +380,7 @@ export interface FileRouteTypes {
     | '/_public/privacy'
     | '/_public/register'
     | '/_public/terms'
+    | '/blog_/$slug'
     | '/_authenticated/admin/audit-logs'
     | '/_authenticated/admin/backups'
     | '/_authenticated/admin/dashboard'
@@ -364,8 +400,11 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   PublicRouteRoute: typeof PublicRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
+  AppsRoute: typeof AppsRoute
+  BlogRoute: typeof BlogRoute
   SetupRoute: typeof SetupRoute
   UpdateInProgressRoute: typeof UpdateInProgressRoute
+  BlogSlugRoute: typeof BlogSlugRoute
   ApiSystemRestoreStatusRoute: typeof ApiSystemRestoreStatusRoute
   ApiUserBackgroundRoute: typeof ApiUserBackgroundRoute
   ApiAdminBackupsBackupIdRoute: typeof ApiAdminBackupsBackupIdRoute
@@ -401,6 +440,20 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/apps': {
+      id: '/apps'
+      path: '/apps'
+      fullPath: '/apps'
+      preLoaderRoute: typeof AppsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/setup': {
@@ -486,6 +539,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/terms'
       preLoaderRoute: typeof PublicTermsRouteImport
       parentRoute: typeof PublicRouteRoute
+    }
+    '/blog_/$slug': {
+      id: '/blog_/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/audit-logs': {
       id: '/_authenticated/admin/audit-logs'
@@ -657,8 +717,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   PublicRouteRoute: PublicRouteRouteWithChildren,
   SplatRoute: SplatRoute,
+  AppsRoute: AppsRoute,
+  BlogRoute: BlogRoute,
   SetupRoute: SetupRoute,
   UpdateInProgressRoute: UpdateInProgressRoute,
+  BlogSlugRoute: BlogSlugRoute,
   ApiSystemRestoreStatusRoute: ApiSystemRestoreStatusRoute,
   ApiUserBackgroundRoute: ApiUserBackgroundRoute,
   ApiAdminBackupsBackupIdRoute: ApiAdminBackupsBackupIdRoute,

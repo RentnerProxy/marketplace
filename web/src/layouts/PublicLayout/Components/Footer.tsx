@@ -58,11 +58,16 @@ export default function Footer() {
                             </h2>
                             <div className="mt-5 flex flex-col items-start gap-4 text-sm text-[#c1d2c9]">
                                 <Link
-                                    to="/"
-                                    hash="marketplace-outlook"
+                                    to="/apps"
                                     className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
                                 >
                                     {t('marketplace.browseApps')}
+                                </Link>
+                                <Link
+                                    to="/blog"
+                                    className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
+                                >
+                                    {t('marketplace.navigation.blog')}
                                 </Link>
                                 <a
                                     href={PROJECT_CONFIG.repositoryUrl}

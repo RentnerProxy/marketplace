@@ -483,7 +483,7 @@
         "home": "Marketplace-startpagina",
         "description": "Monitoring, DNS, beveiliging en meer. De toekomstige plek voor apps die je RentnerProxy-installatie verder brengen.",
         "followDevelopment": "Ontwikkeling volgen",
-        "availability": "Nog niet beschikbaar: de appcatalogus, installatie en openbare registratie volgen in latere ontwikkelfasen.",
+        "availability": "Je bekijkt een voorbeeld. Downloaden, publiceren en openbare registratie volgen later.",
         "inPreparation": "In voorbereiding",
         "outlook": "De eerste officiële apps",
         "outlookNote": "Gepland. Nog niet beschikbaar om te installeren.",
@@ -491,7 +491,7 @@
         "recoveryHint": "Toegang is momenteel bedoeld voor bestaande beheerdersaccounts.",
         "passkeyDescription": "Meld je aan met een toegangssleutel die al voor je account is ingesteld.",
         "tagline": "Jouw RentnerProxy. Nog meer mogelijkheden.",
-        "browseApps": "Geplande apps bekijken",
+        "browseApps": "Apps ontdekken",
         "outlookEyebrow": "Binnenkort",
         "heroEyebrow": "Officiële apps. Jouw volgende upgrade.",
         "accountNavigation": "Accounttoegang",
@@ -500,7 +500,119 @@
         "footerHeadline": "Meer mogelijkheden. Meer jij.",
         "footerDescription": "Officiële apps voor jouw RentnerProxy. Een plek voor alles wat je installatie straks nodig heeft.",
         "footerExplore": "Ontdekken",
-        "footerLegal": "Juridisch"
+        "footerLegal": "Juridisch",
+        "navigation": {
+            "label": "Hoofdnavigatie",
+            "apps": "Apps",
+            "blog": "Blog"
+        },
+        "catalog": {
+            "eyebrow": "De appcatalogus",
+            "title": "Apps voor jouw RentnerProxy.",
+            "description": "Een plek voor officiële apps en uitbreidingen. Ontdek wat er voor je installatie is gepland.",
+            "note": "Alle vermeldingen zijn gepland. Je kunt deze apps nog niet downloaden of installeren.",
+            "backToFlow": "Hoe de marketplace moet gaan werken"
+        },
+        "blog": {
+            "eyebrow": "Vanuit de marketplace",
+            "title": "Nieuws. Updates. Wat eraan komt.",
+            "description": "Nieuws en wijzigingslogboeken voor de centraal beheerde RentnerProxy Marketplace, van nieuwe functies tot verbeteringen voor je account.",
+            "note": "De blog staat klaar voor toekomstige berichten en wijzigingslogboeken. Er zijn nog geen artikelen gepubliceerd.",
+            "changelogTitle": "Wat er verandert in de marketplace",
+            "changelogDescription": "De toekomstige plek voor nieuwe functies, verbeteringen en oplossingen voor de centrale marketplace: de dienst waar je je account hebt.",
+            "newsTitle": "Van app-code tot goedkeuring",
+            "newsDescription": "Hoe sjablonen, ontwikkeling en beoordelingen op elkaar moeten aansluiten en hoe goedgekeurde apps later naar wens via je platform beschikbaar komen.",
+            "backHome": "Terug naar de marketplace-startpagina",
+            "featuredLabel": "Voorbeeld van bericht",
+            "featuredTitle": "Eén marketplace. Voor al je apps.",
+            "featuredSummary": "De gezamenlijke plek voor RentnerProxy-apps begint hier. Toekomstige berichten gaan over nieuwe mogelijkheden, de voortgang van de ontwikkeling en wijzigingen in de marketplace.",
+            "centralTitle": "Eén centrale dienst",
+            "centralDescription": "De marketplace wordt beheerd door RentnerProxy. Gebruikers moeten daar hun account kunnen aanmaken; nieuws en wijzigingslogboeken gaan over deze gezamenlijke dienst.",
+            "centralAccount": "Eén marketplace-account",
+            "centralUpdates": "Wijzigingen aan de centrale dienst",
+            "optionalApps": "Optionele apps via je platform",
+            "archiveTitle": "Versies en updates",
+            "filterLabel": "Releasekanaal filteren",
+            "filters": {
+                "all": "Alle versies",
+                "changelog": "Wijzigingslogboeken",
+                "news": "Nieuws",
+                "stable": "Stabiel",
+                "beta": "Bèta",
+                "alpha": "Alfa"
+            },
+            "previewLabel": "Voorbeeld",
+            "comingSoon": "Bericht volgt binnenkort",
+            "emptyChannel": "Er is nog geen versie in dit kanaal gepubliceerd.",
+            "versionPending": "Versie volgt binnenkort",
+            "releasePreviews": {
+                "alpha": {
+                    "title": "Alfa: de eerste stappen",
+                    "summary": "De toekomstige plek voor vroege marketplace-versies en voorbeelden van functies die nog in ontwikkeling zijn."
+                },
+                "beta": {
+                    "title": "Bèta: samen verder bouwen",
+                    "summary": "Geplande bètaversies brengen nieuwe mogelijkheden, verbeteringen en wijzigingen in de centrale marketplace."
+                },
+                "stable": {
+                    "title": "Stabiel: klaar voor dagelijks gebruik",
+                    "summary": "Toekomstige goedgekeurde stabiele marketplace-versies verschijnen hier met hun wijzigingen en wijzigingslogboeken."
+                }
+            }
+        },
+        "flow": {
+            "eyebrow": "Van een idee naar je installatie",
+            "title": "Jouw idee. De weg naar een app.",
+            "description": "Zo moet een uitbreiding een beschikbare app worden: ontwikkelen, indienen, laten beoordelen en eventueel via het platform installeren.",
+            "hint": "Kies een stap om de rol ervan te ontdekken.",
+            "preview": "Geplande werkwijze: het app-sjabloon, indienen, goedkeuring en installatie zijn nog niet beschikbaar.",
+            "feedback": "Vragen en aanpassingen",
+            "detailLabel": "Stap {{number}} van {{total}}",
+            "relatedApps": "Geplande apps bekijken",
+            "roles": {
+                "developer": "Ontwikkelaar",
+                "reviewer": "RentnerProxy",
+                "marketplace": "Marketplace",
+                "platform": "Jouw platform"
+            },
+            "legend": {
+                "development": "Ontwikkeling en indiening",
+                "review": "Beoordeling en vragen",
+                "release": "Goedkeuring en installatie"
+            },
+            "steps": {
+                "template": {
+                    "title": "App-sjabloon",
+                    "caption": "Het beginpunt",
+                    "description": "Een officieel app-sjabloon moet de basisstructuur en koppeling met RentnerProxy bieden. Het wordt het beginpunt voor het bouwen van je eigen apps."
+                },
+                "develop": {
+                    "title": "De app ontwikkelen",
+                    "caption": "Code en tests",
+                    "description": "Ontwikkel en test de app lokaal met het sjabloon en bereid daarna de eerste versie voor. Apps moeten onafhankelijk van platformupdates kunnen worden geïnstalleerd en bijgewerkt."
+                },
+                "submit": {
+                    "title": "De app indienen",
+                    "caption": "Klaar voor beoordeling",
+                    "description": "De voltooide app moet in de marketplace worden geregistreerd en met een beschrijving en versiegegevens ter beoordeling worden ingediend. Een app indienen publiceert deze nog niet."
+                },
+                "review": {
+                    "title": "Beoordeling",
+                    "caption": "RentnerProxy kijkt mee",
+                    "description": "RentnerProxy moet ingediende apps beoordelen voordat ze worden goedgekeurd. Vragen of vereiste wijzigingen sturen de app terug naar de ontwikkeling."
+                },
+                "publish": {
+                    "title": "Goedkeuring",
+                    "caption": "Zichtbaar in de marketplace",
+                    "description": "Na een geslaagde beoordeling en goedkeuring moet de app in de marketplace worden gepubliceerd. Pas dan wordt de goedgekeurde versie beschikbaar voor gebruikers."
+                },
+                "install": {
+                    "title": "Optioneel installeren",
+                    "caption": "Jouw installatie beslist",
+                    "description": "Gebruikers moeten goedgekeurde apps via hun RentnerProxy-platform kunnen kiezen en vervolgens naar wens downloaden en installeren. App-updates moeten onafhankelijk van platformupdates werken."
+                }
+            }
+        }
     },
     "maintenance": {
         "requestSent": "Verzenden..."

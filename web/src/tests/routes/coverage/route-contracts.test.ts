@@ -93,6 +93,12 @@ mock.module('@/layouts/PublicLayout/index.tsx', () => ({
 mock.module('@/features/MarketplaceHome/index.tsx', () => ({
     default: () => createElement('section', null, 'Marketplace screen'),
 }))
+mock.module('@/features/MarketplaceApps/index.tsx', () => ({
+    default: () => createElement('section', null, 'Marketplace apps screen'),
+}))
+mock.module('@/features/MarketplaceBlog/index.tsx', () => ({
+    default: () => createElement('section', null, 'Marketplace blog screen'),
+}))
 mock.module('@/features/Auth/Login/index.tsx', () => ({ default: LoginPage }))
 mock.module('@/features/Auth/FirstSuperUser/index.tsx', () => ({
     default: () => createElement('main', null, 'Setup screen'),
@@ -134,6 +140,8 @@ await import('@/routes/_public/route.tsx')
 await import('@/routes/_public/login.tsx')
 await import('@/routes/_public/maintenance.tsx')
 await import('@/routes/index.tsx')
+await import('@/routes/apps.tsx')
+await import('@/routes/blog.tsx')
 await import('@/routes/setup.tsx')
 
 function route(path: string) {
@@ -283,16 +291,24 @@ describe('Thin route boundary contracts', () => {
         ).toContain('Maintenance screen')
     })
 
-    it('renders the marketplace in the public shell without authentication or data loading', () => {
-        const options = route('/')
-        expect(options.beforeLoad).toBeUndefined()
-        expect(options.loader).toBeUndefined()
-        const html = renderToStaticMarkup(createElement(options.component!))
-        expect(html).toContain('Public shell')
-        expect(html).toContain('Marketplace screen')
-        expect(authenticate).not.toHaveBeenCalled()
-        expect(client.ensureQueryData).not.toHaveBeenCalled()
-    })
+    it.each([
+        { path: '/', content: 'Marketplace screen' },
+        { path: '/apps', content: 'Marketplace apps screen' },
+        { path: '/blog', content: 'Marketplace blog screen' },
+    ])(
+        'renders $path in the public shell without authentication, setup checks or data loading',
+        ({ path, content }) => {
+            const options = route(path)
+            expect(options.beforeLoad).toBeUndefined()
+            expect(options.loader).toBeUndefined()
+            const html = renderToStaticMarkup(createElement(options.component!))
+            expect(html).toContain('Public shell')
+            expect(html).toContain(content)
+            expect(authenticate).not.toHaveBeenCalled()
+            expect(setupStatus).not.toHaveBeenCalled()
+            expect(client.ensureQueryData).not.toHaveBeenCalled()
+        },
+    )
 
     it('declares document metadata, asset links and a localized provider shell', () => {
         const options = route('__root')
