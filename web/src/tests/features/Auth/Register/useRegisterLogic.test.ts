@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import type { SubmitEvent } from 'react'
 import { defaultToastStore } from '@rentnerkev/toasts/toast'
 import type { RegisterLogicReturn } from '@/features/Auth/Register/Types/register-logic.types.ts'
+import type { RegistrationResult } from '@/features/Auth/Register/Types/registration.types.ts'
 
 const reactExports = { ...React }
 const cells: unknown[] = []
@@ -13,7 +14,7 @@ let refCursor = 0
 const sends: unknown[] = []
 const metadata: unknown[] = []
 const requests: Array<() => Promise<unknown>> = []
-const register = vi.fn(async (input: unknown) => {
+const register = vi.fn(async (input: unknown): Promise<RegistrationResult> => {
     sends.push(input)
     return { success: true, requiresEmailVerification: true }
 })
@@ -26,6 +27,7 @@ const social: {
     isPending: boolean
     refetch: () => Promise<void>
 } = { data: { registration: null }, isPending: false, refetch: async () => {} }
+const refetchSocial = vi.fn(async () => {})
 let hash = ''
 const replaceState = vi.fn(() => {
     hash = ''
@@ -118,6 +120,8 @@ beforeEach(() => {
     defaultToastStore.clearAllToasts()
     social.data.registration = null
     social.isPending = false
+    refetchSocial.mockImplementation(async () => {})
+    social.refetch = refetchSocial
     hash = ''
     Object.defineProperty(globalThis, 'window', {
         configurable: true,
@@ -195,6 +199,24 @@ describe('registration form workflow', () => {
                 },
             },
         ])
+    })
+    it('refreshes an expired provider handoff so password registration is available again', async () => {
+        social.data.registration = { email: 'provider@example.test' }
+        fill(render())
+        expect(render().state.isSocial).toBe(true)
+        register.mockResolvedValueOnce({ success: false, error: 'registration.passwordRequired' })
+        refetchSocial.mockImplementationOnce(async () => {
+            social.data.registration = null
+        })
+        render().handler.handleSubmit(event)
+        await requests[0]?.()
+        expect(refetchSocial).toHaveBeenCalledTimes(1)
+        expect(render().state.isSocial).toBe(false)
+        expect(render().state.phase).toBe('form')
+        expect(defaultToastStore.getToastSnapshot().map((item) => item.content)).toEqual(['auth.register.passwordPolicy'])
+        render().handler.handleSubmit(event)
+        await requests[1]?.()
+        expect(sends.at(-1)).toEqual({ data: { username: 'alice', email: 'alice@example.test', password: 'long-password-123', acceptTerms: true } })
     })
     it('scrubs a verification token immediately and requires one explicit confirmation request', async () => {
         hash = '#verify=' + 'A'.repeat(43)

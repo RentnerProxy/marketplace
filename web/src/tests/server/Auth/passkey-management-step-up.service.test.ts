@@ -38,6 +38,8 @@ vi.mock('@/server/Logging/logger.ts', () => ({
     logError: logPostCommitError,
 }))
 
+const remainingSignIn = vi.fn(async (_transaction: unknown, _input: unknown) => false)
+vi.mock('@/server/Auth/remaining-sign-in.service.ts', () => ({ hasRemainingSignInMethodService: remainingSignIn }))
 const reauthenticate = vi.fn()
 const audit = vi.fn(async function (_input: unknown) {
     return undefined
@@ -92,6 +94,7 @@ let proof: Awaited<ReturnType<typeof createReauthenticationProofService>>
 
 beforeEach(async function () {
     vi.clearAllMocks()
+    remainingSignIn.mockReset().mockResolvedValue(false)
     enqueueSecurityChange.mockReset().mockResolvedValue(undefined)
     publishSessionRevocation.mockReset().mockImplementation(async function () {
         passkeyTestState.events.push('sessions:revoked')
@@ -471,5 +474,51 @@ describe('Passkey deletion with locked step-up proof', function () {
         expect(passkeyTestState.events).toContain('transaction:commit')
         expect(passkeyTestState.events).not.toContain('transaction:rollback')
         expect(passkeyTestState.events.at(-1)).toBe('audit:publish')
+    })
+})
+
+
+async function createTotpDeletionInput() {
+        const user = { ...passkeyTestUser, isTwoFactorEnabled: true }
+        passkeyTestState.rows.users[0] = user
+        passkeyTestState.rows.factors = [{ id: 'factor-1', userId: user.id, verified: true }]
+        const currentProof = await createReauthenticationProofService(user, 'factor-1', PASSKEY_TEST_SESSION_HASH)
+        reauthenticate.mockResolvedValue({ success: true, currentUser: user, proof: currentProof })
+        return { ...input, reauthentication: { method: 'totp' as const, credential: '123456' } }
+}
+
+describe('Passkey deletion remaining-login policy', () => {
+    it('blocks last-method deletion after locked TOTP confirmation without mutation or notifications', async () => {
+        const data = await createTotpDeletionInput()
+        const before = structuredClone(passkeyTestState.rows)
+        const result = await deleteCurrentUserPasskeyService(data)
+        expect(result.success).toBe(false)
+        expect(passkeyTestState.rows).toEqual(before)
+        expect(passkeyTestState.events).toContain('lock:users')
+        expect(passkeyTestState.events).toContain('lock:sessions')
+        expect(passkeyTestState.events).toContain('lock:factors')
+        expect(remainingSignIn).toHaveBeenCalledWith(expect.anything(), { userId: passkeyTestUser.id, excludedPasskeyId: input.passkeyId })
+        expect(audit).not.toHaveBeenCalled()
+        expect(enqueueSecurityChange).not.toHaveBeenCalled()
+        expect(publishSessionRevocation).not.toHaveBeenCalled()
+    })
+    it('allows TOTP removal when the shared policy confirms another usable sign-in method', async () => {
+        const data = await createTotpDeletionInput()
+        remainingSignIn.mockResolvedValueOnce(true)
+        expect(await deleteCurrentUserPasskeyService(data)).toEqual({ success: true })
+        expect(passkeyTestState.rows.credentials.some((row) => row.id === input.passkeyId)).toBe(false)
+        expect(audit).toHaveBeenCalledTimes(1)
+        expect(publishSessionRevocation).toHaveBeenCalledTimes(1)
+    })
+    it('allows confirmed-password removal without mistaking stored placeholder hashes for proof', async () => {
+        expect(await deleteCurrentUserPasskeyService(input)).toEqual({ success: true })
+        expect(remainingSignIn).not.toHaveBeenCalled()
+    })
+    it('never checks remaining methods or removes credentials when the proof became stale', async () => {
+        const data = await createTotpDeletionInput()
+        passkeyTestState.beforeUserLock = () => { passkeyTestState.rows.sessions = [] }
+        expect(await deleteCurrentUserPasskeyService(data)).toMatchObject({ success: false })
+        expect(remainingSignIn).not.toHaveBeenCalled()
+        expect(passkeyTestState.rows.credentials).toHaveLength(2)
     })
 })

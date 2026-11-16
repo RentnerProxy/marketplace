@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'bun:test'
+import { PgDialect } from 'drizzle-orm/pg-core'
+import type { SQL } from 'drizzle-orm'
 import {
     registrationInputSchema,
     verifyRegistrationInputSchema,
@@ -25,12 +27,23 @@ vi.mock('@/lib/AuditLogs/auditLogs.ts', () => ({
 
 function transactionFixture(selections: Array<Array<{ id: string }>>) {
     const inserts: Array<{ table: unknown; values: unknown }> = []
-    const execute = vi.fn(async () => undefined)
+    const queries: SQL[] = []
+    const order: string[] = []
+    const execute = vi.fn(async (query: SQL) => {
+        queries.push(query)
+        order.push('lock')
+    })
     const transaction = {
         execute,
         select: () => ({
             from: () => ({
-                where: () => ({ limit: async () => selections.shift() ?? [] }),
+                where: (query: SQL) => ({
+                    limit: async () => {
+                        queries.push(query)
+                        order.push('select')
+                        return selections.shift() ?? []
+                    },
+                }),
             }),
         }),
         insert: (table: unknown) => ({
@@ -40,7 +53,7 @@ function transactionFixture(selections: Array<Array<{ id: string }>>) {
             },
         }),
     } as unknown as DatabaseTransaction
-    return { transaction, inserts, execute }
+    return { transaction, inserts, execute, queries, order }
 }
 
 describe('Public registration', () => {
@@ -108,12 +121,26 @@ describe('Public registration', () => {
         ])
         expect(
             await createPublicAccountInTransactionService(fixture.transaction, {
-                username: 'person',
-                email: 'person@example.test',
+                username: 'Person',
+                email: 'Person@Example.test',
                 passwordHash: 'hashed',
             }),
         ).toBeNull()
         expect(fixture.inserts).toHaveLength(0)
+        expect(fixture.order).toEqual(['lock', 'select', 'select'])
+        const dialect = new PgDialect()
+        const queries = fixture.queries.map((query) => dialect.sqlToQuery(query))
+        expect(queries[0]).toMatchObject({
+            sql: 'select pg_advisory_xact_lock(7421906)',
+            params: [],
+        })
+        expect(queries[2].sql).toContain(
+            'lower("marketplace"."users"."username")',
+        )
+        expect(queries[2].sql).toContain(
+            'lower("marketplace"."users"."email")',
+        )
+        expect(queries[2].params).toEqual([false, 'person', 'person@example.test'])
     })
 
     it('grants only the dashboard permission and adds profile and verified identity atomically', async () => {

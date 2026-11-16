@@ -177,6 +177,11 @@
             "title": "Zwei-Faktor-Authentifizierung"
         },
         "social": {
+            "confirmation_failed": "Bestätigung fehlgeschlagen. Bitte erneut versuchen.",
+            "not_linked": "Dieser Anbieter ist nicht verbunden.",
+            "last_method": "Zum Trennen muss ein weiterer Anmeldeanbieter oder ein Passkey verfügbar sein.",
+            "disconnect": "{{provider}} trennen",
+            "unlinked": "Die Verbindung zum Anmeldeanbieter wurde getrennt.",
             "title": "Oder weiter mit",
             "continue": "Weiter mit {{provider}}",
             "unavailable": "Die Anbieter-Anmeldung ist nicht verfügbar.",

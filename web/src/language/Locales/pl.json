@@ -177,6 +177,11 @@
             "placeholder": "Tekst zastępczy warunków użytkowania."
         },
         "social": {
+            "confirmation_failed": "Potwierdzenie nie powiodło się. Spróbuj ponownie.",
+            "not_linked": "Ten dostawca nie jest połączony.",
+            "last_method": "Musi pozostać dostępny inny dostawca logowania lub klucz dostępu.",
+            "disconnect": "Odłącz {{provider}}",
+            "unlinked": "Dostawca logowania został odłączony.",
             "title": "Lub kontynuuj z",
             "continue": "Kontynuuj z {{provider}}",
             "unavailable": "Logowanie przez dostawcę jest niedostępne.",

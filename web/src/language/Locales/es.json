@@ -177,6 +177,11 @@
             "placeholder": "Texto provisional para las condiciones de uso."
         },
         "social": {
+            "confirmation_failed": "La confirmación ha fallado. Inténtalo de nuevo.",
+            "not_linked": "Este proveedor no está conectado.",
+            "last_method": "Debe quedar disponible otro proveedor de inicio de sesión o una clave de acceso.",
+            "disconnect": "Desconectar {{provider}}",
+            "unlinked": "Se ha desconectado el proveedor de inicio de sesión.",
             "title": "O continúa con",
             "continue": "Continuar con {{provider}}",
             "unavailable": "El acceso con proveedores no está disponible.",

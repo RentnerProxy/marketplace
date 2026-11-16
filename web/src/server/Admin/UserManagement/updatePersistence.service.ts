@@ -1,6 +1,7 @@
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 import type { NormalizedUserUpdate } from './Types/user-update.types.ts'
-import { and, eq, inArray, ne, or } from 'drizzle-orm'
+import { and, eq, inArray, ne } from 'drizzle-orm'
+import { accountIdentityMatchesService } from '@/server/Auth/accountUniqueness.service.ts'
 import {
     passwordResetTokens,
     permissions,
@@ -89,10 +90,7 @@ export async function hasDuplicateVisibleUserInTransaction(
             and(
                 ne(users.id, input.id),
                 eq(users.isDeleted, false),
-                or(
-                    eq(users.username, input.username),
-                    eq(users.email, input.email),
-                ),
+                accountIdentityMatchesService(input),
             ),
         )
         .limit(1)

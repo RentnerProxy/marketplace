@@ -3,7 +3,7 @@ import { beginSocialLinkInputSchema } from './validation.ts'
 import { requireAuthenticatedFeatureAccessService } from '@/server/Auth/authorization.service.ts'
 import { reauthenticateCurrentUserService } from '@/server/Auth/reauthentication.service.ts'
 import { beginSocialAuthorizationService } from '@/server/Auth/Social/flow.service.ts'
-import { getCurrentUserSocialAccountsService } from '@/server/Auth/Social/management.service.ts'
+import { getCurrentUserSocialAccountsService, unlinkCurrentUserSocialAccountService } from '@/server/Auth/Social/management.service.ts'
 
 export const getSocialAccountsHandler = createServerFn({
     method: 'GET',
@@ -25,4 +25,11 @@ export const beginSocialLinkHandler = createServerFn({ method: 'POST' })
             reauthentication.proof,
         )
         return { success: true as const, url: authorization.url }
+    })
+
+export const unlinkSocialAccountHandler = createServerFn({ method: 'POST' })
+    .validator((data: unknown) => beginSocialLinkInputSchema.parse(data))
+    .handler(async function ({ data }) {
+        await requireAuthenticatedFeatureAccessService()
+        return unlinkCurrentUserSocialAccountService(data)
     })

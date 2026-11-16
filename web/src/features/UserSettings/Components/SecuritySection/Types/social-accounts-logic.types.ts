@@ -11,13 +11,16 @@ export type SocialAccountsLogicReturn = {
         isLoading: boolean
         hasLoadError: boolean
         isLinking: boolean
+        isUnlinking: boolean
+        unlinkingProvider: SocialProviderId | null
         canLink: boolean
-        hasUnlinkedProviders: boolean
+        hasProviders: boolean
         reauthenticationMethod: CurrentUserReauthenticationInput['method']
         reauthenticationValue: string
     }
     handler: {
         handleConnect: (provider: SocialProviderId) => void
+        handleDisconnect: (provider: SocialProviderId) => void
         handleReauthenticationValueChange: (value: string) => void
     }
 }

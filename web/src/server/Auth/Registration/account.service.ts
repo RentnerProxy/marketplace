@@ -1,4 +1,8 @@
-import { and, eq, or, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
+import {
+    accountIdentityMatchesService,
+    lockAccountUniquenessInTransactionService,
+} from '@/server/Auth/accountUniqueness.service.ts'
 import { users, user_profiles } from '@/db/Schema/users.ts'
 import { permissions, userPermissions } from '@/db/Schema/permissions.ts'
 import { socialAccounts } from '@/db/Schema/socialAuth.ts'
@@ -22,7 +26,7 @@ export async function createPublicAccountInTransactionService(
         acceptedAt?: Date
     },
 ) {
-    await transaction.execute(sql`select pg_advisory_xact_lock(7421906)`)
+    await lockAccountUniquenessInTransactionService(transaction)
     const initialized = await transaction
         .select({ id: users.id })
         .from(users)
@@ -36,10 +40,7 @@ export async function createPublicAccountInTransactionService(
         .where(
             and(
                 eq(users.isDeleted, false),
-                or(
-                    sql`lower(${users.username}) = ${input.username.toLowerCase()}`,
-                    sql`lower(${users.email}) = ${input.email.toLowerCase()}`,
-                ),
+                accountIdentityMatchesService(input),
             ),
         )
         .limit(1)

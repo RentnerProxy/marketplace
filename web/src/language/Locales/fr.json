@@ -177,6 +177,11 @@
             "placeholder": "Texte provisoire des conditions d’utilisation."
         },
         "social": {
+            "confirmation_failed": "La confirmation a échoué. Réessayez.",
+            "not_linked": "Ce fournisseur n’est pas connecté.",
+            "last_method": "Un autre fournisseur de connexion ou une clé d’accès doit rester disponible.",
+            "disconnect": "Déconnecter {{provider}}",
+            "unlinked": "Le fournisseur de connexion a été déconnecté.",
             "title": "Ou continuer avec",
             "continue": "Continuer avec {{provider}}",
             "unavailable": "La connexion par fournisseur est indisponible.",

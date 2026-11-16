@@ -106,6 +106,65 @@ describe('Administrative mutations with required audit persistence', function ()
             },
         )
     })
+    it.each(['username', 'email'] as const)(
+        'rejects case-insensitive %s collisions on creation',
+        async function (field) {
+            if (field === 'email')
+                adminAuditDb.state.rows.users[0].email = 'TARGET@EXAMPLE.TEST'
+            const result = await createUserService({
+                username: field === 'username' ? 'TARGET' : 'new-user',
+                email: field === 'email'
+                    ? 'TARGET@EXAMPLE.TEST'
+                    : 'new@example.test',
+            })
+            expect(result).toEqual({
+                success: false,
+                error: 'Ein Benutzer mit diesem Username oder dieser E-Mail existiert bereits.',
+            })
+            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(0)
+            expect(adminAuditExternal.enqueueInvitation).not.toHaveBeenCalled()
+        },
+    )
+    it.each(['username', 'email'] as const)(
+        'rejects case-insensitive %s collisions on update',
+        async function (field) {
+            if (field === 'email')
+                adminAuditDb.state.rows.users[1].email = 'ACTOR@EXAMPLE.TEST'
+            const result = await updateUserProfileService({
+                ...updateInput(),
+                [field]: field === 'username' ? 'ACTOR' : 'ACTOR@EXAMPLE.TEST',
+            })
+            expect(result).toEqual({
+                success: false,
+                error: 'Username oder E-Mail wird bereits verwendet.',
+            })
+            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(0)
+        },
+    )
+    it('allows case-only changes to the same user', async function () {
+        const result = await updateUserProfileService({
+            ...updateInput(),
+            username: 'TARGET',
+            email: 'TARGET@EXAMPLE.TEST',
+        })
+        expect(result.success).toBe(true)
+    })
+    it.each(['create', 'update'] as const)(
+        'locks account uniqueness before user rows during %s',
+        async function (operation) {
+            const result = operation === 'create'
+                ? await createUserService({
+                    username: 'new-user',
+                    email: 'new@example.test',
+                })
+                : await updateUserProfileService(updateInput())
+            expect(result.success).toBe(true)
+            expect(
+                adminAuditDb.state.events.slice(0, 3)
+                    .map((event) => event.operation),
+            ).toEqual(['begin', 'lock:identity', 'lock:update'])
+        },
+    )
     it('commits profile, identity, revocation and audit together', async function () {
         const previousPermissions = structuredClone(
             adminAuditDb.state.rows.userPermissions,

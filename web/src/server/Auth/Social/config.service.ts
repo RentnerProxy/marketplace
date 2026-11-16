@@ -85,6 +85,8 @@ export async function getSocialClientConfigurationService(
             issuer: definition.issuer,
             authorization_endpoint: definition.authorization,
             token_endpoint: definition.token,
+            authorization_response_iss_parameter_supported:
+                definition.authorizationResponseIssuer,
             ...(definition.jwks
                 ? {
                       jwks_uri: definition.jwks,

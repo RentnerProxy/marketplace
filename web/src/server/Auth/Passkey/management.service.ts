@@ -12,6 +12,7 @@ import { getCurrentUserSettingsSession } from '@/server/Auth/currentSession.ts'
 import type { DeleteCurrentUserPasskeyInput } from '@/features/UserSettings/Types/user-settings-server-input.types.ts'
 import { reauthenticateCurrentUserService } from '@/server/Auth/reauthentication.service.ts'
 import { validateReauthenticationProofService } from '@/server/Auth/reauthentication-proof.service.ts'
+import { hasRemainingSignInMethodService } from '@/server/Auth/remaining-sign-in.service.ts'
 
 export async function getCurrentUserPasskeysService() {
     const currentUser = await getCurrentUserSettingsSession()
@@ -71,6 +72,12 @@ export async function deleteCurrentUserPasskeyService(
             return {
                 success: false as const,
                 error: 'Bestätigung fehlgeschlagen. Prüfe deine Eingabe und versuche es erneut.',
+            }
+        }
+        if (data.reauthentication.method !== 'password' && !(await hasRemainingSignInMethodService(transaction, { userId: state.currentUser.id, excludedPasskeyId: data.passkeyId }))) {
+            return {
+                success: false as const,
+                error: 'Der letzte Anmeldeweg kann nicht entfernt werden. Ein weiterer Anmeldeanbieter oder Passkey muss verfügbar bleiben.',
             }
         }
         const deletedPasskeys = await transaction

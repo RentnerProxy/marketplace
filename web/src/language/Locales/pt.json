@@ -177,6 +177,11 @@
             "placeholder": "Texto provisório dos termos de utilização."
         },
         "social": {
+            "confirmation_failed": "A confirmação falhou. Tente novamente.",
+            "not_linked": "Este provedor não está conectado.",
+            "last_method": "Deve permanecer disponível outro provedor de início de sessão ou uma chave de acesso.",
+            "disconnect": "Desconectar {{provider}}",
+            "unlinked": "O provedor de início de sessão foi desconectado.",
             "title": "Ou continua com",
             "continue": "Continuar com {{provider}}",
             "unavailable": "O início de sessão por fornecedor está indisponível.",

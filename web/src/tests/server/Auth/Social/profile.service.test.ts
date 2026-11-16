@@ -144,9 +144,16 @@ afterAll(() => {
 })
 
 function callback(provider: SocialProviderId = 'google') {
-    return new URL(
+    const url = new URL(
         `https://market.example.test/api/auth/${provider}/callback?code=fixture-code&state=fixture-state`,
     )
+    const issuers = {
+        google: 'https://accounts.google.com',
+        github: 'https://github.com/login/oauth',
+        discord: 'https://discord.com',
+    }
+    url.searchParams.set('iss', issuers[provider])
+    return url
 }
 
 const checks = {
@@ -235,6 +242,23 @@ describe('Provider identity verification over mocked HTTPS', () => {
             emailVerified: true,
         })
     })
+
+    it.each(['github', 'discord'] as const)(
+        'requires the advertised %s response issuer before exchanging a code',
+        async (provider) => {
+            process.env.OAUTH_GITHUB_CLIENT_ID = 'github-client'
+            process.env.OAUTH_GITHUB_CLIENT_SECRET = 'fixture-secret'
+            process.env.OAUTH_DISCORD_CLIENT_ID = 'discord-client'
+            process.env.OAUTH_DISCORD_CLIENT_SECRET = 'fixture-secret'
+            includeIdToken = false
+            const url = callback(provider)
+            url.searchParams.delete('iss')
+            await expect(getSocialIdentityFromCallbackService(provider, url, checks)).rejects.toThrow()
+            url.searchParams.set('iss', provider === 'github' ? 'https://github.com' : 'https://github.com/login/oauth')
+            await expect(getSocialIdentityFromCallbackService(provider, url, checks)).rejects.toThrow()
+            expect(tokenRequests).toHaveLength(0)
+        },
+    )
 
     it('preserves Discord identity without treating an unverified email as ownership', async () => {
         process.env.OAUTH_DISCORD_CLIENT_ID = 'fixture-client'

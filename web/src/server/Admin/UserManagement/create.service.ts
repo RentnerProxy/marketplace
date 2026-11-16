@@ -1,6 +1,10 @@
 import { createPasswordResetLinkService } from '@/server/Auth/PasswordReset/link.service.ts'
 import { isDeepStrictEqual } from 'node:util'
-import { and, asc, eq, inArray, ne, or } from 'drizzle-orm'
+import { and, asc, eq, inArray, ne } from 'drizzle-orm'
+import {
+    accountIdentityMatchesService,
+    lockAccountUniquenessInTransactionService,
+} from '@/server/Auth/accountUniqueness.service.ts'
 import { db } from '@/db'
 import {
     defaultUserPermissions,
@@ -52,6 +56,7 @@ export async function createUserService(data: CreateUserInput) {
             }
         }
 
+        await lockAccountUniquenessInTransactionService(transaction)
         await lockAuditUsersInTransactionService(transaction, [createdByUserId])
         const actorRows = await transaction
             .select({
@@ -94,7 +99,7 @@ export async function createUserService(data: CreateUserInput) {
             .where(
                 and(
                     eq(users.isDeleted, false),
-                    or(eq(users.username, username), eq(users.email, email)),
+                    accountIdentityMatchesService({ username, email }),
                 ),
             )
             .limit(1)

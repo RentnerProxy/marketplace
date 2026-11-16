@@ -337,6 +337,23 @@ describe('Social login and second-factor completion', () => {
         expect(createSession).toHaveBeenCalledTimes(1)
     })
 
+    it('consumes the challenge once even when both concurrent TOTP checks succeed', async () => {
+        joined[0]!.user.isTwoFactorEnabled = true
+        factors = [{ id: factorId, userId, verified: true }]
+        await signInSocialIdentityService(identity)
+        totp.mockResolvedValueOnce(true)
+        totp.mockResolvedValueOnce(true)
+        const results = await Promise.all([
+            finishSocialLoginService('123456'),
+            finishSocialLoginService('123456'),
+        ])
+        expect(totp).toHaveBeenCalledTimes(2)
+        expect(read.mock.calls.filter((call) => call[4] === true)).toHaveLength(2)
+        expect(results.filter((result) => result.success)).toHaveLength(1)
+        expect(createSession).toHaveBeenCalledTimes(1)
+        expect(challenge).toBeNull()
+    })
+
     it('applies the challenge rate limit before checking TOTP or issuing a session', async () => {
         joined[0]!.user.isTwoFactorEnabled = true
         factors = [{ id: factorId, userId, verified: true }]

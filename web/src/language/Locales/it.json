@@ -177,6 +177,11 @@
             "placeholder": "Testo provvisorio delle condizioni d’uso."
         },
         "social": {
+            "confirmation_failed": "Conferma non riuscita. Riprova.",
+            "not_linked": "Questo provider non è collegato.",
+            "last_method": "Deve rimanere disponibile un altro provider di accesso o una passkey.",
+            "disconnect": "Scollega {{provider}}",
+            "unlinked": "Il provider di accesso è stato scollegato.",
             "title": "Oppure continua con",
             "continue": "Continua con {{provider}}",
             "unavailable": "L’accesso tramite provider non è disponibile.",

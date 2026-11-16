@@ -177,6 +177,11 @@
             "title": "Two-factor authentication"
         },
         "social": {
+            "confirmation_failed": "Confirmation failed. Please try again.",
+            "not_linked": "This provider is not connected.",
+            "last_method": "Another sign-in provider or a passkey must remain available before disconnecting.",
+            "disconnect": "Disconnect {{provider}}",
+            "unlinked": "The sign-in provider has been disconnected.",
             "title": "Or continue with",
             "continue": "Continue with {{provider}}",
             "unavailable": "Provider sign-in is unavailable.",

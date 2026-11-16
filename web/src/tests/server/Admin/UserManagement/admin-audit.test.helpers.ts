@@ -120,6 +120,8 @@ function matches(
         )
     const left = field(condition.values[0], context)
     const right = field(condition.values[1], context)
+    if (condition.kind === 'lowerEq')
+        return typeof left === 'string' && left.toLowerCase() === right
     if (condition.kind === 'eq') return left === right
     if (condition.kind === 'ne') return left !== right
     if (condition.kind === 'inArray' && Array.isArray(right))
@@ -375,6 +377,9 @@ function createAdminAuditTestDatabase() {
             return chain
         }
         return {
+            async execute() {
+                state.events.push({ transaction, operation: 'lock:identity' })
+            },
             select: (selection?: AdminTestSelection) =>
                 query('select', undefined, selection),
             insert: (table: AdminTestTable) => query('insert', table),
@@ -532,6 +537,10 @@ export const adminAuditExternal = {
 export function installAdminAuditTestMocks() {
     vi.mock('@/db', () => ({ db: adminAuditDb.db }))
     vi.mock('@/db/schema.ts', () => adminAuditSchema)
+    vi.mock('@/db/Schema/users.ts', () => ({
+        users: adminAuditSchema.users,
+        user_profiles: adminAuditSchema.user_profiles,
+    }))
     vi.mock('@/db/Schema/socialAuth.ts', () => ({
         socialAccounts: adminAuditSchema.socialAccounts,
     }))
@@ -543,6 +552,13 @@ export function installAdminAuditTestMocks() {
         inArray: (...values: unknown[]) => ({ kind: 'inArray', values }),
         asc: (value: unknown) => value,
         count: () => 'count',
+        sql: (strings: TemplateStringsArray, ...values: unknown[]) => {
+            if (strings.join('') === 'lower() = ')
+                return { kind: 'lowerEq', values }
+            if (strings.join('') === 'select pg_advisory_xact_lock(7421906)')
+                return { kind: 'identityLock', values }
+            throw new Error('Unsupported test SQL')
+        },
     }))
     vi.mock('@tanstack/react-start/server', () => ({
         deleteCookie: vi.fn(),

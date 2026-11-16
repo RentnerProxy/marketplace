@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { and, eq, lt, or, sql } from 'drizzle-orm'
+import { lockAccountUniquenessInTransactionService } from '@/server/Auth/accountUniqueness.service.ts'
 import { db } from '@/db'
 import { users } from '@/db/Schema/users.ts'
 import { pendingRegistrations } from '@/db/Schema/registration.ts'
@@ -51,9 +52,7 @@ export async function registerService(
         identity.email?.toLowerCase() === data.email
     ) {
         const created = await db.transaction(async (transaction) => {
-            await transaction.execute(
-                sql`select pg_advisory_xact_lock(7421906)`,
-            )
+            await lockAccountUniquenessInTransactionService(transaction)
             if (
                 !(await consumeSocialRegistrationIdentityInTransactionService(
                     transaction,
@@ -86,7 +85,7 @@ export async function registerService(
     const { token, tokenHash, expiresAt } =
         await createRegistrationTokenService()
     const staged = await db.transaction(async (transaction) => {
-        await transaction.execute(sql`select pg_advisory_xact_lock(7421906)`)
+        await lockAccountUniquenessInTransactionService(transaction)
         const initialized = await transaction
             .select({ id: users.id })
             .from(users)

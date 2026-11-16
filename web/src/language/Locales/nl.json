@@ -177,6 +177,11 @@
             "placeholder": "Tijdelijke tekst voor de gebruiksvoorwaarden."
         },
         "social": {
+            "confirmation_failed": "Bevestiging mislukt. Probeer het opnieuw.",
+            "not_linked": "Deze provider is niet gekoppeld.",
+            "last_method": "Er moet een andere aanmeldprovider of een passkey beschikbaar blijven.",
+            "disconnect": "{{provider}} ontkoppelen",
+            "unlinked": "De aanmeldprovider is ontkoppeld.",
             "title": "Of ga verder met",
             "continue": "Verder met {{provider}}",
             "unavailable": "Inloggen via providers is niet beschikbaar.",

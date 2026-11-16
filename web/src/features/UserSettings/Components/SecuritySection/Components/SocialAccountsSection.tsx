@@ -39,11 +39,24 @@ export default function SocialAccountsSection() {
                                 {provider.name}
                             </span>
                             {provider.isConnected ? (
+                                <div className="flex items-center gap-3">
                                 <span className="text-sm text-secondary-text">
                                     {t(
                                         'userSettings.security.socialAccounts.connected',
                                     )}
                                 </span>
+                                <button
+                                    type="button"
+                                    disabled={!state.canLink}
+                                    onClick={() => handler.handleDisconnect(provider.id)}
+                                    className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-danger px-3 text-sm font-semibold text-danger disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {state.isUnlinking && state.unlinkingProvider === provider.id && (
+                                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                                    )}
+                                    {t('auth.social.disconnect', { provider: provider.name })}
+                                </button>
+                                </div>
                             ) : (
                                 <button
                                     type="button"
@@ -65,14 +78,14 @@ export default function SocialAccountsSection() {
                         </div>
                     ))
                 )}
-                {state.hasUnlinkedProviders && (
+                {state.hasProviders && (
                     <>
                         <ReauthenticationInput
                             id="social-account-reauthentication"
                             isTotp={state.reauthenticationMethod === 'totp'}
                             value={state.reauthenticationValue}
                             onChange={handler.handleReauthenticationValueChange}
-                            disabled={state.isLinking}
+                            disabled={state.isLinking || state.isUnlinking}
                         />
                         {state.reauthenticationMethod === 'password' && (
                             <p className="text-xs text-secondary-text">

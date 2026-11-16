@@ -1,4 +1,5 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
+import { lockAccountUniquenessInTransactionService } from '@/server/Auth/accountUniqueness.service.ts'
 import { db } from '@/db'
 import { pendingRegistrations } from '@/db/Schema/registration.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
@@ -14,7 +15,7 @@ export async function verifyRegistrationService(
 ): Promise<VerifyRegistrationResult> {
     const tokenHash = await createTokenHash(data.token)
     const created = await db.transaction(async (transaction) => {
-        await transaction.execute(sql`select pg_advisory_xact_lock(7421906)`)
+        await lockAccountUniquenessInTransactionService(transaction)
         const rows = await transaction
             .delete(pendingRegistrations)
             .where(eq(pendingRegistrations.tokenHash, tokenHash))

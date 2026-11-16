@@ -66,13 +66,15 @@ export default function useRegisterLogic(): RegisterLogicReturn {
             setError('')
             setErrorField(null)
         },
-        onSuccess: (result) => {
+        onSuccess: async (result) => {
             if (!result.success) {
                 reportError(
                     result.error === 'registration.passwordRequired'
                         ? 'auth.register.passwordPolicy'
                         : 'auth.register.failed',
                 )
+                if (result.error === 'registration.passwordRequired')
+                    await social.refetch()
                 return
             }
             setPassword('')
