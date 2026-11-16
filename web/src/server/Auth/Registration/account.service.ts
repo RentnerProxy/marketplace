@@ -80,13 +80,11 @@ export async function createPublicAccountInTransactionService(
         .insert(userPermissions)
         .values({ userId: user.id, permissionId: permission.id })
     if (input.provider && input.subject)
-        await transaction
-            .insert(socialAccounts)
-            .values({
-                userId: user.id,
-                provider: input.provider,
-                subject: input.subject,
-            })
+        await transaction.insert(socialAccounts).values({
+            userId: user.id,
+            provider: input.provider,
+            subject: input.subject,
+        })
     const auditReceipt = await writeAuditLogInTransactionService(transaction, {
         ...prepareAuditContextService(null),
         action: 'auth.registration_completed',
