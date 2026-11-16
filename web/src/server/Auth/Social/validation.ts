@@ -9,5 +9,8 @@ export const socialIdentitySchema = z.object({
 })
 
 export const socialLinkProofSchema = z.object({
-    userId: z.uuid(), sessionHash: z.string().regex(/^[a-f0-9]{64}$/), credentialVersion: z.string().regex(/^[a-f0-9]{64}$/), expiresAt: z.number().int(),
+    userId: z.uuid(),
+    sessionHash: z.string().regex(/^[a-f0-9]{64}$/),
+    credentialVersion: z.string().regex(/^[a-f0-9]{64}$/),
+    expiresAt: z.number().int(),
 })

@@ -41,9 +41,37 @@ const resetState: { phase: PasswordResetClientPhase; isLoading: boolean } = {
     isLoading: false,
 }
 const forgotState = { isLoading: false }
-const registerState = { username: '', email: '', password: '', confirmPassword: '', acceptTerms: false, isSocial: false, isPending: false, error: '', phase: 'form' }
-vi.mock('@/features/Auth/Register/Hooks/useRegisterLogic.ts', () => ({ default: () => ({ state: registerState, handler: { handleSubmit: submit, handleVerify: submit, handleCancelSocial: submit }, setter: { setUsername: change, setEmail: change, setPassword: change, setConfirmPassword: change, setAcceptTerms: change } }) }))
-vi.mock('@/shared/Auth/Components/SocialLogin.tsx', () => ({ default: () => null }))
+const registerState = {
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    acceptTerms: false,
+    isSocial: false,
+    isPending: false,
+    error: '',
+    phase: 'form',
+}
+vi.mock('@/features/Auth/Register/Hooks/useRegisterLogic.ts', () => ({
+    default: () => ({
+        state: registerState,
+        handler: {
+            handleSubmit: submit,
+            handleVerify: submit,
+            handleCancelSocial: submit,
+        },
+        setter: {
+            setUsername: change,
+            setEmail: change,
+            setPassword: change,
+            setConfirmPassword: change,
+            setAcceptTerms: change,
+        },
+    }),
+}))
+vi.mock('@/shared/Auth/Components/SocialLogin.tsx', () => ({
+    default: () => null,
+}))
 const setupState: CreateFirstSuperUserAccountLogicReturn['state'] = {
     setupAccessState: 'granted',
     isCreating: false,
@@ -150,7 +178,12 @@ beforeEach(function () {
         isCreating: false,
     })
     forgotState.isLoading = false
-    Object.assign(registerState, { isSocial: false, isPending: false, phase: 'form', error: '' })
+    Object.assign(registerState, {
+        isSocial: false,
+        isPending: false,
+        phase: 'form',
+        error: '',
+    })
     headerState.hasCustomLogo = false
     headerState.logoSrc = '/rentnerproxy-logo.png'
 })
@@ -191,13 +224,22 @@ describe('authentication page states', function () {
         expect(html).toContain('name="acceptTerms"')
     })
 
-    it.each(['verify', 'inbox', 'complete'])('renders the registration %s state without credential inputs', (phase) => {
-        registerState.phase = phase
-        const html = renderToStaticMarkup(createElement(Register))
-        expect(html).not.toContain('name="password"')
-        expect(html).toContain(phase === 'verify' ? 'auth.register.verifyDescription' : phase === 'inbox' ? 'auth.register.checkInbox' : 'auth.register.complete')
-        expect(html).toContain('href="/login"')
-    })
+    it.each(['verify', 'inbox', 'complete'])(
+        'renders the registration %s state without credential inputs',
+        (phase) => {
+            registerState.phase = phase
+            const html = renderToStaticMarkup(createElement(Register))
+            expect(html).not.toContain('name="password"')
+            expect(html).toContain(
+                phase === 'verify'
+                    ? 'auth.register.verifyDescription'
+                    : phase === 'inbox'
+                      ? 'auth.register.checkInbox'
+                      : 'auth.register.complete',
+            )
+            expect(html).toContain('href="/login"')
+        },
+    )
 
     it('shows custom branding and independent pending labels', function () {
         headerState.hasCustomLogo = true

@@ -63,7 +63,12 @@ const adminAuditSchema = {
         ['presetId', 'permissionId'],
     ),
     sessions: createTestTable('sessions', ['id', 'userId']),
-    socialAccounts: createTestTable('socialAccounts', ['id', 'userId', 'provider', 'subject']),
+    socialAccounts: createTestTable('socialAccounts', [
+        'id',
+        'userId',
+        'provider',
+        'subject',
+    ]),
     passwordResetTokens: createTestTable('passwordResetTokens', [
         'userId',
         'tokenHash',
@@ -468,11 +473,25 @@ function createAdminAuditTestDatabase() {
             { id: 'target-session', userId: ADMIN_TARGET_ID },
         ]
         state.rows.socialAccounts = [
-            { id: 'target-social-account', userId: ADMIN_TARGET_ID, provider: 'google', subject: 'target-provider-subject' },
-            { id: 'actor-social-account', userId: ADMIN_ACTOR_ID, provider: 'github', subject: 'actor-provider-subject' },
+            {
+                id: 'target-social-account',
+                userId: ADMIN_TARGET_ID,
+                provider: 'google',
+                subject: 'target-provider-subject',
+            },
+            {
+                id: 'actor-social-account',
+                userId: ADMIN_ACTOR_ID,
+                provider: 'github',
+                subject: 'actor-provider-subject',
+            },
         ]
         state.rows.twoFactorAuth = [
-            { id: '00000000-0000-4000-8000-000000000003', userId: ADMIN_TARGET_ID, verified: true },
+            {
+                id: '00000000-0000-4000-8000-000000000003',
+                userId: ADMIN_TARGET_ID,
+                verified: true,
+            },
         ]
         state.rows.trustedDevices = [
             { id: 'target-device', userId: ADMIN_TARGET_ID },
@@ -513,7 +532,9 @@ export const adminAuditExternal = {
 export function installAdminAuditTestMocks() {
     vi.mock('@/db', () => ({ db: adminAuditDb.db }))
     vi.mock('@/db/schema.ts', () => adminAuditSchema)
-    vi.mock('@/db/Schema/socialAuth.ts', () => ({ socialAccounts: adminAuditSchema.socialAccounts }))
+    vi.mock('@/db/Schema/socialAuth.ts', () => ({
+        socialAccounts: adminAuditSchema.socialAccounts,
+    }))
     vi.mock('drizzle-orm', () => ({
         and: (...values: unknown[]) => ({ kind: 'and', values }),
         or: (...values: unknown[]) => ({ kind: 'or', values }),

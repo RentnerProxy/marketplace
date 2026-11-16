@@ -95,16 +95,26 @@ export async function createAuthenticatedSessionForUser({
                 Boolean(currentFactor?.verified) !==
                     currentUser.isTwoFactorEnabled ||
                 currentFactorId !== proof.factorId ||
-                (proof.kind === 'password' && proof.trustThisDevice && !currentUser.isTwoFactorEnabled)
+                (proof.kind === 'password' &&
+                    proof.trustThisDevice &&
+                    !currentUser.isTwoFactorEnabled)
             ) {
                 return null
             }
         }
 
         if (proof.kind === 'social') {
-            const accounts = await transaction.select({ id: socialAccounts.id }).from(socialAccounts).where(and(
-                eq(socialAccounts.id, proof.accountId), eq(socialAccounts.userId, currentUser.id),
-            )).limit(1).for('share')
+            const accounts = await transaction
+                .select({ id: socialAccounts.id })
+                .from(socialAccounts)
+                .where(
+                    and(
+                        eq(socialAccounts.id, proof.accountId),
+                        eq(socialAccounts.userId, currentUser.id),
+                    ),
+                )
+                .limit(1)
+                .for('share')
             if (accounts.length !== 1) return null
         }
 

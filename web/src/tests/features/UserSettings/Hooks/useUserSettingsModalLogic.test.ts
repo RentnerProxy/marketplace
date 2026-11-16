@@ -20,7 +20,9 @@ const browser = {
     history: { state: null, replaceState: mock() },
 }
 mock.module('@rentnerkev/toasts', () => ({ toast: { success } }))
-mock.module('@/language/useTranslationStore.ts', () => ({ default: () => ({ t: (key: string) => key }) }))
+mock.module('@/language/useTranslationStore.ts', () => ({
+    default: () => ({ t: (key: string) => key }),
+}))
 let mounted = true
 const body = { style: { overflow: 'unset' } }
 mock.module('react', () => hookReact)
@@ -53,10 +55,18 @@ describe('User settings modal logic', () => {
         browser.location.hash = '#social-linked'
         renderHook(useUserSettingsModalLogic)
         runEffects()
-        expect(renderHook(useUserSettingsModalLogic).state.activeTab).toBe('security')
+        expect(renderHook(useUserSettingsModalLogic).state.activeTab).toBe(
+            'security',
+        )
         expect(shell.handler.openUserSettings).toHaveBeenCalledTimes(1)
-        expect(browser.history.replaceState).toHaveBeenCalledWith(null, '', '/dashboard?view=all')
-        expect(success).toHaveBeenCalledWith('userSettings.security.socialAccounts.linked')
+        expect(browser.history.replaceState).toHaveBeenCalledWith(
+            null,
+            '',
+            '/dashboard?view=all',
+        )
+        expect(success).toHaveBeenCalledWith(
+            'userSettings.security.socialAccounts.linked',
+        )
     })
     it('changes tabs and forwards closure while locking body scroll until cleanup', () => {
         const logic = renderHook(useUserSettingsModalLogic)

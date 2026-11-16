@@ -5,18 +5,24 @@ import { reauthenticateCurrentUserService } from '@/server/Auth/reauthentication
 import { beginSocialAuthorizationService } from '@/server/Auth/Social/flow.service.ts'
 import { getCurrentUserSocialAccountsService } from '@/server/Auth/Social/management.service.ts'
 
-export const getSocialAccountsHandler = createServerFn({ method: 'GET' })
-    .handler(async function () {
-        await requireAuthenticatedFeatureAccessService()
-        return getCurrentUserSocialAccountsService()
-    })
+export const getSocialAccountsHandler = createServerFn({
+    method: 'GET',
+}).handler(async function () {
+    await requireAuthenticatedFeatureAccessService()
+    return getCurrentUserSocialAccountsService()
+})
 
 export const beginSocialLinkHandler = createServerFn({ method: 'POST' })
     .validator((data: unknown) => beginSocialLinkInputSchema.parse(data))
     .handler(async function ({ data }) {
         await requireAuthenticatedFeatureAccessService()
-        const reauthentication = await reauthenticateCurrentUserService(data.reauthentication)
+        const reauthentication = await reauthenticateCurrentUserService(
+            data.reauthentication,
+        )
         if (!reauthentication.success) return reauthentication
-        const authorization = await beginSocialAuthorizationService(data.provider, reauthentication.proof)
+        const authorization = await beginSocialAuthorizationService(
+            data.provider,
+            reauthentication.proof,
+        )
         return { success: true as const, url: authorization.url }
     })

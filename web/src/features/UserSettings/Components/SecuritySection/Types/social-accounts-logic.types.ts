@@ -3,7 +3,11 @@ import type { SocialProviderId } from '@/lib/Auth/Types/social-auth.types.ts'
 
 export type SocialAccountsLogicReturn = {
     state: {
-        providers: Array<{ id: SocialProviderId; name: string; isConnected: boolean }>
+        providers: Array<{
+            id: SocialProviderId
+            name: string
+            isConnected: boolean
+        }>
         isLoading: boolean
         hasLoadError: boolean
         isLinking: boolean

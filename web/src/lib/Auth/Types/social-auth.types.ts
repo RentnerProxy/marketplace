@@ -1,7 +1,4 @@
-export type SocialProviderId =
-    | 'google'
-    | 'github'
-    | 'discord'
+export type SocialProviderId = 'google' | 'github' | 'discord'
 
 export type SocialProvider = { id: SocialProviderId; name: string }
 

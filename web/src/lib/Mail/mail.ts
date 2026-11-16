@@ -41,7 +41,12 @@ export async function sendPasswordResetMail(input: AuthMailInput) {
 export async function sendRegistrationVerificationMail(input: AuthMailInput) {
     const theme = await getRecipientMailThemeService(input.to)
     const { text, html } = createRegistrationMailContent(input, theme)
-    await sendWithSmtp({ to: input.to, subject: 'E-Mail-Adresse bestätigen / Verify your email', text, html })
+    await sendWithSmtp({
+        to: input.to,
+        subject: 'E-Mail-Adresse bestätigen / Verify your email',
+        text,
+        html,
+    })
 }
 
 export async function sendPasswordSetupMail(input: AuthMailInput) {

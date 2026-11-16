@@ -16,7 +16,11 @@ export default function useUserSettingsModalLogic(): UserSettingsModalLogicRetur
 
     useEffect(() => {
         if (window.location.hash !== '#social-linked') return
-        window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`)
+        window.history.replaceState(
+            window.history.state,
+            '',
+            `${window.location.pathname}${window.location.search}`,
+        )
         startTransition(() => setActiveTab('security'))
         openUserSettings()
         toast.success(t('userSettings.security.socialAccounts.linked'))

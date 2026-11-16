@@ -110,7 +110,14 @@ describe('Mail-Worker-Dispatch', function () {
     })
 
     it('dispatches encrypted registration verification mail', async () => {
-        await processMailJob({ name: 'registration-verification', data: await createMailJobEnvelope({ ...authMailData, resetLink: 'https://app.example.test/register#verify=token', kind: 'registration-verification' }) })
+        await processMailJob({
+            name: 'registration-verification',
+            data: await createMailJobEnvelope({
+                ...authMailData,
+                resetLink: 'https://app.example.test/register#verify=token',
+                kind: 'registration-verification',
+            }),
+        })
         expect(sendRegistrationVerificationMail).toHaveBeenCalledTimes(1)
         expect(mockedSendPasswordResetMail).not.toHaveBeenCalled()
         expect(mockedSendPasswordSetupMail).not.toHaveBeenCalled()

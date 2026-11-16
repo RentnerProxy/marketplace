@@ -5,7 +5,10 @@ import { getActiveCurrentSessionUser } from '@/server/Auth/currentSession.ts'
 import { AuthenticationRequiredError } from '@/server/Auth/authorization.errors.ts'
 import { getConfiguredSocialProvidersService } from './config.service.ts'
 import { SOCIAL_PROVIDERS } from '@/config/social-auth.config.ts'
-import type { SocialProvider, SocialProviderId } from '@/lib/Auth/Types/social-auth.types.ts'
+import type {
+    SocialProvider,
+    SocialProviderId,
+} from '@/lib/Auth/Types/social-auth.types.ts'
 
 export async function getCurrentUserSocialAccountsService(): Promise<{
     providers: SocialProvider[]
@@ -13,14 +16,19 @@ export async function getCurrentUserSocialAccountsService(): Promise<{
 }> {
     const currentUser = await getActiveCurrentSessionUser()
     if (!currentUser) throw new AuthenticationRequiredError()
-    const rows = await db.select({
-        id: socialAccounts.id,
-        provider: socialAccounts.provider,
-        createdAt: socialAccounts.createdAt,
-    }).from(socialAccounts).where(eq(socialAccounts.userId, currentUser.id))
+    const rows = await db
+        .select({
+            id: socialAccounts.id,
+            provider: socialAccounts.provider,
+            createdAt: socialAccounts.createdAt,
+        })
+        .from(socialAccounts)
+        .where(eq(socialAccounts.userId, currentUser.id))
         .orderBy(desc(socialAccounts.createdAt))
     const accounts = rows.flatMap((account) => {
-        const provider = SOCIAL_PROVIDERS.find((candidate) => candidate.id === account.provider)
+        const provider = SOCIAL_PROVIDERS.find(
+            (candidate) => candidate.id === account.provider,
+        )
         return provider ? [{ ...account, provider: provider.id }] : []
     })
     return { providers: getConfiguredSocialProvidersService(), accounts }

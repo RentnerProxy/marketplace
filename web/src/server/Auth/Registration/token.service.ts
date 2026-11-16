@@ -4,7 +4,13 @@ import { REGISTRATION_POLICY } from '@/config/security.config.ts'
 
 export async function createRegistrationTokenService() {
     const token = randomBytes(32).toString('base64url')
-    return { token, tokenHash: await createTokenHash(token), expiresAt: new Date(Date.now() + REGISTRATION_POLICY.verificationDurationMs) }
+    return {
+        token,
+        tokenHash: await createTokenHash(token),
+        expiresAt: new Date(
+            Date.now() + REGISTRATION_POLICY.verificationDurationMs,
+        ),
+    }
 }
 
 export function createRegistrationLinkService(origin: string, token: string) {

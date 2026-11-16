@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { socialAuthEnvironmentSchema, socialAuthEnvironmentFields } from './social-auth-environment.service.ts'
+import {
+    socialAuthEnvironmentSchema,
+    socialAuthEnvironmentFields,
+} from './social-auth-environment.service.ts'
 import { containerLogReaderOriginSchema } from '@/server/Logging/container-log.validation.ts'
 import {
     parseConfiguredRealtimeWebSocketUrlService,
@@ -100,10 +103,15 @@ const appEnvironmentSchema = backupEnvironmentSchema
         PASSKEY_RP_NAME: optionalEnvironmentValue,
     })
     .superRefine(function (environment, context) {
-        const socialEnvironment = socialAuthEnvironmentSchema.safeParse(environment)
+        const socialEnvironment =
+            socialAuthEnvironmentSchema.safeParse(environment)
         if (!socialEnvironment.success) {
             for (const issue of socialEnvironment.error.issues) {
-                context.addIssue({ code: 'custom', path: issue.path, message: issue.message })
+                context.addIssue({
+                    code: 'custom',
+                    path: issue.path,
+                    message: issue.message,
+                })
             }
         }
         try {
