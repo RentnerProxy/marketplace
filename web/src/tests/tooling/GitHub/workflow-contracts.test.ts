@@ -161,6 +161,14 @@ test.each(['image', 'release'])(
             expect(document.jobs.failed?.steps.at(-1)?.run).toBe(
                 'bun --no-env-file .github/scripts/release/publish-release.ts failed',
             )
+            expect(document.jobs.failed?.if).toContain('cancelled')
+            const noteCommands = document.jobs.notes?.steps.map((step) => step.run)
+            const prepared = noteCommands?.indexOf('bun --no-env-file .github/scripts/release/publish-release.ts prepare') ?? -1
+            const uploaded = noteCommands?.indexOf('bash .github/scripts/release/publish-changelog.sh') ?? -1
+            const completed = noteCommands?.indexOf('bun --no-env-file .github/scripts/release/publish-release.ts') ?? -1
+            expect(prepared).toBeGreaterThan(-1)
+            expect(uploaded).toBeGreaterThan(prepared)
+            expect(completed).toBeGreaterThan(uploaded)
             expect(document.jobs.content?.permissions).toEqual({
                 contents: 'read',
             })

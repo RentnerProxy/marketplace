@@ -37,6 +37,7 @@ export async function publishRelease(
     image: string,
     changelog: unknown,
     revision: string,
+    mode: 'prepare' | 'publish' = 'publish',
 ) {
     const identity = releaseIdentity(tag)
     const post = requireReleaseChangelog([changelog], tag)
@@ -88,7 +89,8 @@ export async function publishRelease(
                 ),
             )
         } else body = imageSection(body, image, identity.channel)
-        await request('PATCH', `${prefix}/${existing.id}`, { body })
+        if (mode === 'publish')
+            await request('PATCH', `${prefix}/${existing.id}`, { body })
         return body
     }
     const notes = record(
@@ -103,13 +105,14 @@ export async function publishRelease(
         notes.body,
         imageSection('', image, identity.channel),
     )
-    await request('POST', prefix, {
-        tag_name: tag,
-        name: post.content.en.title,
-        body,
-        draft: false,
-        ...releasePublication(tag),
-    })
+    if (mode === 'publish')
+        await request('POST', prefix, {
+            tag_name: tag,
+            name: post.content.en.title,
+            body,
+            draft: false,
+            ...releasePublication(tag),
+        })
     return body
 }
 
@@ -181,7 +184,7 @@ if (import.meta.main) {
             mode,
             `https://github.com/RentnerProxy/marketplace/actions/runs/${process.env.GITHUB_RUN_ID ?? ''}`,
         )
-    } else if (mode === 'complete') {
+    } else if (mode === 'complete' || mode === 'prepare') {
         const directory = process.env.RUNNER_TEMP
         if (!directory)
             throw new Error('Runner temporary directory is required')
@@ -191,6 +194,7 @@ if (import.meta.main) {
             process.env.RELEASE_IMAGE ?? '',
             changelog,
             revision,
+            mode === 'prepare' ? 'prepare' : 'publish',
         )
         await Bun.write(
             join(directory, `Marketplace-${tag}-CHANGELOG.md`),
