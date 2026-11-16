@@ -120,7 +120,9 @@ test.each(['image', 'release'])(
                 step.run === 'bash .github/scripts/ci/core-integration.sh',
         )
         const publicAssets = steps.findIndex(
-            (step) => step.run === 'bun --no-env-file .github/scripts/ci/public-assets.ts',
+            (step) =>
+                step.run ===
+                'bun --no-env-file .github/scripts/ci/public-assets.ts',
         )
         expect(steps[build]?.with).toMatchObject({
             context: '.',

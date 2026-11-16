@@ -16,14 +16,14 @@
 
 @theme {
     --font-display:
-        'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS', 'Segoe UI Variable', 'Segoe UI',
-        ui-sans-serif, system-ui, sans-serif;
+        'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS',
+        'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
     --color-marketplace-canvas: #f7faf8;
     --color-marketplace-ink: #06120f;
     --color-marketplace-void: #020a0b;
     --font-sans:
-        'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui, -apple-system,
-        BlinkMacSystemFont, sans-serif;
+        'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui,
+        -apple-system, BlinkMacSystemFont, sans-serif;
     --color-primary: #30ee61;
     --color-primary-hover: #65f586;
     --color-primary-foreground: #020a0b;
