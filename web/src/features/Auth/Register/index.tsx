@@ -87,7 +87,7 @@ export default function RegisterPage() {
                                         customDesign={inputDesign}
                                         autoComplete="username"
                                         required
-                                        pattern="[a-zA-Z0-9_-]+"
+                                        pattern="[a-zA-Z0-9_\x2D]+"
                                         minLength={3}
                                         maxLength={50}
                                         value={state.username}

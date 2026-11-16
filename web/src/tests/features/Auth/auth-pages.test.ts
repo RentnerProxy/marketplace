@@ -3,6 +3,7 @@ import { createElement } from 'react'
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { PASSWORD_POLICY } from '@/config/security.config.ts'
+import { registrationInputSchema } from '@/features/Auth/Register/validation.ts'
 import type { CreateFirstSuperUserAccountLogicReturn } from '@/features/Auth/FirstSuperUser/Types/first-super-user-form.types.ts'
 import type { PasswordResetClientPhase } from '@/lib/Auth/PasswordReset/Types/password-reset-controller.types.ts'
 
@@ -192,6 +193,34 @@ beforeEach(function () {
 })
 
 describe('authentication page states', function () {
+    it('enforces the username character allowlist with a browser-compatible pattern', function () {
+        const html = renderToStaticMarkup(createElement(Register))
+        const input = html.match(
+            /<input\b[^>]*\bid="register-username"[^>]*>/,
+        )?.[0]
+        const pattern = input?.match(/\bpattern="([^"]+)"/)?.[1]
+        expect(pattern).toBeDefined()
+        const constraint = new RegExp(`^(?:${pattern})$`, 'v')
+        for (const username of [
+            'abc',
+            'Alice_123',
+            'abc-123',
+            '-abc-',
+            '___',
+            'abc!',
+            'a b',
+            'äbc',
+            'abc/123',
+            'abc[123]',
+            'foo|bar',
+        ]) {
+            expect(constraint.test(username)).toBe(
+                registrationInputSchema.shape.username.safeParse(username)
+                    .success,
+            )
+        }
+    })
+
     it.each([Login, Register])(
         'keeps a single main landmark, skip link and legal navigation in the auth shell',
         function (Page) {
