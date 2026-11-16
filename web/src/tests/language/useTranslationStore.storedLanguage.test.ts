@@ -14,25 +14,28 @@ describe('useTranslationStore gespeicherte Sprache', function () {
     it('übernimmt eine gespeicherte Sprache und synchronisiert DOM und Storage', async function () {
         const storage = {
             getItem: vi.fn(function () {
-                return 'en'
+                return 'de'
             }),
             setItem: vi.fn(),
         }
         const documentElement = { lang: '' }
         stubTestGlobal('window', {
             localStorage: storage,
-            navigator: { language: 'de-DE' },
+            navigator: { language: 'en-US' },
         })
         stubTestGlobal('document', { documentElement })
-        i18nextMock.api.resolvedLanguage = 'en'
+        i18nextMock.api.resolvedLanguage = 'de'
 
         const useTranslationStore = (
             await import('@/language/useTranslationStore.ts')
         ).default
         const store = useTranslationStore()
 
-        expect(documentElement.lang).toBe('en')
-        expect(store.language).toBe('en')
+        expect(i18nextMock.api.init).toHaveBeenCalledWith(
+            expect.objectContaining({ lng: 'de' }),
+        )
+        expect(documentElement.lang).toBe('de')
+        expect(store.language).toBe('de')
         expect(store.t('common.save')).toBe('translated:common.save')
 
         await store.setLanguage('de')

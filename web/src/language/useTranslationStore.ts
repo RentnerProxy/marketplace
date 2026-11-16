@@ -42,12 +42,6 @@ function getStoredLanguage(): AppLanguage {
         return storedLanguage
     }
 
-    const browserLanguage = window.navigator.language.split('-')[0]
-
-    if (isAppLanguage(browserLanguage)) {
-        return browserLanguage
-    }
-
     return FALLBACK_LANGUAGE
 }
 

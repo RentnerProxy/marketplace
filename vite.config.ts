@@ -26,6 +26,7 @@ const config = defineConfig({
             eventBusConfig: { enabled: false },
         }),
         nitro({
+            publicAssets: [{ dir: 'web/public' }],
             plugins: [
                 './web/src/server/Runtime/core-worker-lifecycle.service.ts',
             ],

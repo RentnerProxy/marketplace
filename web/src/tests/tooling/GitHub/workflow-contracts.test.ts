@@ -119,6 +119,9 @@ test.each(['image', 'release'])(
             (step) =>
                 step.run === 'bash .github/scripts/ci/core-integration.sh',
         )
+        const publicAssets = steps.findIndex(
+            (step) => step.run === 'bun --no-env-file .github/scripts/ci/public-assets.ts',
+        )
         expect(steps[build]?.with).toMatchObject({
             context: '.',
             file: './Dockerfile',
@@ -129,6 +132,10 @@ test.each(['image', 'release'])(
         expect(scan).toBeGreaterThan(build)
         expect(lifecycle).toBeGreaterThan(scan)
         expect(contracts).toBeGreaterThan(lifecycle)
+        expect(publicAssets).toBeGreaterThan(contracts)
+        expect(steps[publicAssets]?.env?.RUNTIME_IMAGE_ID).toBe(
+            '${{ steps.build.outputs.imageid }}',
+        )
         expect(steps[scan]?.env?.IMAGE_ID).toBe(
             '${{ steps.build.outputs.imageid }}',
         )
@@ -194,7 +201,7 @@ test.each(['image', 'release'])(
             expect(contentGate).toBeGreaterThan(0)
             expect(contentGate).toBeLessThan(build)
             const publish = steps.findIndex((step) => step.id === 'publish')
-            expect(publish).toBeGreaterThan(contracts)
+            expect(publish).toBeGreaterThan(publicAssets)
             expect(steps[publish]?.env?.IMAGE_ID).toBe(
                 '${{ steps.build.outputs.imageid }}',
             )

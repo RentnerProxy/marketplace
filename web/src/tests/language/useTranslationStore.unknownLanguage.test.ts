@@ -21,6 +21,6 @@ describe('useTranslationStore unbekannte Sprache', function () {
         await import('@/language/useTranslationStore.ts')
         i18nextMock.handlers.languageChanged?.('sv')
 
-        expect(documentElement.lang).toBe('de')
+        expect(documentElement.lang).toBe('en')
     })
 })

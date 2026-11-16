@@ -10,7 +10,7 @@ describe('useTranslationStore Standard-Fallback', function () {
     beforeEach(resetLanguageTestHarness)
     afterEach(restoreLanguageTestHarness)
 
-    it('fällt bei unbekannter Browser-Sprache auf die Standardsprache zurück', async function () {
+    it('uses English when storage is unsupported despite a German browser', async function () {
         const storage = {
             getItem: vi.fn(function () {
                 return 'sv'
@@ -19,14 +19,14 @@ describe('useTranslationStore Standard-Fallback', function () {
         }
         stubTestGlobal('window', {
             localStorage: storage,
-            navigator: { language: 'sv-SE' },
+            navigator: { language: 'de-DE' },
         })
         stubTestGlobal('document', { documentElement: { lang: '' } })
 
         await import('@/language/useTranslationStore.ts')
 
         expect(i18nextMock.api.init).toHaveBeenLastCalledWith(
-            expect.objectContaining({ lng: 'de' }),
+            expect.objectContaining({ lng: 'en' }),
         )
     })
 })

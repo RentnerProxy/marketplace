@@ -8,7 +8,7 @@ import portugueseFlag from '@/assets/flags/pt.svg'
 import dutchFlag from '@/assets/flags/nl.svg'
 import polishFlag from '@/assets/flags/pl.svg'
 
-export const FALLBACK_LANGUAGE: AppLanguage = 'de'
+export const FALLBACK_LANGUAGE: AppLanguage = 'en'
 
 export const AVAILABLE_LANGUAGES = [
     'en',

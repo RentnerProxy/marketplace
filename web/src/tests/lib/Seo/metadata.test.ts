@@ -26,6 +26,29 @@ const article = {
 
 describe('Marketplace SEO', () => {
     it.each([
+        ['/', 'Apps for your stack', 'Explore planned monitoring'],
+        ['/apps', 'Apps and extensions', 'Installation will arrive'],
+        ['/blog', 'Blog and changelog', 'Follow development'],
+        ['/imprint', 'Legal notice', 'operator details'],
+        ['/privacy', 'Privacy policy', 'personal data is processed'],
+    ])('defaults public metadata to English for %s', (path, title, description) => {
+        const head = buildMarketplacePageHead(path)
+        expect(head.meta).toContainEqual({
+            title: expect.stringContaining(title),
+        })
+        for (const attribute of [
+            { name: 'description' },
+            { property: 'og:description' },
+            { name: 'twitter:description' },
+        ]) {
+            expect(head.meta).toContainEqual({
+                ...attribute,
+                content: expect.stringContaining(description),
+            })
+        }
+    })
+
+    it.each([
         '/apps?token=private#secret',
         'https://attacker.example/apps?token=private#secret',
         '//attacker.example/apps',
