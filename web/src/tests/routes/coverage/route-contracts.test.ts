@@ -37,6 +37,7 @@ const queryOptions = { queryKey: ['system-settings'] }
 let setupRequired = false
 let hash = ''
 let currentPathname = '/forgot-password'
+let activePublicRouteId = '/_public/forgot-password'
 const setupStatus = mock(async () => ({ isRequired: setupRequired }))
 const routerState = mock(
     ({
@@ -44,8 +45,13 @@ const routerState = mock(
     }: {
         select: (state: {
             location: { hash: string; pathname: string }
+            matches: Array<{ routeId: string }>
         }) => unknown
-    }) => select({ location: { hash, pathname: currentPathname } }),
+    }) =>
+        select({
+            location: { hash, pathname: currentPathname },
+            matches: [{ routeId: activePublicRouteId }],
+        }),
 )
 function routeFactory(path: string) {
     return (options: Options) => {
@@ -174,6 +180,7 @@ beforeEach(() => {
     setupStatus.mockClear()
     hash = ''
     currentPathname = '/forgot-password'
+    activePublicRouteId = '/_public/forgot-password'
 })
 
 describe('Thin route boundary contracts', () => {
@@ -329,12 +336,14 @@ describe('Thin route boundary contracts', () => {
         'lets %s own its full-screen shell while recovery retains the public shell',
         (path) => {
             currentPathname = path
+            activePublicRouteId = '/_public/login'
             const login = renderToStaticMarkup(
                 createElement(route('/_public').component!),
             )
             expect(login).toContain('Route outlet')
             expect(login).not.toContain('Public shell')
             currentPathname = '/forgot-password'
+            activePublicRouteId = '/_public/forgot-password'
             expect(
                 renderToStaticMarkup(
                     createElement(route('/_public').component!),
@@ -342,6 +351,16 @@ describe('Thin route boundary contracts', () => {
             ).toContain('Public shell')
         },
     )
+
+    it('keeps the login shell while navigation to another page is pending', () => {
+        currentPathname = '/register'
+        activePublicRouteId = '/_public/login'
+        const html = renderToStaticMarkup(
+            createElement(route('/_public').component!),
+        )
+        expect(html).toContain('Route outlet')
+        expect(html).not.toContain('Public shell')
+    })
 
     it('renders standalone registration without an enclosing public shell or authentication', () => {
         const options = route('/register')

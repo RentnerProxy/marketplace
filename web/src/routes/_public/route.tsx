@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_public')({
 function PublicRouteLayout() {
     const isLogin = useRouterState({
         select: (state) =>
-            state.location.pathname.replace(/\/+$/, '') === '/login',
+            state.matches.some((match) => match.routeId === '/_public/login'),
     })
 
     return isLogin ? <Outlet /> : <PublicLayout />
