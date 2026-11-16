@@ -1,13 +1,7 @@
-import type { CardWaveProps } from './Types/card-wave.types.ts'
-
-const DEFAULT_EDGES = ['top', 'bottom'] as const
-
-export default function CardWave({
-    edges = DEFAULT_EDGES,
-}: CardWaveProps = {}) {
+export default function CardWave() {
     return (
         <>
-            {edges.map((edge) => (
+            {(['top', 'bottom'] as const).map((edge) => (
                 <svg
                     key={edge}
                     aria-hidden="true"
