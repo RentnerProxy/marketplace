@@ -1,7 +1,9 @@
 import type { CardWaveProps } from './Types/card-wave.types.ts'
 
+const DEFAULT_EDGES = ['top', 'bottom'] as const
+
 export default function CardWave({
-    edges = ['top', 'bottom'],
+    edges = DEFAULT_EDGES,
 }: CardWaveProps = {}) {
     return (
         <>
