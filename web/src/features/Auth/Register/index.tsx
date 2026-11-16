@@ -25,16 +25,16 @@ export default function RegisterPage() {
     return (
         <AuthLayout>
             <section aria-labelledby="register-title">
-                <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-[#176b34]">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#176b34]">
                     {t('auth.register.eyebrow')}
                 </p>
                 <h1
                     id="register-title"
-                    className="font-display text-4xl leading-[1.1] tracking-tight sm:text-5xl"
+                    className="font-display text-3xl leading-[1.1] tracking-tight sm:text-4xl"
                 >
                     {t('auth.register.title')}
                 </h1>
-                <p className="mb-7 mt-3 text-sm leading-7 text-[#65786c]">
+                <p className="mb-4 mt-2 text-sm leading-5 text-[#65786c]">
                     {t('auth.experience.emailHint')}
                 </p>
                 {state.phase === 'form' ? (
@@ -42,7 +42,7 @@ export default function RegisterPage() {
                         {!state.isSocial && <SocialLogin />}
                         <form
                             onSubmit={handler.handleSubmit}
-                            className="mt-6 space-y-5"
+                            className="mt-4 space-y-3"
                         >
                             {!state.isSocial && (
                                 <div className="flex items-center gap-4 text-xs font-medium text-[#65786c]">
@@ -61,7 +61,7 @@ export default function RegisterPage() {
                             )}
                             <fieldset
                                 disabled={state.isPending}
-                                className="space-y-5"
+                                className="space-y-3"
                             >
                                 <legend className="sr-only">
                                     {t('auth.register.accountDetails')}
@@ -78,7 +78,7 @@ export default function RegisterPage() {
                                         {t('auth.register.socialDetails')}
                                     </p>
                                 )}
-                                <div className="grid min-w-0 gap-x-4 gap-y-5 sm:grid-cols-2">
+                                <div className="grid min-w-0 grid-cols-2 gap-3">
                                     <TextInput
                                         id="register-username"
                                         name="username"
@@ -177,7 +177,7 @@ export default function RegisterPage() {
                                         {t('auth.register.passwordPolicy')}
                                     </p>
                                 )}
-                                <label className="flex cursor-pointer items-start gap-3 text-sm leading-6 text-[#65786c]">
+                                <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-[#65786c]">
                                     <input
                                         type="checkbox"
                                         name="acceptTerms"
@@ -228,7 +228,7 @@ export default function RegisterPage() {
                                 <button
                                     type="submit"
                                     disabled={state.isPending}
-                                    className="flex min-h-[52px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                                    className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                                 >
                                     {t(
                                         state.isPending
@@ -298,7 +298,7 @@ export default function RegisterPage() {
                         )}
                     </p>
                 )}
-                <p className="mt-8 border-t border-[#d7e2d9] pt-6 text-center text-sm text-[#65786c]">
+                <p className="mt-5 border-t border-[#d7e2d9] pt-4 text-center text-sm text-[#65786c]">
                     {t('auth.register.alreadyRegistered')}{' '}
                     <Link
                         to="/login"

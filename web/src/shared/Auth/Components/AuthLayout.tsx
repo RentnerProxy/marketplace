@@ -21,15 +21,15 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             <AuthBrandPanel />
 
             <div className="flex min-w-0 flex-col">
-                <header className="flex min-h-24 items-center justify-between gap-4 px-5 pb-4 pt-6 sm:px-10 xl:px-14">
+                <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 px-5 py-2 sm:px-10 xl:px-14">
                     <Link
                         to="/"
                         aria-label={t('auth.experience.backToMarketplace')}
                         className="group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-[#53675a] transition-colors hover:text-[#17472a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
                     >
                         <MarketplaceLogo
-                            className="w-44 sm:w-52 lg:hidden"
-                            sizes="208px"
+                            className="w-36 sm:w-44 lg:hidden"
+                            sizes="176px"
                         />
                         <ArrowLeft
                             aria-hidden="true"
@@ -45,12 +45,12 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                 <main
                     id="main-content"
                     tabIndex={-1}
-                    className="flex flex-1 items-center justify-center px-5 pb-8 pt-5 outline-none sm:px-10 sm:pt-8 xl:px-14 2xl:px-20"
+                    className="flex flex-1 items-center justify-center px-5 py-3 outline-none sm:px-10 xl:px-14 2xl:px-20"
                 >
                     <div className="w-full max-w-[640px]">{children}</div>
                 </main>
 
-                <footer className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 px-5 pb-6 pt-3 text-xs text-[#65786c] sm:px-10">
+                <footer className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 py-3 text-[11px] leading-4 text-[#65786c] sm:px-10">
                     <span className="inline-flex items-center gap-1.5">
                         <ShieldCheck
                             aria-hidden="true"

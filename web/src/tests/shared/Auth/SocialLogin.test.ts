@@ -53,7 +53,10 @@ it('dispatches each provider and preserves pending and two-factor controls', () 
         )
         const html = renderToStaticMarkup(button)
         expect(html).toContain(logic.state.providers[index]!.name)
-        expect(html.match(/aria-hidden="true"/g)).toHaveLength(2)
+        expect(html).toContain('aria-hidden="true"')
+        expect(button.props['aria-label']).toBe(
+            `auth.social.continue: ${logic.state.providers[index]!.name}`,
+        )
         expect(html).toContain('focusable="false"')
     })
 

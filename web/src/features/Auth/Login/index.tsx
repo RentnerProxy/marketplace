@@ -43,7 +43,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
 
                     <form
                         onSubmit={handler.handleSubmit}
-                        className="mt-6 space-y-5"
+                        className="mt-4 space-y-4"
                     >
                         <div className="flex items-center gap-4 text-xs font-medium text-[#65786c]">
                             <span
@@ -57,7 +57,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                             />
                         </div>
 
-                        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                             <form.Field
                                 name="username"
                                 children={(field) => (
@@ -114,7 +114,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                             <button
                                 type="submit"
                                 disabled={state.isLoading}
-                                className="flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                                className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                             >
                                 {state.isLoading ? (
                                     <LoaderCircle
@@ -137,7 +137,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                 disabled={state.isPasskeyLoading}
                                 onClick={handler.handlePasskeyLogin}
                                 aria-describedby="passkey-login-description"
-                                className="flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#cedbd1] bg-transparent px-4 py-3 text-sm font-semibold text-[#294b35] transition-colors hover:border-[#81a78c] hover:bg-[#edf4ed] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                                className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#cedbd1] bg-transparent px-4 py-3 text-sm font-semibold text-[#294b35] transition-colors hover:border-[#81a78c] hover:bg-[#edf4ed] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                             >
                                 {state.isPasskeyLoading ? (
                                     <LoaderCircle
@@ -160,7 +160,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                         </p>
                     </form>
 
-                    <p className="mt-8 border-t border-[#d7e2d9] pt-6 text-center text-sm text-[#65786c]">
+                    <p className="mt-5 border-t border-[#d7e2d9] pt-4 text-center text-sm text-[#65786c]">
                         {t('auth.login.newHere')}{' '}
                         <Link
                             to="/register"

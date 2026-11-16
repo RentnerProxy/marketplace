@@ -1,5 +1,4 @@
 import { TextInput } from '@rentnerkev/inputs'
-import { ArrowRight } from 'lucide-react'
 import type { SocialProviderId } from '@/lib/Auth/Types/social-auth.types.ts'
 import useSocialLoginLogic from '../Hooks/useSocialLoginLogic.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
@@ -78,7 +77,7 @@ export default function SocialLogin() {
             ) : (
                 state.providers.length > 0 && (
                     <div
-                        className="space-y-3"
+                        className="grid auto-cols-fr grid-flow-col gap-2 sm:gap-3"
                         role="group"
                         aria-label={t('auth.social.title')}
                         aria-busy={state.isPending}
@@ -89,19 +88,16 @@ export default function SocialLogin() {
                                 type="button"
                                 disabled={state.isPending}
                                 aria-busy={state.isPending}
+                                aria-label={t('auth.social.continue', {
+                                    provider: provider.name,
+                                })}
                                 onClick={() => handler.handleBegin(provider.id)}
-                                className={`grid min-h-[52px] w-full cursor-pointer grid-cols-[24px_minmax(0,1fr)_24px] items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none ${providerStyles[provider.id]}`}
+                                className={`flex min-h-12 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-xs font-semibold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${providerStyles[provider.id]}`}
                             >
                                 <SocialProviderIcon provider={provider.id} />
                                 <span className="text-center leading-5">
-                                    {t('auth.social.continue', {
-                                        provider: provider.name,
-                                    })}
+                                    {provider.name}
                                 </span>
-                                <ArrowRight
-                                    aria-hidden="true"
-                                    className="h-4 w-4 justify-self-end opacity-60"
-                                />
                             </button>
                         ))}
                     </div>
