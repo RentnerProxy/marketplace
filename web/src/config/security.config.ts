@@ -1,5 +1,5 @@
 export const PASSWORD_POLICY = {
-    minimumNewLength: 3,
+    minimumNewLength: 4,
     maximumLength: 1024,
 } as const
 
@@ -72,7 +72,7 @@ export const RATE_LIMITS = {
 } as const
 
 export const REGISTRATION_POLICY = {
-    minimumPasswordLength: 12,
+    minimumPasswordLength: PASSWORD_POLICY.minimumNewLength,
     verificationDurationMs: 60 * 60_000,
     termsVersion: '2026-11-16',
     minimumResponseMs: 750,

@@ -122,6 +122,9 @@ export default function RegisterPage() {
                                                 aria-describedby="registration-password-policy"
                                                 placeholder={t(
                                                     'auth.experience.passwordHint',
+                                                    {
+                                                        min: REGISTRATION_POLICY.minimumPasswordLength,
+                                                    },
                                                 )}
                                                 locale={language}
                                                 customDesign={inputDesign}
@@ -174,7 +177,9 @@ export default function RegisterPage() {
                                         id="registration-password-policy"
                                         className="text-xs leading-5 text-[#65786c]"
                                     >
-                                        {t('auth.register.passwordPolicy')}
+                                        {t('auth.register.passwordPolicy', {
+                                            min: REGISTRATION_POLICY.minimumPasswordLength,
+                                        })}
                                     </p>
                                 )}
                                 <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-[#65786c]">

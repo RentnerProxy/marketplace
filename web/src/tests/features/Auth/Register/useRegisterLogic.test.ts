@@ -149,7 +149,7 @@ describe('registration form workflow', () => {
         expect(render().state.error).toBe('auth.register.termsRequired')
         expect(render().state.errorField).toBe('terms')
         logic.setter.setAcceptTerms(true)
-        logic.setter.setPassword('short')
+        logic.setter.setPassword('abc')
         render().handler.handleSubmit(event)
         expect(render().state.error).toBe('auth.register.passwordPolicy')
         expect(render().state.errorField).toBe('password')
@@ -160,6 +160,17 @@ describe('registration form workflow', () => {
         expect(render().state.errorField).toBe('confirmPassword')
         expect(requests).toHaveLength(0)
     })
+    it('submits a matching four-character password', async () => {
+        const logic = render()
+        fill(logic)
+        logic.setter.setPassword('1234')
+        logic.setter.setConfirmPassword('1234')
+        render().handler.handleSubmit(event)
+        expect(requests).toHaveLength(1)
+        await requests[0]?.()
+        expect(sends[0]).toMatchObject({ data: { password: '1234' } })
+    })
+
     it('submits credentials with auth-secret discard metadata', async () => {
         fill(render())
         render().handler.handleSubmit(event)

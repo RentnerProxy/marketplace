@@ -73,7 +73,7 @@
             "accountHint": "Kies hoe je verder wilt gaan.",
             "emailHint": "Met e-mail of je favoriete provider. Jij kiest.",
             "secure": "Jouw account. Jouw keuze.",
-            "passwordHint": "Minimaal 12 tekens"
+            "passwordHint": "Minimaal {{min}} tekens"
         },
         "firstSetup": {
             "emailPlaceholder": "E-mailadres",
@@ -140,7 +140,7 @@
             "comingSoon": "Nog niet beschikbaar",
             "alreadyRegistered": "Heb je al een account?",
             "confirmPassword": "Wachtwoord bevestigen",
-            "passwordPolicy": "Gebruik minstens 12 tekens.",
+            "passwordPolicy": "Gebruik minstens {{min}} tekens.",
             "passwordMismatch": "De wachtwoorden komen niet overeen.",
             "termsRequired": "Accepteer de voorwaarden en het privacybeleid.",
             "acceptTerms": "Ik accepteer de",

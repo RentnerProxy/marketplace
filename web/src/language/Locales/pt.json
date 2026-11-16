@@ -73,7 +73,7 @@
             "accountHint": "Escolhe como queres continuar.",
             "emailHint": "Com e-mail ou o teu fornecedor preferido. Tu decides.",
             "secure": "A tua conta. A tua escolha.",
-            "passwordHint": "Pelo menos 12 caracteres"
+            "passwordHint": "Pelo menos {{min}} caracteres"
         },
         "firstSetup": {
             "emailPlaceholder": "Endereço de e-mail",
@@ -140,7 +140,7 @@
             "comingSoon": "Ainda não disponível",
             "alreadyRegistered": "Já tem uma conta?",
             "confirmPassword": "Confirmar palavra-passe",
-            "passwordPolicy": "Usa pelo menos 12 caracteres.",
+            "passwordPolicy": "Usa pelo menos {{min}} caracteres.",
             "passwordMismatch": "As palavras-passe não coincidem.",
             "termsRequired": "Aceita os termos e a política de privacidade.",
             "acceptTerms": "Aceito os",

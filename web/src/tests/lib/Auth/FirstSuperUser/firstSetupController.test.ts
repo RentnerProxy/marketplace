@@ -69,7 +69,7 @@ describe('private first setup controller', function () {
         mocks.create.mockImplementation(async function (input, signal) {
             sentPrivateToken = input.setupToken === fixtureToken
             expect(signal.aborted).toBe(false)
-            expect(input.password).toBe('abc')
+            expect(input.password).toBe('abcd')
             return { success: true }
         })
         const submitted = {

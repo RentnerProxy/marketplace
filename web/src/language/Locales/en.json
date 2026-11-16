@@ -73,7 +73,7 @@
             "accountHint": "Choose how you want to continue.",
             "emailHint": "Use email or your favourite provider. Your choice.",
             "secure": "Your account. Your choice.",
-            "passwordHint": "At least 12 characters"
+            "passwordHint": "At least {{min}} characters"
         },
         "passwordPolicy": "The password must contain between {{min}} and {{max}} characters.",
         "firstSetup": {
@@ -141,7 +141,7 @@
             "comingSoon": "Not available yet",
             "alreadyRegistered": "Already have an account?",
             "confirmPassword": "Confirm password",
-            "passwordPolicy": "Use at least 12 characters.",
+            "passwordPolicy": "Use at least {{min}} characters.",
             "passwordMismatch": "The passwords do not match.",
             "termsRequired": "Please accept the terms and privacy policy.",
             "acceptTerms": "I accept the",

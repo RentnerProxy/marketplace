@@ -34,18 +34,18 @@ describe('First-Superuser-Validierung', function () {
         expect(result.success).toBe(false)
     })
 
-    it('akzeptiert ein Passwort mit drei Zeichen', function () {
+    it('akzeptiert ein Passwort mit vier Zeichen', function () {
         const result = createFirstSuperUserAccountInputSchema.safeParse({
             ...validInput,
-            password: 'aaa',
-            confirmPassword: 'aaa',
+            password: 'aaaa',
+            confirmPassword: 'aaaa',
         })
 
         expect(result.success).toBe(true)
     })
 
-    it.each(['', '1', '12'])(
-        'lehnt neue Passwörter unter drei Zeichen ab: %s',
+    it.each(['', '1', '12', '123'])(
+        'lehnt neue Passwörter unter vier Zeichen ab: %s',
         function (password) {
             const result = createFirstSuperUserAccountInputSchema.safeParse({
                 ...validInput,

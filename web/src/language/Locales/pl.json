@@ -73,7 +73,7 @@
             "accountHint": "Wybierz, jak chcesz kontynuować.",
             "emailHint": "E-mail lub ulubiony dostawca. Ty decydujesz.",
             "secure": "Twoje konto. Twój wybór.",
-            "passwordHint": "Co najmniej 12 znaków"
+            "passwordHint": "Minimalna liczba znaków: {{min}}"
         },
         "firstSetup": {
             "emailPlaceholder": "Adres e-mail",
@@ -140,7 +140,7 @@
             "comingSoon": "Jeszcze niedostępne",
             "alreadyRegistered": "Masz już konto?",
             "confirmPassword": "Potwierdź hasło",
-            "passwordPolicy": "Użyj co najmniej 12 znaków.",
+            "passwordPolicy": "Minimalna liczba znaków: {{min}}.",
             "passwordMismatch": "Hasła nie są takie same.",
             "termsRequired": "Zaakceptuj regulamin i politykę prywatności.",
             "acceptTerms": "Akceptuję",

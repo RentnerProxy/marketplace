@@ -28,10 +28,13 @@ export default function useRegisterLogic(): RegisterLogicReturn {
     const isSocial = Boolean(social.data?.registration)
     const email = emailDraft ?? social.data?.registration?.email ?? ''
     function reportError(key: string) {
-        toast.error(t(key), {
-            title: t('common.error'),
-            dedupeKey: `registration:${key}`,
-        })
+        toast.error(
+            t(key, { min: REGISTRATION_POLICY.minimumPasswordLength }),
+            {
+                title: t('common.error'),
+                dedupeKey: `registration:${key}`,
+            },
+        )
     }
     useEffect(() => {
         const hash = window.location.hash
@@ -146,7 +149,11 @@ export default function useRegisterLogic(): RegisterLogicReturn {
             password.length < REGISTRATION_POLICY.minimumPasswordLength
         ) {
             setErrorField('password')
-            setError(t('auth.register.passwordPolicy'))
+            setError(
+                t('auth.register.passwordPolicy', {
+                    min: REGISTRATION_POLICY.minimumPasswordLength,
+                }),
+            )
             return
         }
         if (!isSocial && password !== confirmPassword) {

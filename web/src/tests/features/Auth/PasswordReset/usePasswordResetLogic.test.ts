@@ -219,12 +219,12 @@ describe('Password reset hook client boundary', function () {
         })
         renderHook()
         await flushSessionActivityTasks()
-        form.values = { password: 'aaa', confirmPassword: 'aaa' }
+        form.values = { password: 'aaaa', confirmPassword: 'aaaa' }
         const result = form.handleSubmit()
         expect(form.values).toEqual(emptyValues())
         expect(renderHook().state.phase).toBe('submitting')
         expect(sent).toEqual([
-            { token: 'synthetic-reset-proof', password: 'aaa' },
+            { token: 'synthetic-reset-proof', password: 'aaaa' },
         ])
         expect(queryClient.getMutationCache().getAll()).toHaveLength(0)
         expect(JSON.stringify(dehydrate(queryClient))).not.toContain(
@@ -266,7 +266,7 @@ describe('Password reset hook client boundary', function () {
         mocks.update.mockImplementation(() => pending.promise)
         renderHook()
         await flushSessionActivityTasks()
-        form.values = { password: 'aaa', confirmPassword: 'aaa' }
+        form.values = { password: 'aaaa', confirmPassword: 'aaaa' }
         const result = form.handleSubmit()
         testBrowser.browser.location.hash = '#token=synthetic-second'
         testBrowser.browser.dispatchEvent(new Event('hashchange'))

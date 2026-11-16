@@ -246,6 +246,12 @@ describe('authentication page states', function () {
         expect(html).toContain('href="/login"')
         expect(html).toContain('<form')
         expect(html).toContain('name="password"')
+        const passwordInputs =
+            html.match(/<input\b[^>]*type="password"[^>]*>/g) ?? []
+        expect(passwordInputs).toHaveLength(2)
+        expect(
+            passwordInputs.every((input) => input.includes('minLength="4"')),
+        ).toBe(true)
         expect(submit).not.toHaveBeenCalled()
         expect(change).not.toHaveBeenCalled()
     })

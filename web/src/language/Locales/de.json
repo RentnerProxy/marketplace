@@ -73,7 +73,7 @@
             "accountHint": "Wähle deinen bevorzugten Weg und leg los.",
             "emailHint": "Mit E-Mail oder deinem Lieblingsanbieter. Du entscheidest.",
             "secure": "Dein Zugang. Deine Entscheidung.",
-            "passwordHint": "Mindestens 12 Zeichen"
+            "passwordHint": "Mindestens {{min}} Zeichen"
         },
         "passwordPolicy": "Das Passwort muss zwischen {{min}} und {{max}} Zeichen lang sein.",
         "firstSetup": {
@@ -141,7 +141,7 @@
             "comingSoon": "Noch nicht verfügbar",
             "alreadyRegistered": "Du hast bereits ein Konto?",
             "confirmPassword": "Passwort bestätigen",
-            "passwordPolicy": "Verwende mindestens 12 Zeichen.",
+            "passwordPolicy": "Verwende mindestens {{min}} Zeichen.",
             "passwordMismatch": "Die Passwörter stimmen nicht überein.",
             "termsRequired": "Bitte akzeptiere die Nutzungsbedingungen und Datenschutzerklärung.",
             "acceptTerms": "Ich akzeptiere die",

@@ -3,6 +3,7 @@ import {
     authCredentialPasswordSchema,
     authNewPasswordSchema,
 } from '@/lib/Auth/validation.ts'
+import { registrationInputSchema } from '@/features/Auth/Register/validation.ts'
 
 describe('Passwort-Policy', function () {
     it('akzeptiert bestehende kurze Passwörter zur Credential-Prüfung', function () {
@@ -10,17 +11,34 @@ describe('Passwort-Policy', function () {
         expect(authCredentialPasswordSchema.safeParse('').success).toBe(false)
     })
 
-    it('akzeptiert ab drei Zeichen ohne weitere Zusammensetzungsregeln', function () {
-        expect(authNewPasswordSchema.safeParse('aaa').success).toBe(true)
-        expect(authNewPasswordSchema.safeParse('123').success).toBe(true)
+    it('accepts four-character new passwords without composition requirements', function () {
+        for (const password of ['aaaa', '1234']) {
+            expect(authNewPasswordSchema.safeParse(password).success).toBe(true)
+            expect(
+                registrationInputSchema.safeParse({
+                    username: 'alice',
+                    email: 'alice@example.test',
+                    password,
+                    acceptTerms: true,
+                }).success,
+            ).toBe(true)
+        }
     })
 
-    it.each(['', '1', '12'])(
-        'lehnt neue Passwörter unter drei Zeichen ab: %s',
+    it.each(['', '1', '12', '123'])(
+        'rejects new passwords and registration passwords below four characters: %s',
         function (password) {
             expect(authNewPasswordSchema.safeParse(password).success).toBe(
                 false,
             )
+            expect(
+                registrationInputSchema.safeParse({
+                    username: 'alice',
+                    email: 'alice@example.test',
+                    password,
+                    acceptTerms: true,
+                }).success,
+            ).toBe(false)
         },
     )
 

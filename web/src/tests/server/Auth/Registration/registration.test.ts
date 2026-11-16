@@ -69,7 +69,7 @@ describe('Public registration', () => {
         )
         for (const invalid of [
             { username: 'bad name' },
-            { password: 'short' },
+            { password: 'abc' },
             { acceptTerms: false },
         ]) {
             expect(
