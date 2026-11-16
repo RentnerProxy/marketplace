@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
     return (
         <div className="relative isolate grid min-h-svh overflow-x-clip bg-marketplace-canvas text-marketplace-ink [color-scheme:light] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <CardWave />
+            <CardWave edges={['bottom']} />
             <a
                 href="#main-content"
                 className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-3 focus:font-semibold focus:text-marketplace-void"
