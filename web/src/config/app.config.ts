@@ -6,5 +6,5 @@ export const PROJECT_CONFIG = {
     repositoryUrl: 'https://github.com/RentnerProxy/marketplace',
     imageRepository: 'ghcr.io/rentnerproxy/marketplace',
     description:
-        'Der offizielle Marketplace für RentnerProxy-Apps und Erweiterungen.',
+        'The official marketplace for RentnerProxy apps and extensions.',
 } as const

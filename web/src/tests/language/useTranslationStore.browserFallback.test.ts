@@ -6,20 +6,20 @@ import {
     restoreLanguageTestHarness,
 } from './useTranslationStoreTestHarness.ts'
 
-describe('useTranslationStore Browser-Fallback', function () {
+describe('useTranslationStore English default', function () {
     beforeEach(resetLanguageTestHarness)
     afterEach(restoreLanguageTestHarness)
 
-    it('fällt bei ungültigem Storage auf die Browser-Sprache zurück', async function () {
+    it('uses English on a first visit from a German browser', async function () {
         const storage = {
             getItem: vi.fn(function () {
-                return 'sv'
+                return null
             }),
             setItem: vi.fn(),
         }
         stubTestGlobal('window', {
             localStorage: storage,
-            navigator: { language: 'en-US' },
+            navigator: { language: 'de-DE' },
         })
         stubTestGlobal('document', { documentElement: { lang: '' } })
 
@@ -28,5 +28,7 @@ describe('useTranslationStore Browser-Fallback', function () {
         expect(i18nextMock.api.init).toHaveBeenCalledWith(
             expect.objectContaining({ lng: 'en' }),
         )
+        expect(document.documentElement.lang).toBe('en')
+        expect(storage.setItem).not.toHaveBeenCalled()
     })
 })

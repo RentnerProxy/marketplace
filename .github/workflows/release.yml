@@ -118,6 +118,10 @@ jobs:
               run: bun --no-env-file run test:deployment
             - name: Verify native TypeScript and Rust contracts
               run: bash .github/scripts/ci/core-integration.sh
+            - name: Verify packaged public assets and English pages
+              env:
+                  RUNTIME_IMAGE_ID: ${{ steps.build.outputs.imageid }}
+              run: bun --no-env-file .github/scripts/ci/public-assets.ts
             - name: Publish tested image
               id: publish
               env:

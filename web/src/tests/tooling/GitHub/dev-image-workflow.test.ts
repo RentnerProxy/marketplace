@@ -68,10 +68,19 @@ test('dev candidate is built without push rights and sealed after its exact imag
     const seal = build.findIndex(
         (step) => step.run === 'bash .github/scripts/deploy/seal-dev-image.sh',
     )
+    const publicAssets = build.findIndex(
+        (step) =>
+            step.run ===
+            'bun --no-env-file .github/scripts/ci/public-assets.ts',
+    )
     expect(scan).toBeGreaterThan(build.indexOf(image))
     expect(smoke).toBeGreaterThan(scan)
     expect(native).toBeGreaterThan(smoke)
-    expect(seal).toBeGreaterThan(native)
+    expect(publicAssets).toBeGreaterThan(native)
+    expect(seal).toBeGreaterThan(publicAssets)
+    expect(record(build[publicAssets]!.env).RUNTIME_IMAGE_ID).toBe(
+        '${{ steps.load.outputs.runtime_image_id }}',
+    )
     expect(record(build[scan]!.env).SCAN_ARCHIVE_SHA256).toBe(
         '${{ steps.load.outputs.archive_sha256 }}',
     )

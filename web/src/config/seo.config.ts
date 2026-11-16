@@ -10,32 +10,32 @@ export const marketplaceRobotsDirectives = {
 export const marketplaceSeoPages = [
     {
         path: '/',
-        title: 'RentnerProxy Marketplace – Apps für deinen Stack',
+        title: 'RentnerProxy Marketplace – Apps for your stack',
         description:
-            'Der offizielle Marketplace für RentnerProxy. Entdecke geplante Apps für Monitoring, DNS und Sicherheit sowie Neuigkeiten aus der Entwicklung.',
+            'The official RentnerProxy marketplace. Explore planned monitoring, DNS and security apps, and follow the latest development updates.',
     },
     {
         path: '/apps',
-        title: 'Apps und Erweiterungen – RentnerProxy Marketplace',
+        title: 'Apps and extensions – RentnerProxy Marketplace',
         description:
-            'Monitoring, DNS, Sicherheit und mehr: Entdecke die geplanten offiziellen RentnerProxy-Apps. Die Installation folgt mit dem Ausbau des Marketplace.',
+            'Monitoring, DNS, security and more: explore planned official RentnerProxy apps. Installation will arrive as the marketplace grows.',
     },
     {
         path: '/blog',
-        title: 'Blog und Changelog – RentnerProxy Marketplace',
+        title: 'Blog and changelog – RentnerProxy Marketplace',
         description:
-            'Neuigkeiten, Funktionen und Changelogs des zentralen RentnerProxy Marketplace. Verfolge die Entwicklung mit Alpha-, Beta- und Stable-Versionen.',
+            'News, features and changelogs from the central RentnerProxy marketplace. Follow development through alpha, beta and stable releases.',
     },
     {
         path: '/imprint',
-        title: 'Impressum – RentnerProxy Marketplace',
+        title: 'Legal notice – RentnerProxy Marketplace',
         description:
-            'Impressum des RentnerProxy Marketplace mit Angaben zum Betreiber und Kontaktmöglichkeiten.',
+            'Legal notice for the RentnerProxy marketplace, including operator details and contact information.',
     },
     {
         path: '/privacy',
-        title: 'Datenschutz – RentnerProxy Marketplace',
+        title: 'Privacy policy – RentnerProxy Marketplace',
         description:
-            'Datenschutzhinweise des RentnerProxy Marketplace zur Verarbeitung personenbezogener Daten und zu deinen Rechten.',
+            'Privacy information for the RentnerProxy marketplace, including how personal data is processed and your rights.',
     },
 ] as const satisfies readonly MarketplaceSeoPage[]
