@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq'
 import {
     sendPasswordResetMail,
+    sendRegistrationVerificationMail,
     sendPasswordSetupMail,
     sendFailedLoginAlertMail,
     sendSecurityChangeMail,
@@ -25,6 +26,9 @@ async function dispatchMailJob(parsedJob: MailJobData) {
     }
 
     switch (parsedJob.kind) {
+        case 'registration-verification':
+            await sendRegistrationVerificationMail(parsedJob)
+            return
         case 'security-change':
             await sendSecurityChangeMail({
                 to: parsedJob.to,
@@ -88,6 +92,7 @@ function getMailJobIdForLogging(value: unknown) {
 
 function getMailJobNameForLogging(value: unknown) {
     switch (value) {
+        case 'registration-verification':
         case 'failed-login-alert':
         case 'password-reset':
         case 'password-setup':

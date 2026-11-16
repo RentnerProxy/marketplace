@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { socialAuthEnvironmentSchema, socialAuthEnvironmentFields } from './social-auth-environment.service.ts'
 import { containerLogReaderOriginSchema } from '@/server/Logging/container-log.validation.ts'
 import {
     parseConfiguredRealtimeWebSocketUrlService,
@@ -67,6 +68,7 @@ function parseExactSecurePasskeyOrigin(value: string) {
 
 const appEnvironmentSchema = backupEnvironmentSchema
     .extend({
+        ...socialAuthEnvironmentFields,
         ORIGIN: originSchema,
         CONTAINER_LOG_READER_URL: z.preprocess(
             (value) =>
@@ -98,6 +100,12 @@ const appEnvironmentSchema = backupEnvironmentSchema
         PASSKEY_RP_NAME: optionalEnvironmentValue,
     })
     .superRefine(function (environment, context) {
+        const socialEnvironment = socialAuthEnvironmentSchema.safeParse(environment)
+        if (!socialEnvironment.success) {
+            for (const issue of socialEnvironment.error.issues) {
+                context.addIssue({ code: 'custom', path: issue.path, message: issue.message })
+            }
+        }
         try {
             resolveRealtimeWebSocketOriginService({
                 origin: environment.ORIGIN,

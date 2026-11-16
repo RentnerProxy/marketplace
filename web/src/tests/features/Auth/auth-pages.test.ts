@@ -41,6 +41,9 @@ const resetState: { phase: PasswordResetClientPhase; isLoading: boolean } = {
     isLoading: false,
 }
 const forgotState = { isLoading: false }
+const registerState = { username: '', email: '', password: '', confirmPassword: '', acceptTerms: false, isSocial: false, isPending: false, error: '', phase: 'form' }
+vi.mock('@/features/Auth/Register/Hooks/useRegisterLogic.ts', () => ({ default: () => ({ state: registerState, handler: { handleSubmit: submit, handleVerify: submit, handleCancelSocial: submit }, setter: { setUsername: change, setEmail: change, setPassword: change, setConfirmPassword: change, setAcceptTerms: change } }) }))
+vi.mock('@/shared/Auth/Components/SocialLogin.tsx', () => ({ default: () => null }))
 const setupState: CreateFirstSuperUserAccountLogicReturn['state'] = {
     setupAccessState: 'granted',
     isCreating: false,
@@ -147,24 +150,23 @@ beforeEach(function () {
         isCreating: false,
     })
     forgotState.isLoading = false
+    Object.assign(registerState, { isSocial: false, isPending: false, phase: 'form', error: '' })
     headerState.hasCustomLogo = false
     headerState.logoSrc = '/rentnerproxy-logo.png'
 })
 
 describe('authentication page states', function () {
-    it('keeps registration a disabled preview with no credential submission path', function () {
+    it('renders registration credentials, confirmation and required legal consent', function () {
         const html = renderToStaticMarkup(createElement(Register))
-        expect(html).toContain('auth.register.previewTitle')
-        expect(html).toContain('auth.register.previewDescription')
-        expect(html).toContain(
-            '<fieldset disabled="" aria-describedby="registration-preview-notice"',
-        )
-        expect(html).toContain('type="submit" disabled=""')
+        expect(html).toContain('auth.register.confirmPassword')
+        expect(html).toContain('name="acceptTerms"')
+        expect(html).toContain('href="/terms"')
+        expect(html).toContain('href="/privacy"')
         expect(html).toContain('type="email"')
         expect(html).toContain('type="password"')
         expect(html).toContain('href="/login"')
-        expect(html).not.toContain('<form')
-        expect(html).not.toContain('name="password"')
+        expect(html).toContain('<form')
+        expect(html).toContain('name="password"')
         expect(submit).not.toHaveBeenCalled()
         expect(change).not.toHaveBeenCalled()
     })
@@ -177,6 +179,24 @@ describe('authentication page states', function () {
         expect(html).toContain('href="/forgot-password"')
         expect(html).toContain('href="/register"')
         expect(html).not.toContain('/custom-logo.webp')
+    })
+
+    it('hides password fields during provider registration and prevents pending edits', function () {
+        Object.assign(registerState, { isSocial: true, isPending: true })
+        const html = renderToStaticMarkup(createElement(Register))
+        expect(html).toContain('auth.register.socialDetails')
+        expect(html).toContain('<fieldset disabled=""')
+        expect(html).not.toContain('name="password"')
+        expect(html).toContain('name="username"')
+        expect(html).toContain('name="acceptTerms"')
+    })
+
+    it.each(['verify', 'inbox', 'complete'])('renders the registration %s state without credential inputs', (phase) => {
+        registerState.phase = phase
+        const html = renderToStaticMarkup(createElement(Register))
+        expect(html).not.toContain('name="password"')
+        expect(html).toContain(phase === 'verify' ? 'auth.register.verifyDescription' : phase === 'inbox' ? 'auth.register.checkInbox' : 'auth.register.complete')
+        expect(html).toContain('href="/login"')
     })
 
     it('shows custom branding and independent pending labels', function () {

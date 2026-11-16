@@ -137,7 +137,7 @@ export default function AppLifecycle() {
                                         state.activeStep.id === step.id
                                     }
                                     aria-controls="marketplace-flow-detail"
-                                    className={`relative flex h-32 w-full flex-col justify-center rounded-2xl border px-5 py-4 text-left transition-colors focus-visible:outline-primary motion-reduce:transition-none ${state.activeStep.id === step.id ? 'border-primary/70 bg-[#0a2113] shadow-[0_0_28px_rgba(48,238,97,0.08)]' : 'border-white/15 bg-[#06110d] hover:border-primary/40 hover:bg-[#0a1911]'}`}
+                                    className={`relative flex h-32 w-full flex-col justify-center rounded-2xl border px-5 py-4 text-left transition-colors focus-visible:outline-primary motion-reduce:transition-none ${state.activeStep.id === step.id ? 'border-primary/40 bg-[#0a1911]' : 'border-white/15 bg-[#06110d] hover:border-primary/30 hover:bg-[#0a1911]'}`}
                                 >
                                     <span className="flex w-full items-center justify-between gap-2 font-mono text-[9px] leading-3 tracking-wide text-[#91a99d]">
                                         <span>

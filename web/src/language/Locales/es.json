@@ -113,15 +113,33 @@
         },
         "register": {
             "email": "Dirección de correo electrónico",
-            "eyebrow": "Cada vez más cerca",
+            "eyebrow": "Crear una cuenta",
             "title": "Tu entrada al marketplace.",
             "description": "Una cuenta para tus aplicaciones y extensiones de RentnerProxy.",
             "previewTitle": "El registro estará disponible pronto",
             "previewDescription": "Esta es una vista previa. Los campos están desactivados; no se recogen datos ni se crea ninguna cuenta.",
-            "accountDetails": "Vista previa de los datos de la cuenta",
+            "accountDetails": "Datos de la cuenta",
             "emailPlaceholder": "Tu dirección de correo",
             "comingSoon": "Todavía no disponible",
-            "alreadyRegistered": "¿Ya tienes una cuenta?"
+            "alreadyRegistered": "¿Ya tienes una cuenta?",
+            "confirmPassword": "Confirmar contraseña",
+            "passwordPolicy": "Usa al menos 12 caracteres.",
+            "passwordMismatch": "Las contraseñas no coinciden.",
+            "termsRequired": "Acepta las condiciones y la política de privacidad.",
+            "acceptTerms": "Acepto las",
+            "terms": "condiciones",
+            "and": "y la",
+            "privacy": "política de privacidad",
+            "submit": "Crear cuenta",
+            "submitting": "Espera …",
+            "socialDetails": "Completa los datos para continuar con tu proveedor.",
+            "checkInbox": "Si es posible registrarte, recibirás un correo con un enlace de confirmación. Revisa también el correo no deseado.",
+            "complete": "Tu correo está confirmado. Ya puedes iniciar sesión.",
+            "failed": "No se pudo completar el registro. Inténtalo de nuevo.",
+            "verify": "Confirmar correo",
+            "verifyDescription": "Confirma tu correo para activar tu cuenta.",
+            "invalidVerification": "El enlace no es válido o ha caducado. Regístrate de nuevo.",
+            "verificationFailed": "No se pudo confirmar el correo. Inténtalo de nuevo."
         },
         "passwordReset": {
             "newPasswordTitle": "Nueva contraseña",
@@ -157,6 +175,21 @@
         "terms": {
             "title": "Condiciones de uso",
             "placeholder": "Texto provisional para las condiciones de uso."
+        },
+        "social": {
+            "title": "O continúa con",
+            "continue": "Continuar con {{provider}}",
+            "unavailable": "El acceso con proveedores no está disponible.",
+            "retry": "Reintentar",
+            "twoFactor": "Introduce el código de autenticación de seis dígitos",
+            "confirm": "Iniciar sesión",
+            "cancel": "Cancelar acceso con proveedor",
+            "failed": "El acceso ha fallado. Inténtalo de nuevo.",
+            "cancelled": "Se canceló el acceso con proveedor.",
+            "account_exists": "Ya existe una cuenta con este correo. Inicia sesión en ella y vincula el proveedor en los ajustes de seguridad.",
+            "inactive": "Esta cuenta está inactiva. Contacta con soporte.",
+            "expired": "El acceso ha caducado. Empieza de nuevo.",
+            "link_failed": "No se pudo vincular el proveedor. Inicia sesión y vuelve a intentarlo en los ajustes de seguridad."
         }
     },
     "safeDelete": {
@@ -218,7 +251,21 @@
             "reauthenticationPasswordPlaceholder": "Introduce la contraseña actual",
             "reauthenticationTotpLabel": "Código 2FA actual",
             "checking": "Comprobando...",
-            "secret": "Secreto: {{secret}}"
+            "secret": "Secreto: {{secret}}",
+            "socialAccounts": {
+                "linked": "El proveedor de acceso se ha vinculado.",
+                "title": "Cuentas vinculadas",
+                "description": "Vincula un proveedor externo para acceder a esta cuenta.",
+                "loading": "Cargando cuentas vinculadas …",
+                "unavailable": "Las conexiones con proveedores no están disponibles.",
+                "connected": "Vinculado",
+                "connect": "Vincular {{provider}}",
+                "reauthenticationLabel": "Contraseña actual",
+                "reauthenticationHint": "Confirma tu contraseña actual antes de vincular un proveedor.",
+                "passwordRequiredHint": "Establece una contraseña antes de vincular otro proveedor.",
+                "loadError": "No se pudieron cargar las cuentas vinculadas. Reinténtalo.",
+                "linkError": "No se pudo vincular el proveedor. Reinténtalo."
+            }
         },
         "header": {
             "title": "Ajustes de usuario",
@@ -483,7 +530,7 @@
         "home": "Inicio del marketplace",
         "description": "Monitorización, DNS, seguridad y mucho más. El futuro hogar de las aplicaciones que llevarán tu instalación de RentnerProxy más lejos.",
         "followDevelopment": "Seguir el desarrollo",
-        "availability": "Estás viendo una vista previa. Las descargas, la publicación y el registro público llegarán más adelante.",
+        "availability": "Las descargas y la publicación estarán disponibles más adelante. Ya puedes crear una cuenta.",
         "inPreparation": "En preparación",
         "outlook": "Las primeras aplicaciones oficiales",
         "outlookNote": "Previstas. Todavía no se pueden instalar.",

@@ -50,6 +50,13 @@
       "when": 1794749971876,
       "tag": "0006_lucky_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794847221443,
+      "tag": "0007_wise_hitman",
+      "breakpoints": true
     }
   ]
 }

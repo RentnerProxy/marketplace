@@ -95,7 +95,7 @@
             "eyebrow": "Your marketplace account",
             "welcomeBack": "Good to have you back.",
             "newHere": "New here?",
-            "discoverRegistration": "Explore registration",
+            "discoverRegistration": "Create an account",
             "description": "Please sign in to your account",
             "forgotPassword": "Forgot password?",
             "login": "Log in",
@@ -113,16 +113,34 @@
             "twoFactorCodeIncomplete": "Please enter the complete 2FA code."
         },
         "register": {
-            "eyebrow": "Coming your way",
+            "eyebrow": "Create an account",
             "title": "Your way into the marketplace.",
             "description": "One account for your RentnerProxy apps and extensions.",
             "previewTitle": "Registration is coming soon",
             "previewDescription": "This is a preview. The fields are disabled; no information is collected and no account is created.",
-            "accountDetails": "Account details preview",
+            "accountDetails": "Account details",
             "email": "Email address",
             "emailPlaceholder": "Your email address",
             "comingSoon": "Not available yet",
-            "alreadyRegistered": "Already have an account?"
+            "alreadyRegistered": "Already have an account?",
+            "confirmPassword": "Confirm password",
+            "passwordPolicy": "Use at least 12 characters.",
+            "passwordMismatch": "The passwords do not match.",
+            "termsRequired": "Please accept the terms and privacy policy.",
+            "acceptTerms": "I accept the",
+            "terms": "terms",
+            "and": "and",
+            "privacy": "privacy policy",
+            "submit": "Create account",
+            "submitting": "Please wait …",
+            "socialDetails": "Complete your account details to continue with your provider.",
+            "checkInbox": "If registration is possible, an email with a confirmation link will arrive shortly. Check your inbox and spam folder.",
+            "complete": "Your email is confirmed. You can now sign in.",
+            "failed": "Registration could not be completed. Please try again.",
+            "verify": "Confirm email",
+            "verifyDescription": "Confirm your email address to activate your account.",
+            "invalidVerification": "This confirmation link is invalid or expired. Please register again.",
+            "verificationFailed": "Your email could not be confirmed. Please try again."
         },
         "passwordReset": {
             "validating": "Checking reset link …",
@@ -157,6 +175,21 @@
             "rememberDevice": "Remember this device",
             "rememberDeviceDescription": "Next time you log in on this browser, no 2FA code is required. The token is valid for 30 days.",
             "title": "Two-factor authentication"
+        },
+        "social": {
+            "title": "Or continue with",
+            "continue": "Continue with {{provider}}",
+            "unavailable": "Provider sign-in is unavailable.",
+            "retry": "Try again",
+            "twoFactor": "Enter your six-digit authentication code",
+            "confirm": "Sign in",
+            "cancel": "Cancel provider sign-in",
+            "failed": "Provider sign-in failed. Please try again.",
+            "cancelled": "Provider sign-in was cancelled.",
+            "account_exists": "An account already uses this email. Sign in to that account and link the provider in security settings.",
+            "inactive": "This account is inactive. Contact support.",
+            "expired": "Your sign-in expired. Please start again.",
+            "link_failed": "The provider could not be linked. Sign in and try again in security settings."
         }
     },
     "safeDelete": {
@@ -278,7 +311,21 @@
             "reauthenticationTotpLabel": "Current 2FA code",
             "reauthenticationTotpPlaceholder": "123456",
             "checking": "Checking...",
-            "secret": "Secret: {{secret}}"
+            "secret": "Secret: {{secret}}",
+            "socialAccounts": {
+                "linked": "The sign-in provider has been linked.",
+                "title": "Connected accounts",
+                "description": "Connect an external provider to sign in to this account.",
+                "loading": "Loading connected accounts …",
+                "unavailable": "Provider connections are unavailable.",
+                "connected": "Connected",
+                "connect": "Connect {{provider}}",
+                "reauthenticationLabel": "Current password",
+                "reauthenticationHint": "Confirm your current password before connecting a provider.",
+                "passwordRequiredHint": "Set a password before connecting another provider.",
+                "loadError": "Connected accounts could not be loaded. Try again.",
+                "linkError": "The provider could not be connected. Try again."
+            }
         },
         "settingsLabel": "User Settings"
     },
@@ -954,7 +1001,7 @@
         "adminLogin": "Administration",
         "description": "Monitoring, DNS, security and more. The future home for apps that take your RentnerProxy setup further.",
         "followDevelopment": "Follow development",
-        "availability": "You're viewing a preview. Downloads, publishing and public registration are coming later.",
+        "availability": "Downloads and publishing are coming later. You can already create an account.",
         "inPreparation": "In preparation",
         "outlook": "The first official apps",
         "outlookNote": "Planned. Not yet available to install.",

@@ -5,6 +5,7 @@ import { Fingerprint, LoaderCircle, Lock, User } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { PasswordInput, TextInput } from '@rentnerkev/inputs'
 import TwoFactorForm from './Components/TwoFactorForm.tsx'
+import SocialLogin from '@/shared/Auth/Components/SocialLogin.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import type { LoginPageProps } from './Types/login-component-props.types.ts'
 
@@ -154,6 +155,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                     : t('auth.login.passkeyLogin')}
                             </button>
                         </form>
+                        <SocialLogin />
                         <p className="mt-7 border-t border-[#dce6df] pt-6 text-center text-sm text-[#52675d]">
                             {t('auth.login.newHere')}{' '}
                             <Link

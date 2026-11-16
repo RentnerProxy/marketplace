@@ -113,15 +113,33 @@
         },
         "register": {
             "email": "E-mailadres",
-            "eyebrow": "Binnenkort voor jou",
+            "eyebrow": "Account maken",
             "title": "Jouw toegang tot de marketplace.",
             "description": "Eén account voor je RentnerProxy-apps en uitbreidingen.",
             "previewTitle": "Registratie is binnenkort beschikbaar",
             "previewDescription": "Dit is een voorbeeld. De velden zijn uitgeschakeld; er worden geen gegevens verzameld en er wordt geen account aangemaakt.",
-            "accountDetails": "Voorbeeld van accountgegevens",
+            "accountDetails": "Accountgegevens",
             "emailPlaceholder": "Je e-mailadres",
             "comingSoon": "Nog niet beschikbaar",
-            "alreadyRegistered": "Heb je al een account?"
+            "alreadyRegistered": "Heb je al een account?",
+            "confirmPassword": "Wachtwoord bevestigen",
+            "passwordPolicy": "Gebruik minstens 12 tekens.",
+            "passwordMismatch": "De wachtwoorden komen niet overeen.",
+            "termsRequired": "Accepteer de voorwaarden en het privacybeleid.",
+            "acceptTerms": "Ik accepteer de",
+            "terms": "voorwaarden",
+            "and": "en het",
+            "privacy": "privacybeleid",
+            "submit": "Account maken",
+            "submitting": "Even geduld …",
+            "socialDetails": "Vul je gegevens aan om met je provider door te gaan.",
+            "checkInbox": "Als registratie mogelijk is, ontvang je een bevestigingsmail. Controleer ook je spammap.",
+            "complete": "Je e-mailadres is bevestigd. Je kunt nu inloggen.",
+            "failed": "Registratie is mislukt. Probeer het opnieuw.",
+            "verify": "E-mail bevestigen",
+            "verifyDescription": "Bevestig je e-mailadres om je account te activeren.",
+            "invalidVerification": "Deze link is ongeldig of verlopen. Registreer opnieuw.",
+            "verificationFailed": "Bevestigen is mislukt. Probeer het opnieuw."
         },
         "passwordReset": {
             "newPasswordTitle": "Nieuw wachtwoord",
@@ -157,6 +175,21 @@
         "terms": {
             "title": "Gebruiksvoorwaarden",
             "placeholder": "Tijdelijke tekst voor de gebruiksvoorwaarden."
+        },
+        "social": {
+            "title": "Of ga verder met",
+            "continue": "Verder met {{provider}}",
+            "unavailable": "Inloggen via providers is niet beschikbaar.",
+            "retry": "Opnieuw proberen",
+            "twoFactor": "Voer je zescijferige authenticatiecode in",
+            "confirm": "Inloggen",
+            "cancel": "Inloggen via provider annuleren",
+            "failed": "Inloggen is mislukt. Probeer opnieuw.",
+            "cancelled": "Inloggen via provider is geannuleerd.",
+            "account_exists": "Er bestaat al een account met dit e-mailadres. Log daarop in en koppel de provider in de beveiligingsinstellingen.",
+            "inactive": "Dit account is inactief. Neem contact op met ondersteuning.",
+            "expired": "Je aanmelding is verlopen. Begin opnieuw.",
+            "link_failed": "Koppelen is mislukt. Log in en probeer het opnieuw in de beveiligingsinstellingen."
         }
     },
     "safeDelete": {
@@ -218,7 +251,21 @@
             "reauthenticationPasswordPlaceholder": "Voer je huidige wachtwoord in",
             "reauthenticationTotpLabel": "Huidige 2FA-code",
             "checking": "Controleren...",
-            "secret": "Geheim: {{secret}}"
+            "secret": "Geheim: {{secret}}",
+            "socialAccounts": {
+                "linked": "De aanmeldprovider is gekoppeld.",
+                "title": "Gekoppelde accounts",
+                "description": "Koppel een externe provider om op dit account in te loggen.",
+                "loading": "Gekoppelde accounts laden …",
+                "unavailable": "Providerkoppelingen zijn niet beschikbaar.",
+                "connected": "Gekoppeld",
+                "connect": "{{provider}} koppelen",
+                "reauthenticationLabel": "Huidig wachtwoord",
+                "reauthenticationHint": "Bevestig je huidige wachtwoord voordat je een provider koppelt.",
+                "passwordRequiredHint": "Stel een wachtwoord in voordat je nog een provider koppelt.",
+                "loadError": "Gekoppelde accounts konden niet worden geladen. Probeer opnieuw.",
+                "linkError": "De provider kon niet worden gekoppeld. Probeer opnieuw."
+            }
         },
         "header": {
             "title": "Gebruikersinstellingen",
@@ -483,7 +530,7 @@
         "home": "Marketplace-startpagina",
         "description": "Monitoring, DNS, beveiliging en meer. De toekomstige plek voor apps die je RentnerProxy-installatie verder brengen.",
         "followDevelopment": "Ontwikkeling volgen",
-        "availability": "Je bekijkt een voorbeeld. Downloaden, publiceren en openbare registratie volgen later.",
+        "availability": "Downloads en publiceren komen later. Je kunt al een account maken.",
         "inPreparation": "In voorbereiding",
         "outlook": "De eerste officiële apps",
         "outlookNote": "Gepland. Nog niet beschikbaar om te installeren.",

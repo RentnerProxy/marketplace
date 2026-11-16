@@ -113,15 +113,33 @@
         },
         "register": {
             "email": "Adres e-mail",
-            "eyebrow": "Już wkrótce dla Ciebie",
+            "eyebrow": "Utwórz konto",
             "title": "Twoja droga do marketplace.",
             "description": "Jedno konto do aplikacji i rozszerzeń RentnerProxy.",
             "previewTitle": "Rejestracja będzie wkrótce dostępna",
             "previewDescription": "To jest podgląd. Pola są wyłączone; żadne dane nie są zbierane i żadne konto nie jest tworzone.",
-            "accountDetails": "Podgląd danych konta",
+            "accountDetails": "Dane konta",
             "emailPlaceholder": "Twój adres e-mail",
             "comingSoon": "Jeszcze niedostępne",
-            "alreadyRegistered": "Masz już konto?"
+            "alreadyRegistered": "Masz już konto?",
+            "confirmPassword": "Potwierdź hasło",
+            "passwordPolicy": "Użyj co najmniej 12 znaków.",
+            "passwordMismatch": "Hasła nie są takie same.",
+            "termsRequired": "Zaakceptuj regulamin i politykę prywatności.",
+            "acceptTerms": "Akceptuję",
+            "terms": "regulamin",
+            "and": "i",
+            "privacy": "politykę prywatności",
+            "submit": "Utwórz konto",
+            "submitting": "Poczekaj …",
+            "socialDetails": "Uzupełnij dane, aby kontynuować z dostawcą.",
+            "checkInbox": "Jeśli rejestracja jest możliwa, otrzymasz wiadomość z linkiem potwierdzającym. Sprawdź również spam.",
+            "complete": "Adres e-mail został potwierdzony. Możesz się zalogować.",
+            "failed": "Nie udało się zarejestrować. Spróbuj ponownie.",
+            "verify": "Potwierdź e-mail",
+            "verifyDescription": "Potwierdź adres e-mail, aby aktywować konto.",
+            "invalidVerification": "Link jest nieprawidłowy lub wygasł. Zarejestruj się ponownie.",
+            "verificationFailed": "Nie udało się potwierdzić adresu. Spróbuj ponownie."
         },
         "passwordReset": {
             "newPasswordTitle": "Nowe hasło",
@@ -157,6 +175,21 @@
         "terms": {
             "title": "Warunki użytkowania",
             "placeholder": "Tekst zastępczy warunków użytkowania."
+        },
+        "social": {
+            "title": "Lub kontynuuj z",
+            "continue": "Kontynuuj z {{provider}}",
+            "unavailable": "Logowanie przez dostawcę jest niedostępne.",
+            "retry": "Spróbuj ponownie",
+            "twoFactor": "Wpisz sześciocyfrowy kod uwierzytelniający",
+            "confirm": "Zaloguj się",
+            "cancel": "Anuluj logowanie przez dostawcę",
+            "failed": "Logowanie nie powiodło się. Spróbuj ponownie.",
+            "cancelled": "Logowanie przez dostawcę zostało anulowane.",
+            "account_exists": "Konto z tym adresem e-mail już istnieje. Zaloguj się na nie i połącz dostawcę w ustawieniach bezpieczeństwa.",
+            "inactive": "To konto jest nieaktywne. Skontaktuj się z pomocą.",
+            "expired": "Logowanie wygasło. Zacznij ponownie.",
+            "link_failed": "Nie udało się połączyć dostawcy. Zaloguj się i spróbuj ponownie w ustawieniach bezpieczeństwa."
         }
     },
     "safeDelete": {
@@ -218,7 +251,21 @@
             "reauthenticationPasswordPlaceholder": "Wprowadź obecne hasło",
             "reauthenticationTotpLabel": "Obecny kod 2FA",
             "checking": "Sprawdzanie...",
-            "secret": "Sekret: {{secret}}"
+            "secret": "Sekret: {{secret}}",
+            "socialAccounts": {
+                "linked": "Dostawca logowania został połączony.",
+                "title": "Połączone konta",
+                "description": "Połącz zewnętrznego dostawcę, aby logować się na to konto.",
+                "loading": "Wczytywanie połączonych kont …",
+                "unavailable": "Połączenia z dostawcami są niedostępne.",
+                "connected": "Połączono",
+                "connect": "Połącz {{provider}}",
+                "reauthenticationLabel": "Aktualne hasło",
+                "reauthenticationHint": "Potwierdź aktualne hasło przed połączeniem dostawcy.",
+                "passwordRequiredHint": "Ustaw hasło przed połączeniem kolejnego dostawcy.",
+                "loadError": "Nie udało się wczytać połączonych kont. Spróbuj ponownie.",
+                "linkError": "Nie udało się połączyć dostawcy. Spróbuj ponownie."
+            }
         },
         "header": {
             "title": "Ustawienia użytkownika",
@@ -483,7 +530,7 @@
         "home": "Strona główna marketplace",
         "description": "Monitoring, DNS, bezpieczeństwo i wiele więcej. Przyszłe miejsce dla aplikacji, które rozszerzą możliwości Twojej instalacji RentnerProxy.",
         "followDevelopment": "Śledź rozwój",
-        "availability": "Oglądasz podgląd. Pobieranie, publikowanie i publiczna rejestracja pojawią się później.",
+        "availability": "Pobieranie i publikowanie będą dostępne później. Możesz już utworzyć konto.",
         "inPreparation": "W przygotowaniu",
         "outlook": "Pierwsze oficjalne aplikacje",
         "outlookNote": "Planowane. Nie można ich jeszcze zainstalować.",

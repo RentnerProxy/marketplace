@@ -33,6 +33,7 @@ const deliveryMocks = {
     sendSecurityChangeMail: vi.fn(async function () {}),
     sendPasswordResetMail: vi.fn(async function () {}),
     sendPasswordSetupMail: vi.fn(async function () {}),
+    sendRegistrationVerificationMail: vi.fn(async function () {}),
 }
 const quiescenceServiceMocks = {
     close: vi.fn(async function () {}),
