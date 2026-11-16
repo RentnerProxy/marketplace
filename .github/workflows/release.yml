@@ -147,21 +147,27 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
                   RELEASE_TAG: ${{ github.ref_name }}
               run: bash .github/scripts/release/validate-tag.sh
-            - name: Generate and publish release notes
+            - name: Prepare release notes and downloadable changelog
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.ref_name }}
+                  RELEASE_IMAGE: ${{ needs.publish.outputs.image }}
+              run: bun --no-env-file .github/scripts/release/publish-release.ts prepare
+            - name: Publish downloadable changelog
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ github.ref_name }}
+              run: bash .github/scripts/release/publish-changelog.sh
+            - name: Replace building status with the completed release
               env:
                   GH_TOKEN: ${{ github.token }}
                   RELEASE_TAG: ${{ github.ref_name }}
                   RELEASE_IMAGE: ${{ needs.publish.outputs.image }}
               run: bun --no-env-file .github/scripts/release/publish-release.ts
-            - name: Publish downloadable changelog
-              env:
-                  GH_TOKEN: ${{ github.token }}
-                  RELEASE_TAG: ${{ github.ref_name }}
-              run: gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/Marketplace-$RELEASE_TAG-CHANGELOG.md" --repo "$GITHUB_REPOSITORY" --clobber
     failed:
         name: Report interrupted release build
         needs: [content, announce, verify, publish, notes]
-        if: ${{ always() && needs.announce.result == 'success' && (needs.verify.result == 'failure' || needs.publish.result == 'failure' || needs.notes.result == 'failure') }}
+        if: ${{ always() && needs.announce.result == 'success' && (contains(fromJSON('["failure","cancelled"]'), needs.verify.result) || contains(fromJSON('["failure","cancelled"]'), needs.publish.result) || contains(fromJSON('["failure","cancelled"]'), needs.notes.result)) }}
         runs-on: ubuntu-latest
         timeout-minutes: 5
         permissions:
