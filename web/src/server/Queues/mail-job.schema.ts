@@ -31,6 +31,7 @@ export const securityChangeMailInputSchema = z.strictObject({
 })
 
 export const mailJobDataSchema = z.discriminatedUnion('kind', [
+    authMailJobSchema.extend({ kind: z.literal('registration-verification') }),
     authMailJobSchema.extend({ kind: z.literal('password-reset') }),
     authMailJobSchema.extend({ kind: z.literal('password-setup') }),
     mailRecipientSchema.extend({

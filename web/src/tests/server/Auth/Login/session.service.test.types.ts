@@ -2,6 +2,7 @@ export type SessionTestRow = Record<string, unknown>
 export type SessionTestTable =
     | 'users'
     | 'passkeyCredentials'
+    | 'socialAccounts'
     | 'sessions'
     | 'trustedDevices'
     | 'userPermissions'

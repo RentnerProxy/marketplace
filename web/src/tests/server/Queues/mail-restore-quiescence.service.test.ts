@@ -299,6 +299,7 @@ vi.mock('@/lib/Mail/mail.ts', function () {
     return {
         sendPasswordResetMail: vi.fn(async function () {}),
         sendPasswordSetupMail: vi.fn(async function () {}),
+        sendRegistrationVerificationMail: vi.fn(async function () {}),
         sendFailedLoginAlertMail: vi.fn(async function () {}),
     }
 })

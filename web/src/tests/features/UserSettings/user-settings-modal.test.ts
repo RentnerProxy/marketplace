@@ -176,6 +176,7 @@ describe('User settings modal composition', () => {
             'PasswordResetSection',
             'TwoFactorSection',
             'PasskeySection',
+            'SocialAccountsSection',
         ])
     })
 

@@ -27,9 +27,9 @@ export default function TwoFactorForm({
                         size="lg"
                     />
                 </div>
-                <h2 className="font-display text-3xl text-marketplace-void">
+                <h1 className="font-display text-3xl text-marketplace-void">
                     {t('auth.twoFactor.title')}
-                </h2>
+                </h1>
                 <p className="text-sm text-[#52675d]">
                     {t('auth.twoFactor.description')}
                 </p>

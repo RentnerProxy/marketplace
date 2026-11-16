@@ -1,6 +1,7 @@
 import de from '@/language/Locales/de.json'
 import en from '@/language/Locales/en.json'
 import { createAuthMailContent } from './Templates/authMailTemplate.ts'
+import { createRegistrationMailContent } from './Templates/registrationMailTemplate.ts'
 import { createSecurityChangeMailContent } from './Templates/securityChangeMailTemplate.ts'
 import type {
     AuthMailInput,
@@ -34,6 +35,17 @@ export async function sendPasswordResetMail(input: AuthMailInput) {
         subject: 'Passwort zurücksetzen',
         headline: 'Passwort zurücksetzen',
         intro: `Hallo ${input.username}, über diesen Link kannst du dein Passwort zurücksetzen.`,
+    })
+}
+
+export async function sendRegistrationVerificationMail(input: AuthMailInput) {
+    const theme = await getRecipientMailThemeService(input.to)
+    const { text, html } = createRegistrationMailContent(input, theme)
+    await sendWithSmtp({
+        to: input.to,
+        subject: 'E-Mail-Adresse bestätigen / Verify your email',
+        text,
+        html,
     })
 }
 

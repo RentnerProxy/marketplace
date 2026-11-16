@@ -1,5 +1,6 @@
 import { deleteCookie, setCookie } from '@tanstack/react-start/server'
 import { and, eq } from 'drizzle-orm'
+import { socialAccounts } from '@/db/Schema/socialAuth.ts'
 import { db } from '@/db'
 import { getClientRequestMeta } from '@/lib/Request/clientRequestMeta.ts'
 import {
@@ -76,7 +77,7 @@ export async function createAuthenticatedSessionForUser({
             return null
         }
 
-        if (proof.kind === 'password') {
+        if (proof.kind === 'password' || proof.kind === 'social') {
             const currentFactors = await transaction
                 .select({
                     id: twoFactorAuth.id,
@@ -94,10 +95,27 @@ export async function createAuthenticatedSessionForUser({
                 Boolean(currentFactor?.verified) !==
                     currentUser.isTwoFactorEnabled ||
                 currentFactorId !== proof.factorId ||
-                (proof.trustThisDevice && !currentUser.isTwoFactorEnabled)
+                (proof.kind === 'password' &&
+                    proof.trustThisDevice &&
+                    !currentUser.isTwoFactorEnabled)
             ) {
                 return null
             }
+        }
+
+        if (proof.kind === 'social') {
+            const accounts = await transaction
+                .select({ id: socialAccounts.id })
+                .from(socialAccounts)
+                .where(
+                    and(
+                        eq(socialAccounts.id, proof.accountId),
+                        eq(socialAccounts.userId, currentUser.id),
+                    ),
+                )
+                .limit(1)
+                .for('share')
+            if (accounts.length !== 1) return null
         }
 
         if (proof.kind === 'passkey') {

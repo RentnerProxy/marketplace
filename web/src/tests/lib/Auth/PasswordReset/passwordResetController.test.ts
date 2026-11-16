@@ -58,7 +58,7 @@ async function activate(token = 'synthetic-reset-proof') {
 
 describe('Bounded local password reset controller', function () {
     it('does not validate or submit until a client token has been transferred', async function () {
-        await controller.submit({ password: 'aaa', confirmPassword: 'aaa' })
+        await controller.submit({ password: 'aaaa', confirmPassword: 'aaaa' })
         expect(mocks.validate).not.toHaveBeenCalled()
         expect(mocks.update).not.toHaveBeenCalled()
     })
@@ -78,11 +78,14 @@ describe('Bounded local password reset controller', function () {
             await activate()
             expect(mocks.rejected).toHaveBeenCalledWith('invalid')
             expect(mocks.phase).not.toHaveBeenCalledWith('ready')
-            await controller.submit({ password: 'aaa', confirmPassword: 'aaa' })
+            await controller.submit({
+                password: 'aaaa',
+                confirmPassword: 'aaaa',
+            })
             expect(mocks.update).not.toHaveBeenCalled()
         },
     )
-    it.each(['', 'a', 'aa', 'x'.repeat(1025)])(
+    it.each(['', 'a', 'aa', 'aaa', 'x'.repeat(1025)])(
         'preserves the password length guard %#',
         async function (password) {
             await activate()
@@ -93,11 +96,11 @@ describe('Bounded local password reset controller', function () {
     )
     it('rejects a mismatch without consuming the token', async function () {
         await activate()
-        await controller.submit({ password: 'aaa', confirmPassword: 'aab' })
+        await controller.submit({ password: 'aaaa', confirmPassword: 'aaab' })
         expect(mocks.error).toHaveBeenCalledWith('password-mismatch')
         expect(mocks.update).not.toHaveBeenCalled()
     })
-    it.each(['aaa', 'x'.repeat(1024)])(
+    it.each(['aaaa', 'x'.repeat(1024)])(
         'accepts the existing password boundary %# and cannot submit the consumed local token again',
         async function (password) {
             const sent: Array<{ token: string; password: string }> = []
@@ -120,15 +123,15 @@ describe('Bounded local password reset controller', function () {
         mocks.update.mockImplementation(() => pending.promise)
         await activate()
         const operation = controller.submit({
-            password: 'aaa',
-            confirmPassword: 'aaa',
+            password: 'aaaa',
+            confirmPassword: 'aaaa',
         })
         const passedInput = mocks.update.mock.calls[0]?.[0]
         expect(passedInput).toEqual({
             token: 'synthetic-reset-proof',
-            password: 'aaa',
+            password: 'aaaa',
         })
-        await controller.submit({ password: 'bbb', confirmPassword: 'bbb' })
+        await controller.submit({ password: 'bbbb', confirmPassword: 'bbbb' })
         expect(mocks.update).toHaveBeenCalledTimes(1)
         pending.resolve({ success: true })
         await operation
@@ -140,10 +143,10 @@ describe('Bounded local password reset controller', function () {
             error: 'synthetic invalid token',
         })
         await activate()
-        await controller.submit({ password: 'aaa', confirmPassword: 'aaa' })
+        await controller.submit({ password: 'aaaa', confirmPassword: 'aaaa' })
         expect(mocks.rejected).toHaveBeenCalledWith('invalid')
         expect(mocks.success).not.toHaveBeenCalled()
-        await controller.submit({ password: 'aaa', confirmPassword: 'aaa' })
+        await controller.submit({ password: 'aaaa', confirmPassword: 'aaaa' })
         expect(mocks.update).toHaveBeenCalledTimes(1)
     })
     it('times out an abort-ignoring validation once and only retries after a manual request', async function () {
@@ -180,8 +183,8 @@ describe('Bounded local password reset controller', function () {
         mocks.update.mockImplementation(() => pending.promise)
         await activate()
         const operation = controller.submit({
-            password: 'aaa',
-            confirmPassword: 'aaa',
+            password: 'aaaa',
+            confirmPassword: 'aaaa',
         })
         await clock.advance(passwordResetConfig.requestTimeoutMs)
         await operation
@@ -207,8 +210,8 @@ describe('Bounded local password reset controller', function () {
             const operation =
                 stage === 'submission'
                     ? controller.submit({
-                          password: 'aaa',
-                          confirmPassword: 'aaa',
+                          password: 'aaaa',
+                          confirmPassword: 'aaaa',
                       })
                     : Promise.resolve()
             await activate('synthetic-second')
@@ -226,7 +229,10 @@ describe('Bounded local password reset controller', function () {
                 sent.push(input.token)
                 return { success: true }
             })
-            await controller.submit({ password: 'bbb', confirmPassword: 'bbb' })
+            await controller.submit({
+                password: 'bbbb',
+                confirmPassword: 'bbbb',
+            })
             expect(sent).toEqual(['synthetic-second'])
         },
     )
@@ -241,8 +247,8 @@ describe('Bounded local password reset controller', function () {
             const operation =
                 stage === 'submission'
                     ? controller.submit({
-                          password: 'aaa',
-                          confirmPassword: 'aaa',
+                          password: 'aaaa',
+                          confirmPassword: 'aaaa',
                       })
                     : Promise.resolve()
             const signal =

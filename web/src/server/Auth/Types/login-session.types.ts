@@ -12,6 +12,11 @@ type AuthenticatedLoginUser = Pick<
 
 export type AuthenticatedLoginProof =
     | {
+          kind: 'social'
+          accountId: string
+          factorId: string | null
+      }
+    | {
           kind: 'password'
           trustThisDevice: boolean
           factorId: string | null

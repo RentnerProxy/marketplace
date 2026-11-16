@@ -3,6 +3,7 @@ import { db } from '@/db'
 import {
     passwordResetTokens,
     sessions,
+    socialAccounts,
     trustedDevices,
     twoFactorAuth,
     userPermissions,
@@ -143,6 +144,9 @@ export async function deleteUserService(data: DeleteUserInput) {
             await transaction
                 .delete(twoFactorAuth)
                 .where(eq(twoFactorAuth.userId, data.id))
+            await transaction
+                .delete(socialAccounts)
+                .where(eq(socialAccounts.userId, data.id))
             await transaction
                 .delete(userPermissions)
                 .where(eq(userPermissions.userId, data.id))

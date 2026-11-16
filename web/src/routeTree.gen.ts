@@ -41,6 +41,8 @@ import { Route as ApiUserBackgroundRouteImport } from './routes/api/user/backgro
 import { Route as ApiAdminBackupsBackupIdRouteImport } from './routes/api/admin/backups/$backupId'
 import { Route as ApiAdminBackupsDownloadRouteImport } from './routes/api/admin/backups/download'
 import { Route as ApiAdminBackupsImportRouteImport } from './routes/api/admin/backups/import'
+import { Route as ApiAuthProviderCallbackRouteImport } from './routes/api/auth/$provider/callback'
+import { Route as ApiAuthProviderCompleteRouteImport } from './routes/api/auth/$provider/complete'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -206,6 +208,16 @@ const ApiAdminBackupsImportRoute = ApiAdminBackupsImportRouteImport.update({
   path: '/api/admin/backups/import',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthProviderCallbackRoute = ApiAuthProviderCallbackRouteImport.update({
+  id: '/api/auth/$provider/callback',
+  path: '/api/auth/$provider/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthProviderCompleteRoute = ApiAuthProviderCompleteRouteImport.update({
+  id: '/api/auth/$provider/complete',
+  path: '/api/auth/$provider/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -238,6 +250,8 @@ export interface FileRoutesByFullPath {
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
+  '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
+  '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -270,6 +284,8 @@ export interface FileRoutesByTo {
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
+  '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
+  '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -305,6 +321,8 @@ export interface FileRoutesById {
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
+  '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
+  '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -339,6 +357,8 @@ export interface FileRouteTypes {
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
+    | '/api/auth/$provider/callback'
+    | '/api/auth/$provider/complete'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -371,6 +391,8 @@ export interface FileRouteTypes {
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
+    | '/api/auth/$provider/callback'
+    | '/api/auth/$provider/complete'
   id:
     | '__root__'
     | '/'
@@ -405,6 +427,8 @@ export interface FileRouteTypes {
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
+    | '/api/auth/$provider/callback'
+    | '/api/auth/$provider/complete'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -426,6 +450,8 @@ export interface RootRouteChildren {
   ApiAdminBackupsBackupIdRoute: typeof ApiAdminBackupsBackupIdRoute
   ApiAdminBackupsDownloadRoute: typeof ApiAdminBackupsDownloadRoute
   ApiAdminBackupsImportRoute: typeof ApiAdminBackupsImportRoute
+  ApiAuthProviderCallbackRoute: typeof ApiAuthProviderCallbackRoute
+  ApiAuthProviderCompleteRoute: typeof ApiAuthProviderCompleteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -654,6 +680,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminBackupsImportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/$provider/callback': {
+      id: '/api/auth/$provider/callback'
+      path: '/api/auth/$provider/callback'
+      fullPath: '/api/auth/$provider/callback'
+      preLoaderRoute: typeof ApiAuthProviderCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$provider/complete': {
+      id: '/api/auth/$provider/complete'
+      path: '/api/auth/$provider/complete'
+      fullPath: '/api/auth/$provider/complete'
+      preLoaderRoute: typeof ApiAuthProviderCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -748,6 +788,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminBackupsBackupIdRoute: ApiAdminBackupsBackupIdRoute,
   ApiAdminBackupsDownloadRoute: ApiAdminBackupsDownloadRoute,
   ApiAdminBackupsImportRoute: ApiAdminBackupsImportRoute,
+  ApiAuthProviderCallbackRoute: ApiAuthProviderCallbackRoute,
+  ApiAuthProviderCompleteRoute: ApiAuthProviderCompleteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

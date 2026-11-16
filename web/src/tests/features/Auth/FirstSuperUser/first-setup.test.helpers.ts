@@ -4,8 +4,8 @@ export function createFirstSetupFormValues(): FirstSuperUserFormValues {
     return {
         username: 'fixture-user',
         email: 'fixture@example.test',
-        password: 'abc',
-        confirmPassword: 'abc',
+        password: 'abcd',
+        confirmPassword: 'abcd',
         firstName: '',
         lastName: '',
         street: '',

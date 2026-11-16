@@ -1,0 +1,168 @@
+import { beforeEach, describe, expect, it, mock } from 'bun:test'
+
+const access = mock(async () => ({}))
+const proof = {
+    userId: 'current-user',
+    sessionHash: 'session',
+    credentialVersion: 'version',
+}
+const reauthenticate = mock(async () => ({
+    success: true,
+    proof,
+    error: 'Invalid confirmation',
+}))
+const begin = mock(async () => ({ url: 'https://provider.example/authorize' }))
+const unlink = mock(async (_input: unknown) => ({ success: true }))
+const accounts = mock(async () => ({ providers: [], accounts: [] }))
+
+mock.module('@tanstack/react-start', () => ({
+    createServerFn: () => ({
+        handler: (handler: () => Promise<unknown>) => handler,
+        validator: (validate: (data: unknown) => unknown) => ({
+            handler:
+                (handler: (input: { data: unknown }) => Promise<unknown>) =>
+                async (input: { data: unknown }) =>
+                    handler({ data: validate(input.data) }),
+        }),
+    }),
+}))
+mock.module('@/server/Auth/authorization.service.ts', () => ({
+    requireAuthenticatedFeatureAccessService: access,
+}))
+mock.module('@/server/Auth/reauthentication.service.ts', () => ({
+    reauthenticateCurrentUserService: reauthenticate,
+}))
+mock.module('@/server/Auth/Social/flow.service.ts', () => ({
+    beginSocialAuthorizationService: begin,
+}))
+mock.module('@/server/Auth/Social/management.service.ts', () => ({
+    getCurrentUserSocialAccountsService: accounts,
+    unlinkCurrentUserSocialAccountService: unlink,
+}))
+
+const {
+    beginSocialLinkHandler,
+    getSocialAccountsHandler,
+    unlinkSocialAccountHandler,
+} = await import('@/features/UserSettings/SocialAccounts/middleware.ts')
+
+beforeEach(() => {
+    unlink.mockClear()
+    access.mockClear()
+    access.mockResolvedValue({})
+    reauthenticate.mockClear()
+    reauthenticate.mockResolvedValue({
+        success: true,
+        proof,
+        error: 'Invalid confirmation',
+    })
+    begin.mockClear()
+    accounts.mockClear()
+})
+
+describe('Social account boundaries', () => {
+    it('requires authenticated feature access before listing accounts', async () => {
+        access.mockRejectedValueOnce(new Error('Authentication required'))
+        await expect(getSocialAccountsHandler()).rejects.toThrow(
+            'Authentication required',
+        )
+        expect(accounts).not.toHaveBeenCalled()
+    })
+
+    it('passes fresh password proof to the staged authorization flow', async () => {
+        const reauthentication = {
+            method: 'password' as const,
+            credential: 'test-password',
+        }
+        await expect(
+            beginSocialLinkHandler({
+                data: { provider: 'google', reauthentication },
+            }),
+        ).resolves.toEqual({
+            success: true,
+            url: 'https://provider.example/authorize',
+        })
+        expect(access).toHaveBeenCalledTimes(1)
+        expect(reauthenticate).toHaveBeenCalledWith(reauthentication)
+        expect(begin).toHaveBeenCalledWith('google', proof)
+    })
+
+    it('does not initiate linking after failed reauthentication', async () => {
+        reauthenticate.mockResolvedValueOnce({
+            success: false,
+            error: 'Invalid confirmation',
+            proof,
+        })
+        await expect(
+            beginSocialLinkHandler({
+                data: {
+                    provider: 'github',
+                    reauthentication: { method: 'totp', credential: '123456' },
+                },
+            }),
+        ).resolves.toMatchObject({ success: false })
+        expect(begin).not.toHaveBeenCalled()
+    })
+
+    it.each(['unknown', 'apple', 'facebook', 'microsoft'])(
+        'rejects unsupported provider %s before delegation',
+        async (provider) => {
+            await expect(
+                beginSocialLinkHandler({
+                    data: {
+                        provider,
+                        reauthentication: {
+                            method: 'password',
+                            credential: 'test-password',
+                        },
+                    } as never,
+                }),
+            ).rejects.toThrow()
+            expect(access).not.toHaveBeenCalled()
+            expect(begin).not.toHaveBeenCalled()
+        },
+    )
+})
+
+describe('Social account unlink boundary', () => {
+    it('requires authenticated feature access before unlinking', async () => {
+        access.mockRejectedValueOnce(new Error('Authentication required'))
+        await expect(
+            unlinkSocialAccountHandler({
+                data: {
+                    provider: 'google',
+                    reauthentication: {
+                        method: 'password',
+                        credential: 'password',
+                    },
+                },
+            }),
+        ).rejects.toThrow('Authentication required')
+        expect(unlink).not.toHaveBeenCalled()
+    })
+    it('validates provider and confirmation before service delegation', async () => {
+        await expect(
+            unlinkSocialAccountHandler({
+                data: {
+                    provider: 'unknown',
+                    reauthentication: {
+                        method: 'password',
+                        credential: 'password',
+                    },
+                } as never,
+            }),
+        ).rejects.toThrow()
+        expect(access).not.toHaveBeenCalled()
+        expect(unlink).not.toHaveBeenCalled()
+    })
+    it('delegates validated password or TOTP confirmation to the protected service', async () => {
+        const data = {
+            provider: 'github' as const,
+            reauthentication: { method: 'totp' as const, credential: '123456' },
+        }
+        expect(await unlinkSocialAccountHandler({ data })).toEqual({
+            success: true,
+        })
+        expect(unlink).toHaveBeenCalledWith(data)
+    })
+})

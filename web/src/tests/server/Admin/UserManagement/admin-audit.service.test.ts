@@ -10,6 +10,46 @@ import {
     installAdminAuditTestMocks,
 } from './admin-audit.test.helpers.ts'
 installAdminAuditTestMocks()
+const staleSocialSnapshot = {
+    accountId: '00000000-0000-4000-8000-000000000004',
+    factorId: '00000000-0000-4000-8000-000000000003',
+    user: {
+        id: ADMIN_TARGET_ID,
+        username: 'target',
+        email: 'target@example.test',
+        passwordHash: 'original-target-password-hash',
+        isActive: true,
+        isTwoFactorEnabled: true as const,
+    },
+}
+const consumeSocialTotp = vi.fn(async () => true)
+const createSocialSession = vi.fn(async () => ({
+    success: true,
+    redirectTo: '/dashboard',
+}))
+vi.mock('@/server/Auth/Social/challenge.service.ts', () => ({
+    getSocialHandoffCookieService: () => ({
+        token: 'synthetic-token',
+        browserToken: 'synthetic-browser',
+    }),
+    readSocialChallengeService: async () => ({
+        tokenHash: 'synthetic-challenge-hash',
+        provider: 'google',
+        payload: staleSocialSnapshot,
+    }),
+    createSocialHandoffService: vi.fn(),
+}))
+vi.mock('@/server/RateLimit/rateLimit.service.ts', () => ({
+    enforceRateLimit: vi.fn(async () => {}),
+}))
+vi.mock('@/server/Auth/totp-verification.service.ts', () => ({
+    consumeTotpCodeService: consumeSocialTotp,
+}))
+vi.mock('@/server/Auth/Login/session.service.ts', () => ({
+    createAuthenticatedSessionForUser: createSocialSession,
+}))
+const { finishSocialLoginService } =
+    await import('@/server/Auth/Social/login.service.ts')
 const { updateUserProfileService } =
     await import('@/server/Admin/UserManagement/update.service.ts')
 const { setUserActiveService } =
@@ -66,6 +106,68 @@ describe('Administrative mutations with required audit persistence', function ()
             },
         )
     })
+    it.each(['username', 'email'] as const)(
+        'rejects case-insensitive %s collisions on creation',
+        async function (field) {
+            if (field === 'email')
+                adminAuditDb.state.rows.users[0].email = 'TARGET@EXAMPLE.TEST'
+            const result = await createUserService({
+                username: field === 'username' ? 'TARGET' : 'new-user',
+                email:
+                    field === 'email'
+                        ? 'TARGET@EXAMPLE.TEST'
+                        : 'new@example.test',
+            })
+            expect(result).toEqual({
+                success: false,
+                error: 'Ein Benutzer mit diesem Username oder dieser E-Mail existiert bereits.',
+            })
+            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(0)
+            expect(adminAuditExternal.enqueueInvitation).not.toHaveBeenCalled()
+        },
+    )
+    it.each(['username', 'email'] as const)(
+        'rejects case-insensitive %s collisions on update',
+        async function (field) {
+            if (field === 'email')
+                adminAuditDb.state.rows.users[1].email = 'ACTOR@EXAMPLE.TEST'
+            const result = await updateUserProfileService({
+                ...updateInput(),
+                [field]: field === 'username' ? 'ACTOR' : 'ACTOR@EXAMPLE.TEST',
+            })
+            expect(result).toEqual({
+                success: false,
+                error: 'Username oder E-Mail wird bereits verwendet.',
+            })
+            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(0)
+        },
+    )
+    it('allows case-only changes to the same user', async function () {
+        const result = await updateUserProfileService({
+            ...updateInput(),
+            username: 'TARGET',
+            email: 'TARGET@EXAMPLE.TEST',
+        })
+        expect(result.success).toBe(true)
+    })
+    it.each(['create', 'update'] as const)(
+        'locks account uniqueness before user rows during %s',
+        async function (operation) {
+            const result =
+                operation === 'create'
+                    ? await createUserService({
+                          username: 'new-user',
+                          email: 'new@example.test',
+                      })
+                    : await updateUserProfileService(updateInput())
+            expect(result.success).toBe(true)
+            expect(
+                adminAuditDb.state.events
+                    .slice(0, 3)
+                    .map((event) => event.operation),
+            ).toEqual(['begin', 'lock:identity', 'lock:update'])
+        },
+    )
     it('commits profile, identity, revocation and audit together', async function () {
         const previousPermissions = structuredClone(
             adminAuditDb.state.rows.userPermissions,
@@ -197,6 +299,49 @@ describe('Administrative mutations with required audit persistence', function ()
             expectNoPublishing()
         },
     )
+    it('releases deleted user provider mappings and rejects an outstanding social two-factor login', async () => {
+        await expect(
+            deleteUserService({ id: ADMIN_TARGET_ID }),
+        ).resolves.toEqual({ success: true })
+        const rows = adminAuditDb.state.rows
+        expect(rows.socialAccounts).toEqual([
+            {
+                id: 'actor-social-account',
+                userId: ADMIN_ACTOR_ID,
+                provider: 'github',
+                subject: 'actor-provider-subject',
+            },
+        ])
+        expect(rows.twoFactorAuth).toHaveLength(0)
+        expect(
+            rows.users.find((user) => user.id === ADMIN_TARGET_ID),
+        ).toMatchObject({
+            isDeleted: true,
+            isActive: false,
+            isTwoFactorEnabled: false,
+        })
+        const events = adminAuditDb.state.events
+        const userLock = events.findIndex(
+            (event) =>
+                event.operation === 'lock:update' &&
+                event.table === 'users' &&
+                event.ids?.includes(ADMIN_TARGET_ID),
+        )
+        const mappingDeletion = events.findIndex(
+            (event) =>
+                event.operation === 'delete' &&
+                event.table === 'socialAccounts',
+        )
+        expect(userLock).toBeGreaterThan(-1)
+        expect(mappingDeletion).toBeGreaterThan(userLock)
+        expect(events[mappingDeletion]?.transaction).toBe(1)
+
+        await expect(finishSocialLoginService('123456')).resolves.toMatchObject(
+            { success: false },
+        )
+        expect(consumeSocialTotp).not.toHaveBeenCalled()
+        expect(createSocialSession).not.toHaveBeenCalled()
+    })
     it.each(['deactivate', 'delete'])(
         'audits %s even if its revocation publisher fails',
         async function (operation) {

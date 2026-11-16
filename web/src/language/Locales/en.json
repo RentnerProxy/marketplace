@@ -58,6 +58,23 @@
         "backups": "Backups"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Back to marketplace",
+            "eyebrow": "The RentnerProxy ecosystem",
+            "headline": "Your setup.",
+            "headlineAccent": "More possibilities.",
+            "description": "A place for apps, extensions and your ideas for RentnerProxy.",
+            "community": "By the community. For your setup.",
+            "discover": "Discover",
+            "build": "Build",
+            "connect": "Contribute",
+            "credentials": "Or use your credentials",
+            "emailRegistration": "Or register with email",
+            "accountHint": "Choose how you want to continue.",
+            "emailHint": "Use email or your favourite provider. Your choice.",
+            "secure": "Your account. Your choice.",
+            "passwordHint": "At least {{min}} characters"
+        },
         "passwordPolicy": "The password must contain between {{min}} and {{max}} characters.",
         "firstSetup": {
             "title": "Create first superuser",
@@ -93,9 +110,9 @@
         },
         "login": {
             "eyebrow": "Your marketplace account",
-            "welcomeBack": "Good to have you back.",
+            "welcomeBack": "Welcome back.",
             "newHere": "New here?",
-            "discoverRegistration": "Explore registration",
+            "discoverRegistration": "Create an account",
             "description": "Please sign in to your account",
             "forgotPassword": "Forgot password?",
             "login": "Log in",
@@ -113,16 +130,34 @@
             "twoFactorCodeIncomplete": "Please enter the complete 2FA code."
         },
         "register": {
-            "eyebrow": "Coming your way",
-            "title": "Your way into the marketplace.",
+            "eyebrow": "Create an account",
+            "title": "Make it yours.",
             "description": "One account for your RentnerProxy apps and extensions.",
             "previewTitle": "Registration is coming soon",
             "previewDescription": "This is a preview. The fields are disabled; no information is collected and no account is created.",
-            "accountDetails": "Account details preview",
+            "accountDetails": "Account details",
             "email": "Email address",
             "emailPlaceholder": "Your email address",
             "comingSoon": "Not available yet",
-            "alreadyRegistered": "Already have an account?"
+            "alreadyRegistered": "Already have an account?",
+            "confirmPassword": "Confirm password",
+            "passwordPolicy": "Use at least {{min}} characters.",
+            "passwordMismatch": "The passwords do not match.",
+            "termsRequired": "Please accept the terms and privacy policy.",
+            "acceptTerms": "I accept the",
+            "terms": "terms",
+            "and": "and",
+            "privacy": "privacy policy",
+            "submit": "Create account",
+            "submitting": "Please wait …",
+            "socialDetails": "Complete your account details to continue with your provider.",
+            "checkInbox": "If registration is possible, an email with a confirmation link will arrive shortly. Check your inbox and spam folder.",
+            "complete": "Your email is confirmed. You can now sign in.",
+            "failed": "Registration could not be completed. Please try again.",
+            "verify": "Confirm email",
+            "verifyDescription": "Confirm your email address to activate your account.",
+            "invalidVerification": "This confirmation link is invalid or expired. Please register again.",
+            "verificationFailed": "Your email could not be confirmed. Please try again."
         },
         "passwordReset": {
             "validating": "Checking reset link …",
@@ -157,6 +192,26 @@
             "rememberDevice": "Remember this device",
             "rememberDeviceDescription": "Next time you log in on this browser, no 2FA code is required. The token is valid for 30 days.",
             "title": "Two-factor authentication"
+        },
+        "social": {
+            "confirmation_failed": "Confirmation failed. Please try again.",
+            "not_linked": "This provider is not connected.",
+            "last_method": "Another sign-in provider or a passkey must remain available before disconnecting.",
+            "disconnect": "Disconnect {{provider}}",
+            "unlinked": "The sign-in provider has been disconnected.",
+            "title": "Or continue with",
+            "continue": "Continue with {{provider}}",
+            "unavailable": "Provider sign-in is unavailable.",
+            "retry": "Try again",
+            "twoFactor": "Enter your six-digit authentication code",
+            "confirm": "Sign in",
+            "cancel": "Cancel provider sign-in",
+            "failed": "Provider sign-in failed. Please try again.",
+            "cancelled": "Provider sign-in was cancelled.",
+            "account_exists": "An account already uses this email. Sign in to that account and link the provider in security settings.",
+            "inactive": "This account is inactive. Contact support.",
+            "expired": "Your sign-in expired. Please start again.",
+            "link_failed": "The provider could not be linked. Sign in and try again in security settings."
         }
     },
     "safeDelete": {
@@ -278,7 +333,21 @@
             "reauthenticationTotpLabel": "Current 2FA code",
             "reauthenticationTotpPlaceholder": "123456",
             "checking": "Checking...",
-            "secret": "Secret: {{secret}}"
+            "secret": "Secret: {{secret}}",
+            "socialAccounts": {
+                "linked": "The sign-in provider has been linked.",
+                "title": "Connected accounts",
+                "description": "Connect an external provider to sign in to this account.",
+                "loading": "Loading connected accounts …",
+                "unavailable": "Provider connections are unavailable.",
+                "connected": "Connected",
+                "connect": "Connect {{provider}}",
+                "reauthenticationLabel": "Current password",
+                "reauthenticationHint": "Confirm your current password before connecting a provider.",
+                "passwordRequiredHint": "Set a password before connecting another provider.",
+                "loadError": "Connected accounts could not be loaded. Try again.",
+                "linkError": "The provider could not be connected. Try again."
+            }
         },
         "settingsLabel": "User Settings"
     },
@@ -954,14 +1023,14 @@
         "adminLogin": "Administration",
         "description": "Monitoring, DNS, security and more. The future home for apps that take your RentnerProxy setup further.",
         "followDevelopment": "Follow development",
-        "availability": "You're viewing a preview. Downloads, publishing and public registration are coming later.",
+        "availability": "Downloads and publishing are coming later. You can already create an account.",
         "inPreparation": "In preparation",
         "outlook": "The first official apps",
         "outlookNote": "Planned. Not yet available to install.",
         "loginDescription": "Sign in to manage the marketplace.",
         "usernameLabel": "Username",
         "passwordLabel": "Password",
-        "recoveryHint": "Access is currently intended for existing administration accounts.",
+        "recoveryHint": "Sign in with your account or create a new one.",
         "passkeyDescription": "Sign in with a passkey that is already set up for your account.",
         "apps": {
             "monitoring": {
@@ -996,7 +1065,7 @@
         "accountNavigation": "Account access",
         "login": "Login",
         "register": "Register",
-        "registrationSoon": "Registration – coming soon",
+        "registrationSoon": "Create an account",
         "footerHeadline": "More possibilities. More you.",
         "footerDescription": "Official apps for your RentnerProxy. A home for whatever your setup needs next.",
         "footerExplore": "Explore",

@@ -58,6 +58,23 @@
         "backups": "Backups"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Zum Marketplace",
+            "eyebrow": "Das RentnerProxy-Ökosystem",
+            "headline": "Dein Setup.",
+            "headlineAccent": "Mehr Möglichkeiten.",
+            "description": "Ein Ort für Apps, Erweiterungen und deine Ideen rund um RentnerProxy.",
+            "community": "Von der Community. Für dein Setup.",
+            "discover": "Entdecken",
+            "build": "Entwickeln",
+            "connect": "Mitgestalten",
+            "credentials": "Oder mit deinen Zugangsdaten",
+            "emailRegistration": "Oder mit E-Mail registrieren",
+            "accountHint": "Wähle deinen bevorzugten Weg und leg los.",
+            "emailHint": "Mit E-Mail oder deinem Lieblingsanbieter. Du entscheidest.",
+            "secure": "Dein Zugang. Deine Entscheidung.",
+            "passwordHint": "Mindestens {{min}} Zeichen"
+        },
         "passwordPolicy": "Das Passwort muss zwischen {{min}} und {{max}} Zeichen lang sein.",
         "firstSetup": {
             "title": "Ersten Superuser anlegen",
@@ -93,9 +110,9 @@
         },
         "login": {
             "eyebrow": "Dein Marketplace-Konto",
-            "welcomeBack": "Schön, dass du da bist.",
+            "welcomeBack": "Willkommen zurück.",
             "newHere": "Neu hier?",
-            "discoverRegistration": "Zur Registrierung",
+            "discoverRegistration": "Konto erstellen",
             "description": "Bitte melde dich in deinem Account an",
             "forgotPassword": "Passwort vergessen?",
             "login": "Einloggen",
@@ -113,16 +130,34 @@
             "twoFactorCodeIncomplete": "Bitte gib den vollständigen 2FA-Code ein."
         },
         "register": {
-            "eyebrow": "Bald für dich da",
-            "title": "Dein Zugang zum Marketplace.",
+            "eyebrow": "Konto erstellen",
+            "title": "Mach’s dir eigen.",
             "description": "Ein Konto für deine Apps und Erweiterungen rund um RentnerProxy.",
             "previewTitle": "Registrierung kommt bald",
             "previewDescription": "Hier siehst du bereits die Vorschau. Die Felder sind noch deaktiviert; es werden keine Daten erfasst und kein Konto angelegt.",
-            "accountDetails": "Vorschau der Kontodaten",
+            "accountDetails": "Kontodaten",
             "email": "E-Mail-Adresse",
             "emailPlaceholder": "Deine E-Mail-Adresse",
             "comingSoon": "Noch nicht verfügbar",
-            "alreadyRegistered": "Du hast bereits ein Konto?"
+            "alreadyRegistered": "Du hast bereits ein Konto?",
+            "confirmPassword": "Passwort bestätigen",
+            "passwordPolicy": "Verwende mindestens {{min}} Zeichen.",
+            "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+            "termsRequired": "Bitte akzeptiere die Nutzungsbedingungen und Datenschutzerklärung.",
+            "acceptTerms": "Ich akzeptiere die",
+            "terms": "Nutzungsbedingungen",
+            "and": "und",
+            "privacy": "Datenschutzerklärung",
+            "submit": "Konto erstellen",
+            "submitting": "Bitte warten …",
+            "socialDetails": "Vervollständige deine Kontodaten für die Anmeldung mit deinem Anbieter.",
+            "checkInbox": "Wenn eine Registrierung möglich ist, erhältst du gleich eine E-Mail mit einem Bestätigungslink. Prüfe auch deinen Spamordner.",
+            "complete": "Deine E-Mail-Adresse ist bestätigt. Du kannst dich jetzt anmelden.",
+            "failed": "Die Registrierung konnte nicht abgeschlossen werden. Bitte versuche es erneut.",
+            "verify": "E-Mail bestätigen",
+            "verifyDescription": "Bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.",
+            "invalidVerification": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte registriere dich erneut.",
+            "verificationFailed": "Deine E-Mail-Adresse konnte nicht bestätigt werden. Bitte versuche es erneut."
         },
         "passwordReset": {
             "validating": "Reset-Link wird geprüft …",
@@ -157,6 +192,26 @@
             "rememberDevice": "Dieses Gerät speichern",
             "rememberDeviceDescription": "Beim nächsten Login auf diesem Browser ist kein 2FA-Code nötig. Der Token ist 30 Tage gültig.",
             "title": "Zwei-Faktor-Authentifizierung"
+        },
+        "social": {
+            "confirmation_failed": "Bestätigung fehlgeschlagen. Bitte erneut versuchen.",
+            "not_linked": "Dieser Anbieter ist nicht verbunden.",
+            "last_method": "Zum Trennen muss ein weiterer Anmeldeanbieter oder ein Passkey verfügbar sein.",
+            "disconnect": "{{provider}} trennen",
+            "unlinked": "Die Verbindung zum Anmeldeanbieter wurde getrennt.",
+            "title": "Oder weiter mit",
+            "continue": "Weiter mit {{provider}}",
+            "unavailable": "Die Anbieter-Anmeldung ist nicht verfügbar.",
+            "retry": "Erneut versuchen",
+            "twoFactor": "Gib deinen sechsstelligen Authentifizierungscode ein",
+            "confirm": "Anmelden",
+            "cancel": "Anbieter-Anmeldung abbrechen",
+            "failed": "Die Anbieter-Anmeldung ist fehlgeschlagen. Bitte versuche es erneut.",
+            "cancelled": "Die Anbieter-Anmeldung wurde abgebrochen.",
+            "account_exists": "Für diese E-Mail existiert bereits ein Konto. Melde dich dort an und verknüpfe den Anbieter in den Sicherheitseinstellungen.",
+            "inactive": "Dieses Konto ist inaktiv. Wende dich an den Support.",
+            "expired": "Deine Anmeldung ist abgelaufen. Bitte starte erneut.",
+            "link_failed": "Der Anbieter konnte nicht verknüpft werden. Melde dich an und versuche es in den Sicherheitseinstellungen erneut."
         }
     },
     "safeDelete": {
@@ -278,7 +333,21 @@
             "reauthenticationTotpLabel": "Aktueller 2FA-Code",
             "reauthenticationTotpPlaceholder": "123456",
             "checking": "Prüft...",
-            "secret": "Secret: {{secret}}"
+            "secret": "Secret: {{secret}}",
+            "socialAccounts": {
+                "linked": "Der Anmeldeanbieter wurde verknüpft.",
+                "title": "Verknüpfte Konten",
+                "description": "Verbinde einen externen Anbieter, um dich bei diesem Konto anzumelden.",
+                "loading": "Verknüpfte Konten werden geladen …",
+                "unavailable": "Anbieter-Verknüpfungen sind nicht verfügbar.",
+                "connected": "Verknüpft",
+                "connect": "{{provider}} verknüpfen",
+                "reauthenticationLabel": "Aktuelles Passwort",
+                "reauthenticationHint": "Bestätige dein aktuelles Passwort, bevor du einen Anbieter verknüpfst.",
+                "passwordRequiredHint": "Lege ein Passwort fest, bevor du einen weiteren Anbieter verknüpfst.",
+                "loadError": "Verknüpfte Konten konnten nicht geladen werden. Versuche es erneut.",
+                "linkError": "Der Anbieter konnte nicht verknüpft werden. Versuche es erneut."
+            }
         },
         "settingsLabel": "Benutzereinstellungen"
     },
@@ -954,14 +1023,14 @@
         "adminLogin": "Verwaltung",
         "description": "Monitoring, DNS, Sicherheit und mehr. Hier entsteht der Ort für Apps, mit denen du dein RentnerProxy-Setup erweiterst.",
         "followDevelopment": "Entwicklung verfolgen",
-        "availability": "Du siehst eine Vorschau. Downloads, Veröffentlichungen und die öffentliche Registrierung folgen später.",
+        "availability": "Downloads und Veröffentlichung folgen später. Du kannst bereits ein Konto erstellen.",
         "inPreparation": "In Vorbereitung",
         "outlook": "Die ersten offiziellen Apps",
         "outlookNote": "Geplant. Noch nicht zur Installation verfügbar.",
         "loginDescription": "Melde dich an, um den Marketplace zu verwalten.",
         "usernameLabel": "Benutzername",
         "passwordLabel": "Passwort",
-        "recoveryHint": "Der Zugang ist derzeit für bestehende Verwaltungskonten vorgesehen.",
+        "recoveryHint": "Melde dich mit deinem Konto an oder erstelle ein neues.",
         "passkeyDescription": "Melde dich mit einem bereits für dein Konto eingerichteten Passkey an.",
         "apps": {
             "monitoring": {
@@ -996,7 +1065,7 @@
         "accountNavigation": "Kontozugang",
         "login": "Login",
         "register": "Registrieren",
-        "registrationSoon": "Registrieren – bald verfügbar",
+        "registrationSoon": "Konto erstellen",
         "footerHeadline": "Mehr drin. Mehr du.",
         "footerDescription": "Offizielle Apps für dein RentnerProxy. Ein Zuhause für alles, was dein Setup als Nächstes braucht.",
         "footerExplore": "Entdecken",

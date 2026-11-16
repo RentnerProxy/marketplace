@@ -5,6 +5,7 @@ import {
     sendFailedLoginAlertMail,
     sendSecurityChangeMail,
     sendPasswordResetMail,
+    sendRegistrationVerificationMail,
     sendPasswordSetupMail,
 } from '@/lib/Mail/mail.ts'
 import { MAIL_QUEUE_NAME } from '@/server/Queues/mail.queue.ts'
@@ -27,6 +28,7 @@ vi.mock('@/lib/Mail/mail.ts', function () {
         sendFailedLoginAlertMail: vi.fn(async function () {}),
         sendSecurityChangeMail: vi.fn(async function () {}),
         sendPasswordResetMail: vi.fn(async function () {}),
+        sendRegistrationVerificationMail: vi.fn(async function () {}),
         sendPasswordSetupMail: vi.fn(async function () {}),
     }
 })
@@ -105,6 +107,20 @@ describe('Mail-Worker-Dispatch', function () {
 
     it('nutzt eine versionierte Queue gegen gemischte Worker-Versionen', function () {
         expect(MAIL_QUEUE_NAME).toBe('rentnerproxy-marketplace-mail-v2')
+    })
+
+    it('dispatches encrypted registration verification mail', async () => {
+        await processMailJob({
+            name: 'registration-verification',
+            data: await createMailJobEnvelope({
+                ...authMailData,
+                resetLink: 'https://app.example.test/register#verify=token',
+                kind: 'registration-verification',
+            }),
+        })
+        expect(sendRegistrationVerificationMail).toHaveBeenCalledTimes(1)
+        expect(mockedSendPasswordResetMail).not.toHaveBeenCalled()
+        expect(mockedSendPasswordSetupMail).not.toHaveBeenCalled()
     })
 
     it('sendet einen Reset-Job ausschließlich als Reset-Mail', async function () {

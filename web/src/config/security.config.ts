@@ -1,5 +1,5 @@
 export const PASSWORD_POLICY = {
-    minimumNewLength: 3,
+    minimumNewLength: 4,
     maximumLength: 1024,
 } as const
 
@@ -28,6 +28,13 @@ export const LOGIN_ATTEMPT_POLICY = {
 } as const
 
 export const RATE_LIMITS = {
+    registrationIp: { limit: 10, windowMs: 60 * 60_000 },
+    registrationAccount: { limit: 3, windowMs: 60 * 60_000 },
+    registrationVerifyIp: { limit: 30, windowMs: 15 * 60_000 },
+    socialStartIp: { limit: 30, windowMs: 15 * 60_000 },
+    socialCallbackIp: { limit: 60, windowMs: 15 * 60_000 },
+    socialTwoFactorIp: { limit: 30, windowMs: 15 * 60_000 },
+    socialTwoFactorChallenge: { limit: 5, windowMs: 5 * 60_000 },
     sessionActivityIp: { limit: 120, windowMs: 60_000 },
     sessionActivitySession: { limit: 6, windowMs: 60_000 },
     loginIp: { limit: 50, windowMs: 15 * 60000 },
@@ -62,6 +69,13 @@ export const RATE_LIMITS = {
     backupCreate: { limit: 5, windowMs: 60 * 60000 },
     backupDownload: { limit: 30, windowMs: 60 * 60000 },
     backupImport: { limit: 5, windowMs: 60 * 60000 },
+} as const
+
+export const REGISTRATION_POLICY = {
+    minimumPasswordLength: PASSWORD_POLICY.minimumNewLength,
+    verificationDurationMs: 60 * 60_000,
+    termsVersion: '2026-11-16',
+    minimumResponseMs: 750,
 } as const
 
 export const AUTH_ENUMERATION_PROTECTION = {

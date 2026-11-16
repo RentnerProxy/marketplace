@@ -141,8 +141,8 @@ function fillForm() {
     let hook = renderHook()
     hook.setter.setFieldValue('username', 'fixture-user')
     hook.setter.setFieldValue('email', 'fixture@example.test')
-    hook.setter.setFieldValue('password', 'abc')
-    hook.setter.setFieldValue('confirmPassword', 'abc')
+    hook.setter.setFieldValue('password', 'abcd')
+    hook.setter.setFieldValue('confirmPassword', 'abcd')
     hook = renderHook()
     return hook
 }
@@ -310,7 +310,7 @@ describe('first setup hook secret lifecycle', function () {
         expect(sentRequests[0]?.signal.aborted).toBe(true)
         expect(hook.state.isCreating).toBe(false)
         expect(hook.state.setupAccessState).toBe('granted')
-        expect(hook.state.formValues.password).toBe('abc')
+        expect(hook.state.formValues.password).toBe('abcd')
         expect(mocks.toastError).toHaveBeenCalledWith(
             'auth.firstSetup.createError',
             { title: 'common.error' },
@@ -369,7 +369,7 @@ describe('first setup hook secret lifecycle', function () {
         )
         expect(renderHook().state.setupAccessState).toBe('granted')
         expect(renderHook().state.isCreating).toBe(false)
-        expect(renderHook().state.formValues.password).toBe('abc')
+        expect(renderHook().state.formValues.password).toBe('abcd')
         expectPrivateState()
         await submit()
         expect(mocks.navigate).toHaveBeenCalledTimes(1)
@@ -411,12 +411,12 @@ describe('first setup hook secret lifecycle', function () {
         },
     )
 
-    it('keeps the three-character minimum and the existing password-policy notice', async function () {
+    it('keeps the four-character minimum and the existing password-policy notice', async function () {
         renderHook()
         await flushSessionActivityTasks()
         const hook = fillForm()
-        hook.setter.setFieldValue('password', 'ab')
-        hook.setter.setFieldValue('confirmPassword', 'ab')
+        hook.setter.setFieldValue('password', 'abc')
+        hook.setter.setFieldValue('confirmPassword', 'abc')
         await submit()
         expect(mocks.create).not.toHaveBeenCalled()
         expect(mocks.toastError).toHaveBeenCalledWith('auth.passwordPolicy', {

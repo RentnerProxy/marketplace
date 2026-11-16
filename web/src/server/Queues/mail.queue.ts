@@ -59,6 +59,12 @@ export async function enqueuePasswordResetMail(input: AuthMailInput) {
     })
 }
 
+export async function enqueueRegistrationVerificationMail(
+    input: AuthMailInput,
+) {
+    await enqueueMailJob({ ...input, kind: 'registration-verification' })
+}
+
 export async function enqueuePasswordSetupMail(input: AuthMailInput) {
     await enqueueMailJob({
         ...input,

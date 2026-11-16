@@ -1,4 +1,5 @@
 import { normalizePermissionKeys } from '@/lib/Permissions/permissionCollections.ts'
+import { lockAccountUniquenessInTransactionService } from '@/server/Auth/accountUniqueness.service.ts'
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 import type { NormalizedUserUpdate } from './Types/user-update.types.ts'
 import { writeAuditLogInTransactionService } from '@/lib/AuditLogs/auditLogs.ts'
@@ -28,6 +29,7 @@ export async function updateUserInTransaction(
     auditContext: PreparedAuditContext,
 ) {
     const currentUserId = auditContext.actorUserId
+    await lockAccountUniquenessInTransactionService(transaction)
     await lockAuditUsersInTransactionService(transaction, [
         currentUserId,
         input.id,

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router'
 import { RouteErrorComponent } from '@/shared/RouteErrorComponent/RouteErrorComponent.tsx'
 import PublicLayout from '@/layouts/PublicLayout/index.tsx'
 import { systemSettingsQueryOptions } from '@/lib/Queries/appQueries.ts'
@@ -6,7 +6,7 @@ import { getFirstSuperUserSetupStatusHandler } from '@/features/Auth/FirstSuperU
 import { redirectPublicRouteForSetupStatus } from '@/lib/Routes/routeRedirects.ts'
 
 export const Route = createFileRoute('/_public')({
-    component: PublicLayout,
+    component: PublicRouteLayout,
     errorComponent: RouteErrorComponent,
     beforeLoad: async function ({ location }) {
         const { isRequired } = await getFirstSuperUserSetupStatusHandler()
@@ -17,3 +17,12 @@ export const Route = createFileRoute('/_public')({
         await context.queryClient.ensureQueryData(systemSettingsQueryOptions())
     },
 })
+
+function PublicRouteLayout() {
+    const isLogin = useRouterState({
+        select: (state) =>
+            state.matches.some((match) => match.routeId === '/_public/login'),
+    })
+
+    return isLogin ? <Outlet /> : <PublicLayout />
+}

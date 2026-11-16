@@ -3,6 +3,7 @@ import { createElement } from 'react'
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { PASSWORD_POLICY } from '@/config/security.config.ts'
+import { registrationInputSchema } from '@/features/Auth/Register/validation.ts'
 import type { CreateFirstSuperUserAccountLogicReturn } from '@/features/Auth/FirstSuperUser/Types/first-super-user-form.types.ts'
 import type { PasswordResetClientPhase } from '@/lib/Auth/PasswordReset/Types/password-reset-controller.types.ts'
 
@@ -41,6 +42,40 @@ const resetState: { phase: PasswordResetClientPhase; isLoading: boolean } = {
     isLoading: false,
 }
 const forgotState = { isLoading: false }
+const registerState = {
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    acceptTerms: false,
+    isSocial: false,
+    isPending: false,
+    error: '',
+    phase: 'form',
+}
+vi.mock('@/features/Auth/Register/Hooks/useRegisterLogic.ts', () => ({
+    default: () => ({
+        state: registerState,
+        handler: {
+            handleSubmit: submit,
+            handleVerify: submit,
+            handleCancelSocial: submit,
+        },
+        setter: {
+            setUsername: change,
+            setEmail: change,
+            setPassword: change,
+            setConfirmPassword: change,
+            setAcceptTerms: change,
+        },
+    }),
+}))
+vi.mock('@/shared/Auth/Components/SocialLogin.tsx', () => ({
+    default: () => null,
+}))
+vi.mock('@/layouts/PublicLayout/Components/LanguageSwitcher.tsx', () => ({
+    default: () => createElement('button', { type: 'button' }, 'Language'),
+}))
 const setupState: CreateFirstSuperUserAccountLogicReturn['state'] = {
     setupAccessState: 'granted',
     isCreating: false,
@@ -147,24 +182,76 @@ beforeEach(function () {
         isCreating: false,
     })
     forgotState.isLoading = false
+    Object.assign(registerState, {
+        isSocial: false,
+        isPending: false,
+        phase: 'form',
+        error: '',
+    })
     headerState.hasCustomLogo = false
     headerState.logoSrc = '/rentnerproxy-logo.png'
 })
 
 describe('authentication page states', function () {
-    it('keeps registration a disabled preview with no credential submission path', function () {
+    it('enforces the username character allowlist with a browser-compatible pattern', function () {
         const html = renderToStaticMarkup(createElement(Register))
-        expect(html).toContain('auth.register.previewTitle')
-        expect(html).toContain('auth.register.previewDescription')
-        expect(html).toContain(
-            '<fieldset disabled="" aria-describedby="registration-preview-notice"',
-        )
-        expect(html).toContain('type="submit" disabled=""')
+        const input = html.match(
+            /<input\b[^>]*\bid="register-username"[^>]*>/,
+        )?.[0]
+        const pattern = input?.match(/\bpattern="([^"]+)"/)?.[1]
+        expect(pattern).toBeDefined()
+        const constraint = new RegExp(`^(?:${pattern})$`, 'v')
+        for (const username of [
+            'abc',
+            'Alice_123',
+            'abc-123',
+            '-abc-',
+            '___',
+            'abc!',
+            'a b',
+            'äbc',
+            'abc/123',
+            'abc[123]',
+            'foo|bar',
+        ]) {
+            expect(constraint.test(username)).toBe(
+                registrationInputSchema.shape.username.safeParse(username)
+                    .success,
+            )
+        }
+    })
+
+    it.each([Login, Register])(
+        'keeps a single main landmark, skip link and legal navigation in the auth shell',
+        function (Page) {
+            const html = renderToStaticMarkup(createElement(Page))
+            expect(html.match(/<main\b/g)).toHaveLength(1)
+            expect(html.match(/<h1\b/g)).toHaveLength(1)
+            expect(html).toContain('href="#main-content"')
+            expect(html).toContain('id="main-content"')
+            expect(html).toContain('href="/imprint"')
+            expect(html).toContain('href="/privacy"')
+            expect(html).toContain('Language')
+        },
+    )
+
+    it('renders registration credentials, confirmation and required legal consent', function () {
+        const html = renderToStaticMarkup(createElement(Register))
+        expect(html).toContain('auth.register.confirmPassword')
+        expect(html).toContain('name="acceptTerms"')
+        expect(html).toContain('href="/terms"')
+        expect(html).toContain('href="/privacy"')
         expect(html).toContain('type="email"')
         expect(html).toContain('type="password"')
         expect(html).toContain('href="/login"')
-        expect(html).not.toContain('<form')
-        expect(html).not.toContain('name="password"')
+        expect(html).toContain('<form')
+        expect(html).toContain('name="password"')
+        const passwordInputs =
+            html.match(/<input\b[^>]*type="password"[^>]*>/g) ?? []
+        expect(passwordInputs).toHaveLength(2)
+        expect(
+            passwordInputs.every((input) => input.includes('minLength="4"')),
+        ).toBe(true)
         expect(submit).not.toHaveBeenCalled()
         expect(change).not.toHaveBeenCalled()
     })
@@ -178,6 +265,33 @@ describe('authentication page states', function () {
         expect(html).toContain('href="/register"')
         expect(html).not.toContain('/custom-logo.webp')
     })
+
+    it('hides password fields during provider registration and prevents pending edits', function () {
+        Object.assign(registerState, { isSocial: true, isPending: true })
+        const html = renderToStaticMarkup(createElement(Register))
+        expect(html).toContain('auth.register.socialDetails')
+        expect(html).toContain('<fieldset disabled=""')
+        expect(html).not.toContain('name="password"')
+        expect(html).toContain('name="username"')
+        expect(html).toContain('name="acceptTerms"')
+    })
+
+    it.each(['verify', 'inbox', 'complete'])(
+        'renders the registration %s state without credential inputs',
+        (phase) => {
+            registerState.phase = phase
+            const html = renderToStaticMarkup(createElement(Register))
+            expect(html).not.toContain('name="password"')
+            expect(html).toContain(
+                phase === 'verify'
+                    ? 'auth.register.verifyDescription'
+                    : phase === 'inbox'
+                      ? 'auth.register.checkInbox'
+                      : 'auth.register.complete',
+            )
+            expect(html).toContain('href="/login"')
+        },
+    )
 
     it('shows custom branding and independent pending labels', function () {
         headerState.hasCustomLogo = true
@@ -198,6 +312,7 @@ describe('authentication page states', function () {
         loginState.trustThisDevice = true
         const html = renderToStaticMarkup(createElement(Login))
         expect(html).toContain('auth.twoFactor.title')
+        expect(html.match(/<h1\b/g)).toHaveLength(1)
         expect(html).toContain('auth.login.twoFactorCodeIncomplete')
         expect(html).toContain('type="checkbox"')
         expect(html).toContain('checked=""')

@@ -124,10 +124,10 @@ describe('password reset server adapters', () => {
         expect(mocks.validate).not.toHaveBeenCalled()
     })
 
-    it('keeps password mutation on POST with both quotas and the chosen three-character minimum', async () => {
+    it('keeps password mutation on POST with both quotas and the chosen four-character minimum', async () => {
         expect(Reflect.get(updatePasswordByTokenHandler, 'method')).toBe('POST')
         await updatePasswordByTokenHandler({
-            data: { token: ' token ', password: 'abc' },
+            data: { token: ' token ', password: 'abcd' },
         })
         expect(events).toEqual([
             'password-reset-finish-ip',
@@ -150,11 +150,11 @@ describe('password reset server adapters', () => {
             ],
         ])
         expect(mocks.update.mock.calls).toEqual([
-            [{ token: 'token', password: 'abc' }],
+            [{ token: 'token', password: 'abcd' }],
         ])
     })
 
-    it.each(['a', 'ab', 'x'.repeat(1025)])(
+    it.each(['a', 'ab', 'abc', 'x'.repeat(1025)])(
         'keeps the password limits at the server boundary',
         async (password) => {
             await expect(
@@ -173,7 +173,7 @@ describe('password reset server adapters', () => {
             .mockRejectedValueOnce(denied)
         await expect(
             updatePasswordByTokenHandler({
-                data: { token: 'token', password: 'abc' },
+                data: { token: 'token', password: 'abcd' },
             }),
         ).rejects.toBe(denied)
         expect(mocks.update).not.toHaveBeenCalled()

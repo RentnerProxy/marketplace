@@ -40,6 +40,10 @@ function column(table: SessionTestTable, field: string): SessionTestColumn {
     return { table, field }
 }
 const schema = {
+    socialAccounts: {
+        id: column('socialAccounts', 'id'),
+        userId: column('socialAccounts', 'userId'),
+    },
     users: { id: column('users', 'id') },
     passkeyCredentials: {
         id: column('passkeyCredentials', 'id'),
@@ -71,6 +75,7 @@ const schema = {
 
 function tableName(table: unknown): SessionTestTable {
     if (table === schema.users) return 'users'
+    if (table === schema.socialAccounts) return 'socialAccounts'
     if (table === schema.passkeyCredentials) return 'passkeyCredentials'
     if (table === schema.sessions) return 'sessions'
     if (table === schema.trustedDevices) return 'trustedDevices'
@@ -83,6 +88,7 @@ function tableName(table: unknown): SessionTestTable {
 function emptyTables(): SessionTestTables {
     return {
         users: [],
+        socialAccounts: [],
         passkeyCredentials: [],
         sessions: [],
         trustedDevices: [],
@@ -105,6 +111,7 @@ function resolveValue(value: unknown, scope: SessionTestScope): unknown {
     const table = value.table
     if (
         table !== 'users' &&
+        table !== 'socialAccounts' &&
         table !== 'passkeyCredentials' &&
         table !== 'sessions' &&
         table !== 'trustedDevices' &&
@@ -230,6 +237,38 @@ function createTransaction(transaction: SessionTestTransaction) {
                                                             user,
                                                         )
                                                     })
+                                            },
+                                        }
+                                    },
+                                }
+                            },
+                        }
+                    }
+                    if (table === schema.socialAccounts) {
+                        return {
+                            where(predicate: SessionTestPredicate) {
+                                return {
+                                    limit(count: number) {
+                                        return {
+                                            async for(mode: string) {
+                                                requireUserLock(transaction)
+                                                if (mode !== 'share')
+                                                    throw new Error(
+                                                        'Expected a shared social account lock',
+                                                    )
+                                                state.events.push(
+                                                    'transaction:' +
+                                                        transaction.id +
+                                                        ':social',
+                                                )
+                                                return transaction.rows.socialAccounts
+                                                    .filter((account) =>
+                                                        matches(predicate, {
+                                                            socialAccounts:
+                                                                account,
+                                                        }),
+                                                    )
+                                                    .slice(0, count)
                                             },
                                         }
                                     },
@@ -477,6 +516,9 @@ vi.mock('@/db', function () {
 vi.mock('@/db/schema.ts', function () {
     return schema
 })
+vi.mock('@/db/Schema/socialAuth.ts', () => ({
+    socialAccounts: schema.socialAccounts,
+}))
 vi.mock('@tanstack/react-start/server', function () {
     return {
         setCookie: services.setCookie,
@@ -531,6 +573,11 @@ function passkeyProof(): AuthenticatedLoginProof {
         counter: 7,
         newCounter: 8,
     }
+}
+function socialProof(
+    factorId: string | null = 'factor-1',
+): AuthenticatedLoginProof {
+    return { kind: 'social', accountId: 'social-1', factorId }
 }
 function inputFixture(
     proof: AuthenticatedLoginProof = passwordProof(),
@@ -601,6 +648,7 @@ describe('atomic authenticated session finalization', function () {
         vi.clearAllMocks()
         state.rows = emptyTables()
         state.rows.users = [{ ...inputFixture().user, isDeleted: false }]
+        state.rows.socialAccounts = [{ id: 'social-1', userId: USER_ID }]
         state.rows.passkeyCredentials = [
             { id: 'passkey-1', userId: USER_ID, counter: 7 },
         ]
@@ -642,7 +690,7 @@ describe('atomic authenticated session finalization', function () {
         vi.restoreAllMocks()
     })
 
-    it.each(['password', 'passkey', 'no-permissions'])(
+    it.each(['password', 'passkey', 'social', 'no-permissions'])(
         'rolls back %s finalization when its mandatory audit fails',
         async function (kind) {
             if (kind === 'no-permissions') state.rows.userPermissions = []
@@ -655,7 +703,9 @@ describe('atomic authenticated session finalization', function () {
                     inputFixture(
                         kind === 'password'
                             ? passwordProof(true)
-                            : passkeyProof(),
+                            : kind === 'social'
+                              ? socialProof()
+                              : passkeyProof(),
                     ),
                 ),
             ).rejects.toThrow('Synthetic audit failure')
@@ -843,6 +893,76 @@ describe('atomic authenticated session finalization', function () {
         },
     )
 
+    it.each([true, false])(
+        'finalizes linked social login with MFA enabled: %s',
+        async (enabled) => {
+            const input = inputFixture(socialProof(enabled ? 'factor-1' : null))
+            input.user.isTwoFactorEnabled = enabled
+            state.rows.users[0].isTwoFactorEnabled = enabled
+            if (!enabled) state.rows.twoFactorAuth = []
+            expect(
+                await createAuthenticatedSessionForUser(input),
+            ).toMatchObject({ success: true, redirectTo: '/user' })
+            expect(state.rows.sessions).toHaveLength(1)
+            expect(state.rows.trustedDevices).toHaveLength(0)
+            expect(state.passkeyConditions).toEqual([])
+            expectBefore('transaction:1:lock', 'transaction:1:factor')
+            expectBefore('transaction:1:factor', 'transaction:1:social')
+            expectBefore('transaction:1:social', 'transaction:1:permissions')
+            expectBefore(
+                'transaction:1:commit',
+                'cookie:' + SESSION_COOKIE_NAME,
+            )
+            expect(services.setCookie).not.toHaveBeenCalledWith(
+                TRUSTED_DEVICE_COOKIE_NAME,
+                expect.anything(),
+                expect.anything(),
+            )
+        },
+    )
+
+    it.each(['unlinked', 'different owner', 'different account'])(
+        'rejects social proof for an account that is %s',
+        async (change) => {
+            if (change === 'unlinked') state.rows.socialAccounts = []
+            if (change === 'different owner')
+                state.rows.socialAccounts[0].userId = 'another-user'
+            if (change === 'different account')
+                state.rows.socialAccounts[0].id = 'another-account'
+            expect(
+                await createAuthenticatedSessionForUser(
+                    inputFixture(socialProof()),
+                ),
+            ).toEqual(INVALID)
+            expectNoCredentials()
+            expect(state.events).not.toContain('transaction:1:permissions')
+        },
+    )
+
+    it.each([
+        'replaced',
+        'removed',
+        'unverified',
+        'different owner',
+        'missing proof',
+    ])('rejects social MFA when the factor is %s', async (change) => {
+        if (change === 'replaced') state.rows.twoFactorAuth[0].id = 'new-factor'
+        if (change === 'removed') state.rows.twoFactorAuth = []
+        if (change === 'unverified')
+            state.rows.twoFactorAuth[0].verified = false
+        if (change === 'different owner')
+            state.rows.twoFactorAuth[0].userId = 'another-user'
+        expect(
+            await createAuthenticatedSessionForUser(
+                inputFixture(
+                    socialProof(change === 'missing proof' ? null : 'factor-1'),
+                ),
+            ),
+        ).toEqual(INVALID)
+        expectNoCredentials()
+        expect(state.events).not.toContain('transaction:1:social')
+    })
+
     it('starts both deadlines only after user-lock and permission waits finish', async function () {
         const startedAt = Date.parse('2026-09-06T01:00:00.000Z')
         const issuedAt = startedAt + 70 * 60_000
@@ -911,7 +1031,7 @@ describe('atomic authenticated session finalization', function () {
     })
 
     it.each(
-        ['password', 'passkey'].flatMap(function (kind) {
+        ['password', 'passkey', 'social'].flatMap(function (kind) {
             return [
                 'missing',
                 'inactive',
@@ -941,7 +1061,9 @@ describe('atomic authenticated session finalization', function () {
                     inputFixture(
                         kind === 'password'
                             ? passwordProof(true)
-                            : passkeyProof(),
+                            : kind === 'social'
+                              ? socialProof()
+                              : passkeyProof(),
                     ),
                 ),
             ).toEqual(INVALID)

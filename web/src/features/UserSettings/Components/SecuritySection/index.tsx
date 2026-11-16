@@ -1,6 +1,7 @@
 import PasswordResetSection from '@/features/UserSettings/Components/SecuritySection/Components/PasswordResetSection.tsx'
 import PasskeySection from '@/features/UserSettings/Components/SecuritySection/Components/PasskeySection.tsx'
 import TwoFactorSection from '@/features/UserSettings/Components/SecuritySection/Components/TwoFactorSection.tsx'
+import SocialAccountsSection from './Components/SocialAccountsSection.tsx'
 
 export default function SecuritySection() {
     return (
@@ -8,6 +9,7 @@ export default function SecuritySection() {
             <PasswordResetSection />
             <TwoFactorSection />
             <PasskeySection />
+            <SocialAccountsSection />
         </div>
     )
 }

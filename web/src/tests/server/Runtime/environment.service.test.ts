@@ -37,6 +37,24 @@ function createValidMailWorkerEnvironmentWithoutSmtpDefaults() {
 }
 
 describe('Production-Environment', function () {
+    it('validates provider credentials as complete optional groups at startup', () => {
+        const environment = createValidAppEnvironment()
+        const configured = validateAppProductionEnvironment({
+            ...environment,
+            OAUTH_GOOGLE_CLIENT_ID: 'fixture-client',
+            OAUTH_GOOGLE_CLIENT_SECRET: 'fixture-secret',
+        })
+        expect(configured.OAUTH_GOOGLE_CLIENT_ID).toBe('fixture-client')
+        for (const provider of ['GOOGLE', 'GITHUB', 'DISCORD']) {
+            expect(() =>
+                validateAppProductionEnvironment({
+                    ...environment,
+                    [`OAUTH_${provider}_CLIENT_ID`]: 'fixture-client',
+                }),
+            ).toThrow(new RegExp(`OAUTH_${provider}_CLIENT_SECRET`))
+        }
+    })
+
     it('verwirft ungültige Origins ohne rohe Fehler oder Eingaben zu protokollieren', () => {
         const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
         try {
