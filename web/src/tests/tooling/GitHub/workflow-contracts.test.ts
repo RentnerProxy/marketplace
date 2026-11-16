@@ -145,11 +145,19 @@ test.each(['image', 'release'])(
             expect(job.needs).toBe('verify')
             expect(document.jobs.verify?.needs).toBe('announce')
             expect(document.jobs.announce?.needs).toBe('content')
-            expect(document.jobs.announce?.permissions).toEqual({ contents: 'write' })
+            expect(document.jobs.announce?.permissions).toEqual({
+                contents: 'write',
+            })
             expect(document.jobs.announce?.steps.at(-1)?.run).toBe(
                 'bun --no-env-file .github/scripts/release/publish-release.ts building',
             )
-            expect(document.jobs.failed?.needs).toEqual(['content', 'announce', 'verify', 'publish', 'notes'])
+            expect(document.jobs.failed?.needs).toEqual([
+                'content',
+                'announce',
+                'verify',
+                'publish',
+                'notes',
+            ])
             expect(document.jobs.failed?.steps.at(-1)?.run).toBe(
                 'bun --no-env-file .github/scripts/release/publish-release.ts failed',
             )

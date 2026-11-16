@@ -5,8 +5,14 @@ import {
 } from '../../../../../.github/scripts/automation/github.ts'
 import type { GitHubRequest } from '../../../../../.github/scripts/automation/Types/pr-maintenance.types.ts'
 import { releaseIdentity } from '../../../../../.github/scripts/release/release-identity.ts'
-import { publishRelease, publishReleaseStatus } from '../../../../../.github/scripts/release/publish-release.ts'
-import { renderReleaseStatus, releasePublication } from '../../../../../.github/scripts/release/release-presentation.ts'
+import {
+    publishRelease,
+    publishReleaseStatus,
+} from '../../../../../.github/scripts/release/publish-release.ts'
+import {
+    renderReleaseStatus,
+    releasePublication,
+} from '../../../../../.github/scripts/release/release-presentation.ts'
 
 const revision = 'b'.repeat(40)
 const image = 'ghcr.io/rentnerproxy/marketplace@sha256:' + 'a'.repeat(64)
@@ -86,19 +92,48 @@ describe('release build lifecycle', () => {
 
     test('announces Alpha 1 as a regular Latest release without claiming its image is ready', async () => {
         const state = fixture()
-        await publishReleaseStatus(state.request, tag, revision, changelog(tag), 'building', run)
+        await publishReleaseStatus(
+            state.request,
+            tag,
+            revision,
+            changelog(tag),
+            'building',
+            run,
+        )
         const created = record(state.calls.at(-1)?.body)
-        expect(created).toMatchObject({ prerelease: false, make_latest: 'true', draft: false })
+        expect(created).toMatchObject({
+            prerelease: false,
+            make_latest: 'true',
+            draft: false,
+        })
         expect(created.body).toContain('building-release-banner.png')
-        expect(created.body).toContain('as soon as all checks and publication succeed')
+        expect(created.body).toContain(
+            'as soon as all checks and publication succeed',
+        )
         expect(created.body).toContain(run)
         expect(created.body).not.toContain(image)
-        expect(releasePublication('v1.0.0-alpha.2')).toEqual({ prerelease: true, make_latest: 'false' })
+        expect(releasePublication('v1.0.0-alpha.2')).toEqual({
+            prerelease: true,
+            make_latest: 'false',
+        })
     })
 
     test('replaces the placeholder with banner, authored changelog and exact image while preserving manual notes', async () => {
-        const state = fixture({ id: 42, tag_name: tag, body: 'Manual note\n' + renderReleaseStatus(tag, revision, 'building', run) + '\nManual footer' })
-        const body = await publishRelease(state.request, tag, image, changelog(tag), revision)
+        const state = fixture({
+            id: 42,
+            tag_name: tag,
+            body:
+                'Manual note\n' +
+                renderReleaseStatus(tag, revision, 'building', run) +
+                '\nManual footer',
+        })
+        const body = await publishRelease(
+            state.request,
+            tag,
+            image,
+            changelog(tag),
+            revision,
+        )
         expect(body.startsWith('Manual note\n')).toBe(true)
         expect(body.endsWith('\nManual footer')).toBe(true)
         expect(body).toContain('alpha-release-banner.png')
@@ -110,27 +145,73 @@ describe('release build lifecycle', () => {
     })
 
     test('reports failure honestly and replaces it on retry without duplicating markers', async () => {
-        const state = fixture({ id: 42, tag_name: tag, body: renderReleaseStatus(tag, revision, 'building', run) })
-        await publishReleaseStatus(state.request, tag, revision, changelog(tag), 'failed', run)
+        const state = fixture({
+            id: 42,
+            tag_name: tag,
+            body: renderReleaseStatus(tag, revision, 'building', run),
+        })
+        await publishReleaseStatus(
+            state.request,
+            tag,
+            revision,
+            changelog(tag),
+            'failed',
+            run,
+        )
         const failed = record(state.calls.at(-1)?.body)
         expect(failed.body).toContain('Release build interrupted')
         expect(failed.body).toContain('not confirmed ready')
         const retry = fixture({ id: 42, tag_name: tag, body: failed.body })
-        await publishReleaseStatus(retry.request, tag, revision, changelog(tag), 'building', run)
-        expect(record(retry.calls.at(-1)?.body).body).toBe(renderReleaseStatus(tag, revision, 'building', run))
+        await publishReleaseStatus(
+            retry.request,
+            tag,
+            revision,
+            changelog(tag),
+            'building',
+            run,
+        )
+        expect(record(retry.calls.at(-1)?.body).body).toBe(
+            renderReleaseStatus(tag, revision, 'building', run),
+        )
     })
 
     test('does not replace a completed release with a stale failure or build message', async () => {
-        const state = fixture({ id: 42, tag_name: tag, body: '<!-- marketplace:appliance:start -->ready<!-- marketplace:appliance:end -->' })
-        await publishReleaseStatus(state.request, tag, revision, changelog(tag), 'failed', run)
+        const state = fixture({
+            id: 42,
+            tag_name: tag,
+            body: '<!-- marketplace:appliance:start -->ready<!-- marketplace:appliance:end -->',
+        })
+        await publishReleaseStatus(
+            state.request,
+            tag,
+            revision,
+            changelog(tag),
+            'failed',
+            run,
+        )
         expect(state.calls).toHaveLength(1)
     })
 
-    test.each([[revision, 'https://example.com/run'], ['main', run]])('rejects untrusted media %s or workflow %s before writing', async (media, link) => {
+    test.each([
+        [revision, 'https://example.com/run'],
+        ['main', run],
+    ])(
+        'rejects untrusted media %s or workflow %s before writing',
+        async (media, link) => {
             const state = fixture()
-            await expect(publishReleaseStatus(state.request, tag, media ?? '', changelog(tag), 'building', link ?? '')).rejects.toThrow()
+            await expect(
+                publishReleaseStatus(
+                    state.request,
+                    tag,
+                    media ?? '',
+                    changelog(tag),
+                    'building',
+                    link ?? '',
+                ),
+            ).rejects.toThrow()
             expect(state.calls).toHaveLength(0)
-    })
+        },
+    )
 })
 
 describe('native GitHub releases', () => {
@@ -264,21 +345,39 @@ describe('native GitHub releases', () => {
             body: '<!-- marketplace:appliance:start -->Manual content without an end marker',
         })
         await expect(
-            publishRelease(state.request, 'v1.2.3', image, changelog('v1.2.3'), revision),
+            publishRelease(
+                state.request,
+                'v1.2.3',
+                image,
+                changelog('v1.2.3'),
+                revision,
+            ),
         ).rejects.toThrow('ambiguous')
         expect(state.calls).toHaveLength(1)
     })
     test('fails closed for unavailable release lookup', async () => {
         const state = fixture(undefined, 403)
         await expect(
-            publishRelease(state.request, 'v1.2.3', image, changelog('v1.2.3'), revision),
+            publishRelease(
+                state.request,
+                'v1.2.3',
+                image,
+                changelog('v1.2.3'),
+                revision,
+            ),
         ).rejects.toThrow()
         expect(state.calls).toHaveLength(1)
     })
     test('rejects inconsistent existing release identity', async () => {
         const state = fixture({ id: 42, tag_name: 'v9.9.9' })
         await expect(
-            publishRelease(state.request, 'v1.2.3', image, changelog('v1.2.3'), revision),
+            publishRelease(
+                state.request,
+                'v1.2.3',
+                image,
+                changelog('v1.2.3'),
+                revision,
+            ),
         ).rejects.toThrow()
         expect(state.calls).toHaveLength(1)
     })
@@ -290,7 +389,7 @@ describe('native GitHub releases', () => {
                 'v1.2.3',
                 'ghcr.io/rentnerproxy/marketplace:latest',
                 changelog('v1.2.3'),
-            revision,
+                revision,
             ),
         ).rejects.toThrow()
         expect(state.calls).toHaveLength(0)
