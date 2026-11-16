@@ -58,6 +58,23 @@
         "auditLogs": "Registri di controllo"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Torna al marketplace",
+            "eyebrow": "L’ecosistema RentnerProxy",
+            "headline": "Il tuo ambiente.",
+            "headlineAccent": "Più possibilità.",
+            "description": "Uno spazio per app, estensioni e le tue idee per RentnerProxy.",
+            "community": "Dalla community. Per il tuo ambiente.",
+            "discover": "Scopri",
+            "build": "Sviluppa",
+            "connect": "Contribuisci",
+            "credentials": "Oppure usa le tue credenziali",
+            "emailRegistration": "Oppure registrati con l’email",
+            "accountHint": "Scegli come vuoi continuare.",
+            "emailHint": "Con l’email o il tuo provider preferito. Decidi tu.",
+            "secure": "Il tuo account. La tua scelta.",
+            "passwordHint": "Almeno 12 caratteri"
+        },
         "firstSetup": {
             "emailPlaceholder": "Indirizzo email",
             "passwordPlaceholder": "Password",
@@ -94,7 +111,7 @@
             "passwordPlaceholder": "Password",
             "title": "Accesso",
             "eyebrow": "Il tuo account marketplace",
-            "welcomeBack": "È bello riaverti qui.",
+            "welcomeBack": "Bentornato.",
             "newHere": "Sei nuovo qui?",
             "discoverRegistration": "Scopri la registrazione",
             "description": "Accedi al tuo account.",
@@ -114,7 +131,7 @@
         "register": {
             "email": "Indirizzo email",
             "eyebrow": "Crea un account",
-            "title": "La tua porta sul marketplace.",
+            "title": "Fallo tuo.",
             "description": "Un account per le tue app ed estensioni RentnerProxy.",
             "previewTitle": "La registrazione arriverà presto",
             "previewDescription": "Questa è un’anteprima. I campi sono disattivati; non vengono raccolti dati e non viene creato alcun account.",

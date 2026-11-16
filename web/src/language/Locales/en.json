@@ -58,6 +58,23 @@
         "backups": "Backups"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Back to marketplace",
+            "eyebrow": "The RentnerProxy ecosystem",
+            "headline": "Your setup.",
+            "headlineAccent": "More possibilities.",
+            "description": "A place for apps, extensions and your ideas for RentnerProxy.",
+            "community": "By the community. For your setup.",
+            "discover": "Discover",
+            "build": "Build",
+            "connect": "Contribute",
+            "credentials": "Or use your credentials",
+            "emailRegistration": "Or register with email",
+            "accountHint": "Choose how you want to continue.",
+            "emailHint": "Use email or your favourite provider. Your choice.",
+            "secure": "Your account. Your choice.",
+            "passwordHint": "At least 12 characters"
+        },
         "passwordPolicy": "The password must contain between {{min}} and {{max}} characters.",
         "firstSetup": {
             "title": "Create first superuser",
@@ -93,7 +110,7 @@
         },
         "login": {
             "eyebrow": "Your marketplace account",
-            "welcomeBack": "Good to have you back.",
+            "welcomeBack": "Welcome back.",
             "newHere": "New here?",
             "discoverRegistration": "Create an account",
             "description": "Please sign in to your account",
@@ -114,7 +131,7 @@
         },
         "register": {
             "eyebrow": "Create an account",
-            "title": "Your way into the marketplace.",
+            "title": "Make it yours.",
             "description": "One account for your RentnerProxy apps and extensions.",
             "previewTitle": "Registration is coming soon",
             "previewDescription": "This is a preview. The fields are disabled; no information is collected and no account is created.",

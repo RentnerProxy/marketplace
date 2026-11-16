@@ -58,6 +58,23 @@
         "backups": "Backups"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Zum Marketplace",
+            "eyebrow": "Das RentnerProxy-Ökosystem",
+            "headline": "Dein Setup.",
+            "headlineAccent": "Mehr Möglichkeiten.",
+            "description": "Ein Ort für Apps, Erweiterungen und deine Ideen rund um RentnerProxy.",
+            "community": "Von der Community. Für dein Setup.",
+            "discover": "Entdecken",
+            "build": "Entwickeln",
+            "connect": "Mitgestalten",
+            "credentials": "Oder mit deinen Zugangsdaten",
+            "emailRegistration": "Oder mit E-Mail registrieren",
+            "accountHint": "Wähle deinen bevorzugten Weg und leg los.",
+            "emailHint": "Mit E-Mail oder deinem Lieblingsanbieter. Du entscheidest.",
+            "secure": "Dein Zugang. Deine Entscheidung.",
+            "passwordHint": "Mindestens 12 Zeichen"
+        },
         "passwordPolicy": "Das Passwort muss zwischen {{min}} und {{max}} Zeichen lang sein.",
         "firstSetup": {
             "title": "Ersten Superuser anlegen",
@@ -93,7 +110,7 @@
         },
         "login": {
             "eyebrow": "Dein Marketplace-Konto",
-            "welcomeBack": "Schön, dass du da bist.",
+            "welcomeBack": "Willkommen zurück.",
             "newHere": "Neu hier?",
             "discoverRegistration": "Konto erstellen",
             "description": "Bitte melde dich in deinem Account an",
@@ -114,7 +131,7 @@
         },
         "register": {
             "eyebrow": "Konto erstellen",
-            "title": "Dein Zugang zum Marketplace.",
+            "title": "Mach’s dir eigen.",
             "description": "Ein Konto für deine Apps und Erweiterungen rund um RentnerProxy.",
             "previewTitle": "Registrierung kommt bald",
             "previewDescription": "Hier siehst du bereits die Vorschau. Die Felder sind noch deaktiviert; es werden keine Daten erfasst und kein Konto angelegt.",

@@ -58,6 +58,23 @@
         "auditLogs": "Dzienniki audytu"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Powrót do marketplace",
+            "eyebrow": "Ekosystem RentnerProxy",
+            "headline": "Twoja konfiguracja.",
+            "headlineAccent": "Więcej możliwości.",
+            "description": "Miejsce na aplikacje, rozszerzenia i Twoje pomysły dla RentnerProxy.",
+            "community": "Od społeczności. Dla Twojej konfiguracji.",
+            "discover": "Odkrywaj",
+            "build": "Twórz",
+            "connect": "Współtwórz",
+            "credentials": "Lub użyj danych logowania",
+            "emailRegistration": "Lub zarejestruj się przez e-mail",
+            "accountHint": "Wybierz, jak chcesz kontynuować.",
+            "emailHint": "E-mail lub ulubiony dostawca. Ty decydujesz.",
+            "secure": "Twoje konto. Twój wybór.",
+            "passwordHint": "Co najmniej 12 znaków"
+        },
         "firstSetup": {
             "emailPlaceholder": "Adres e-mail",
             "passwordPlaceholder": "Hasło",
@@ -94,7 +111,7 @@
             "passwordPlaceholder": "Hasło",
             "title": "Logowanie",
             "eyebrow": "Twoje konto marketplace",
-            "welcomeBack": "Dobrze Cię znów widzieć.",
+            "welcomeBack": "Witaj ponownie.",
             "newHere": "Jesteś tu pierwszy raz?",
             "discoverRegistration": "Poznaj rejestrację",
             "description": "Zaloguj się na swoje konto.",
@@ -114,7 +131,7 @@
         "register": {
             "email": "Adres e-mail",
             "eyebrow": "Utwórz konto",
-            "title": "Twoja droga do marketplace.",
+            "title": "Stwórz coś po swojemu.",
             "description": "Jedno konto do aplikacji i rozszerzeń RentnerProxy.",
             "previewTitle": "Rejestracja będzie wkrótce dostępna",
             "previewDescription": "To jest podgląd. Pola są wyłączone; żadne dane nie są zbierane i żadne konto nie jest tworzone.",

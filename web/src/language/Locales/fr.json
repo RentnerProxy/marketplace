@@ -58,6 +58,23 @@
         "auditLogs": "Journaux d’audit"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Retour au marketplace",
+            "eyebrow": "L’écosystème RentnerProxy",
+            "headline": "Ton environnement.",
+            "headlineAccent": "Plus de possibilités.",
+            "description": "Un espace pour les applis, les extensions et tes idées autour de RentnerProxy.",
+            "community": "Par la communauté. Pour ton environnement.",
+            "discover": "Découvrir",
+            "build": "Développer",
+            "connect": "Contribuer",
+            "credentials": "Ou utilise tes identifiants",
+            "emailRegistration": "Ou inscris-toi par e-mail",
+            "accountHint": "Choisis comment tu souhaites continuer.",
+            "emailHint": "Par e-mail ou avec ton fournisseur préféré. À toi de choisir.",
+            "secure": "Ton compte. Ton choix.",
+            "passwordHint": "Au moins 12 caractères"
+        },
         "firstSetup": {
             "emailPlaceholder": "Adresse e-mail",
             "passwordPlaceholder": "Mot de passe",
@@ -94,7 +111,7 @@
             "passwordPlaceholder": "Mot de passe",
             "title": "Connexion",
             "eyebrow": "Votre compte marketplace",
-            "welcomeBack": "Heureux de vous revoir.",
+            "welcomeBack": "Heureux de te revoir.",
             "newHere": "Vous êtes nouveau ici ?",
             "discoverRegistration": "Découvrir l’inscription",
             "description": "Connectez-vous à votre compte.",
@@ -114,7 +131,7 @@
         "register": {
             "email": "Adresse e-mail",
             "eyebrow": "Créer un compte",
-            "title": "Votre accès au marketplace.",
+            "title": "À toi de jouer.",
             "description": "Un compte pour vos applications et extensions RentnerProxy.",
             "previewTitle": "L’inscription arrive bientôt",
             "previewDescription": "Ceci est un aperçu. Les champs sont désactivés ; aucune donnée n’est collectée et aucun compte n’est créé.",

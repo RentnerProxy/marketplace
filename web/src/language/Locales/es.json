@@ -58,6 +58,23 @@
         "auditLogs": "Registros de auditoría"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Volver al marketplace",
+            "eyebrow": "El ecosistema RentnerProxy",
+            "headline": "Tu entorno.",
+            "headlineAccent": "Más posibilidades.",
+            "description": "Un lugar para apps, extensiones y tus ideas para RentnerProxy.",
+            "community": "De la comunidad. Para tu entorno.",
+            "discover": "Descubre",
+            "build": "Desarrolla",
+            "connect": "Participa",
+            "credentials": "O usa tus credenciales",
+            "emailRegistration": "O regístrate con tu correo",
+            "accountHint": "Elige cómo quieres continuar.",
+            "emailHint": "Con tu correo o tu proveedor favorito. Tú decides.",
+            "secure": "Tu cuenta. Tú decides.",
+            "passwordHint": "Al menos 12 caracteres"
+        },
         "firstSetup": {
             "emailPlaceholder": "Dirección de correo electrónico",
             "passwordPlaceholder": "Contraseña",
@@ -94,7 +111,7 @@
             "passwordPlaceholder": "Contraseña",
             "title": "Inicio de sesión",
             "eyebrow": "Tu cuenta del marketplace",
-            "welcomeBack": "Nos alegra verte de nuevo.",
+            "welcomeBack": "Te damos la bienvenida de nuevo.",
             "newHere": "¿Es tu primera visita?",
             "discoverRegistration": "Descubrir el registro",
             "description": "Inicia sesión en tu cuenta.",
@@ -114,7 +131,7 @@
         "register": {
             "email": "Dirección de correo electrónico",
             "eyebrow": "Crear una cuenta",
-            "title": "Tu entrada al marketplace.",
+            "title": "Hazlo tuyo.",
             "description": "Una cuenta para tus aplicaciones y extensiones de RentnerProxy.",
             "previewTitle": "El registro estará disponible pronto",
             "previewDescription": "Esta es una vista previa. Los campos están desactivados; no se recogen datos ni se crea ninguna cuenta.",

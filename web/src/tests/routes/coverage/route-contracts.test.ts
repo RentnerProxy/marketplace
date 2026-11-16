@@ -36,13 +36,16 @@ const cacheSession = mock()
 const queryOptions = { queryKey: ['system-settings'] }
 let setupRequired = false
 let hash = ''
+let currentPathname = '/forgot-password'
 const setupStatus = mock(async () => ({ isRequired: setupRequired }))
 const routerState = mock(
     ({
         select,
     }: {
-        select: (state: { location: { hash: string } }) => string
-    }) => select({ location: { hash } }),
+        select: (state: {
+            location: { hash: string; pathname: string }
+        }) => unknown
+    }) => select({ location: { hash, pathname: currentPathname } }),
 )
 function routeFactory(path: string) {
     return (options: Options) => {
@@ -170,6 +173,7 @@ beforeEach(() => {
     setupRequired = false
     setupStatus.mockClear()
     hash = ''
+    currentPathname = '/forgot-password'
 })
 
 describe('Thin route boundary contracts', () => {
@@ -305,7 +309,6 @@ describe('Thin route boundary contracts', () => {
         { path: '/blog', content: 'Marketplace blog screen' },
         { path: '/imprint', content: 'Imprint screen' },
         { path: '/privacy', content: 'Privacy screen' },
-        { path: '/register', content: 'Register screen' },
     ])(
         'renders $path in the public shell without authentication, setup checks or data loading',
         ({ path, content }) => {
@@ -321,6 +324,35 @@ describe('Thin route boundary contracts', () => {
             expect(client.ensureQueryData).not.toHaveBeenCalled()
         },
     )
+
+    it.each(['/login', '/login/'])(
+        'lets %s own its full-screen shell while recovery retains the public shell',
+        (path) => {
+            currentPathname = path
+            const login = renderToStaticMarkup(
+                createElement(route('/_public').component!),
+            )
+            expect(login).toContain('Route outlet')
+            expect(login).not.toContain('Public shell')
+            currentPathname = '/forgot-password'
+            expect(
+                renderToStaticMarkup(
+                    createElement(route('/_public').component!),
+                ),
+            ).toContain('Public shell')
+        },
+    )
+
+    it('renders standalone registration without an enclosing public shell or authentication', () => {
+        const options = route('/register')
+        expect(options.beforeLoad).toBeUndefined()
+        expect(options.loader).toBeUndefined()
+        const html = renderToStaticMarkup(createElement(options.component!))
+        expect(html).toContain('Register screen')
+        expect(html).not.toContain('Public shell')
+        expect(authenticate).not.toHaveBeenCalled()
+        expect(setupStatus).not.toHaveBeenCalled()
+    })
 
     it.each(['/', '/apps', '/blog', '/imprint', '/privacy'])(
         'explicitly indexes only public page %s with its canonical URL',

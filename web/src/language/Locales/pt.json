@@ -58,6 +58,23 @@
         "auditLogs": "Registos de auditoria"
     },
     "auth": {
+        "experience": {
+            "backToMarketplace": "Voltar ao marketplace",
+            "eyebrow": "O ecossistema RentnerProxy",
+            "headline": "O teu ambiente.",
+            "headlineAccent": "Mais possibilidades.",
+            "description": "Um espaço para apps, extensões e as tuas ideias para o RentnerProxy.",
+            "community": "Da comunidade. Para o teu ambiente.",
+            "discover": "Descobrir",
+            "build": "Desenvolver",
+            "connect": "Contribuir",
+            "credentials": "Ou usa as tuas credenciais",
+            "emailRegistration": "Ou regista-te com e-mail",
+            "accountHint": "Escolhe como queres continuar.",
+            "emailHint": "Com e-mail ou o teu fornecedor preferido. Tu decides.",
+            "secure": "A tua conta. A tua escolha.",
+            "passwordHint": "Pelo menos 12 caracteres"
+        },
         "firstSetup": {
             "emailPlaceholder": "Endereço de e-mail",
             "passwordPlaceholder": "Palavra-passe",
@@ -94,7 +111,7 @@
             "passwordPlaceholder": "Palavra-passe",
             "title": "Início de sessão",
             "eyebrow": "A sua conta do marketplace",
-            "welcomeBack": "É bom tê-lo de volta.",
+            "welcomeBack": "Bem-vindo de volta.",
             "newHere": "É novo por aqui?",
             "discoverRegistration": "Conhecer o registo",
             "description": "Inicie sessão na sua conta.",
@@ -114,7 +131,7 @@
         "register": {
             "email": "Endereço de e-mail",
             "eyebrow": "Criar uma conta",
-            "title": "A sua entrada no marketplace.",
+            "title": "Dá-lhe o teu toque.",
             "description": "Uma conta para as suas aplicações e extensões RentnerProxy.",
             "previewTitle": "O registo estará disponível em breve",
             "previewDescription": "Esta é uma pré-visualização. Os campos estão desativados; não são recolhidos dados nem é criada qualquer conta.",

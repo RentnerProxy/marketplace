@@ -72,6 +72,9 @@ vi.mock('@/features/Auth/Register/Hooks/useRegisterLogic.ts', () => ({
 vi.mock('@/shared/Auth/Components/SocialLogin.tsx', () => ({
     default: () => null,
 }))
+vi.mock('@/layouts/PublicLayout/Components/LanguageSwitcher.tsx', () => ({
+    default: () => createElement('button', { type: 'button' }, 'Language'),
+}))
 const setupState: CreateFirstSuperUserAccountLogicReturn['state'] = {
     setupAccessState: 'granted',
     isCreating: false,
@@ -189,6 +192,20 @@ beforeEach(function () {
 })
 
 describe('authentication page states', function () {
+    it.each([Login, Register])(
+        'keeps a single main landmark, skip link and legal navigation in the auth shell',
+        function (Page) {
+            const html = renderToStaticMarkup(createElement(Page))
+            expect(html.match(/<main\b/g)).toHaveLength(1)
+            expect(html.match(/<h1\b/g)).toHaveLength(1)
+            expect(html).toContain('href="#main-content"')
+            expect(html).toContain('id="main-content"')
+            expect(html).toContain('href="/imprint"')
+            expect(html).toContain('href="/privacy"')
+            expect(html).toContain('Language')
+        },
+    )
+
     it('renders registration credentials, confirmation and required legal consent', function () {
         const html = renderToStaticMarkup(createElement(Register))
         expect(html).toContain('auth.register.confirmPassword')
@@ -260,6 +277,7 @@ describe('authentication page states', function () {
         loginState.trustThisDevice = true
         const html = renderToStaticMarkup(createElement(Login))
         expect(html).toContain('auth.twoFactor.title')
+        expect(html.match(/<h1\b/g)).toHaveLength(1)
         expect(html).toContain('auth.login.twoFactorCodeIncomplete')
         expect(html).toContain('type="checkbox"')
         expect(html).toContain('checked=""')
