@@ -90,6 +90,14 @@ describe('release build lifecycle', () => {
     const tag = 'v1.0.0-alpha.1'
     const run = 'https://github.com/RentnerProxy/marketplace/actions/runs/123'
 
+    test('prepares the downloadable changelog before publishing a completed presentation', async () => {
+        const state = fixture({ id: 42, tag_name: tag, body: renderReleaseStatus(tag, revision, 'building', run) })
+        const body = await publishRelease(state.request, tag, image, changelog(tag), revision, 'prepare')
+        expect(body).toContain(image)
+        expect(body).toContain('alpha-release-banner.png')
+        expect(state.calls.every((call) => call.method === 'GET' || call.path.endsWith('/generate-notes'))).toBe(true)
+    })
+
     test('announces Alpha 1 as a regular Latest release without claiming its image is ready', async () => {
         const state = fixture()
         await publishReleaseStatus(
