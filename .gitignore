@@ -17,6 +17,9 @@ todos.json
 web/public/images/user
 web/public/images/system
 web/public/favicon.ico
+/public/images/user/
+/public/images/system/
+/public/favicon.ico
 storage-data
 storage-data-*
 /backups/
