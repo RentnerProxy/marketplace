@@ -1008,7 +1008,7 @@
         "loginDescription": "Melde dich an, um den Marketplace zu verwalten.",
         "usernameLabel": "Benutzername",
         "passwordLabel": "Passwort",
-        "recoveryHint": "Der Zugang ist derzeit für bestehende Verwaltungskonten vorgesehen.",
+        "recoveryHint": "Melde dich mit deinem Konto an oder erstelle ein neues.",
         "passkeyDescription": "Melde dich mit einem bereits für dein Konto eingerichteten Passkey an.",
         "apps": {
             "monitoring": {
@@ -1043,7 +1043,7 @@
         "accountNavigation": "Kontozugang",
         "login": "Login",
         "register": "Registrieren",
-        "registrationSoon": "Registrieren – bald verfügbar",
+        "registrationSoon": "Konto erstellen",
         "footerHeadline": "Mehr drin. Mehr du.",
         "footerDescription": "Offizielle Apps für dein RentnerProxy. Ein Zuhause für alles, was dein Setup als Nächstes braucht.",
         "footerExplore": "Entdecken",

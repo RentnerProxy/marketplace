@@ -1008,7 +1008,7 @@
         "loginDescription": "Sign in to manage the marketplace.",
         "usernameLabel": "Username",
         "passwordLabel": "Password",
-        "recoveryHint": "Access is currently intended for existing administration accounts.",
+        "recoveryHint": "Sign in with your account or create a new one.",
         "passkeyDescription": "Sign in with a passkey that is already set up for your account.",
         "apps": {
             "monitoring": {
@@ -1043,7 +1043,7 @@
         "accountNavigation": "Account access",
         "login": "Login",
         "register": "Register",
-        "registrationSoon": "Registration – coming soon",
+        "registrationSoon": "Create an account",
         "footerHeadline": "More possibilities. More you.",
         "footerDescription": "Official apps for your RentnerProxy. A home for whatever your setup needs next.",
         "footerExplore": "Explore",
