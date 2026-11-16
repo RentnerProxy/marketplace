@@ -5,14 +5,15 @@
         "category": "changelog",
         "releaseTag": "v1.0.0-alpha.1",
         "version": "1.0.0-alpha.1",
-        "publishedAt": "2026-11-15",
+        "publishedAt": "2026-11-16",
         "content": {
             "en": {
                 "title": "RentnerProxy Marketplace v1.0.0-alpha.1: the first public preview",
                 "summary": "Our first alpha introduces the public Marketplace foundation: planned apps, the development workflow and a versioned blog. Public registration remains closed.",
                 "body": [
                     "v1.0.0-alpha.1 introduces the public foundation of the RentnerProxy Marketplace. Explore the planned official apps, discover their path from development to approval and follow news in the versioned blog. The new design, language selector and public information pages bring that shared home to life.",
-                    "This alpha is a preview. Public registration remains closed; app downloads, installation and submissions are not available yet. The Marketplace is operated centrally by RentnerProxy. Next come the package and API contracts, followed by the gradual integration of official apps with the platform."
+                    "This alpha is a preview. Public registration remains closed; app downloads, installation and submissions are not available yet. The Marketplace is operated centrally by RentnerProxy. Next come the package and API contracts, followed by the gradual integration of official apps with the platform.",
+                    "Release pages now show when an image is still being built and checked, then replace that status with the release banner, versioned image and downloadable changelog. Failed builds remain visible as failed until a retry succeeds. This release also fixes two concurrency issues in native storage verification: a test that checked directory identity too early, and a Linux race while observing a storage lease being released."
                 ]
             },
             "de": {
@@ -20,7 +21,8 @@
                 "summary": "Die erste Alpha legt das Fundament für den Marketplace: geplante Apps, der Entwicklungsablauf und ein Versionsblog. Die öffentliche Registrierung bleibt geschlossen.",
                 "body": [
                     "Mit v1.0.0-alpha.1 beginnt die öffentliche Vorschau des RentnerProxy Marketplace. Du kannst die geplanten offiziellen Apps entdecken, ihren Weg von der Entwicklung bis zur Freigabe kennenlernen und Neuigkeiten direkt im Versionsblog verfolgen. Das neue Design, die Sprachauswahl und die öffentlichen Infoseiten bilden dafür die Grundlage.",
-                    "Diese Alpha ist eine Vorschau. Die öffentliche Registrierung bleibt geschlossen; App-Downloads, Installation und Einreichungen sind noch nicht verfügbar. Der Marketplace wird zentral von RentnerProxy betrieben. Als Nächstes folgen die Paket- und API-Verträge sowie die schrittweise Anbindung der offiziellen Apps an die Plattform."
+                    "Diese Alpha ist eine Vorschau. Die öffentliche Registrierung bleibt geschlossen; App-Downloads, Installation und Einreichungen sind noch nicht verfügbar. Der Marketplace wird zentral von RentnerProxy betrieben. Als Nächstes folgen die Paket- und API-Verträge sowie die schrittweise Anbindung der offiziellen Apps an die Plattform.",
+                    "Release-Seiten zeigen jetzt an, solange ein Image noch gebaut und geprüft wird. Danach erscheinen Release-Banner, versioniertes Image und herunterladbares Changelog. Fehlgeschlagene Builds bleiben bis zum erfolgreichen Wiederholungsversuch als fehlgeschlagen sichtbar. Außerdem behebt dieses Release zwei Nebenläufigkeitsprobleme bei der nativen Storage-Prüfung: eine zu frühe Identitätsprüfung im Test und einen Linux-Wettlauf beim Beobachten einer gerade freigegebenen Storage-Lease."
                 ]
             }
         }

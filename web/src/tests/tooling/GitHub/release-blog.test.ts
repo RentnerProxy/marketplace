@@ -147,6 +147,7 @@ describe('checked-in release changelog gate', () => {
                 'v1.2.3',
                 'ghcr.io/rentnerproxy/marketplace@sha256:' + 'a'.repeat(64),
                 undefined,
+                'b'.repeat(40),
             ),
         ).rejects.toThrow()
         expect(requests).toEqual([])

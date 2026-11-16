@@ -233,6 +233,37 @@ fn restored_mtime_and_identical_bytes_cannot_hide_a_windows_status_change() {
 
 #[cfg(unix)]
 #[test]
+fn unlinked_path_stat_is_ignorable_only_without_replacement() {
+    for replace in [false, true] {
+        let (_temporary, root) = fixture();
+        let lease = shared(&root);
+        let fence = Fence::open(&root, Some(&lease["context"])).unwrap();
+        let target = path(&lease);
+        let name = target.file_name().unwrap().to_str().unwrap();
+        let opened = fence.shared.handle.open(name).unwrap();
+        fs::remove_file(target).unwrap();
+        // Linux path stat can resolve the inode before unlink, then collect
+        // this same zero-link snapshot after unlink. Retain the descriptor
+        // to reproduce that metadata deterministically at both path checks.
+        let removed = opened.metadata().unwrap();
+        assert_eq!(removed.nlink(), 0);
+        if replace {
+            fs::write(target, b"replacement").unwrap();
+        }
+        assert_eq!(
+            check_unlinked(&fence.shared, name, &removed)
+                .unwrap_err()
+                .code,
+            if replace { "STORAGE_INVALID" } else { "ENOENT" }
+        );
+        if replace {
+            assert_eq!(fs::read(target).unwrap(), b"replacement");
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
 fn unlinked_scan_descriptor_is_ignorable_only_without_replacement() {
     for replace in [false, true] {
         let (_temporary, root) = fixture();
