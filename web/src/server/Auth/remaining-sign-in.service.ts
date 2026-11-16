@@ -32,5 +32,6 @@ export async function hasRemainingSignInMethodService(
         .select({ id: passkeyCredentials.id })
         .from(passkeyCredentials)
         .where(eq(passkeyCredentials.userId, input.userId))
-    return passkeys.some((passkey) => passkey.id !== input.excludedPasskeyId)
+    const excludedPasskeyId = input.excludedPasskeyId?.toLowerCase()
+    return passkeys.some((passkey) => passkey.id.toLowerCase() !== excludedPasskeyId)
 }

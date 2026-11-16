@@ -2,6 +2,7 @@ import type { SecurityChangeMailInput } from '@/lib/Mail/Types/mail-domain.types
 import type { UserSessionsRevokedEvent } from '@/websockets/Types/events.ts'
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { createReauthenticationProofService } from '@/server/Auth/reauthentication-proof.service.ts'
+import { deleteCurrentUserPasskeyInputSchema } from '@/features/UserSettings/validation.ts'
 import {
     passkeyTestDb,
     passkeyTestOrm,
@@ -38,12 +39,6 @@ vi.mock('@/server/Logging/logger.ts', () => ({
     logError: logPostCommitError,
 }))
 
-const remainingSignIn = vi.fn(
-    async (_transaction: unknown, _input: unknown) => false,
-)
-vi.mock('@/server/Auth/remaining-sign-in.service.ts', () => ({
-    hasRemainingSignInMethodService: remainingSignIn,
-}))
 const reauthenticate = vi.fn()
 const audit = vi.fn(async function (_input: unknown) {
     return undefined
@@ -83,6 +78,18 @@ vi.mock('@/server/Auth/reauthentication.service.ts', function () {
 
 vi.mock('@/server/Auth/rejected-authentication.service.ts', () => ({
     recordRejectedAuthenticationService: vi.fn(),
+}))
+vi.mock('@/db/Schema/socialAuth.ts', () => ({
+    socialAccounts: passkeyTestSchema.passkeyChallenges,
+}))
+vi.mock('@/server/Auth/Social/config.service.ts', () => ({
+    getConfiguredSocialProvidersService: () => [],
+}))
+const { hasRemainingSignInMethodService: actualRemainingSignIn } =
+    await import('@/server/Auth/remaining-sign-in.service.ts')
+const remainingSignIn = vi.fn(actualRemainingSignIn)
+vi.mock('@/server/Auth/remaining-sign-in.service.ts', () => ({
+    hasRemainingSignInMethodService: remainingSignIn,
 }))
 const { deleteCurrentUserPasskeyService } =
     await import('@/server/Auth/Passkey/management.service.ts')
@@ -504,6 +511,34 @@ async function createTotpDeletionInput() {
 }
 
 describe('Passkey deletion remaining-login policy', () => {
+    it('blocks an uppercase UUID for the last passkey before deletion, revocation or audit', async () => {
+        const data = await createTotpDeletionInput()
+        const passkeyId = '019ab18f-abcd-7abc-8abc-abcdef123456'
+        passkeyTestState.rows.credentials = [
+            { id: passkeyId, userId: passkeyTestUser.id },
+            { id: 'other-passkey', userId: 'other-user' },
+        ]
+        remainingSignIn.mockImplementation(actualRemainingSignIn)
+        const before = structuredClone(passkeyTestState.rows)
+        const validatedInput = deleteCurrentUserPasskeyInputSchema.parse({
+            ...data,
+            passkeyId: passkeyId.toUpperCase(),
+        })
+        expect(validatedInput.passkeyId).toBe(passkeyId.toUpperCase())
+        const result = await deleteCurrentUserPasskeyService(validatedInput)
+        expect(result).toEqual({
+            success: false,
+            error: 'Der letzte Anmeldeweg kann nicht entfernt werden. Ein weiterer Anmeldeanbieter oder Passkey muss verfügbar bleiben.',
+        })
+        expect(passkeyTestState.rows).toEqual(before)
+        expect(passkeyTestState.events).toContain('lock:users')
+        expect(passkeyTestState.events).not.toContain('delete:credentials:tx')
+        expect(passkeyTestState.events).not.toContain('delete:sessions:tx')
+        expect(audit).not.toHaveBeenCalled()
+        expect(publishAudit).not.toHaveBeenCalled()
+        expect(enqueueSecurityChange).not.toHaveBeenCalled()
+        expect(publishSessionRevocation).not.toHaveBeenCalled()
+    })
     it('blocks last-method deletion after locked TOTP confirmation without mutation or notifications', async () => {
         const data = await createTotpDeletionInput()
         const before = structuredClone(passkeyTestState.rows)
