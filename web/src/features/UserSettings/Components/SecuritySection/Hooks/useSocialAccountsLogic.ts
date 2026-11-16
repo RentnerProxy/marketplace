@@ -62,7 +62,12 @@ export default function useSocialAccountsLogic(): SocialAccountsLogicReturn {
                         reauthentication.handler.createReauthenticationInput(),
                 },
             })
-            if (!result.success) throw new AppError(result.error.startsWith('auth.social.') ? t(result.error) : result.error)
+            if (!result.success)
+                throw new AppError(
+                    result.error.startsWith('auth.social.')
+                        ? t(result.error)
+                        : result.error,
+                )
         },
         onSuccess: async () => {
             toast.success(t('auth.social.unlinked'), {
@@ -109,7 +114,8 @@ export default function useSocialAccountsLogic(): SocialAccountsLogicReturn {
     }
 
     function handleDisconnect(provider: SocialProviderId) {
-        if (!canLink || actionInFlight.current || !connected.has(provider)) return
+        if (!canLink || actionInFlight.current || !connected.has(provider))
+            return
         actionInFlight.current = true
         unlinking.mutate(provider)
     }

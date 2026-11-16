@@ -113,9 +113,10 @@ describe('Administrative mutations with required audit persistence', function ()
                 adminAuditDb.state.rows.users[0].email = 'TARGET@EXAMPLE.TEST'
             const result = await createUserService({
                 username: field === 'username' ? 'TARGET' : 'new-user',
-                email: field === 'email'
-                    ? 'TARGET@EXAMPLE.TEST'
-                    : 'new@example.test',
+                email:
+                    field === 'email'
+                        ? 'TARGET@EXAMPLE.TEST'
+                        : 'new@example.test',
             })
             expect(result).toEqual({
                 success: false,
@@ -152,15 +153,17 @@ describe('Administrative mutations with required audit persistence', function ()
     it.each(['create', 'update'] as const)(
         'locks account uniqueness before user rows during %s',
         async function (operation) {
-            const result = operation === 'create'
-                ? await createUserService({
-                    username: 'new-user',
-                    email: 'new@example.test',
-                })
-                : await updateUserProfileService(updateInput())
+            const result =
+                operation === 'create'
+                    ? await createUserService({
+                          username: 'new-user',
+                          email: 'new@example.test',
+                      })
+                    : await updateUserProfileService(updateInput())
             expect(result.success).toBe(true)
             expect(
-                adminAuditDb.state.events.slice(0, 3)
+                adminAuditDb.state.events
+                    .slice(0, 3)
                     .map((event) => event.operation),
             ).toEqual(['begin', 'lock:identity', 'lock:update'])
         },

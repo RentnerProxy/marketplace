@@ -253,9 +253,18 @@ describe('Provider identity verification over mocked HTTPS', () => {
             includeIdToken = false
             const url = callback(provider)
             url.searchParams.delete('iss')
-            await expect(getSocialIdentityFromCallbackService(provider, url, checks)).rejects.toThrow()
-            url.searchParams.set('iss', provider === 'github' ? 'https://github.com' : 'https://github.com/login/oauth')
-            await expect(getSocialIdentityFromCallbackService(provider, url, checks)).rejects.toThrow()
+            await expect(
+                getSocialIdentityFromCallbackService(provider, url, checks),
+            ).rejects.toThrow()
+            url.searchParams.set(
+                'iss',
+                provider === 'github'
+                    ? 'https://github.com'
+                    : 'https://github.com/login/oauth',
+            )
+            await expect(
+                getSocialIdentityFromCallbackService(provider, url, checks),
+            ).rejects.toThrow()
             expect(tokenRequests).toHaveLength(0)
         },
     )

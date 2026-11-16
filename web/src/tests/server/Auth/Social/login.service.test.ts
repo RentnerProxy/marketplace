@@ -348,7 +348,9 @@ describe('Social login and second-factor completion', () => {
             finishSocialLoginService('123456'),
         ])
         expect(totp).toHaveBeenCalledTimes(2)
-        expect(read.mock.calls.filter((call) => call[4] === true)).toHaveLength(2)
+        expect(read.mock.calls.filter((call) => call[4] === true)).toHaveLength(
+            2,
+        )
         expect(results.filter((result) => result.success)).toHaveLength(1)
         expect(createSession).toHaveBeenCalledTimes(1)
         expect(challenge).toBeNull()

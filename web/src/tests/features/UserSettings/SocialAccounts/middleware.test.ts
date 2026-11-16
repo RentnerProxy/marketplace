@@ -40,8 +40,11 @@ mock.module('@/server/Auth/Social/management.service.ts', () => ({
     unlinkCurrentUserSocialAccountService: unlink,
 }))
 
-const { beginSocialLinkHandler, getSocialAccountsHandler, unlinkSocialAccountHandler } =
-    await import('@/features/UserSettings/SocialAccounts/middleware.ts')
+const {
+    beginSocialLinkHandler,
+    getSocialAccountsHandler,
+    unlinkSocialAccountHandler,
+} = await import('@/features/UserSettings/SocialAccounts/middleware.ts')
 
 beforeEach(() => {
     unlink.mockClear()
@@ -121,21 +124,45 @@ describe('Social account boundaries', () => {
     )
 })
 
-
 describe('Social account unlink boundary', () => {
     it('requires authenticated feature access before unlinking', async () => {
         access.mockRejectedValueOnce(new Error('Authentication required'))
-        await expect(unlinkSocialAccountHandler({ data: { provider: 'google', reauthentication: { method: 'password', credential: 'password' } } })).rejects.toThrow('Authentication required')
+        await expect(
+            unlinkSocialAccountHandler({
+                data: {
+                    provider: 'google',
+                    reauthentication: {
+                        method: 'password',
+                        credential: 'password',
+                    },
+                },
+            }),
+        ).rejects.toThrow('Authentication required')
         expect(unlink).not.toHaveBeenCalled()
     })
     it('validates provider and confirmation before service delegation', async () => {
-        await expect(unlinkSocialAccountHandler({ data: { provider: 'unknown', reauthentication: { method: 'password', credential: 'password' } } as never })).rejects.toThrow()
+        await expect(
+            unlinkSocialAccountHandler({
+                data: {
+                    provider: 'unknown',
+                    reauthentication: {
+                        method: 'password',
+                        credential: 'password',
+                    },
+                } as never,
+            }),
+        ).rejects.toThrow()
         expect(access).not.toHaveBeenCalled()
         expect(unlink).not.toHaveBeenCalled()
     })
     it('delegates validated password or TOTP confirmation to the protected service', async () => {
-        const data = { provider: 'github' as const, reauthentication: { method: 'totp' as const, credential: '123456' } }
-        expect(await unlinkSocialAccountHandler({ data })).toEqual({ success: true })
+        const data = {
+            provider: 'github' as const,
+            reauthentication: { method: 'totp' as const, credential: '123456' },
+        }
+        expect(await unlinkSocialAccountHandler({ data })).toEqual({
+            success: true,
+        })
         expect(unlink).toHaveBeenCalledWith(data)
     })
 })

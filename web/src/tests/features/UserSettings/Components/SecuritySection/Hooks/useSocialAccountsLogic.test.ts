@@ -45,7 +45,10 @@ let unlinkMutation: Mutation
 let mutationIndex = 0
 const unlinkMutate = mock()
 const unlinkReset = mock()
-const unlink = mock(async (_input: unknown) => ({ success: true, error: 'Confirmation failed' }))
+const unlink = mock(async (_input: unknown) => ({
+    success: true,
+    error: 'Confirmation failed',
+}))
 const errors = mock()
 const success = mock()
 const mutate = mock()
@@ -60,7 +63,15 @@ mock.module('@tanstack/react-query', () => ({
     useQuery: (options: { queryKey: string[] }) =>
         options.queryKey[0] === 'session' ? session : accounts,
     useMutation: (options: Mutation) => {
-        if (mutationIndex++ % 2 === 1) { unlinkMutation = options; return { isPending: false, mutate: unlinkMutate, reset: unlinkReset, variables: undefined } }
+        if (mutationIndex++ % 2 === 1) {
+            unlinkMutation = options
+            return {
+                isPending: false,
+                mutate: unlinkMutate,
+                reset: unlinkReset,
+                variables: undefined,
+            }
+        }
         mutation = options
         return { isPending: false, mutate, reset }
     },
@@ -82,7 +93,9 @@ mock.module('@/shared/Errors/toastAppError.ts', () => ({
 }))
 
 mock.module('@rentnerkev/toasts', () => ({ toast: { success } }))
-mock.module('@/language/useTranslationStore.ts', () => ({ default: () => ({ t: (key: string) => key }) }))
+mock.module('@/language/useTranslationStore.ts', () => ({
+    default: () => ({ t: (key: string) => key }),
+}))
 mock.module('react', () => ({ useRef: () => ({ current: false }) }))
 
 const { default: useSocialAccountsLogic } =
@@ -164,7 +177,6 @@ describe('Social account linking hook', () => {
     })
 })
 
-
 describe('Social account unlinking hook', () => {
     it('blocks unconnected providers, missing confirmation and duplicate submissions', () => {
         const logic = useSocialAccountsLogic()
@@ -182,30 +194,50 @@ describe('Social account unlinking hook', () => {
     it('confirms unlink, refreshes accounts, reports success and clears secrets', async () => {
         useSocialAccountsLogic()
         await unlinkMutation.mutationFn('github')
-        expect(unlink).toHaveBeenCalledWith({ data: { provider: 'github', reauthentication: { method: 'password', credential: 'test-password' } } })
+        expect(unlink).toHaveBeenCalledWith({
+            data: {
+                provider: 'github',
+                reauthentication: {
+                    method: 'password',
+                    credential: 'test-password',
+                },
+            },
+        })
         await unlinkMutation.onSuccess('')
         expect(refetch).toHaveBeenCalledTimes(1)
-        expect(success).toHaveBeenCalledWith('auth.social.unlinked', { title: 'userSettings.header.title' })
+        expect(success).toHaveBeenCalledWith('auth.social.unlinked', {
+            title: 'userSettings.header.title',
+        })
         unlinkMutation.onSettled()
-        expect(reauthentication.handler.resetReauthenticationValue).toHaveBeenCalledTimes(1)
+        expect(
+            reauthentication.handler.resetReauthenticationValue,
+        ).toHaveBeenCalledTimes(1)
         expect(unlinkReset).toHaveBeenCalledTimes(1)
     })
     it('reports failed confirmation and API failures without refresh or success', async () => {
         useSocialAccountsLogic()
-        unlink.mockResolvedValueOnce({ success: false, error: 'Confirmation failed' })
-        await expect(unlinkMutation.mutationFn('github')).rejects.toThrow('Confirmation failed')
+        unlink.mockResolvedValueOnce({
+            success: false,
+            error: 'Confirmation failed',
+        })
+        await expect(unlinkMutation.mutationFn('github')).rejects.toThrow(
+            'Confirmation failed',
+        )
         unlink.mockRejectedValueOnce(new Error('Request failed'))
-        await expect(unlinkMutation.mutationFn('github')).rejects.toThrow('Request failed')
+        await expect(unlinkMutation.mutationFn('github')).rejects.toThrow(
+            'Request failed',
+        )
         const error = new Error('Request failed')
         unlinkMutation.onError(error)
         expect(errors).toHaveBeenCalledWith(error)
         expect(refetch).not.toHaveBeenCalled()
         expect(success).not.toHaveBeenCalled()
         unlinkMutation.onSettled()
-        expect(reauthentication.handler.resetReauthenticationValue).toHaveBeenCalledTimes(1)
+        expect(
+            reauthentication.handler.resetReauthenticationValue,
+        ).toHaveBeenCalledTimes(1)
     })
 })
-
 
 it('passes TOTP confirmation and releases duplicate protection after a failed operation', async () => {
     reauthentication.state.reauthenticationMethod = 'totp'
@@ -213,7 +245,12 @@ it('passes TOTP confirmation and releases duplicate protection after a failed op
     const logic = useSocialAccountsLogic()
     logic.handler.handleDisconnect('github')
     await unlinkMutation.mutationFn('github')
-    expect(unlink).toHaveBeenCalledWith({ data: { provider: 'github', reauthentication: { method: 'totp', credential: '123456' } } })
+    expect(unlink).toHaveBeenCalledWith({
+        data: {
+            provider: 'github',
+            reauthentication: { method: 'totp', credential: '123456' },
+        },
+    })
     unlinkMutation.onSettled()
     logic.handler.handleDisconnect('github')
     expect(unlinkMutate).toHaveBeenCalledTimes(2)

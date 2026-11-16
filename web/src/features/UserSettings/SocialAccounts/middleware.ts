@@ -3,7 +3,10 @@ import { beginSocialLinkInputSchema } from './validation.ts'
 import { requireAuthenticatedFeatureAccessService } from '@/server/Auth/authorization.service.ts'
 import { reauthenticateCurrentUserService } from '@/server/Auth/reauthentication.service.ts'
 import { beginSocialAuthorizationService } from '@/server/Auth/Social/flow.service.ts'
-import { getCurrentUserSocialAccountsService, unlinkCurrentUserSocialAccountService } from '@/server/Auth/Social/management.service.ts'
+import {
+    getCurrentUserSocialAccountsService,
+    unlinkCurrentUserSocialAccountService,
+} from '@/server/Auth/Social/management.service.ts'
 
 export const getSocialAccountsHandler = createServerFn({
     method: 'GET',

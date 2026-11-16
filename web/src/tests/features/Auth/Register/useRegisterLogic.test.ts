@@ -204,7 +204,10 @@ describe('registration form workflow', () => {
         social.data.registration = { email: 'provider@example.test' }
         fill(render())
         expect(render().state.isSocial).toBe(true)
-        register.mockResolvedValueOnce({ success: false, error: 'registration.passwordRequired' })
+        register.mockResolvedValueOnce({
+            success: false,
+            error: 'registration.passwordRequired',
+        })
         refetchSocial.mockImplementationOnce(async () => {
             social.data.registration = null
         })
@@ -213,10 +216,19 @@ describe('registration form workflow', () => {
         expect(refetchSocial).toHaveBeenCalledTimes(1)
         expect(render().state.isSocial).toBe(false)
         expect(render().state.phase).toBe('form')
-        expect(defaultToastStore.getToastSnapshot().map((item) => item.content)).toEqual(['auth.register.passwordPolicy'])
+        expect(
+            defaultToastStore.getToastSnapshot().map((item) => item.content),
+        ).toEqual(['auth.register.passwordPolicy'])
         render().handler.handleSubmit(event)
         await requests[1]?.()
-        expect(sends.at(-1)).toEqual({ data: { username: 'alice', email: 'alice@example.test', password: 'long-password-123', acceptTerms: true } })
+        expect(sends.at(-1)).toEqual({
+            data: {
+                username: 'alice',
+                email: 'alice@example.test',
+                password: 'long-password-123',
+                acceptTerms: true,
+            },
+        })
     })
     it('scrubs a verification token immediately and requires one explicit confirmation request', async () => {
         hash = '#verify=' + 'A'.repeat(43)

@@ -129,7 +129,9 @@ describe('Public registration', () => {
         expect(fixture.inserts).toHaveLength(0)
         expect(fixture.order).toEqual(['lock', 'select', 'select'])
         const dialect = new PgDialect()
-        const queries = fixture.queries.map((query) => dialect.sqlToQuery(query))
+        const queries = fixture.queries.map((query) =>
+            dialect.sqlToQuery(query),
+        )
         expect(queries[0]).toMatchObject({
             sql: 'select pg_advisory_xact_lock(7421906)',
             params: [],
@@ -137,10 +139,12 @@ describe('Public registration', () => {
         expect(queries[2].sql).toContain(
             'lower("marketplace"."users"."username")',
         )
-        expect(queries[2].sql).toContain(
-            'lower("marketplace"."users"."email")',
-        )
-        expect(queries[2].params).toEqual([false, 'person', 'person@example.test'])
+        expect(queries[2].sql).toContain('lower("marketplace"."users"."email")')
+        expect(queries[2].params).toEqual([
+            false,
+            'person',
+            'person@example.test',
+        ])
     })
 
     it('grants only the dashboard permission and adds profile and verified identity atomically', async () => {

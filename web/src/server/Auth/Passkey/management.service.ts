@@ -74,7 +74,13 @@ export async function deleteCurrentUserPasskeyService(
                 error: 'Bestätigung fehlgeschlagen. Prüfe deine Eingabe und versuche es erneut.',
             }
         }
-        if (data.reauthentication.method !== 'password' && !(await hasRemainingSignInMethodService(transaction, { userId: state.currentUser.id, excludedPasskeyId: data.passkeyId }))) {
+        if (
+            data.reauthentication.method !== 'password' &&
+            !(await hasRemainingSignInMethodService(transaction, {
+                userId: state.currentUser.id,
+                excludedPasskeyId: data.passkeyId,
+            }))
+        ) {
             return {
                 success: false as const,
                 error: 'Der letzte Anmeldeweg kann nicht entfernt werden. Ein weiterer Anmeldeanbieter oder Passkey muss verfügbar bleiben.',

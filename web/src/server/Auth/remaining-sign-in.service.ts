@@ -9,13 +9,28 @@ import type { SocialProviderId } from '@/lib/Auth/Types/social-auth.types.ts'
 // A stored password hash alone cannot distinguish a known password from a placeholder.
 export async function hasRemainingSignInMethodService(
     transaction: DatabaseTransaction,
-    input: { userId: string; excludedProvider?: SocialProviderId; excludedPasskeyId?: string },
+    input: {
+        userId: string
+        excludedProvider?: SocialProviderId
+        excludedPasskeyId?: string
+    },
 ) {
-    const linked = await transaction.select({ provider: socialAccounts.provider })
-        .from(socialAccounts).where(eq(socialAccounts.userId, input.userId))
+    const linked = await transaction
+        .select({ provider: socialAccounts.provider })
+        .from(socialAccounts)
+        .where(eq(socialAccounts.userId, input.userId))
     const configured = getConfiguredSocialProvidersService()
-    if (linked.some((account) => account.provider !== input.excludedProvider && configured.some((provider) => provider.id === account.provider))) return true
-    const passkeys = await transaction.select({ id: passkeyCredentials.id }).from(passkeyCredentials)
+    if (
+        linked.some(
+            (account) =>
+                account.provider !== input.excludedProvider &&
+                configured.some((provider) => provider.id === account.provider),
+        )
+    )
+        return true
+    const passkeys = await transaction
+        .select({ id: passkeyCredentials.id })
+        .from(passkeyCredentials)
         .where(eq(passkeyCredentials.userId, input.userId))
     return passkeys.some((passkey) => passkey.id !== input.excludedPasskeyId)
 }
