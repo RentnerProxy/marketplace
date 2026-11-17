@@ -1,12 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import {
-    createUserInputSchema,
+    accountManagementScopeSchema,
     deleteUserInputSchema,
     resetUserPasswordInputSchema,
     setUserActiveInputSchema,
     updateUserProfileInputSchema,
 } from '@/features/Admin/UserManagement/validation.ts'
-import { createUserService } from '@/server/Admin/UserManagement/create.service.ts'
 import { deleteUserService } from '@/server/Admin/UserManagement/delete.service.ts'
 import {
     getPermissionsService,
@@ -15,32 +14,27 @@ import {
 import { resetUserPasswordService } from '@/server/Admin/UserManagement/password.service.ts'
 import { setUserActiveService } from '@/server/Admin/UserManagement/active.service.ts'
 import { updateUserProfileService } from '@/server/Admin/UserManagement/update.service.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { getAccountManagementPermission } from '@/lib/UserManagement/accountManagementPermission.ts'
 import { requirePermissionService } from '@/server/Auth/authorization.service.ts'
 import { RATE_LIMITS } from '@/config/security.config.ts'
 import { enforceRateLimit } from '@/server/RateLimit/rateLimit.service.ts'
 
-export const getPermissionsHandler = createServerFn({ method: 'GET' }).handler(
-    async function () {
-        await requirePermissionService(PERMISSIONS.ADMIN_USER_MANAGEMENT)
-        return getPermissionsService()
-    },
-)
-
-export const getUsersHandler = createServerFn({ method: 'GET' }).handler(
-    async function () {
-        await requirePermissionService(PERMISSIONS.ADMIN_USER_MANAGEMENT)
-        return getUsersService()
-    },
-)
-
-export const createUserHandler = createServerFn({ method: 'POST' })
-    .validator(function (data: unknown) {
-        return createUserInputSchema.parse(data)
+export const getPermissionsHandler = createServerFn({ method: 'GET' })
+    .validator((data: unknown) => accountManagementScopeSchema.parse(data))
+    .handler(async ({ data }) => {
+        await requirePermissionService(
+            getAccountManagementPermission(data.accountType),
+        )
+        return getPermissionsService(data.accountType)
     })
-    .handler(async function ({ data }) {
-        await requirePermissionService(PERMISSIONS.ADMIN_USER_MANAGEMENT)
-        return createUserService(data)
+
+export const getUsersHandler = createServerFn({ method: 'GET' })
+    .validator((data: unknown) => accountManagementScopeSchema.parse(data))
+    .handler(async ({ data }) => {
+        const access = await requirePermissionService(
+            getAccountManagementPermission(data.accountType),
+        )
+        return getUsersService(data.accountType, access.userId)
     })
 
 export const updateUserProfileHandler = createServerFn({ method: 'POST' })
@@ -48,7 +42,9 @@ export const updateUserProfileHandler = createServerFn({ method: 'POST' })
         return updateUserProfileInputSchema.parse(data)
     })
     .handler(async function ({ data }) {
-        await requirePermissionService(PERMISSIONS.ADMIN_USER_MANAGEMENT)
+        await requirePermissionService(
+            getAccountManagementPermission(data.accountType),
+        )
         return updateUserProfileService(data)
     })
 
@@ -57,7 +53,9 @@ export const deleteUserHandler = createServerFn({ method: 'POST' })
         return deleteUserInputSchema.parse(data)
     })
     .handler(async function ({ data }) {
-        await requirePermissionService(PERMISSIONS.ADMIN_USER_MANAGEMENT)
+        await requirePermissionService(
+            getAccountManagementPermission(data.accountType),
+        )
         return deleteUserService(data)
     })
 
@@ -66,7 +64,9 @@ export const setUserActiveHandler = createServerFn({ method: 'POST' })
         return setUserActiveInputSchema.parse(data)
     })
     .handler(async function ({ data }) {
-        await requirePermissionService(PERMISSIONS.ADMIN_USER_MANAGEMENT)
+        await requirePermissionService(
+            getAccountManagementPermission(data.accountType),
+        )
         return setUserActiveService(data)
     })
 
@@ -76,7 +76,7 @@ export const resetUserPasswordHandler = createServerFn({ method: 'POST' })
     })
     .handler(async function ({ data }) {
         const access = await requirePermissionService(
-            PERMISSIONS.ADMIN_USER_MANAGEMENT,
+            getAccountManagementPermission(data.accountType),
         )
         await enforceRateLimit({
             ...RATE_LIMITS.adminPasswordResetIp,

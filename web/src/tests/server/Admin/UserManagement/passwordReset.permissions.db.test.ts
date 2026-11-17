@@ -13,7 +13,9 @@ import { db } from '@/db'
 import {
     passwordResetTokens,
     permissions,
-    userPermissions,
+    publicAccounts,
+    staffAccounts,
+    staffUserPermissions,
     users,
 } from '@/db/schema.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
@@ -108,10 +110,12 @@ async function cleanupAdminResetUsers() {
 }
 
 async function createTestUser(role: string) {
+    const accountType = role === 'target' ? 'public' : 'staff'
     const suffix = crypto.randomUUID()
     const insertedUsers = await db
         .insert(users)
         .values({
+            accountType,
             username: `test-db-${role}-${suffix}`.slice(0, 50),
             email: `${TEST_EMAIL_PREFIX}${role}-${suffix}@example.com`,
             passwordHash: 'test-only-placeholder-hash',
@@ -124,6 +128,9 @@ async function createTestUser(role: string) {
         throw new Error('Permission-Testbenutzer konnte nicht angelegt werden.')
     }
 
+    await db
+        .insert(accountType === 'staff' ? staffAccounts : publicAccounts)
+        .values({ userId })
     return userId
 }
 
@@ -158,7 +165,7 @@ async function ensurePermission(permissionKey: string) {
 }
 
 async function assignPermission(userId: string, permissionKey: string) {
-    await db.insert(userPermissions).values({
+    await db.insert(staffUserPermissions).values({
         userId,
         permissionId: await ensurePermission(permissionKey),
     })
@@ -212,13 +219,18 @@ describe('resetUserPasswordService Permission-DB-Integration', function () {
         await assignPermission(actorUserId, PERMISSIONS.ADMIN_USER_MANAGEMENT)
         serviceState.currentUserId = actorUserId
 
-        const result = await resetUserPasswordService({ id: targetUserId })
+        const result = await resetUserPasswordService({
+            id: targetUserId,
+            accountType: 'public',
+        })
         const storedTokens = await getStoredResetTokenHashes(targetUserId)
         const mailPayload = mockedEnqueuePasswordResetMail.mock.calls
             .at(0)
             ?.at(0)
         const rawToken = mailPayload
-            ? new URL(mailPayload.resetLink).searchParams.get('token')
+            ? new URLSearchParams(
+                  new URL(mailPayload.resetLink).hash.slice(1),
+              ).get('token')
             : null
 
         expect(result).toEqual({ success: true })
@@ -240,7 +252,10 @@ describe('resetUserPasswordService Permission-DB-Integration', function () {
         const previousToken = await createExistingResetToken(targetUserId)
         serviceState.currentUserId = actorUserId
 
-        const result = await resetUserPasswordService({ id: targetUserId })
+        const result = await resetUserPasswordService({
+            id: targetUserId,
+            accountType: 'public',
+        })
 
         expect(result).toEqual({
             success: false,
@@ -261,11 +276,14 @@ describe('resetUserPasswordService Permission-DB-Integration', function () {
         await assignPermission(targetUserId, PERMISSIONS.ADMIN_SUPER_USER)
         serviceState.currentUserId = actorUserId
 
-        const result = await resetUserPasswordService({ id: targetUserId })
+        const result = await resetUserPasswordService({
+            id: targetUserId,
+            accountType: 'staff',
+        })
 
         expect(result).toEqual({
             success: false,
-            error: 'Nur Superuser dürfen Passwort-Resets für Superuser auslösen.',
+            error: 'Dir fehlt die erforderliche Berechtigung.',
         })
         expect(await getStoredResetTokenHashes(targetUserId)).toEqual([
             { tokenHash: previousToken.tokenHash },

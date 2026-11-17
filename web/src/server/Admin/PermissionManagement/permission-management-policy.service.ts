@@ -3,7 +3,7 @@ import { normalizePermissionKeys } from '@/lib/Permissions/permissionCollections
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { lockAuditUsersInTransactionService } from '@/lib/AuditLogs/user-locks.ts'
-import { permissions, userPermissions, users } from '@/db/schema.ts'
+import { permissions, staffUserPermissions, users } from '@/db/schema.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { hasSuperUserPermission } from '@/lib/Permissions/permissions.ts'
 import { PermissionDeniedError } from '@/server/Auth/authorization.errors.ts'
@@ -25,10 +25,13 @@ export async function requireSuperUserReadAccessService(actorUserId: string) {
     const actorRows = await db
         .select({ id: users.id })
         .from(users)
-        .innerJoin(userPermissions, eq(userPermissions.userId, users.id))
+        .innerJoin(
+            staffUserPermissions,
+            eq(staffUserPermissions.userId, users.id),
+        )
         .innerJoin(
             permissions,
-            eq(permissions.id, userPermissions.permissionId),
+            eq(permissions.id, staffUserPermissions.permissionId),
         )
         .where(
             and(

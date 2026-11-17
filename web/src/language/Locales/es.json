@@ -55,7 +55,12 @@
         "navigation": "Navegación",
         "systemSettings": "Ajustes del sistema",
         "userManagement": "Gestión de usuarios",
-        "auditLogs": "Registros de auditoría"
+        "auditLogs": "Registros de auditoría",
+        "publicAccounts": "Cuentas públicas",
+        "accounts": "Cuentas",
+        "registrationDefaults": "Permisos de registro",
+        "staff": "Equipo",
+        "staffAccounts": "Cuentas del equipo"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "Esta cuenta está inactiva. Contacta con soporte.",
             "expired": "El acceso ha caducado. Empieza de nuevo.",
             "link_failed": "No se pudo vincular el proveedor. Inicia sesión y vuelve a intentarlo en los ajustes de seguridad."
+        },
+        "staffInvitation": {
+            "title": "Invitación al equipo",
+            "description": "Establece una contraseña para activar tu cuenta del equipo.",
+            "accept": "Aceptar invitación",
+            "checking": "Cargando invitación…",
+            "invalid": "El enlace de invitación no es válido, ha caducado o ya se usó. Pide al equipo una nueva invitación.",
+            "complete": "Tu cuenta del equipo está lista. Ya puedes iniciar sesión.",
+            "failed": "No se pudo aceptar la invitación en este momento. Inténtalo de nuevo."
         }
     },
     "safeDelete": {

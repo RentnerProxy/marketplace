@@ -14,7 +14,7 @@ import {
     sessions,
     trustedDevices,
     twoFactorAuth,
-    userPermissions,
+    accountPermissions,
     users,
 } from '@/db/schema.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
@@ -141,12 +141,12 @@ export async function createAuthenticatedSessionForUser({
 
         const permissionRows = await transaction
             .select({ key: permissions.key })
-            .from(userPermissions)
+            .from(accountPermissions)
             .innerJoin(
                 permissions,
-                eq(permissions.id, userPermissions.permissionId),
+                eq(permissions.id, accountPermissions.permissionId),
             )
-            .where(eq(userPermissions.userId, user.id))
+            .where(eq(accountPermissions.userId, user.id))
         const userPermissionKeys = permissionRows.map(
             (permission) => permission.key,
         )

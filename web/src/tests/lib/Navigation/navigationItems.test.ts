@@ -42,33 +42,30 @@ const nestedNavigation: Array<AuthenticatedNavItem> = [
 ]
 
 describe('Sidebar-Navigation', function () {
-    it('trennt Übersicht und Rechte im Userverwaltungs-Menü nach Permission', function () {
-        const userManagerItems = getVisibleNavigationItems(NAVBAR_ITEMS, [
+    it('shows separate navigation groups and limits team management to superusers', () => {
+        const delegated = getVisibleNavigationItems(NAVBAR_ITEMS, [
             PERMISSIONS.ADMIN_USER_MANAGEMENT,
         ])
-        const superUserItems = getVisibleNavigationItems(NAVBAR_ITEMS, [
-            PERMISSIONS.ADMIN_SUPER_USER,
-        ])
-        const combinedItems = getVisibleNavigationItems(NAVBAR_ITEMS, [
+        const owner = getVisibleNavigationItems(NAVBAR_ITEMS, [
             PERMISSIONS.ADMIN_USER_MANAGEMENT,
             PERMISSIONS.ADMIN_SUPER_USER,
         ])
-
         expect(
-            userManagerItems
-                .find((item) => item.labelKey === 'nav.userManagement')
-                ?.children?.map((item) => item.labelKey),
-        ).toEqual(['nav.overview'])
+            delegated.find((item) => item.labelKey === 'nav.staff'),
+        ).toBeUndefined()
+        expect(flattenNavigationRoutes(delegated).map(({ to }) => to)).toEqual([
+            '/admin/users',
+        ])
         expect(
-            superUserItems
-                .find((item) => item.labelKey === 'nav.userManagement')
-                ?.children?.map((item) => item.labelKey),
-        ).toEqual(['nav.permissions'])
+            owner
+                .find((item) => item.labelKey === 'nav.publicAccounts')
+                ?.children?.map(({ to }) => to),
+        ).toEqual(['/admin/users', '/admin/user-defaults'])
         expect(
-            combinedItems
-                .find((item) => item.labelKey === 'nav.userManagement')
-                ?.children?.map((item) => item.labelKey),
-        ).toEqual(['nav.overview', 'nav.permissions'])
+            owner
+                .find((item) => item.labelKey === 'nav.staff')
+                ?.children?.map(({ to }) => to),
+        ).toEqual(['/admin/staff', '/admin/permissions'])
     })
 
     it('filtert Berechtigungen über beliebig tiefe Child-Ebenen', function () {

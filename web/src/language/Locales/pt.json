@@ -55,7 +55,12 @@
         "navigation": "Navegação",
         "systemSettings": "Definições do sistema",
         "userManagement": "Gestão de utilizadores",
-        "auditLogs": "Registos de auditoria"
+        "auditLogs": "Registos de auditoria",
+        "publicAccounts": "Contas públicas",
+        "accounts": "Contas",
+        "registrationDefaults": "Permissões de registo",
+        "staff": "Equipa",
+        "staffAccounts": "Contas da equipa"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "Esta conta está inativa. Contacta o suporte.",
             "expired": "O início de sessão expirou. Recomeça.",
             "link_failed": "Não foi possível associar o fornecedor. Inicia sessão e tenta novamente nas definições de segurança."
+        },
+        "staffInvitation": {
+            "title": "Convite para a equipa",
+            "description": "Define uma palavra-passe para ativar a tua conta de equipa.",
+            "accept": "Aceitar convite",
+            "checking": "A carregar o convite…",
+            "invalid": "O link é inválido, expirou ou já foi usado. Pede um novo convite à tua equipa.",
+            "complete": "A tua conta de equipa está pronta. Já podes iniciar sessão.",
+            "failed": "Não foi possível aceitar o convite agora. Tenta novamente."
         }
     },
     "safeDelete": {

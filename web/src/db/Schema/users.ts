@@ -8,10 +8,12 @@ import {
     uuid,
     varchar,
     index,
+    unique,
     uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import { appSchema } from './base.ts'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 
 export const users = appSchema.table(
     'users',
@@ -26,6 +28,9 @@ export const users = appSchema.table(
         email: varchar('email', { length: 255 }).notNull(),
 
         passwordHash: text('passwordHash').notNull(),
+        accountType: varchar('accountType', { length: 6 })
+            .$type<AccountType>()
+            .notNull(),
 
         isTwoFactorEnabled: boolean('isTwoFactorEnabled')
             .default(false)
@@ -39,14 +44,6 @@ export const users = appSchema.table(
         })
             .defaultNow()
             .notNull(),
-        createdByUserId: uuid('createdByUserId').references(
-            function (): AnyPgColumn {
-                return users.id
-            },
-            {
-                onDelete: 'set null',
-            },
-        ),
     },
     function (table) {
         return [
@@ -56,7 +53,15 @@ export const users = appSchema.table(
             uniqueIndex('users_email_active_unique_idx')
                 .on(table.email)
                 .where(sql`${table.isDeleted} = false`),
-            index('users_created_by_user_id_idx').on(table.createdByUserId),
+            check(
+                'users_account_type_check',
+                sql`${table.accountType} in ('public', 'staff')`,
+            ),
+            unique('users_id_account_type_unique').on(
+                table.id,
+                table.accountType,
+            ),
+            index('users_account_type_idx').on(table.accountType),
             index('users_is_deleted_idx').on(table.isDeleted),
         ]
     },

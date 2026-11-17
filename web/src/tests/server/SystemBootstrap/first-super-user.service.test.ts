@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import { createFirstSuperUserAccountService } from '@/server/SystemBootstrap/first-super-user.service.ts'
-import { DEFAULT_ADMIN_PERMISSION_KEYS } from '@/config/permissions.config.ts'
+import {
+    DEFAULT_ADMIN_PERMISSION_KEYS,
+    PERMISSIONS,
+} from '@/config/permissions.config.ts'
 import {
     authAuditDb,
     authAuditMocks,
@@ -27,7 +30,10 @@ vi.mock('@/server/SystemBootstrap/permissions.service.ts', () => ({
     async syncDefaultPermissions(
         transaction: ReturnType<typeof createAuthAuditTestApi>,
     ) {
-        const permissions = DEFAULT_ADMIN_PERMISSION_KEYS.map((key, index) => ({
+        const permissions = [
+            ...DEFAULT_ADMIN_PERMISSION_KEYS,
+            PERMISSIONS.USER_DASHBOARD,
+        ].map((key, index) => ({
             id: 'permission-' + String(index),
             key,
         }))
@@ -107,10 +113,23 @@ describe('Erster Superuser Setup-Token und Pflichtaudit', function () {
             },
         })
         expect(authAuditState.rows.users).toHaveLength(1)
+        expect(authAuditState.rows.users[0].accountType).toBe('staff')
+        expect(authAuditState.rows.staffAccounts).toMatchObject([
+            { userId: 'new-users-1' },
+        ])
+        expect(authAuditState.rows.defaultUserPermissions).toMatchObject([
+            {
+                permissionId:
+                    'permission-' +
+                    String(DEFAULT_ADMIN_PERMISSION_KEYS.length),
+            },
+        ])
         expect(authAuditState.rows.user_profiles).toHaveLength(1)
         expect(authAuditState.rows.systemSettings).toHaveLength(1)
         expect(authAuditState.rows.permissions.length).toBeGreaterThan(0)
-        expect(authAuditState.rows.userPermissions.length).toBeGreaterThan(0)
+        expect(authAuditState.rows.staffUserPermissions.length).toBeGreaterThan(
+            0,
+        )
         expect(authAuditState.rows.auditLogs).toEqual([
             expect.objectContaining({
                 action: 'system.first-super-user.created',

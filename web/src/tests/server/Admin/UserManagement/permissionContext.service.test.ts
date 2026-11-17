@@ -14,9 +14,9 @@ const schemaMock = (function () {
             id: 'permissions.id',
             key: 'permissions.key',
         },
-        userPermissions: {
-            permissionId: 'userPermissions.permissionId',
-            userId: 'userPermissions.userId',
+        staffUserPermissions: {
+            permissionId: 'staffUserPermissions.permissionId',
+            userId: 'staffUserPermissions.userId',
         },
         users: {
             id: 'users.id',

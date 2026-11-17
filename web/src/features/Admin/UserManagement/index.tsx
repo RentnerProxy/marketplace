@@ -1,23 +1,22 @@
-import CreateUserPanel from './Components/CreateUserPanel.tsx'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import EditUserModal from './Components/UserEditModal/index.tsx'
 import UsersTable from './Components/UsersTable/index.tsx'
 import useUserManagementLogic from './Hooks/useUserManagementLogic.ts'
 import SafeDeleteModal from '@/shared/SafeDeleteModal/index.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 
-export default function UserManagement() {
+export default function UserManagement({
+    accountType,
+}: {
+    accountType: AccountType
+}) {
     const { t } = useTranslationStore()
-    const { state, handler, form } = useUserManagementLogic()
+    const { state, handler } = useUserManagementLogic(accountType)
 
     return (
         <div className="space-y-6">
-            <CreateUserPanel
-                form={form}
-                isCreatingUser={state.isCreatingUser}
-                onSubmit={handler.handleCreateUserSubmit}
-            />
-
             <UsersTable
+                accountType={accountType}
                 availablePermissions={state.availablePermissions}
                 isDeletingUser={state.isDeletingUser}
                 isTogglingUserActive={state.isTogglingUserActive}

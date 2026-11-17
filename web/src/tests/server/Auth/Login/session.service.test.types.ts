@@ -5,7 +5,7 @@ export type SessionTestTable =
     | 'socialAccounts'
     | 'sessions'
     | 'trustedDevices'
-    | 'userPermissions'
+    | 'accountPermissions'
     | 'permissions'
     | 'twoFactorAuth'
     | 'auditLogs'

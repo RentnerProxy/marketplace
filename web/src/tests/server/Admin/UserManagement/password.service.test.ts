@@ -18,7 +18,10 @@ describe('Admin Password-Reset', function () {
     })
 
     it('revalidiert die Admin-Berechtigung nach sortierten Userlocks in der Token-Transaktion', async function () {
-        const result = await resetUserPasswordService({ id: ADMIN_TARGET_ID })
+        const result = await resetUserPasswordService({
+            accountType: 'staff',
+            id: ADMIN_TARGET_ID,
+        })
         expect(result).toEqual({ success: true })
         expect(
             adminAuditDb.state.events.filter(
@@ -43,12 +46,15 @@ describe('Admin Password-Reset', function () {
     })
 
     it('erstellt nach zwischenzeitlichem Berechtigungsentzug kein Token', async function () {
-        adminAuditDb.state.rows.userPermissions =
-            adminAuditDb.state.rows.userPermissions.filter(
+        adminAuditDb.state.rows.staffUserPermissions =
+            adminAuditDb.state.rows.staffUserPermissions.filter(
                 (row) => row.userId !== ADMIN_ACTOR_ID,
             )
         const before = structuredClone(adminAuditDb.state.rows)
-        const result = await resetUserPasswordService({ id: ADMIN_TARGET_ID })
+        const result = await resetUserPasswordService({
+            accountType: 'staff',
+            id: ADMIN_TARGET_ID,
+        })
         expect(result).toEqual({
             success: false,
             error: 'Dir fehlt die erforderliche Berechtigung.',
@@ -67,7 +73,10 @@ describe('Admin Password-Reset', function () {
     it('erstellt für deaktivierte Benutzer weder Token noch Mail-Job', async function () {
         adminAuditDb.state.rows.users[0].isActive = false
         const before = structuredClone(adminAuditDb.state.rows)
-        const result = await resetUserPasswordService({ id: ADMIN_TARGET_ID })
+        const result = await resetUserPasswordService({
+            accountType: 'staff',
+            id: ADMIN_TARGET_ID,
+        })
         expect(result).toEqual({
             success: false,
             error: 'Für deaktivierte Benutzer kann kein Passwort-Reset versendet werden.',
@@ -92,7 +101,10 @@ describe('Admin Password-Reset', function () {
         adminAuditExternal.enqueueReset.mockRejectedValueOnce(
             new Error('Queue nicht erreichbar'),
         )
-        const result = await resetUserPasswordService({ id: ADMIN_TARGET_ID })
+        const result = await resetUserPasswordService({
+            accountType: 'staff',
+            id: ADMIN_TARGET_ID,
+        })
         expect(result).toMatchObject({ success: false })
         expect(adminAuditDb.state.rows.passwordResetTokens).toEqual([
             otherToken,

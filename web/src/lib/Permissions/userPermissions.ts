@@ -1,7 +1,7 @@
 import type { DatabaseReader } from '@/lib/Database/Types/database.types.ts'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { permissions, userPermissions } from '@/db/schema.ts'
+import { permissions, accountPermissions } from '@/db/schema.ts'
 
 export async function getUserPermissionKeys(
     userId: string,
@@ -9,12 +9,12 @@ export async function getUserPermissionKeys(
 ) {
     const permissionRows = await database
         .select({ key: permissions.key })
-        .from(userPermissions)
+        .from(accountPermissions)
         .innerJoin(
             permissions,
-            eq(permissions.id, userPermissions.permissionId),
+            eq(permissions.id, accountPermissions.permissionId),
         )
-        .where(eq(userPermissions.userId, userId))
+        .where(eq(accountPermissions.userId, userId))
 
     return permissionRows.map((permission) => permission.key)
 }

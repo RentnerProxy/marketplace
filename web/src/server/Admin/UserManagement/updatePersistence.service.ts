@@ -1,13 +1,17 @@
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 import type { NormalizedUserUpdate } from './Types/user-update.types.ts'
 import { and, eq, inArray, ne } from 'drizzle-orm'
-import { accountIdentityMatchesService } from '@/server/Auth/accountUniqueness.service.ts'
+import {
+    accountIdentityMatchesService,
+    hasStaffIdentityReservationInTransactionService,
+} from '@/server/Auth/accountUniqueness.service.ts'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import {
     passwordResetTokens,
     permissions,
     sessions,
     trustedDevices,
-    userPermissions,
+    staffUserPermissions,
     user_profiles,
     users,
 } from '@/db/schema.ts'
@@ -15,6 +19,7 @@ import {
 export async function lockUserForUpdateInTransaction(
     transaction: DatabaseTransaction,
     userId: string,
+    accountType: AccountType,
 ) {
     const userRows = await transaction
         .select({
@@ -22,10 +27,9 @@ export async function lockUserForUpdateInTransaction(
             email: users.email,
             isActive: users.isActive,
             isDeleted: users.isDeleted,
-            createdByUserId: users.createdByUserId,
         })
         .from(users)
-        .where(eq(users.id, userId))
+        .where(and(eq(users.id, userId), eq(users.accountType, accountType)))
         .limit(1)
         .for('update')
 
@@ -95,7 +99,13 @@ export async function hasDuplicateVisibleUserInTransaction(
         )
         .limit(1)
 
-    return duplicateUsers.length > 0
+    return (
+        duplicateUsers.length > 0 ||
+        (await hasStaffIdentityReservationInTransactionService(
+            transaction,
+            input,
+        ))
+    )
 }
 
 export async function writeUserAndProfileInTransaction(
@@ -111,7 +121,7 @@ export async function writeUserAndProfileInTransaction(
             username: users.username,
             email: users.email,
             isActive: users.isActive,
-            createdByUserId: users.createdByUserId,
+            accountType: users.accountType,
             createdAt: users.createdAt,
         })
     const user = updatedUsers.at(0)
@@ -166,14 +176,14 @@ export async function replaceUserPermissionsInTransaction(
     selectedPermissions: Array<{ id: string }>,
 ) {
     await transaction
-        .delete(userPermissions)
-        .where(eq(userPermissions.userId, userId))
+        .delete(staffUserPermissions)
+        .where(eq(staffUserPermissions.userId, userId))
 
     if (selectedPermissions.length === 0) {
         return
     }
 
-    await transaction.insert(userPermissions).values(
+    await transaction.insert(staffUserPermissions).values(
         selectedPermissions.map(function (permission) {
             return {
                 userId,

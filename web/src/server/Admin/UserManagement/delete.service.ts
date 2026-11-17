@@ -1,15 +1,16 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import {
     passwordResetTokens,
+    publicUserPermissions,
     sessions,
     socialAccounts,
     trustedDevices,
     twoFactorAuth,
-    userPermissions,
+    staffUserPermissions,
     users,
 } from '@/db/schema.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { getAccountManagementPermission } from '@/lib/UserManagement/accountManagementPermission.ts'
 import {
     prepareAuditContextService,
     publishCommittedAuditLogService,
@@ -47,12 +48,16 @@ export async function deleteUserService(data: DeleteUserInput) {
                 .select({
                     username: users.username,
                     email: users.email,
-                    createdByUserId: users.createdByUserId,
                     isActive: users.isActive,
                     isDeleted: users.isDeleted,
                 })
                 .from(users)
-                .where(eq(users.id, data.id))
+                .where(
+                    and(
+                        eq(users.id, data.id),
+                        eq(users.accountType, data.accountType),
+                    ),
+                )
                 .limit(1)
                 .for('update')
             const deletedUser = deletedUsers.at(0)
@@ -78,7 +83,7 @@ export async function deleteUserService(data: DeleteUserInput) {
                 !currentUserPermissionKeys ||
                 !hasPermission(
                     currentUserPermissionKeys,
-                    PERMISSIONS.ADMIN_USER_MANAGEMENT,
+                    getAccountManagementPermission(data.accountType),
                 )
             ) {
                 return {
@@ -147,9 +152,13 @@ export async function deleteUserService(data: DeleteUserInput) {
             await transaction
                 .delete(socialAccounts)
                 .where(eq(socialAccounts.userId, data.id))
+            const assignments =
+                data.accountType === 'staff'
+                    ? staffUserPermissions
+                    : publicUserPermissions
             await transaction
-                .delete(userPermissions)
-                .where(eq(userPermissions.userId, data.id))
+                .delete(assignments)
+                .where(eq(assignments.userId, data.id))
             const updatedUsers = await transaction
                 .update(users)
                 .set({
@@ -191,11 +200,14 @@ export async function deleteUserService(data: DeleteUserInput) {
     }
 
     try {
-        await publishUserAccessRevokedService({
-            userId: data.id,
-            reason: 'deleted',
-            updatedAt: new Date().toISOString(),
-        })
+        await publishUserAccessRevokedService(
+            {
+                userId: data.id,
+                reason: 'deleted',
+                updatedAt: new Date().toISOString(),
+            },
+            data.accountType,
+        )
     } catch (error) {
         logError('user_management.delete_publish_failed', error, {
             userId: data.id,

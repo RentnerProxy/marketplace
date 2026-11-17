@@ -4,7 +4,7 @@ import { db } from '@/db'
 import {
     permissions,
     sessions,
-    userPermissions,
+    accountPermissions,
     user_profiles,
     user_settings,
     users,
@@ -95,12 +95,12 @@ export async function validateSessionService() {
 
     const permissionRows = await db
         .select({ key: permissions.key })
-        .from(userPermissions)
+        .from(accountPermissions)
         .innerJoin(
             permissions,
-            eq(permissions.id, userPermissions.permissionId),
+            eq(permissions.id, accountPermissions.permissionId),
         )
-        .where(eq(userPermissions.userId, session.user.id))
+        .where(eq(accountPermissions.userId, session.user.id))
 
     const userPermissionKeys = permissionRows.map(
         (permission) => permission.key,

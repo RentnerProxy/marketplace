@@ -21,9 +21,9 @@ const schema = {
         isDeleted: 'users.isDeleted',
     },
     permissions: { id: 'permissions.id', key: 'permissions.key' },
-    userPermissions: {
-        userId: 'userPermissions.userId',
-        permissionId: 'userPermissions.permissionId',
+    accountPermissions: {
+        userId: 'accountPermissions.userId',
+        permissionId: 'accountPermissions.permissionId',
     },
 }
 
@@ -103,7 +103,7 @@ export function createBackupMutationMocks(audit: BackupAuditHarness) {
                     },
                     innerJoin(joinedTable: unknown, condition: unknown) {
                         if (
-                            table !== schema.userPermissions ||
+                            table !== schema.accountPermissions ||
                             joinedTable !== schema.permissions
                         ) {
                             throw new Error('Unexpected permission join')
@@ -111,13 +111,13 @@ export function createBackupMutationMocks(audit: BackupAuditHarness) {
                         assertCondition(
                             condition,
                             schema.permissions.id,
-                            schema.userPermissions.permissionId,
+                            schema.accountPermissions.permissionId,
                         )
                         return {
                             async where(userCondition: unknown) {
                                 assertCondition(
                                     userCondition,
-                                    schema.userPermissions.userId,
+                                    schema.accountPermissions.userId,
                                     userId,
                                 )
                                 return state.permissionKeys.map((key) => ({

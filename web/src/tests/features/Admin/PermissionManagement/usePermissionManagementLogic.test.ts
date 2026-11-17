@@ -28,7 +28,7 @@ let overviewFetching = false
 let overviewError = false
 let overviewMissing = false
 const refetchOverview = vi.fn(async () => {})
-let receiveEvent: (event: { type: string }) => void
+let receiveEvent: (event: { type: string; payload?: { scope: string } }) => void
 const subscribe = vi.fn((listener: typeof receiveEvent) => {
     receiveEvent = listener
     return vi.fn()
@@ -150,7 +150,6 @@ vi.mock('@/websockets/Client/realtimeEventsClient.ts', () => ({
 
 import usePermissionManagementLogic from '@/features/Admin/PermissionManagement/Hooks/usePermissionManagementLogic.ts'
 import PermissionManagement from '@/features/Admin/PermissionManagement/index.tsx'
-import DefaultPermissionsPanel from '@/features/Admin/PermissionManagement/Components/DefaultPermissionsPanel.tsx'
 import PermissionPresetsPanel from '@/features/Admin/PermissionManagement/Components/PermissionPresetsPanel.tsx'
 import UserPermissionsPanel from '@/features/Admin/PermissionManagement/Components/UserPermissionsPanel.tsx'
 
@@ -198,7 +197,6 @@ beforeEach(() => {
     overviewMissing = false
     overview = {
         permissions: [],
-        defaultPermissionKeys: [PERMISSIONS.USER_DASHBOARD],
         presets: [],
     }
 })
@@ -210,9 +208,9 @@ afterEach(() => {
 describe('PermissionManagement Entwurfs-Lebenszyklus', () => {
     it('switches the visible screen panel through the tab controls and retries overview errors', () => {
         let nodes = elements(renderPage())
-        expect(
-            nodes.some((node) => node.type === DefaultPermissionsPanel),
-        ).toBe(true)
+        expect(nodes.some((node) => node.type === UserPermissionsPanel)).toBe(
+            true,
+        )
         const tabs = nodes.find(
             (node) => typeof node.props.onTabChange === 'function',
         )
@@ -277,15 +275,21 @@ describe('PermissionManagement Entwurfs-Lebenszyklus', () => {
         const hook = renderHook()
         expect(hook.state.permissions).toEqual([])
         expect(hook.state.presets).toEqual([])
-        expect(hook.state.defaults.permissionKeys).toEqual([])
     })
 
-    it('invalidates permission metadata without refetching and refreshes user caches for user events', () => {
+    it('invalidates permission metadata on preset changes and refreshes user caches for user events', () => {
         renderHook()
-        receiveEvent({ type: 'admin-permissions.updated' })
+        receiveEvent({
+            type: 'admin-permissions.updated',
+            payload: { scope: 'defaults' },
+        })
+        expect(queryClient.invalidateQueries).not.toHaveBeenCalled()
+        receiveEvent({
+            type: 'admin-permissions.updated',
+            payload: { scope: 'presets' },
+        })
         expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
             queryKey: ['admin-permission-management', 'overview'],
-            refetchType: 'none',
         })
         queryClient.invalidateQueries.mockClear()
         for (const type of ['admin-user.updated', 'admin-user.access-revoked'])
@@ -302,12 +306,9 @@ describe('PermissionManagement Entwurfs-Lebenszyklus', () => {
         expect(queryClient.invalidateQueries).not.toHaveBeenCalled()
     })
 
-    it('erhält Default-, Preset- und Benutzerentwürfe über Tabwechsel', () => {
+    it('erhält Preset- und Benutzerentwürfe über Tabwechsel', () => {
         let hook = renderHook()
-        expect(usersQueryEnabled).toBe(false)
-        hook.handler.defaults.handleTogglePermission(
-            PERMISSIONS.ADMIN_DASHBOARD,
-        )
+        expect(usersQueryEnabled).toBe(true)
         hook.handler.handleTabChange('presets')
         hook = renderHook()
         hook.handler.permissionPresets.handleFieldChange('name', 'Entwurf')
@@ -321,14 +322,10 @@ describe('PermissionManagement Entwurfs-Lebenszyklus', () => {
         hook.handler.managedUsers.handleTogglePermission(
             PERMISSIONS.ADMIN_DASHBOARD,
         )
-        hook.handler.handleTabChange('defaults')
+        hook.handler.handleTabChange('presets')
         hook = renderHook()
 
         expect(usersQueryEnabled).toBe(false)
-        expect(hook.state.defaults.isDirty).toBe(true)
-        expect(hook.state.defaults.permissionKeys).toContain(
-            PERMISSIONS.ADMIN_DASHBOARD,
-        )
         expect(hook.state.permissionPresets.formValues.name).toBe('Entwurf')
         expect(hook.state.permissionPresets.formValues.permissionKeys).toEqual([
             PERMISSIONS.USER_DASHBOARD,
@@ -339,26 +336,5 @@ describe('PermissionManagement Entwurfs-Lebenszyklus', () => {
         )
         expect(hook.state.managedUsers.isDirty).toBe(true)
         expect(subscribe).toHaveBeenCalledTimes(1)
-    })
-
-    it('übernimmt neue Default-Rechte nur solange der Entwurf unverändert ist', () => {
-        renderHook()
-        overview = {
-            ...overview,
-            defaultPermissionKeys: [PERMISSIONS.ADMIN_DASHBOARD],
-        }
-        let hook = renderHook()
-        expect(hook.state.defaults.permissionKeys).toEqual([
-            PERMISSIONS.ADMIN_DASHBOARD,
-        ])
-        expect(hook.state.defaults.isDirty).toBe(false)
-        hook.handler.defaults.handleTogglePermission(PERMISSIONS.USER_DASHBOARD)
-        overview = { ...overview, defaultPermissionKeys: [] }
-        hook = renderHook()
-        expect(hook.state.defaults.permissionKeys).toEqual([
-            PERMISSIONS.ADMIN_DASHBOARD,
-            PERMISSIONS.USER_DASHBOARD,
-        ])
-        expect(hook.state.defaults.isDirty).toBe(true)
     })
 })

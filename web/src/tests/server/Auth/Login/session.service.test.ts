@@ -58,9 +58,9 @@ const schema = {
         userId: column('trustedDevices', 'userId'),
         deviceTokenHash: column('trustedDevices', 'deviceTokenHash'),
     },
-    userPermissions: {
-        userId: column('userPermissions', 'userId'),
-        permissionId: column('userPermissions', 'permissionId'),
+    accountPermissions: {
+        userId: column('accountPermissions', 'userId'),
+        permissionId: column('accountPermissions', 'permissionId'),
     },
     permissions: {
         id: column('permissions', 'id'),
@@ -79,7 +79,7 @@ function tableName(table: unknown): SessionTestTable {
     if (table === schema.passkeyCredentials) return 'passkeyCredentials'
     if (table === schema.sessions) return 'sessions'
     if (table === schema.trustedDevices) return 'trustedDevices'
-    if (table === schema.userPermissions) return 'userPermissions'
+    if (table === schema.accountPermissions) return 'accountPermissions'
     if (table === schema.permissions) return 'permissions'
     if (table === schema.twoFactorAuth) return 'twoFactorAuth'
     throw new Error('Unexpected table in isolated session adapter')
@@ -92,7 +92,7 @@ function emptyTables(): SessionTestTables {
         passkeyCredentials: [],
         sessions: [],
         trustedDevices: [],
-        userPermissions: [],
+        accountPermissions: [],
         permissions: [],
         twoFactorAuth: [],
         auditLogs: [],
@@ -115,7 +115,7 @@ function resolveValue(value: unknown, scope: SessionTestScope): unknown {
         table !== 'passkeyCredentials' &&
         table !== 'sessions' &&
         table !== 'trustedDevices' &&
-        table !== 'userPermissions' &&
+        table !== 'accountPermissions' &&
         table !== 'permissions' &&
         table !== 'twoFactorAuth'
     )
@@ -303,7 +303,7 @@ function createTransaction(transaction: SessionTestTransaction) {
                             },
                         }
                     }
-                    if (table !== schema.userPermissions)
+                    if (table !== schema.accountPermissions)
                         throw new Error('Unexpected session lookup')
                     return {
                         innerJoin(
@@ -321,12 +321,12 @@ function createTransaction(transaction: SessionTestTransaction) {
                                             ':permissions',
                                     )
                                     await state.beforePermissions?.()
-                                    return transaction.rows.userPermissions.flatMap(
+                                    return transaction.rows.accountPermissions.flatMap(
                                         function (assignment) {
                                             return transaction.rows.permissions.flatMap(
                                                 function (permission) {
                                                     const scope = {
-                                                        userPermissions:
+                                                        accountPermissions:
                                                             assignment,
                                                         permissions: permission,
                                                     }
@@ -652,7 +652,7 @@ describe('atomic authenticated session finalization', function () {
         state.rows.passkeyCredentials = [
             { id: 'passkey-1', userId: USER_ID, counter: 7 },
         ]
-        state.rows.userPermissions = [
+        state.rows.accountPermissions = [
             { userId: USER_ID, permissionId: 'permission-1' },
         ]
         state.rows.permissions = [{ id: 'permission-1', key: 'user.synthetic' }]
@@ -693,7 +693,7 @@ describe('atomic authenticated session finalization', function () {
     it.each(['password', 'passkey', 'social', 'no-permissions'])(
         'rolls back %s finalization when its mandatory audit fails',
         async function (kind) {
-            if (kind === 'no-permissions') state.rows.userPermissions = []
+            if (kind === 'no-permissions') state.rows.accountPermissions = []
             const before = structuredClone(state.rows)
             services.audit.mockRejectedValueOnce(
                 new Error('Synthetic audit failure'),
@@ -1372,7 +1372,7 @@ describe('atomic authenticated session finalization', function () {
     })
 
     it('keeps the no-permission result free of sessions and trusted devices', async function () {
-        state.rows.userPermissions = []
+        state.rows.accountPermissions = []
 
         const result = await createAuthenticatedSessionForUser(
             inputFixture(passwordProof(true)),

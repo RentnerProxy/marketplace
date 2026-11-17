@@ -1,12 +1,18 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import {
     accountIdentityMatchesService,
+    hasStaffIdentityReservationInTransactionService,
     lockAccountUniquenessInTransactionService,
 } from '@/server/Auth/accountUniqueness.service.ts'
 import { users, user_profiles } from '@/db/Schema/users.ts'
-import { permissions, userPermissions } from '@/db/Schema/permissions.ts'
+import { publicAccounts } from '@/db/Schema/accounts.ts'
+import {
+    defaultUserPermissions,
+    permissions,
+    publicUserPermissions,
+} from '@/db/Schema/permissions.ts'
 import { socialAccounts } from '@/db/Schema/socialAuth.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { PUBLIC_PERMISSION_KEYS } from '@/config/permissions.config.ts'
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 import type { SocialProviderId } from '@/lib/Auth/Types/social-auth.types.ts'
 import {
@@ -44,7 +50,14 @@ export async function createPublicAccountInTransactionService(
             ),
         )
         .limit(1)
-    if (duplicate.at(0)) return null
+    if (
+        duplicate.at(0) ||
+        (await hasStaffIdentityReservationInTransactionService(
+            transaction,
+            input,
+        ))
+    )
+        return null
     if (input.provider && input.subject) {
         const existingIdentity = await transaction
             .select({ id: socialAccounts.id })
@@ -58,28 +71,37 @@ export async function createPublicAccountInTransactionService(
             .limit(1)
         if (existingIdentity.at(0)) return null
     }
-    const dashboard = await transaction
+    const defaults = await transaction
         .select({ id: permissions.id })
-        .from(permissions)
-        .where(eq(permissions.key, PERMISSIONS.USER_DASHBOARD))
-        .limit(1)
-    const permission = dashboard.at(0)
-    if (!permission)
-        throw new Error('Public dashboard permission is unavailable')
+        .from(defaultUserPermissions)
+        .innerJoin(
+            permissions,
+            eq(permissions.id, defaultUserPermissions.permissionId),
+        )
+        .where(inArray(permissions.key, PUBLIC_PERMISSION_KEYS))
     const rows = await transaction
         .insert(users)
         .values({
             username: input.username,
             email: input.email,
             passwordHash: input.passwordHash,
+            accountType: 'public',
         })
         .returning({ id: users.id })
     const user = rows.at(0)
     if (!user) throw new Error('Public account insert returned no user')
+    await transaction.insert(publicAccounts).values({ userId: user.id })
     await transaction.insert(user_profiles).values({ userId: user.id })
-    await transaction
-        .insert(userPermissions)
-        .values({ userId: user.id, permissionId: permission.id })
+    if (defaults.length > 0) {
+        await transaction
+            .insert(publicUserPermissions)
+            .values(
+                defaults.map(({ id }) => ({
+                    userId: user.id,
+                    permissionId: id,
+                })),
+            )
+    }
     if (input.provider && input.subject)
         await transaction.insert(socialAccounts).values({
             userId: user.id,

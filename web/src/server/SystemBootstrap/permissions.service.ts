@@ -5,7 +5,7 @@ import type {
 } from './Types/bootstrap-permissions.types.ts'
 
 import { eq, notInArray } from 'drizzle-orm'
-import { permissions, userPermissions } from '@/db/schema.ts'
+import { permissions, staffUserPermissions } from '@/db/schema.ts'
 import {
     DEFAULT_ADMIN_PERMISSION_KEYS,
     DEFAULT_PERMISSIONS,
@@ -54,9 +54,14 @@ export async function syncDefaultPermissions(
 
         if (superUserPermission) {
             const superUsers = await transaction
-                .select({ userId: userPermissions.userId })
-                .from(userPermissions)
-                .where(eq(userPermissions.permissionId, superUserPermission.id))
+                .select({ userId: staffUserPermissions.userId })
+                .from(staffUserPermissions)
+                .where(
+                    eq(
+                        staffUserPermissions.permissionId,
+                        superUserPermission.id,
+                    ),
+                )
             const assignments = superUsers.flatMap((user) =>
                 adminPermissions.map((permission) => ({
                     userId: user.userId,
@@ -66,10 +71,10 @@ export async function syncDefaultPermissions(
 
             if (assignments.length > 0) {
                 const insertedAssignments = await transaction
-                    .insert(userPermissions)
+                    .insert(staffUserPermissions)
                     .values(assignments)
                     .onConflictDoNothing()
-                    .returning({ userId: userPermissions.userId })
+                    .returning({ userId: staffUserPermissions.userId })
                 grantedAssignments = insertedAssignments.length
             }
         }

@@ -55,7 +55,12 @@
         "navigation": "Navigazione",
         "systemSettings": "Impostazioni di sistema",
         "userManagement": "Gestione utenti",
-        "auditLogs": "Registri di controllo"
+        "auditLogs": "Registri di controllo",
+        "publicAccounts": "Account pubblici",
+        "accounts": "Account",
+        "registrationDefaults": "Permessi di registrazione",
+        "staff": "Team",
+        "staffAccounts": "Account del team"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "Questo account è inattivo. Contatta l’assistenza.",
             "expired": "Accesso scaduto. Ricomincia.",
             "link_failed": "Impossibile collegare il provider. Accedi e riprova nelle impostazioni di sicurezza."
+        },
+        "staffInvitation": {
+            "title": "Invito al team",
+            "description": "Imposta una password per attivare il tuo account del team.",
+            "accept": "Accetta invito",
+            "checking": "Caricamento dell’invito…",
+            "invalid": "Il link di invito non è valido, è scaduto o è già stato usato. Chiedi al team un nuovo invito.",
+            "complete": "Il tuo account del team è pronto. Ora puoi accedere.",
+            "failed": "Al momento non è possibile accettare l’invito. Riprova."
         }
     },
     "safeDelete": {

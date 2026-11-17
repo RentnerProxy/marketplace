@@ -3,7 +3,7 @@ import { and, eq, ne } from 'drizzle-orm'
 import {
     permissions,
     systemSettings,
-    userPermissions,
+    staffUserPermissions,
     users,
 } from '@/db/schema.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
@@ -28,12 +28,12 @@ async function notifyMaintenanceAdmins(request: {
 }) {
     const adminRows = await db
         .select({ userId: users.id })
-        .from(userPermissions)
+        .from(staffUserPermissions)
         .innerJoin(
             permissions,
-            eq(permissions.id, userPermissions.permissionId),
+            eq(permissions.id, staffUserPermissions.permissionId),
         )
-        .innerJoin(users, eq(users.id, userPermissions.userId))
+        .innerJoin(users, eq(users.id, staffUserPermissions.userId))
         .where(
             and(
                 eq(permissions.key, PERMISSIONS.ADMIN_SYSTEM_SETTINGS),

@@ -5,6 +5,7 @@ import {
     ADMIN_BACKUPS_TOPIC,
     ADMIN_MAINTENANCE_TOPIC,
     ADMIN_USERS_TOPIC,
+    ADMIN_STAFF_TOPIC,
     MAINTENANCE_MODE_TOPIC,
     SYSTEM_SETTINGS_TOPIC,
     getUserTopic,
@@ -19,11 +20,10 @@ export function getRealtimeConnectionTopics(
         MAINTENANCE_MODE_TOPIC,
         getUserTopic(data.userId),
     ]
-    if (
-        hasPermission(data.permissions, PERMISSIONS.ADMIN_USER_MANAGEMENT) ||
-        hasPermission(data.permissions, PERMISSIONS.ADMIN_SUPER_USER)
-    )
+    if (hasPermission(data.permissions, PERMISSIONS.ADMIN_USER_MANAGEMENT))
         topics.push(ADMIN_USERS_TOPIC)
+    if (hasPermission(data.permissions, PERMISSIONS.ADMIN_SUPER_USER))
+        topics.push(ADMIN_STAFF_TOPIC)
     if (hasPermission(data.permissions, PERMISSIONS.ADMIN_AUDIT_LOGS))
         topics.push(ADMIN_AUDIT_LOGS_TOPIC)
     if (hasPermission(data.permissions, PERMISSIONS.ADMIN_BACKUPS))

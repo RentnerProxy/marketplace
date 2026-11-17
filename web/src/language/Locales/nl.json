@@ -55,7 +55,12 @@
         "navigation": "Navigatie",
         "systemSettings": "Systeeminstellingen",
         "userManagement": "Gebruikersbeheer",
-        "auditLogs": "Auditlogboeken"
+        "auditLogs": "Auditlogboeken",
+        "publicAccounts": "Openbare accounts",
+        "accounts": "Accounts",
+        "registrationDefaults": "Registratierechten",
+        "staff": "Team",
+        "staffAccounts": "Teamaccounts"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "Dit account is inactief. Neem contact op met ondersteuning.",
             "expired": "Je aanmelding is verlopen. Begin opnieuw.",
             "link_failed": "Koppelen is mislukt. Log in en probeer het opnieuw in de beveiligingsinstellingen."
+        },
+        "staffInvitation": {
+            "title": "Teamuitnodiging",
+            "description": "Stel een wachtwoord in om je teamaccount te activeren.",
+            "accept": "Uitnodiging accepteren",
+            "checking": "Uitnodiging laden…",
+            "invalid": "Deze uitnodigingslink is ongeldig, verlopen of al gebruikt. Vraag je team om een nieuwe uitnodiging.",
+            "complete": "Je teamaccount is klaar. Je kunt je nu aanmelden.",
+            "failed": "De uitnodiging kon nu niet worden geaccepteerd. Probeer het opnieuw."
         }
     },
     "safeDelete": {

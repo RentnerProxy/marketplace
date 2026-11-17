@@ -5,7 +5,9 @@ export type AuthAuditTestTable =
     | 'auditLogs'
     | 'systemSettings'
     | 'user_profiles'
-    | 'userPermissions'
+    | 'staffUserPermissions'
+    | 'staffAccounts'
+    | 'defaultUserPermissions'
     | 'permissions'
 export type AuthAuditTestRow = Record<string, unknown>
 export type AuthAuditTestRows = Record<

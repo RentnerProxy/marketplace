@@ -3,6 +3,7 @@ import { normalizeUserProfileUpdate } from '@/server/Admin/UserManagement/update
 
 function createInput() {
     return {
+        accountType: 'public' as const,
         id: '019f72d1-dc60-7040-bdac-9e201573f094',
         username: '  kevin  ',
         email: '  KEVIN@example.test  ',
@@ -21,6 +22,7 @@ describe('UserManagement Update-Normalisierung', function () {
         expect(normalizeUserProfileUpdate(createInput())).toEqual({
             success: true,
             input: {
+                accountType: 'public' as const,
                 id: '019f72d1-dc60-7040-bdac-9e201573f094',
                 username: 'kevin',
                 email: 'kevin@example.test',
@@ -43,6 +45,7 @@ describe('UserManagement Update-Normalisierung', function () {
         expect(normalizeUserProfileUpdate(profileInput)).toEqual({
             success: true,
             input: {
+                accountType: 'public' as const,
                 id: '019f72d1-dc60-7040-bdac-9e201573f094',
                 username: 'kevin',
                 email: 'kevin@example.test',

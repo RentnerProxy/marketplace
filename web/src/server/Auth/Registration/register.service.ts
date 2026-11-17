@@ -1,6 +1,10 @@
 import { randomBytes } from 'node:crypto'
-import { and, eq, lt, or, sql } from 'drizzle-orm'
-import { lockAccountUniquenessInTransactionService } from '@/server/Auth/accountUniqueness.service.ts'
+import { and, eq, lt } from 'drizzle-orm'
+import {
+    accountIdentityMatchesService,
+    hasStaffIdentityReservationInTransactionService,
+    lockAccountUniquenessInTransactionService,
+} from '@/server/Auth/accountUniqueness.service.ts'
 import { db } from '@/db'
 import { users } from '@/db/Schema/users.ts'
 import { pendingRegistrations } from '@/db/Schema/registration.ts'
@@ -102,14 +106,18 @@ export async function registerService(
             .where(
                 and(
                     eq(users.isDeleted, false),
-                    or(
-                        sql`lower(${users.username}) = ${data.username.toLowerCase()}`,
-                        sql`lower(${users.email}) = ${data.email}`,
-                    ),
+                    accountIdentityMatchesService(data),
                 ),
             )
             .limit(1)
-        if (duplicates.at(0)) return false
+        if (
+            duplicates.at(0) ||
+            (await hasStaffIdentityReservationInTransactionService(
+                transaction,
+                data,
+            ))
+        )
+            return false
         if (
             identity &&
             !(await consumeSocialRegistrationIdentityInTransactionService(

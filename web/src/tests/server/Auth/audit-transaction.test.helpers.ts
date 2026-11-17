@@ -17,7 +17,9 @@ const tables: Array<AuthAuditTestTable> = [
     'auditLogs',
     'systemSettings',
     'user_profiles',
-    'userPermissions',
+    'staffUserPermissions',
+    'staffAccounts',
+    'defaultUserPermissions',
     'permissions',
 ]
 export const authAuditSchema = {
@@ -33,7 +35,9 @@ export const authAuditSchema = {
     auditLogs: { id: 'id', createdAt: 'createdAt' },
     systemSettings: { id: 'id' },
     user_profiles: { userId: 'userId' },
-    userPermissions: { userId: 'userId', permissionId: 'permissionId' },
+    staffAccounts: { userId: 'userId' },
+    defaultUserPermissions: { permissionId: 'permissionId' },
+    staffUserPermissions: { userId: 'userId', permissionId: 'permissionId' },
     permissions: { id: 'id' },
 }
 export const authAuditOrm = {
@@ -63,7 +67,9 @@ function emptyRows(): AuthAuditTestRows {
         auditLogs: [],
         systemSettings: [],
         user_profiles: [],
-        userPermissions: [],
+        staffUserPermissions: [],
+        staffAccounts: [],
+        defaultUserPermissions: [],
         permissions: [],
     }
 }

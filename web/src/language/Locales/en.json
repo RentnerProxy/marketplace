@@ -55,7 +55,12 @@
         "user": "User",
         "userManagement": "User management",
         "auditLogs": "Audit Logs",
-        "backups": "Backups"
+        "backups": "Backups",
+        "publicAccounts": "Public accounts",
+        "accounts": "Accounts",
+        "registrationDefaults": "Registration defaults",
+        "staff": "Staff",
+        "staffAccounts": "Staff accounts"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "This account is inactive. Contact support.",
             "expired": "Your sign-in expired. Please start again.",
             "link_failed": "The provider could not be linked. Sign in and try again in security settings."
+        },
+        "staffInvitation": {
+            "title": "Staff invitation",
+            "description": "Set a password to activate your staff account.",
+            "accept": "Accept invitation",
+            "checking": "Loading invitation…",
+            "invalid": "This invitation link is invalid, expired, or already used. Ask your team for a new invitation.",
+            "complete": "Your staff account is ready. You can now sign in.",
+            "failed": "The invitation could not be accepted right now. Please try again."
         }
     },
     "safeDelete": {
@@ -622,14 +636,14 @@
             "restoreWarningPrivateBackgroundCoverage": "Historical archives with manifest v2 do not reset private backgrounds to the backup date: existing images are kept and only missing images are added. Archives with manifest v3 restore the complete image snapshot, including an empty snapshot."
         },
         "permissions": {
-            "title": "Permission management",
-            "description": "Manage default permissions, permission presets, and individual user permissions in one place.",
+            "title": "Staff permissions",
+            "description": "Manage individual staff permissions and reusable presets.",
             "overviewLoadError": "Permission management could not be loaded.",
             "retry": "Try again",
             "tabs": {
                 "defaults": "Default permissions",
                 "presets": "Presets",
-                "users": "User permissions"
+                "users": "Staff permissions"
             },
             "catalog": {
                 "adminDashboard": {
@@ -637,8 +651,8 @@
                     "description": "Can open the admin dashboard."
                 },
                 "userManagement": {
-                    "name": "User management",
-                    "description": "Can manage user accounts."
+                    "name": "Public accounts",
+                    "description": "Can manage publicly registered accounts."
                 },
                 "systemSettings": {
                     "name": "System settings",
@@ -671,12 +685,13 @@
                 "superUser": "Critical permission"
             },
             "defaults": {
-                "title": "Default permissions for new users",
-                "description": "These permissions are assigned automatically whenever a new user is created.",
-                "hint": "Changes only apply to users created in the future. Existing user permissions remain unchanged, and the superuser permission can never be assigned automatically.",
+                "title": "Default permissions for public accounts",
+                "description": "These permissions are assigned when a public registration completes.",
+                "hint": "If you clear all defaults, newly registered accounts will have no access and cannot sign in.",
                 "save": "Save default permissions",
                 "saved": "Default permissions were saved.",
-                "saveError": "Default permissions could not be saved."
+                "saveError": "Default permissions could not be saved.",
+                "loadError": "Default permissions could not be loaded."
             },
             "presets": {
                 "createTitle": "Create preset",
@@ -738,10 +753,10 @@
         },
         "users": {
             "deleteQuestion": "Are you sure you want to delete the user \"{{username}}\"?",
-            "description": "Create users and manage existing accounts.",
-            "title": "User management",
-            "tableTitle": "Users",
-            "tableDescription": "All accounts created in the system.",
+            "description": "Manage publicly registered Marketplace accounts.",
+            "title": "Public accounts",
+            "tableTitle": "Registered accounts",
+            "tableDescription": "Accounts created through public registration.",
             "createTitle": "Create user",
             "createDescription": "Enter username and email, an invitation email will be sent.",
             "editTitle": "Edit user",
@@ -796,6 +811,30 @@
             "passwordResetAriaLabel": "Reset user password",
             "deleteAriaLabel": "Delete user",
             "closeModalAriaLabel": "Close modal"
+        },
+        "staff": {
+            "title": "Staff accounts",
+            "description": "Invite your team and manage internal accounts.",
+            "tableTitle": "Team members",
+            "tableDescription": "Active and deactivated staff accounts.",
+            "inviteTitle": "Invite a team member",
+            "inviteDescription": "Choose the initial permissions. The recipient uses the link in the email to set up their account.",
+            "invitePermissions": "Initial permissions",
+            "invite": "Send invitation",
+            "inviteSent": "The invitation email was queued.",
+            "pendingTitle": "Pending invitations",
+            "noInvitations": "There are no pending invitations.",
+            "expires": "Expires {{date}}",
+            "revoke": "Revoke",
+            "revokeQuestion": "Revoke the invitation for {{email}}?",
+            "revoked": "The invitation was revoked.",
+            "revokeError": "The invitation could not be revoked.",
+            "loadError": "Invitations or staff permissions could not be loaded.",
+            "inviteErrors": {
+                "identityInUse": "The username or email address is in use or reserved by a pending invitation.",
+                "invalidPermissions": "Choose at least one permission that grants access to a page.",
+                "deliveryFailed": "The invitation email could not be queued."
+            }
         }
     },
     "maintenance": {

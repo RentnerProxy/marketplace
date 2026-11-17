@@ -1,14 +1,4 @@
-import type {
-    CreateUserForm,
-    UpdateUserFormValues,
-} from './user-management-form.types.ts'
-import type { SubmitEvent } from 'react'
-
-export type CreateUserPanelProps = {
-    form: CreateUserForm
-    isCreatingUser: boolean
-    onSubmit: (event: SubmitEvent<HTMLFormElement>) => void
-}
+import type { UpdateUserFormValues } from './user-management-form.types.ts'
 
 export type UserAvatarProps = {
     userId: string

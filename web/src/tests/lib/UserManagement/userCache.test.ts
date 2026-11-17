@@ -14,8 +14,6 @@ function createUser(id: string, isActive: boolean): UserManagementUser {
         postalCode: null,
         city: null,
         isActive,
-        createdByUserId: null,
-        isDefaultUser: false,
         isSuperUser: false,
         isCurrentUser: false,
         createdAt: '2026-09-22T00:00:00.000Z',

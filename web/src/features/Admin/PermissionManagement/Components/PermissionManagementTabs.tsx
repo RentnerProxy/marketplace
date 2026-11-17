@@ -1,4 +1,4 @@
-import { Layers3, ShieldCheck, Users } from 'lucide-react'
+import { Layers3, Users } from 'lucide-react'
 import SegmentedTabs from '@/shared/SegmentedTabs.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import type { SegmentedTabOption } from '@/shared/Types/segmented-tabs.types.ts'
@@ -12,26 +12,21 @@ export default function PermissionManagementTabs({
     const { t } = useTranslationStore()
     const tabs: Array<SegmentedTabOption<PermissionManagementTab>> = [
         {
-            key: 'defaults',
-            label: t('admin.permissions.tabs.defaults'),
-            icon: ShieldCheck,
+            key: 'users',
+            label: t('admin.permissions.tabs.users'),
+            icon: Users,
         },
         {
             key: 'presets',
             label: t('admin.permissions.tabs.presets'),
             icon: Layers3,
         },
-        {
-            key: 'users',
-            label: t('admin.permissions.tabs.users'),
-            icon: Users,
-        },
     ]
 
     return (
         <SegmentedTabs
             activeTab={activeTab}
-            columns={3}
+            columns={2}
             tabs={tabs}
             onTabChange={onTabChange}
         />

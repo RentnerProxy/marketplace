@@ -65,8 +65,8 @@ describe('replaceManagedUserPermissionsService', function () {
             if (kind === 'inactive')
                 adminAuditDb.state.rows.users[1].isActive = false
             else
-                adminAuditDb.state.rows.userPermissions =
-                    adminAuditDb.state.rows.userPermissions.filter(
+                adminAuditDb.state.rows.staffUserPermissions =
+                    adminAuditDb.state.rows.staffUserPermissions.filter(
                         (row) => row.userId !== ADMIN_ACTOR_ID,
                     )
             await expect(
@@ -94,7 +94,7 @@ describe('replaceManagedUserPermissionsService', function () {
         })
         const rows = adminAuditDb.state.rows
         expect(
-            rows.userPermissions
+            rows.staffUserPermissions
                 .filter((row) => row.userId === ADMIN_TARGET_ID)
                 .map((row) => row.permissionId),
         ).toEqual(input.permissionKeys.map((key) => 'permission:' + key))

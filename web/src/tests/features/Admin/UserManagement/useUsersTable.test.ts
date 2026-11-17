@@ -26,8 +26,6 @@ const user: UserManagementUser = {
     postalCode: null,
     city: null,
     isActive: true,
-    createdByUserId: null,
-    isDefaultUser: false,
     isSuperUser: false,
     isCurrentUser: false,
     createdAt: '2026-01-01T00:00:00Z',
@@ -45,6 +43,7 @@ import UsersTable from '@/features/Admin/UserManagement/Components/UsersTable/in
 import useUserTableActionsLogic from '@/features/Admin/UserManagement/Components/UsersTable/Hooks/useUserTableActionsLogic.ts'
 
 const props: UsersTableProps = {
+    accountType: 'public',
     availablePermissions: [
         { id: 'z', key: 'z.read', name: 'Z', description: '' },
         { id: 'a', key: 'a.read', name: 'A', description: '' },
@@ -81,8 +80,11 @@ beforeEach(() => {
                       ? {
                             user: { id: actor },
                             permissions: superUser
-                                ? [PERMISSIONS.ADMIN_SUPER_USER]
-                                : [],
+                                ? [
+                                      PERMISSIONS.ADMIN_SUPER_USER,
+                                      PERMISSIONS.ADMIN_USER_MANAGEMENT,
+                                  ]
+                                : [PERMISSIONS.ADMIN_USER_MANAGEMENT],
                         }
                       : undefined,
               }
@@ -179,11 +181,11 @@ describe('users table view', () => {
         expect(rowIds()).toEqual([user.id, 'other'])
     })
 
-    it('uses actor/visibility-specific queries, exposes background loading and hides anonymous cached rows', () => {
+    it('uses account-scoped queries, exposes background loading and hides anonymous cached rows', () => {
         expect(renderTable().data).toEqual([user])
         expect(query).toHaveBeenLastCalledWith(
             expect.objectContaining({
-                queryKey: ['admin-users', 'actor', 'restricted'],
+                queryKey: ['admin-users', 'public', 'actor'],
                 enabled: true,
             }),
         )
@@ -192,7 +194,7 @@ describe('users table view', () => {
         expect(renderTable().isLoading).toBe(true)
         expect(query).toHaveBeenLastCalledWith(
             expect.objectContaining({
-                queryKey: ['admin-users', 'actor', 'full'],
+                queryKey: ['admin-users', 'public', 'actor'],
             }),
         )
         actor = undefined

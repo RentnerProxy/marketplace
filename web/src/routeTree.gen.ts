@@ -20,6 +20,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as StaffInvitationRouteImport } from './routes/staff-invitation'
 import { Route as UpdateInProgressRouteImport } from './routes/update-in-progress'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedUserRouteRouteImport } from './routes/_authenticated/user/route'
@@ -33,7 +34,9 @@ import { Route as AuthenticatedAdminAuditLogsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminPermissionsRouteImport } from './routes/_authenticated/admin/permissions'
+import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authenticated/admin/staff'
 import { Route as AuthenticatedAdminSystemSettingsRouteImport } from './routes/_authenticated/admin/system-settings'
+import { Route as AuthenticatedAdminUserDefaultsRouteImport } from './routes/_authenticated/admin/user-defaults'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedUserDashboardRouteImport } from './routes/_authenticated/user/dashboard'
 import { Route as ApiSystemRestoreStatusRouteImport } from './routes/api/system/restore-status'
@@ -95,6 +98,11 @@ const SetupRoute = SetupRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffInvitationRoute = StaffInvitationRouteImport.update({
+  id: '/staff-invitation',
+  path: '/staff-invitation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UpdateInProgressRoute = UpdateInProgressRouteImport.update({
@@ -166,10 +174,21 @@ const AuthenticatedAdminPermissionsRoute =
     path: '/permissions',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminStaffRoute = AuthenticatedAdminStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminSystemSettingsRoute =
   AuthenticatedAdminSystemSettingsRouteImport.update({
     id: '/system-settings',
     path: '/system-settings',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminUserDefaultsRoute =
+  AuthenticatedAdminUserDefaultsRouteImport.update({
+    id: '/user-defaults',
+    path: '/user-defaults',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
@@ -229,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff-invitation': typeof StaffInvitationRoute
   '/update-in-progress': typeof UpdateInProgressRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/user': typeof AuthenticatedUserRouteRouteWithChildren
@@ -242,7 +262,9 @@ export interface FileRoutesByFullPath {
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/permissions': typeof AuthenticatedAdminPermissionsRoute
+  '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
+  '/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
@@ -263,6 +285,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff-invitation': typeof StaffInvitationRoute
   '/update-in-progress': typeof UpdateInProgressRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/user': typeof AuthenticatedUserRouteRouteWithChildren
@@ -276,7 +299,9 @@ export interface FileRoutesByTo {
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/permissions': typeof AuthenticatedAdminPermissionsRoute
+  '/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
+  '/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
@@ -300,6 +325,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/staff-invitation': typeof StaffInvitationRoute
   '/update-in-progress': typeof UpdateInProgressRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/user': typeof AuthenticatedUserRouteRouteWithChildren
@@ -313,7 +339,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/permissions': typeof AuthenticatedAdminPermissionsRoute
+  '/_authenticated/admin/staff': typeof AuthenticatedAdminStaffRoute
   '/_authenticated/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
+  '/_authenticated/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
@@ -336,6 +364,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/setup'
     | '/sitemap.xml'
+    | '/staff-invitation'
     | '/update-in-progress'
     | '/admin'
     | '/user'
@@ -349,7 +378,9 @@ export interface FileRouteTypes {
     | '/admin/backups'
     | '/admin/dashboard'
     | '/admin/permissions'
+    | '/admin/staff'
     | '/admin/system-settings'
+    | '/admin/user-defaults'
     | '/admin/users'
     | '/user/dashboard'
     | '/api/system/restore-status'
@@ -370,6 +401,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/setup'
     | '/sitemap.xml'
+    | '/staff-invitation'
     | '/update-in-progress'
     | '/admin'
     | '/user'
@@ -383,7 +415,9 @@ export interface FileRouteTypes {
     | '/admin/backups'
     | '/admin/dashboard'
     | '/admin/permissions'
+    | '/admin/staff'
     | '/admin/system-settings'
+    | '/admin/user-defaults'
     | '/admin/users'
     | '/user/dashboard'
     | '/api/system/restore-status'
@@ -406,6 +440,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/setup'
     | '/sitemap.xml'
+    | '/staff-invitation'
     | '/update-in-progress'
     | '/_authenticated/admin'
     | '/_authenticated/user'
@@ -419,7 +454,9 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/backups'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/permissions'
+    | '/_authenticated/admin/staff'
     | '/_authenticated/admin/system-settings'
+    | '/_authenticated/admin/user-defaults'
     | '/_authenticated/admin/users'
     | '/_authenticated/user/dashboard'
     | '/api/system/restore-status'
@@ -443,6 +480,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   SetupRoute: typeof SetupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StaffInvitationRoute: typeof StaffInvitationRoute
   UpdateInProgressRoute: typeof UpdateInProgressRoute
   BlogSlugRoute: typeof BlogSlugRoute
   ApiSystemRestoreStatusRoute: typeof ApiSystemRestoreStatusRoute
@@ -531,6 +569,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff-invitation': {
+      id: '/staff-invitation'
+      path: '/staff-invitation'
+      fullPath: '/staff-invitation'
+      preLoaderRoute: typeof StaffInvitationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/update-in-progress': {
@@ -624,11 +669,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPermissionsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/staff': {
+      id: '/_authenticated/admin/staff'
+      path: '/staff'
+      fullPath: '/admin/staff'
+      preLoaderRoute: typeof AuthenticatedAdminStaffRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/system-settings': {
       id: '/_authenticated/admin/system-settings'
       path: '/system-settings'
       fullPath: '/admin/system-settings'
       preLoaderRoute: typeof AuthenticatedAdminSystemSettingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/user-defaults': {
+      id: '/_authenticated/admin/user-defaults'
+      path: '/user-defaults'
+      fullPath: '/admin/user-defaults'
+      preLoaderRoute: typeof AuthenticatedAdminUserDefaultsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/users': {
@@ -702,7 +761,9 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminBackupsRoute: typeof AuthenticatedAdminBackupsRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminPermissionsRoute: typeof AuthenticatedAdminPermissionsRoute
+  AuthenticatedAdminStaffRoute: typeof AuthenticatedAdminStaffRoute
   AuthenticatedAdminSystemSettingsRoute: typeof AuthenticatedAdminSystemSettingsRoute
+  AuthenticatedAdminUserDefaultsRoute: typeof AuthenticatedAdminUserDefaultsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
 }
 
@@ -712,8 +773,10 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminBackupsRoute: AuthenticatedAdminBackupsRoute,
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
     AuthenticatedAdminPermissionsRoute: AuthenticatedAdminPermissionsRoute,
+    AuthenticatedAdminStaffRoute: AuthenticatedAdminStaffRoute,
     AuthenticatedAdminSystemSettingsRoute:
       AuthenticatedAdminSystemSettingsRoute,
+    AuthenticatedAdminUserDefaultsRoute: AuthenticatedAdminUserDefaultsRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   }
 
@@ -781,6 +844,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   SetupRoute: SetupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StaffInvitationRoute: StaffInvitationRoute,
   UpdateInProgressRoute: UpdateInProgressRoute,
   BlogSlugRoute: BlogSlugRoute,
   ApiSystemRestoreStatusRoute: ApiSystemRestoreStatusRoute,

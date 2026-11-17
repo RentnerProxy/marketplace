@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import {
     passkeyChallenges,
@@ -7,7 +7,7 @@ import {
     trustedDevices,
     users,
 } from '@/db/schema.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { getAccountManagementPermission } from '@/lib/UserManagement/accountManagementPermission.ts'
 import {
     prepareAuditContextService,
     publishCommittedAuditLogService,
@@ -42,12 +42,16 @@ export async function setUserActiveService(data: SetUserActiveInput) {
                 .select({
                     username: users.username,
                     email: users.email,
-                    createdByUserId: users.createdByUserId,
                     isActive: users.isActive,
                     isDeleted: users.isDeleted,
                 })
                 .from(users)
-                .where(eq(users.id, data.id))
+                .where(
+                    and(
+                        eq(users.id, data.id),
+                        eq(users.accountType, data.accountType),
+                    ),
+                )
                 .limit(1)
                 .for('update')
             const previousUser = previousUsers.at(0)
@@ -73,7 +77,7 @@ export async function setUserActiveService(data: SetUserActiveInput) {
                 !currentUserPermissionKeys ||
                 !hasPermission(
                     currentUserPermissionKeys,
-                    PERMISSIONS.ADMIN_USER_MANAGEMENT,
+                    getAccountManagementPermission(data.accountType),
                 )
             ) {
                 return {
@@ -168,11 +172,14 @@ export async function setUserActiveService(data: SetUserActiveInput) {
 
     if (!data.isActive) {
         try {
-            await publishUserAccessRevokedService({
-                userId: data.id,
-                reason: 'deactivated',
-                updatedAt: new Date().toISOString(),
-            })
+            await publishUserAccessRevokedService(
+                {
+                    userId: data.id,
+                    reason: 'deactivated',
+                    updatedAt: new Date().toISOString(),
+                },
+                data.accountType,
+            )
         } catch (error) {
             logError('user_management.active_publish_failed', error, {
                 userId: data.id,

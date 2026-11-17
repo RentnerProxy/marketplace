@@ -27,7 +27,7 @@ describe('fragment links through the real authentication mail renderers', functi
         {
             name: 'account invitation',
             send: sendPasswordSetupMail,
-            subject: 'Account einrichten',
+            subject: 'Einladung ins Marketplace-Team',
         },
     ])(
         'preserves and escapes the $name link in HTML and text',

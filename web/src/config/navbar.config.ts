@@ -5,6 +5,8 @@ import {
     Users,
     HardDriveDownload,
     KeyRound,
+    ShieldCheck,
+    ContactRound,
 } from 'lucide-react'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
@@ -19,16 +21,38 @@ export const NAVBAR_ITEMS = [
         description: 'admin.dashboard.description',
     },
     {
-        labelKey: 'nav.userManagement',
+        labelKey: 'nav.publicAccounts',
         icon: Users,
         children: [
             {
-                labelKey: 'nav.overview',
+                labelKey: 'nav.accounts',
                 to: '/admin/users',
                 icon: Users,
                 permission: PERMISSIONS.ADMIN_USER_MANAGEMENT,
                 title: 'admin.users.title',
                 description: 'admin.users.description',
+            },
+            {
+                labelKey: 'nav.registrationDefaults',
+                to: '/admin/user-defaults',
+                icon: ShieldCheck,
+                permission: PERMISSIONS.ADMIN_SUPER_USER,
+                title: 'admin.permissions.defaults.title',
+                description: 'admin.permissions.defaults.description',
+            },
+        ],
+    },
+    {
+        labelKey: 'nav.staff',
+        icon: ContactRound,
+        children: [
+            {
+                labelKey: 'nav.staffAccounts',
+                to: '/admin/staff',
+                icon: ContactRound,
+                permission: PERMISSIONS.ADMIN_SUPER_USER,
+                title: 'admin.staff.title',
+                description: 'admin.staff.description',
             },
             {
                 labelKey: 'nav.permissions',

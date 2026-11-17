@@ -3,6 +3,6 @@ import { RouteErrorComponent } from '@/shared/RouteErrorComponent/RouteErrorComp
 import UserManagement from '@/features/Admin/UserManagement/index.tsx'
 
 export const Route = createFileRoute('/_authenticated/admin/users')({
-    component: UserManagement,
+    component: () => <UserManagement accountType="public" />,
     errorComponent: RouteErrorComponent,
 })

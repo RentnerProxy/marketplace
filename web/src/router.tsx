@@ -14,11 +14,16 @@ import {
     discardFirstSetupToken,
 } from '@/lib/Auth/FirstSuperUser/firstSetupTokenHandoff.ts'
 import { isFirstSuperUserSetupPath } from '@/features/Auth/FirstSuperUser/setupAccess.ts'
+import {
+    isStaffInvitationPath,
+    staffInvitationTokenHandoff,
+} from '@/lib/Auth/staffInvitationToken.ts'
 
 export function getRouter() {
     if (!import.meta.env.SSR && typeof window !== 'undefined') {
         captureResetToken(window)
         captureFirstSetupToken(window)
+        staffInvitationTokenHandoff.capture(window)
     }
     const context = getContext()
 
@@ -38,6 +43,8 @@ export function getRouter() {
                 discardPasswordResetToken(window)
             if (!isFirstSuperUserSetupPath(toLocation.pathname))
                 discardFirstSetupToken(window)
+            if (!isStaffInvitationPath(toLocation.pathname))
+                staffInvitationTokenHandoff.discard(window)
         })
     }
 

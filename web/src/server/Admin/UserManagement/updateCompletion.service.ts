@@ -9,7 +9,11 @@ function createUpdatedUserProjection(
     transactionResult: SuccessfulUserUpdateTransaction,
     currentUserId: string | null,
 ): UserManagementUser {
-    const { user, userProfile, permissionKeys } = transactionResult
+    const {
+        user: { accountType: _accountType, ...user },
+        userProfile,
+        permissionKeys,
+    } = transactionResult
 
     return {
         ...user,
@@ -19,7 +23,6 @@ function createUpdatedUserProjection(
         houseNumber: userProfile.houseNumber,
         postalCode: userProfile.postalCode,
         city: userProfile.city,
-        isDefaultUser: user.createdByUserId === null,
         isSuperUser: hasSuperUserPermission(permissionKeys),
         isCurrentUser: user.id === currentUserId,
         permissions: permissionKeys,
@@ -38,16 +41,19 @@ export async function completeUserUpdateService(
     await publishCommittedAuditLogService(transactionResult.audit)
 
     try {
-        await publishUserUpdatedService({
-            userId: user.id,
-            username: user.username,
-            previousUsername: previousUser.username,
-            permissionKeys,
-            previousPermissionKeys,
-            addedPermissionKeys: [],
-            removedPermissionKeys: [],
-            updatedAt: new Date().toISOString(),
-        })
+        await publishUserUpdatedService(
+            {
+                userId: user.id,
+                username: user.username,
+                previousUsername: previousUser.username,
+                permissionKeys,
+                previousPermissionKeys,
+                addedPermissionKeys: [],
+                removedPermissionKeys: [],
+                updatedAt: new Date().toISOString(),
+            },
+            user.accountType,
+        )
     } catch (error) {
         logError('user_management.update_publish_failed', error, {
             userId: user.id,

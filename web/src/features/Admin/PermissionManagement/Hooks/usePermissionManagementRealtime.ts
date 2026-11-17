@@ -13,9 +13,9 @@ export default function usePermissionManagementRealtime() {
     useEffect(() => {
         return subscribeToRealtimeEvents(async function (realtimeEvent) {
             if (realtimeEvent.type === 'admin-permissions.updated') {
+                if (realtimeEvent.payload.scope !== 'presets') return
                 return queryClient.invalidateQueries({
                     queryKey: PERMISSION_MANAGEMENT_OVERVIEW_QUERY_KEY,
-                    refetchType: 'none',
                 })
             }
 
