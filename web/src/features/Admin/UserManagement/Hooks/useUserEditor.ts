@@ -7,6 +7,7 @@ import useTranslationStore from '@/language/useTranslationStore.ts'
 import { updateUserProfileHandler } from '../middleware.ts'
 import type { UpdateUserFormValues } from '../Types/user-management-form.types.ts'
 import type { UserManagementUser } from '../Types/user-management-domain.types.ts'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import { ADMIN_USERS_QUERY_KEY } from '@/lib/UserManagement/userCache.ts'
 
 const emptyEditForm: UpdateUserFormValues = {
@@ -21,7 +22,10 @@ const emptyEditForm: UpdateUserFormValues = {
     city: '',
 }
 
-export default function useUserEditor(canManageSuperUsers: boolean) {
+export default function useUserEditor(
+    accountType: AccountType,
+    canManageSuperUsers: boolean,
+) {
     const { t } = useTranslationStore()
     const queryClient = useQueryClient()
     const [editForm, setEditForm] =
@@ -35,7 +39,9 @@ export default function useUserEditor(canManageSuperUsers: boolean) {
     const { mutate: updateUserMutation, isPending: isUpdatingUser } =
         useMutation({
             mutationFn: async function (values: UpdateUserFormValues) {
-                return await updateUserProfileHandler({ data: values })
+                return await updateUserProfileHandler({
+                    data: { ...values, accountType },
+                })
             },
             onSuccess: async function (result) {
                 if (!result.success) {
@@ -48,7 +54,7 @@ export default function useUserEditor(canManageSuperUsers: boolean) {
                 })
                 handleCloseEditModal()
                 await queryClient.invalidateQueries({
-                    queryKey: ADMIN_USERS_QUERY_KEY,
+                    queryKey: [...ADMIN_USERS_QUERY_KEY, accountType],
                 })
             },
             onError: function (error) {

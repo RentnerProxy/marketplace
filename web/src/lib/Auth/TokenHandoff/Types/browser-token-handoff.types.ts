@@ -18,6 +18,7 @@ export type BrowserTokenHandoff = {
 
 export type BrowserTokenHandoffOptions = {
     isActivePath: (pathname: string) => boolean
+    shouldCaptureFragmentChange?: (fragment: string) => boolean
     parseFragment: (fragment: string) => BrowserTokenTransfer
     canonicalPath: string
     clearUrlError: string

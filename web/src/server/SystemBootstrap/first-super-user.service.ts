@@ -2,12 +2,17 @@ import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts
 import { sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+    defaultUserPermissions,
+    staffAccounts,
     systemSettings,
-    userPermissions,
+    staffUserPermissions,
     user_profiles,
     users,
 } from '@/db/schema.ts'
-import { DEFAULT_ADMIN_PERMISSION_KEYS } from '@/config/permissions.config.ts'
+import {
+    DEFAULT_ADMIN_PERMISSION_KEYS,
+    PERMISSIONS,
+} from '@/config/permissions.config.ts'
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import {
     prepareAuditContextService,
@@ -89,6 +94,7 @@ export async function createFirstSuperUserAccountService(
                 username: data.username.trim(),
                 email: data.email.trim().toLowerCase(),
                 passwordHash: await Bun.password.hash(data.password),
+                accountType: 'staff',
                 isActive: true,
             })
             .returning({
@@ -101,6 +107,19 @@ export async function createFirstSuperUserAccountService(
         if (!user) {
             throw new Error('Der erste Superuser konnte nicht angelegt werden.')
         }
+
+        await transaction.insert(staffAccounts).values({ userId: user.id })
+        const publicDashboard = availablePermissions.find(
+            ({ key }) => key === PERMISSIONS.USER_DASHBOARD,
+        )
+        if (!publicDashboard)
+            throw new Error(
+                'Public dashboard permission is unavailable during setup',
+            )
+        await transaction
+            .insert(defaultUserPermissions)
+            .values({ permissionId: publicDashboard.id })
+            .onConflictDoNothing()
 
         await transaction.insert(user_profiles).values({
             userId: user.id,
@@ -118,7 +137,7 @@ export async function createFirstSuperUserAccountService(
 
         if (adminPermissions.length > 0) {
             await transaction
-                .insert(userPermissions)
+                .insert(staffUserPermissions)
                 .values(
                     adminPermissions.map((permission) => ({
                         userId: user.id,

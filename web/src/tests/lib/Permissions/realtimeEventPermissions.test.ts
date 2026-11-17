@@ -30,19 +30,19 @@ describe('Realtime Permission-Topic-Zugriff', function () {
         ).toBe(true)
     })
 
-    it('verbindet nicht neu, solange der Zugriff auf dasselbe Benutzer-Topic erhalten bleibt', function () {
+    it('reconnects when staff and public account topics change', function () {
         expect(
             shouldReconnectForPermissionChange(
                 [PERMISSIONS.ADMIN_USER_MANAGEMENT],
                 [PERMISSIONS.ADMIN_SUPER_USER],
             ),
-        ).toBe(false)
+        ).toBe(true)
         expect(
             shouldReconnectForPermissionChange(
                 [PERMISSIONS.ADMIN_SUPER_USER],
                 [PERMISSIONS.ADMIN_USER_MANAGEMENT],
             ),
-        ).toBe(false)
+        ).toBe(true)
         expect(
             shouldReconnectForPermissionChange(
                 [
@@ -51,7 +51,7 @@ describe('Realtime Permission-Topic-Zugriff', function () {
                 ],
                 [PERMISSIONS.ADMIN_USER_MANAGEMENT],
             ),
-        ).toBe(false)
+        ).toBe(true)
         expect(
             shouldReconnectForPermissionChange(
                 [
@@ -60,7 +60,7 @@ describe('Realtime Permission-Topic-Zugriff', function () {
                 ],
                 [PERMISSIONS.ADMIN_SUPER_USER],
             ),
-        ).toBe(false)
+        ).toBe(true)
     })
 
     it('verbindet bei Änderungen ohne Topic-Zugriff nicht neu', function () {

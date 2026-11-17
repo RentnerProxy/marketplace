@@ -1,4 +1,5 @@
-import { or, sql } from 'drizzle-orm'
+import { and, gt, or, sql } from 'drizzle-orm'
+import { staffInvitations } from '@/db/Schema/accounts.ts'
 import { users } from '@/db/Schema/users.ts'
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 
@@ -17,4 +18,25 @@ export function accountIdentityMatchesService(input: {
         sql`lower(${users.username}) = ${input.username.toLowerCase()}`,
         sql`lower(${users.email}) = ${input.email.toLowerCase()}`,
     )
+}
+
+export async function hasStaffIdentityReservationInTransactionService(
+    transaction: DatabaseTransaction,
+    input: { username: string; email: string },
+    now = new Date(),
+) {
+    const reserved = await transaction
+        .select({ id: staffInvitations.id })
+        .from(staffInvitations)
+        .where(
+            and(
+                gt(staffInvitations.expiresAt, now),
+                or(
+                    sql`lower(${staffInvitations.username}) = ${input.username.toLowerCase()}`,
+                    sql`lower(${staffInvitations.email}) = ${input.email.toLowerCase()}`,
+                ),
+            ),
+        )
+        .limit(1)
+    return reserved.length > 0
 }

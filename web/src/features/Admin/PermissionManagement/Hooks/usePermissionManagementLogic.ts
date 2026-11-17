@@ -9,20 +9,17 @@ import type {
     PermissionManagementTab,
 } from '../Types/permission-management-domain.types.ts'
 import type { PermissionManagementLogicReturn } from '../Types/permission-management-logic.types.ts'
-import useDefaultPermissions from './useDefaultPermissions.ts'
 import useManagedUserPermissions from './useManagedUserPermissions.ts'
 import usePermissionManagementRealtime from './usePermissionManagementRealtime.ts'
 import usePermissionPresets from './usePermissionPresets.ts'
 
 const emptyOverview: PermissionManagementOverview = {
     permissions: [],
-    defaultPermissionKeys: [],
     presets: [],
 }
 
 export default function usePermissionManagementLogic(): PermissionManagementLogicReturn {
-    const [activeTab, setActiveTab] =
-        useState<PermissionManagementTab>('defaults')
+    const [activeTab, setActiveTab] = useState<PermissionManagementTab>('users')
     const overviewQuery = useQuery({
         queryKey: PERMISSION_MANAGEMENT_OVERVIEW_QUERY_KEY,
         queryFn: getPermissionManagementOverviewHandler,
@@ -35,9 +32,6 @@ export default function usePermissionManagementLogic(): PermissionManagementLogi
             ),
         [overview.permissions],
     )
-    const defaults = useDefaultPermissions({
-        defaultPermissionKeys: overview.defaultPermissionKeys,
-    })
     const permissionPresets = usePermissionPresets({
         presets: overview.presets,
     })
@@ -63,11 +57,6 @@ export default function usePermissionManagementLogic(): PermissionManagementLogi
             isLoadingOverview:
                 overviewQuery.isLoading || overviewQuery.isFetching,
             isOverviewError: overviewQuery.isError,
-            defaults: {
-                permissionKeys: defaults.state.permissionKeys,
-                isDirty: defaults.state.isDirty,
-                isSaving: defaults.state.isSaving,
-            },
             permissionPresets: {
                 formValues: permissionPresets.state.formValues,
                 presets: permissionPresets.state.presets,
@@ -97,10 +86,6 @@ export default function usePermissionManagementLogic(): PermissionManagementLogi
         handler: {
             handleTabChange,
             handleRetryOverview,
-            defaults: {
-                handleTogglePermission: defaults.handler.handleTogglePermission,
-                handleSave: defaults.handler.handleSave,
-            },
             permissionPresets: {
                 handleFieldChange: permissionPresets.handler.handleFieldChange,
                 handleTogglePermission:

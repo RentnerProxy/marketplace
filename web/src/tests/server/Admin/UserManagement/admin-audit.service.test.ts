@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import type { UpdateUserProfileInput } from '@/features/Admin/UserManagement/Types/user-management-server-input.types.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 import {
     ADMIN_ACTOR_ID,
@@ -56,8 +55,6 @@ const { setUserActiveService } =
     await import('@/server/Admin/UserManagement/active.service.ts')
 const { deleteUserService } =
     await import('@/server/Admin/UserManagement/delete.service.ts')
-const { createUserService } =
-    await import('@/server/Admin/UserManagement/create.service.ts')
 const { resetUserPasswordService } =
     await import('@/server/Admin/UserManagement/password.service.ts')
 
@@ -65,6 +62,7 @@ function updateInput(id = ADMIN_TARGET_ID): UpdateUserProfileInput {
     const user = adminAuditDb.state.rows.users.find((row) => row.id === id)!
     return {
         id,
+        accountType: 'staff',
         username: String(user.username),
         email: 'changed@example.test',
         firstName: 'After',
@@ -99,33 +97,7 @@ describe('Administrative mutations with required audit persistence', function ()
             expect(adminAuditDb.state.activeTransaction).toBe(0)
             expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
         })
-        adminAuditExternal.enqueueInvitation.mockImplementation(
-            async function () {
-                expect(adminAuditDb.state.activeTransaction).toBe(0)
-                expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
-            },
-        )
     })
-    it.each(['username', 'email'] as const)(
-        'rejects case-insensitive %s collisions on creation',
-        async function (field) {
-            if (field === 'email')
-                adminAuditDb.state.rows.users[0].email = 'TARGET@EXAMPLE.TEST'
-            const result = await createUserService({
-                username: field === 'username' ? 'TARGET' : 'new-user',
-                email:
-                    field === 'email'
-                        ? 'TARGET@EXAMPLE.TEST'
-                        : 'new@example.test',
-            })
-            expect(result).toEqual({
-                success: false,
-                error: 'Ein Benutzer mit diesem Username oder dieser E-Mail existiert bereits.',
-            })
-            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(0)
-            expect(adminAuditExternal.enqueueInvitation).not.toHaveBeenCalled()
-        },
-    )
     it.each(['username', 'email'] as const)(
         'rejects case-insensitive %s collisions on update',
         async function (field) {
@@ -150,32 +122,24 @@ describe('Administrative mutations with required audit persistence', function ()
         })
         expect(result.success).toBe(true)
     })
-    it.each(['create', 'update'] as const)(
-        'locks account uniqueness before user rows during %s',
-        async function (operation) {
-            const result =
-                operation === 'create'
-                    ? await createUserService({
-                          username: 'new-user',
-                          email: 'new@example.test',
-                      })
-                    : await updateUserProfileService(updateInput())
-            expect(result.success).toBe(true)
-            expect(
-                adminAuditDb.state.events
-                    .slice(0, 3)
-                    .map((event) => event.operation),
-            ).toEqual(['begin', 'lock:identity', 'lock:update'])
-        },
-    )
+    it('locks account uniqueness before user rows during profile changes', async () => {
+        expect((await updateUserProfileService(updateInput())).success).toBe(
+            true,
+        )
+        expect(
+            adminAuditDb.state.events
+                .slice(0, 3)
+                .map((event) => event.operation),
+        ).toEqual(['begin', 'lock:identity', 'lock:update'])
+    })
     it('commits profile, identity, revocation and audit together', async function () {
         const previousPermissions = structuredClone(
-            adminAuditDb.state.rows.userPermissions,
+            adminAuditDb.state.rows.staffUserPermissions,
         )
         const result = await updateUserProfileService(updateInput())
         expect(result.success).toBe(true)
         const rows = adminAuditDb.state.rows
-        expect(rows.userPermissions).toEqual(previousPermissions)
+        expect(rows.staffUserPermissions).toEqual(previousPermissions)
         expect(
             rows.users.find((row) => row.id === ADMIN_TARGET_ID)?.email,
         ).toBe('changed@example.test')
@@ -289,9 +253,13 @@ describe('Administrative mutations with required audit persistence', function ()
             adminAuditDb.state.failTable = 'auditLogs'
             await expect(
                 operation === 'delete'
-                    ? deleteUserService({ id: ADMIN_TARGET_ID })
+                    ? deleteUserService({
+                          id: ADMIN_TARGET_ID,
+                          accountType: 'staff',
+                      })
                     : setUserActiveService({
                           id: ADMIN_TARGET_ID,
+                          accountType: 'staff',
                           isActive: false,
                       }),
             ).rejects.toThrow('Injected persistence failure')
@@ -301,7 +269,7 @@ describe('Administrative mutations with required audit persistence', function ()
     )
     it('releases deleted user provider mappings and rejects an outstanding social two-factor login', async () => {
         await expect(
-            deleteUserService({ id: ADMIN_TARGET_ID }),
+            deleteUserService({ id: ADMIN_TARGET_ID, accountType: 'staff' }),
         ).resolves.toEqual({ success: true })
         const rows = adminAuditDb.state.rows
         expect(rows.socialAccounts).toEqual([
@@ -350,9 +318,13 @@ describe('Administrative mutations with required audit persistence', function ()
             )
             await expect(
                 operation === 'delete'
-                    ? deleteUserService({ id: ADMIN_TARGET_ID })
+                    ? deleteUserService({
+                          id: ADMIN_TARGET_ID,
+                          accountType: 'staff',
+                      })
                     : setUserActiveService({
                           id: ADMIN_TARGET_ID,
+                          accountType: 'staff',
                           isActive: false,
                       }),
             ).resolves.toEqual({ success: true })
@@ -364,8 +336,8 @@ describe('Administrative mutations with required audit persistence', function ()
         },
     )
     it('does not mutate after actor permission loss', async function () {
-        adminAuditDb.state.rows.userPermissions =
-            adminAuditDb.state.rows.userPermissions.filter(
+        adminAuditDb.state.rows.staffUserPermissions =
+            adminAuditDb.state.rows.staffUserPermissions.filter(
                 (row) => row.userId !== ADMIN_ACTOR_ID,
             )
         const previous = structuredClone(adminAuditDb.state.rows)
@@ -377,89 +349,72 @@ describe('Administrative mutations with required audit persistence', function ()
         expect(adminAuditDb.state.rows).toEqual(previous)
         expectNoPublishing()
     })
-    it.each([
-        { kind: 'reset', durationMs: 60 * 60_000 },
-        { kind: 'invitation', durationMs: 24 * 60 * 60_000 },
-    ])(
-        'queues a fragment-only $kind link with the original token lifetime and hash',
-        async function (flow) {
-            const beforeMs = Date.now()
-            const result =
-                flow.kind === 'reset'
-                    ? await resetUserPasswordService({ id: ADMIN_TARGET_ID })
-                    : await createUserService({
-                          username: 'new-user',
-                          email: 'new-user@example.test',
-                      })
-            const afterMs = Date.now()
-            expect(result.success).toBe(true)
+    it('queues a fragment-only password reset with the original lifetime and hash', async () => {
+        const beforeMs = Date.now()
+        const result = await resetUserPasswordService({
+            id: ADMIN_TARGET_ID,
+            accountType: 'staff',
+        })
+        const afterMs = Date.now()
+        expect(result.success).toBe(true)
 
-            const queue =
-                flow.kind === 'reset'
-                    ? adminAuditExternal.enqueueReset
-                    : adminAuditExternal.enqueueInvitation
-            expect(queue).toHaveBeenCalledTimes(1)
-            const mail = queue.mock.calls[0]?.[0]
-            if (!mail) throw new Error('Expected a queued authentication mail')
-            const resetUrl = new URL(mail.resetLink)
-            const token = new URLSearchParams(resetUrl.hash.slice(1)).get(
-                'token',
-            )
-            if (!token) throw new Error('Expected a fragment token')
-            expect(token).toMatch(
-                /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
-            )
-            expect(mail).toEqual({
-                to:
-                    flow.kind === 'reset'
-                        ? 'target@example.test'
-                        : 'new-user@example.test',
-                username: flow.kind === 'reset' ? 'target' : 'new-user',
-                resetLink: resetUrl.origin + '/password-reset#token=' + token,
-            })
-            expect(resetUrl.pathname).toBe('/password-reset')
-            expect(resetUrl.search).toBe('')
-            expect(resetUrl.hash).toBe('#token=' + token)
+        const queue = adminAuditExternal.enqueueReset
+        expect(queue).toHaveBeenCalledTimes(1)
+        const mail = queue.mock.calls[0]?.[0]
+        if (!mail) throw new Error('Expected a queued authentication mail')
+        const resetUrl = new URL(mail.resetLink)
+        const token = new URLSearchParams(resetUrl.hash.slice(1)).get('token')
+        if (!token) throw new Error('Expected a fragment token')
+        expect(token).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        )
+        expect(mail).toEqual({
+            to: 'target@example.test',
+            username: 'target',
+            resetLink: resetUrl.origin + '/password-reset#token=' + token,
+        })
+        expect(resetUrl.pathname).toBe('/password-reset')
+        expect(resetUrl.search).toBe('')
+        expect(resetUrl.hash).toBe('#token=' + token)
 
-            const recipient = adminAuditDb.state.rows.users.find(
-                (row) => row.email === mail.to,
-            )
-            if (!recipient) throw new Error('Expected the mail recipient')
-            const persistedToken =
-                adminAuditDb.state.rows.passwordResetTokens.find(
-                    (row) => row.userId === recipient.id,
-                )
-            if (!(persistedToken?.expiresAt instanceof Date))
-                throw new Error('Expected the original token expiration')
-            const tokenHash = await createTokenHash(token)
-            expect(persistedToken.tokenHash).toBe(tokenHash)
-            expect(persistedToken.tokenHash).not.toBe(token)
-            expect(persistedToken.expiresAt.getTime()).toBeGreaterThanOrEqual(
-                beforeMs + flow.durationMs,
-            )
-            expect(persistedToken.expiresAt.getTime()).toBeLessThanOrEqual(
-                afterMs + flow.durationMs,
-            )
-            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
-            expect(adminAuditDb.state.rows.auditLogs[0].action).toBe(
-                flow.kind === 'reset'
-                    ? 'admin.user.password_reset_requested'
-                    : 'admin.user.created',
-            )
-            for (const serialized of [
-                JSON.stringify(result),
-                JSON.stringify(adminAuditDb.state.rows.auditLogs),
-            ]) {
-                expect(serialized).not.toContain(token)
-                expect(serialized).not.toContain(tokenHash)
-            }
-        },
-    )
+        const recipient = adminAuditDb.state.rows.users.find(
+            (row) => row.email === mail.to,
+        )
+        if (!recipient) throw new Error('Expected the mail recipient')
+        const persistedToken = adminAuditDb.state.rows.passwordResetTokens.find(
+            (row) => row.userId === recipient.id,
+        )
+        if (!(persistedToken?.expiresAt instanceof Date))
+            throw new Error('Expected the original token expiration')
+        const tokenHash = await createTokenHash(token)
+        expect(persistedToken.tokenHash).toBe(tokenHash)
+        expect(persistedToken.tokenHash).not.toBe(token)
+        expect(persistedToken.expiresAt.getTime()).toBeGreaterThanOrEqual(
+            beforeMs + 60 * 60_000,
+        )
+        expect(persistedToken.expiresAt.getTime()).toBeLessThanOrEqual(
+            afterMs + 60 * 60_000,
+        )
+        expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
+        expect(adminAuditDb.state.rows.auditLogs[0].action).toBe(
+            'admin.user.password_reset_requested',
+        )
+        for (const serialized of [
+            JSON.stringify(result),
+            JSON.stringify(adminAuditDb.state.rows.auditLogs),
+        ]) {
+            expect(serialized).not.toContain(token)
+            expect(serialized).not.toContain(tokenHash)
+        }
+    })
     it('does not enqueue a reset and preserves the previous token when required audit fails', async function () {
         const previous = structuredClone(adminAuditDb.state.rows)
         adminAuditDb.state.failTable = 'auditLogs'
         await expect(
-            resetUserPasswordService({ id: ADMIN_TARGET_ID }),
+            resetUserPasswordService({
+                id: ADMIN_TARGET_ID,
+                accountType: 'staff',
+            }),
         ).rejects.toThrow('Injected persistence failure')
         expect(adminAuditDb.state.rows).toEqual(previous)
         expect(adminAuditExternal.enqueueReset).not.toHaveBeenCalled()
@@ -470,7 +425,10 @@ describe('Administrative mutations with required audit persistence', function ()
             new Error('Queue unavailable'),
         )
         await expect(
-            resetUserPasswordService({ id: ADMIN_TARGET_ID }),
+            resetUserPasswordService({
+                id: ADMIN_TARGET_ID,
+                accountType: 'staff',
+            }),
         ).resolves.toMatchObject({ success: false })
         expect(adminAuditDb.state.rows.passwordResetTokens).toHaveLength(0)
         expect(
@@ -500,7 +458,10 @@ describe('Administrative mutations with required audit persistence', function ()
             },
         )
         await expect(
-            resetUserPasswordService({ id: ADMIN_TARGET_ID }),
+            resetUserPasswordService({
+                id: ADMIN_TARGET_ID,
+                accountType: 'staff',
+            }),
         ).resolves.toMatchObject({ success: false })
         expect(adminAuditDb.state.rows.passwordResetTokens[0].tokenHash).toBe(
             'newer-token',
@@ -514,168 +475,13 @@ describe('Administrative mutations with required audit persistence', function ()
         adminAuditDb.state.failAuditAction =
             'admin.user.password_reset_cancelled'
         await expect(
-            resetUserPasswordService({ id: ADMIN_TARGET_ID }),
+            resetUserPasswordService({
+                id: ADMIN_TARGET_ID,
+                accountType: 'staff',
+            }),
         ).rejects.toThrow('Injected persistence failure')
         expect(adminAuditDb.state.rows.passwordResetTokens).toHaveLength(1)
         expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
         expect(adminAuditDb.state.events.at(-1)?.operation).toBe('rollback')
-    })
-    it('does not create a user or enqueue an invitation on audit failure', async function () {
-        const previous = structuredClone(adminAuditDb.state.rows)
-        adminAuditDb.state.failTable = 'auditLogs'
-        await expect(
-            createUserService({
-                username: 'new-user',
-                email: 'new-user@example.test',
-            }),
-        ).rejects.toThrow('Injected persistence failure')
-        expect(adminAuditDb.state.rows).toEqual(previous)
-        expect(adminAuditExternal.enqueueInvitation).not.toHaveBeenCalled()
-        expectNoPublishing()
-    })
-    it('audits creation and the full invitation compensation without exposing the password hash', async function () {
-        adminAuditExternal.enqueueInvitation.mockRejectedValueOnce(
-            new Error('Queue unavailable'),
-        )
-        await expect(
-            createUserService({
-                username: 'new-user',
-                email: 'new-user@example.test',
-            }),
-        ).resolves.toMatchObject({ success: false })
-        expect(adminAuditDb.state.rows.users).toHaveLength(2)
-        expect(adminAuditDb.state.rows.user_profiles).toHaveLength(2)
-        expect(adminAuditDb.state.rows.passwordResetTokens).toHaveLength(1)
-        expect(
-            adminAuditDb.state.rows.auditLogs.map((row) => row.action),
-        ).toEqual(['admin.user.created', 'admin.user.creation_rolled_back'])
-        expect(JSON.stringify(adminAuditDb.state.rows.auditLogs)).not.toContain(
-            'passwordHash',
-        )
-    })
-    it.each([
-        'passwordHash',
-        'email',
-        'username',
-        'isActive',
-        'isDeleted',
-        'isTwoFactorEnabled',
-    ])(
-        'preserves the created account if its %s changes before compensation',
-        async function (field) {
-            adminAuditExternal.enqueueInvitation.mockImplementationOnce(
-                async function () {
-                    const created = adminAuditDb.state.rows.users.find(
-                        (row) => row.username === 'new-user',
-                    )!
-                    created[field] =
-                        field === 'isActive'
-                            ? false
-                            : ['isDeleted', 'isTwoFactorEnabled'].includes(
-                                    field,
-                                )
-                              ? true
-                              : 'concurrent-change'
-                    throw new Error('Queue unavailable')
-                },
-            )
-            await expect(
-                createUserService({
-                    username: 'new-user',
-                    email: 'new-user@example.test',
-                }),
-            ).resolves.toMatchObject({ success: false })
-            expect(adminAuditDb.state.rows.users).toHaveLength(3)
-            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
-        },
-    )
-    it.each([
-        'superuser-permission',
-        'removed-permission',
-        'profile',
-        'profile-image',
-        'token-hash',
-        'token-expiry',
-        'additional-token',
-    ])(
-        'preserves the created account and dependent rows after a concurrent %s change',
-        async function (change) {
-            let preservedRows = structuredClone(adminAuditDb.state.rows)
-            adminAuditExternal.enqueueInvitation.mockImplementationOnce(
-                async function () {
-                    const created = adminAuditDb.state.rows.users.find(
-                        (row) => row.username === 'new-user',
-                    )!
-                    const profile = adminAuditDb.state.rows.user_profiles.find(
-                        (row) => row.userId === created.id,
-                    )!
-                    const invitation =
-                        adminAuditDb.state.rows.passwordResetTokens.find(
-                            (row) => row.userId === created.id,
-                        )!
-                    if (change === 'superuser-permission')
-                        adminAuditDb.state.rows.userPermissions.push({
-                            userId: created.id,
-                            permissionId:
-                                'permission:' + PERMISSIONS.ADMIN_SUPER_USER,
-                        })
-                    if (change === 'removed-permission')
-                        adminAuditDb.state.rows.userPermissions =
-                            adminAuditDb.state.rows.userPermissions.filter(
-                                (row) => row.userId !== created.id,
-                            )
-                    if (change === 'profile')
-                        profile.firstName = 'Changed elsewhere'
-                    if (change === 'profile-image')
-                        profile.profileImageUpdatedAt = new Date(
-                            '2026-09-06T13:00:00.000Z',
-                        )
-                    if (change === 'token-hash')
-                        invitation.tokenHash = 'later-reset-token'
-                    if (change === 'token-expiry')
-                        invitation.expiresAt = new Date(
-                            '2035-01-01T00:00:00.000Z',
-                        )
-                    if (change === 'additional-token')
-                        adminAuditDb.state.rows.passwordResetTokens.push({
-                            userId: created.id,
-                            tokenHash: 'additional-token',
-                        })
-                    preservedRows = structuredClone(adminAuditDb.state.rows)
-                    throw new Error('Queue unavailable')
-                },
-            )
-            await expect(
-                createUserService({
-                    username: 'new-user',
-                    email: 'new-user@example.test',
-                }),
-            ).resolves.toMatchObject({ success: false })
-            expect(adminAuditDb.state.rows).toEqual(preservedRows)
-            expect(adminAuditDb.state.rows.users).toHaveLength(3)
-            expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
-            expect(
-                adminAuditDb.state.events.some(
-                    (event) =>
-                        event.operation === 'delete' && event.table === 'users',
-                ),
-            ).toBe(false)
-        },
-    )
-
-    it('rolls the creation compensation back if its own required audit fails', async function () {
-        adminAuditExternal.enqueueInvitation.mockRejectedValueOnce(
-            new Error('Queue unavailable'),
-        )
-        adminAuditDb.state.failAuditAction = 'admin.user.creation_rolled_back'
-        await expect(
-            createUserService({
-                username: 'new-user',
-                email: 'new-user@example.test',
-            }),
-        ).rejects.toThrow('Injected persistence failure')
-        expect(adminAuditDb.state.rows.users).toHaveLength(3)
-        expect(adminAuditDb.state.rows.user_profiles).toHaveLength(3)
-        expect(adminAuditDb.state.rows.auditLogs).toHaveLength(1)
     })
 })

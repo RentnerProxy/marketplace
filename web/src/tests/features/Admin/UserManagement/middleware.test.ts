@@ -7,7 +7,6 @@ import type { Boundary } from './management-middleware.test.helpers.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { RATE_LIMITS } from '@/config/security.config.ts'
 
-const create = vi.fn()
 const update = vi.fn()
 const remove = vi.fn()
 const active = vi.fn()
@@ -16,9 +15,6 @@ const users = vi.fn()
 const permissions = vi.fn()
 const rateLimit = vi.fn()
 vi.mock('@tanstack/react-start', () => ({ createServerFn: createServerFnStub }))
-vi.mock('@/server/Admin/UserManagement/create.service.ts', () => ({
-    createUserService: create,
-}))
 vi.mock('@/server/Admin/UserManagement/update.service.ts', () => ({
     updateUserProfileService: update,
 }))
@@ -44,11 +40,6 @@ const id = '01941f29-7c00-7000-8000-000000000001'
 const cases = [
     ['getPermissionsHandler', permissions, undefined],
     ['getUsersHandler', users, undefined],
-    [
-        'createUserHandler',
-        create,
-        { username: 'member', email: 'member@example.invalid' },
-    ],
     [
         'updateUserProfileHandler',
         update,
@@ -82,13 +73,22 @@ describe('user management server boundaries', () => {
         'authorizes %s before delegating to its service',
         async (name, service, data) => {
             const handler = handlers[name] as unknown as Boundary
-            const response = await handler(data ? { data } : undefined)
+            const response = await handler({
+                data: { ...data, accountType: 'public' },
+            })
             expect(authorize).toHaveBeenCalledWith(
                 PERMISSIONS.ADMIN_USER_MANAGEMENT,
             )
             expect(service).toHaveBeenCalledTimes(1)
-            if (data) expect(service).toHaveBeenCalledWith(data)
-            else expect(service).toHaveBeenCalledWith()
+            if (name === 'getUsersHandler')
+                expect(service).toHaveBeenCalledWith('public', 'actor')
+            else if (name === 'getPermissionsHandler')
+                expect(service).toHaveBeenCalledWith('public')
+            else
+                expect(service).toHaveBeenCalledWith({
+                    ...data,
+                    accountType: 'public',
+                })
             expect(response).toEqual({ success: true })
         },
     )
@@ -98,15 +98,15 @@ describe('user management server boundaries', () => {
         async (name, service, data) => {
             authorize.mockRejectedValue(new Error('Forbidden'))
             const handler = handlers[name] as unknown as Boundary
-            await expect(handler(data ? { data } : undefined)).rejects.toThrow(
-                'Forbidden',
-            )
+            await expect(
+                handler({ data: { ...data, accountType: 'public' } }),
+            ).rejects.toThrow('Forbidden')
             expect(service).not.toHaveBeenCalled()
             expect(rateLimit).not.toHaveBeenCalled()
         },
     )
 
-    it.each(cases.filter(([, , data]) => Boolean(data)))(
+    it.each(cases)(
         'rejects invalid input for %s before invoking services',
         async (name, service) => {
             const handler = handlers[name] as unknown as Boundary
@@ -116,19 +116,22 @@ describe('user management server boundaries', () => {
         },
     )
 
-    it('normalizes create input before passing it to the domain service', async () => {
-        await (handlers.createUserHandler as unknown as Boundary)({
-            data: { username: ' member ', email: ' member@example.invalid ' },
-        })
-        expect(create).toHaveBeenCalledWith({
-            username: 'member',
-            email: 'member@example.invalid',
-        })
-    })
+    it.each(cases)(
+        'requires superuser access for the staff scope of %s',
+        async (name, service, data) => {
+            authorize.mockRejectedValue(new Error('Forbidden'))
+            const handler = handlers[name] as unknown as Boundary
+            await expect(
+                handler({ data: { ...data, accountType: 'staff' } }),
+            ).rejects.toThrow('Forbidden')
+            expect(authorize).toHaveBeenCalledWith(PERMISSIONS.ADMIN_SUPER_USER)
+            expect(service).not.toHaveBeenCalled()
+        },
+    )
 
     it('limits password resets by actor/IP and target before sending an invitation', async () => {
         await (handlers.resetUserPasswordHandler as unknown as Boundary)({
-            data: { id },
+            data: { id, accountType: 'public' },
         })
         expect(rateLimit).toHaveBeenNthCalledWith(1, {
             ...RATE_LIMITS.adminPasswordResetIp,
@@ -141,7 +144,10 @@ describe('user management server boundaries', () => {
             identifiers: ['actor', id],
             includeClientIp: false,
         })
-        expect(resetPassword).toHaveBeenCalledWith({ id })
+        expect(resetPassword).toHaveBeenCalledWith({
+            id,
+            accountType: 'public',
+        })
     })
 
     it.each([1, 2])(
@@ -153,7 +159,7 @@ describe('user management server boundaries', () => {
             })
             await expect(
                 (handlers.resetUserPasswordHandler as unknown as Boundary)({
-                    data: { id },
+                    data: { id, accountType: 'public' },
                 }),
             ).rejects.toThrow('Rate limited')
             expect(resetPassword).not.toHaveBeenCalled()

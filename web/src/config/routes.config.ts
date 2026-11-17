@@ -15,6 +15,8 @@ export const ROUTE_PERMISSIONS = {
     '/admin/dashboard': PERMISSIONS.ADMIN_DASHBOARD,
     '/admin/users': PERMISSIONS.ADMIN_USER_MANAGEMENT,
     '/admin/permissions': PERMISSIONS.ADMIN_SUPER_USER,
+    '/admin/staff': PERMISSIONS.ADMIN_SUPER_USER,
+    '/admin/user-defaults': PERMISSIONS.ADMIN_SUPER_USER,
     '/admin/system-settings': PERMISSIONS.ADMIN_SYSTEM_SETTINGS,
     '/user/dashboard': PERMISSIONS.USER_DASHBOARD,
     '/admin/audit-logs': PERMISSIONS.ADMIN_AUDIT_LOGS,

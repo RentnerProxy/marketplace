@@ -71,7 +71,7 @@ async function verifyBunPassword(password: string, passwordHash: string) {
 }
 
 async function expectFileExists(filePath: string) {
-    await expect(access(filePath)).resolves.toBeUndefined()
+    await access(filePath)
 }
 
 async function uploadDemoUserImages(userId: string) {
@@ -122,6 +122,7 @@ async function createTestCreatorUser() {
         .insert(schema.users)
         .values({
             username: TEST_CREATOR_USERNAME,
+            accountType: 'staff',
             email: TEST_CREATOR_EMAIL,
             passwordHash: await createBunPasswordHash(
                 DEFAULT_TEST_USER_PASSWORD,
@@ -135,6 +136,7 @@ async function createTestCreatorUser() {
         throw new Error('Test-Ersteller konnte nicht angelegt werden.')
     }
 
+    await db.insert(schema.staffAccounts).values({ userId })
     return userId
 }
 
@@ -203,7 +205,7 @@ describe('Systemsettings DB-Demodaten', function () {
             passwordHash: await createBunPasswordHash(
                 DEFAULT_TEST_USER_PASSWORD,
             ),
-            createdByUserId: creatorUserId,
+            accountType: 'staff' as const,
             isActive: true,
         }
 
@@ -216,15 +218,17 @@ describe('Systemsettings DB-Demodaten', function () {
                 id: schema.users.id,
                 email: schema.users.email,
                 passwordHash: schema.users.passwordHash,
-                createdByUserId: schema.users.createdByUserId,
             })
+
+        await db
+            .insert(schema.staffAccounts)
+            .values({ userId: inserted[0].id, invitedByUserId: creatorUserId })
 
         const storedUsers = await db
             .select({
                 id: schema.users.id,
                 email: schema.users.email,
                 passwordHash: schema.users.passwordHash,
-                createdByUserId: schema.users.createdByUserId,
             })
             .from(schema.users)
             .where(eq(schema.users.email, inserted[0].email))
@@ -233,7 +237,11 @@ describe('Systemsettings DB-Demodaten', function () {
         expect(storedUsers[0]?.id).toBe(inserted[0].id)
         expect(storedUsers[0]?.email).toBe(inserted[0].email)
         expect(storedUsers[0]?.passwordHash).toBe(inserted[0].passwordHash)
-        expect(storedUsers[0]?.createdByUserId).toBe(creatorUserId)
+        const memberships = await db
+            .select()
+            .from(schema.staffAccounts)
+            .where(eq(schema.staffAccounts.userId, inserted[0].id))
+        expect(memberships[0]?.invitedByUserId).toBe(creatorUserId)
         expect(
             await verifyBunPassword(
                 DEFAULT_TEST_USER_PASSWORD,

@@ -52,9 +52,9 @@ export async function sendRegistrationVerificationMail(input: AuthMailInput) {
 export async function sendPasswordSetupMail(input: AuthMailInput) {
     await sendAuthMail({
         ...input,
-        subject: 'Account einrichten',
-        headline: 'Account einrichten',
-        intro: `Hallo ${input.username}, für dich wurde ein Account angelegt. Setze über diesen Link dein Passwort.`,
+        subject: 'Einladung ins Marketplace-Team',
+        headline: 'Einladung ins Marketplace-Team',
+        intro: `Hallo ${input.username}, du wurdest ins Marketplace-Team eingeladen. Öffne den Link, um dein Teamkonto einzurichten und dein Passwort festzulegen.`,
     })
 }
 

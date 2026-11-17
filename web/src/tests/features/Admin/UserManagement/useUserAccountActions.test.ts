@@ -36,8 +36,6 @@ const user: UserManagementUser = {
     postalCode: null,
     city: null,
     isActive: true,
-    createdByUserId: null,
-    isDefaultUser: false,
     isSuperUser: false,
     isCurrentUser: false,
     createdAt: '2026-01-01',
@@ -59,7 +57,7 @@ beforeEach(() => {
 
 describe('account actions', () => {
     it('blocks self deletion/deactivation and unauthorized super-user actions', async () => {
-        const hook = render(() => useUserAccountActions(false))
+        const hook = render(() => useUserAccountActions('public', false))
         hook.handler.handleDeleteUser({ ...user, isCurrentUser: true })
         hook.handler.handleToggleUserActive({ ...user, isCurrentUser: true })
         const superUser = { ...user, isSuperUser: true }
@@ -79,31 +77,34 @@ describe('account actions', () => {
         expect(setActive).not.toHaveBeenCalled()
         expect(resetPassword).not.toHaveBeenCalled()
         expect(
-            render(() => useUserAccountActions(false)).state.deleteTargetUser,
+            render(() => useUserAccountActions('public', false)).state
+                .deleteTargetUser,
         ).toBeNull()
     })
 
     it('cancels deletion, then confirms an authorized deletion and invalidates lists', async () => {
         const invalidate = vi.spyOn(client, 'invalidateQueries')
-        let hook = render(() => useUserAccountActions(true))
+        let hook = render(() => useUserAccountActions('public', true))
         hook.handler.handleDeleteUser({ ...user, isSuperUser: true })
-        hook = render(() => useUserAccountActions(true))
+        hook = render(() => useUserAccountActions('public', true))
         expect(hook.state.deleteTargetUser?.id).toBe(user.id)
         hook.handler.handleCloseDeleteModal()
-        hook = render(() => useUserAccountActions(true))
+        hook = render(() => useUserAccountActions('public', true))
         hook.handler.handleConfirmDeleteUser()
         expect(deleteUser).not.toHaveBeenCalled()
         hook.handler.handleDeleteUser(user)
         render(() =>
-            useUserAccountActions(true),
+            useUserAccountActions('public', true),
         ).handler.handleConfirmDeleteUser()
-        hook = render(() => useUserAccountActions(true))
+        hook = render(() => useUserAccountActions('public', true))
         expect(hook.state.deleteTargetUser).toBeNull()
         expect(hook.state.isDeletingUser).toBe(true)
         await settle()
-        expect(deleteUser).toHaveBeenCalledWith({ data: { id: user.id } })
+        expect(deleteUser).toHaveBeenCalledWith({
+            data: { accountType: 'public', id: user.id },
+        })
         expect(invalidate).toHaveBeenCalledWith({
-            queryKey: ADMIN_USERS_QUERY_KEY,
+            queryKey: [...ADMIN_USERS_QUERY_KEY, 'public'],
         })
         expect(success).toHaveBeenCalledWith('admin.users.deleted', {
             title: 'admin.users.title',
@@ -113,24 +114,28 @@ describe('account actions', () => {
 
     it('updates all cached user lists after status changes and allows reactivating self', async () => {
         client.setQueryData(
-            [...ADMIN_USERS_QUERY_KEY, 'restricted'],
+            [...ADMIN_USERS_QUERY_KEY, 'public', 'restricted'],
             [user, { ...user, id: 'other' }],
         )
-        client.setQueryData([...ADMIN_USERS_QUERY_KEY, 'full'], [user])
-        const hook = render(() => useUserAccountActions(true))
+        client.setQueryData(
+            [...ADMIN_USERS_QUERY_KEY, 'public', 'full'],
+            [user],
+        )
+        const hook = render(() => useUserAccountActions('public', true))
         hook.handler.handleToggleUserActive(user)
         expect(
-            render(() => useUserAccountActions(true)).state
+            render(() => useUserAccountActions('public', true)).state
                 .isTogglingUserActive,
         ).toBe(true)
         await settle()
         expect(setActive).toHaveBeenCalledWith({
-            data: { id: user.id, isActive: false },
+            data: { accountType: 'public', id: user.id, isActive: false },
         })
         expect(
             client
                 .getQueryData<Array<UserManagementUser>>([
                     ...ADMIN_USERS_QUERY_KEY,
+                    'public',
                     'restricted',
                 ])
                 ?.map((entry) => entry.isActive),
@@ -138,6 +143,7 @@ describe('account actions', () => {
         expect(
             client.getQueryData<Array<UserManagementUser>>([
                 ...ADMIN_USERS_QUERY_KEY,
+                'public',
                 'full',
             ])?.[0]?.isActive,
         ).toBe(false)
@@ -148,25 +154,29 @@ describe('account actions', () => {
         })
         await settle()
         expect(setActive).toHaveBeenLastCalledWith({
-            data: { id: user.id, isActive: true },
+            data: { accountType: 'public', id: user.id, isActive: true },
         })
     })
 
     it('sends reset once while pending and permits an authorized super-user reset', async () => {
         const pendingRequest = Promise.withResolvers<unknown>()
         resetPassword.mockImplementation(() => pendingRequest.promise)
-        render(() => useUserAccountActions(true)).handler.onPasswordReset({
+        render(() =>
+            useUserAccountActions('public', true),
+        ).handler.onPasswordReset({
             ...user,
             isSuperUser: true,
         })
         await Promise.resolve()
-        const pending = render(() => useUserAccountActions(true))
+        const pending = render(() => useUserAccountActions('public', true))
         expect(pending.state.isResendingPasswordReset).toBe(true)
         pending.handler.onPasswordReset(user)
         pendingRequest.resolve({ success: true })
         await settle()
         expect(resetPassword).toHaveBeenCalledTimes(1)
-        expect(resetPassword).toHaveBeenCalledWith({ data: { id: user.id } })
+        expect(resetPassword).toHaveBeenCalledWith({
+            data: { accountType: 'public', id: user.id },
+        })
         expect(success).toHaveBeenCalledWith('admin.users.passwordResetSent', {
             title: 'admin.users.title',
         })
@@ -185,10 +195,10 @@ describe('account actions', () => {
                 success: false,
                 error: { code: 'FORBIDDEN', message: 'Denied' },
             })
-            let hook = render(() => useUserAccountActions(true))
+            let hook = render(() => useUserAccountActions('public', true))
             if (action === 'delete') {
                 hook.handler.handleDeleteUser(user)
-                hook = render(() => useUserAccountActions(true))
+                hook = render(() => useUserAccountActions('public', true))
                 hook.handler.handleConfirmDeleteUser()
             } else if (action === 'status')
                 hook.handler.handleToggleUserActive(user)
@@ -216,10 +226,10 @@ describe('account actions', () => {
                       ? setActive
                       : resetPassword
             adapter.mockRejectedValue(reason)
-            let hook = render(() => useUserAccountActions(false))
+            let hook = render(() => useUserAccountActions('public', false))
             if (action === 'delete') {
                 hook.handler.handleDeleteUser(user)
-                hook = render(() => useUserAccountActions(false))
+                hook = render(() => useUserAccountActions('public', false))
                 hook.handler.handleConfirmDeleteUser()
             } else if (action === 'status')
                 hook.handler.handleToggleUserActive(user)
@@ -235,16 +245,16 @@ describe('account actions', () => {
 
 describe('user editor', () => {
     it('blocks unauthorized super-user edits and resets the draft on cancel', () => {
-        let hook = render(() => useUserEditor(false))
+        let hook = render(() => useUserEditor('public', false))
         hook.handler.handleOpenEditModal({ ...user, isSuperUser: true })
-        expect(render(() => useUserEditor(false)).state.isEditModalOpen).toBe(
-            false,
-        )
+        expect(
+            render(() => useUserEditor('public', false)).state.isEditModalOpen,
+        ).toBe(false)
         expect(error).toHaveBeenCalledWith('admin.users.editForbidden', {
             title: 'admin.users.title',
         })
         hook.handler.handleOpenEditModal(user)
-        hook = render(() => useUserEditor(false))
+        hook = render(() => useUserEditor('public', false))
         expect(hook.state.isEditModalOpen).toBe(true)
         expect(hook.state.editForm).toMatchObject({
             id: user.id,
@@ -252,32 +262,36 @@ describe('user editor', () => {
             city: '',
         })
         hook.handler.handleCloseEditModal()
-        hook = render(() => useUserEditor(false))
+        hook = render(() => useUserEditor('public', false))
         expect(hook.state.isEditModalOpen).toBe(false)
         expect(hook.state.editForm.id).toBe('')
     })
 
     it('saves a populated profile, closes the editor and invalidates users', async () => {
         const invalidate = vi.spyOn(client, 'invalidateQueries')
-        render(() => useUserEditor(true)).handler.handleOpenEditModal({
-            ...user,
-            isSuperUser: true,
-            firstName: 'Ada',
-            city: 'Berlin',
-        })
-        let hook = render(() => useUserEditor(true))
+        render(() => useUserEditor('public', true)).handler.handleOpenEditModal(
+            {
+                ...user,
+                isSuperUser: true,
+                firstName: 'Ada',
+                city: 'Berlin',
+            },
+        )
+        let hook = render(() => useUserEditor('public', true))
         const values = { ...hook.state.editForm, username: 'updated' }
         hook.handler.handleUpdateUser(values)
-        expect(render(() => useUserEditor(true)).state.isUpdatingUser).toBe(
-            true,
-        )
+        expect(
+            render(() => useUserEditor('public', true)).state.isUpdatingUser,
+        ).toBe(true)
         await settle()
-        expect(updateProfile).toHaveBeenCalledWith({ data: values })
-        hook = render(() => useUserEditor(true))
+        expect(updateProfile).toHaveBeenCalledWith({
+            data: { ...values, accountType: 'public' },
+        })
+        hook = render(() => useUserEditor('public', true))
         expect(hook.state.isEditModalOpen).toBe(false)
         expect(hook.state.editForm.id).toBe('')
         expect(invalidate).toHaveBeenCalledWith({
-            queryKey: ADMIN_USERS_QUERY_KEY,
+            queryKey: [...ADMIN_USERS_QUERY_KEY, 'public'],
         })
         invalidate.mockRestore()
     })
@@ -294,12 +308,15 @@ describe('user editor', () => {
                 updateProfile.mockRejectedValue(
                     failure === 'network' ? new Error('offline') : null,
                 )
-            render(() => useUserEditor(false)).handler.handleOpenEditModal(user)
-            const hook = render(() => useUserEditor(false))
+            render(() =>
+                useUserEditor('public', false),
+            ).handler.handleOpenEditModal(user)
+            const hook = render(() => useUserEditor('public', false))
             hook.handler.handleUpdateUser(hook.state.editForm)
             await settle()
             expect(
-                render(() => useUserEditor(false)).state.isEditModalOpen,
+                render(() => useUserEditor('public', false)).state
+                    .isEditModalOpen,
             ).toBe(true)
             if (failure === 'rejected')
                 expect(appError).toHaveBeenCalledTimes(1)

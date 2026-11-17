@@ -22,7 +22,7 @@ const permission = vi.fn(async function (_key: string) {
     expect(actor?.isActive).toBe(true)
     expect(actor?.isDeleted).toBe(false)
     expect(
-        systemSettingsDb.state.rows.userPermissions.some(
+        systemSettingsDb.state.rows.staffUserPermissions.some(
             (entry) =>
                 entry.userId === SYSTEM_SETTINGS_ACTOR_ID &&
                 entry.permissionId ===

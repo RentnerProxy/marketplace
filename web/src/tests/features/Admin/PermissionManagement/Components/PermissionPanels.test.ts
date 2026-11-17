@@ -320,14 +320,14 @@ describe('Permission presets', () => {
         ).toBe(false)
     })
 
-    it('provides the three management tabs and forwards tab selection', () => {
+    it('provides the staff permissions and presets tabs and forwards tab selection', () => {
         const onTabChange = mock()
         const tree = PermissionManagementTabs({
             activeTab: 'presets',
             onTabChange,
         })
         const html = renderToStaticMarkup(tree)
-        for (const tab of ['defaults', 'presets', 'users'])
+        for (const tab of ['presets', 'users'])
             expect(html).toContain(`admin.permissions.tabs.${tab}`)
         expect(tree.props.activeTab).toBe('presets')
         invoke(tree, 'onTabChange', 'users')

@@ -3,7 +3,7 @@ import { getUserPermissionKeys } from '@/lib/Permissions/userPermissions.ts'
 import { getActiveUserPermissionKeysInTransaction } from '@/server/Auth/transaction-authorization.service.ts'
 import { and, count, eq } from 'drizzle-orm'
 
-import { permissions, userPermissions, users } from '@/db/schema.ts'
+import { permissions, staffUserPermissions, users } from '@/db/schema.ts'
 import { SUPER_USER_PERMISSION } from '@/lib/Permissions/permissions.ts'
 
 export function getAddedPermissionKeys(
@@ -45,11 +45,11 @@ export async function lockAndCountActiveSuperUsers(
 
     const activeSuperUserRows = await transaction
         .select({ value: count() })
-        .from(userPermissions)
-        .innerJoin(users, eq(users.id, userPermissions.userId))
+        .from(staffUserPermissions)
+        .innerJoin(users, eq(users.id, staffUserPermissions.userId))
         .where(
             and(
-                eq(userPermissions.permissionId, superUserPermission.id),
+                eq(staffUserPermissions.permissionId, superUserPermission.id),
                 eq(users.isActive, true),
                 eq(users.isDeleted, false),
             ),

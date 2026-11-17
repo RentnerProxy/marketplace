@@ -1,6 +1,5 @@
 import {
     haveSamePermissionKeys,
-    withoutSuperUserPermission,
     togglePermissionKey,
 } from '@/lib/Permissions/permissionCollections.ts'
 import { useEffect, useRef, useState } from 'react'
@@ -12,8 +11,8 @@ import { AppError } from '@/lib/Errors/appError.ts'
 import { getErrorMessage } from '@/lib/Errors/error.ts'
 import { toastAppError } from '@/shared/Errors/toastAppError.ts'
 import { replaceDefaultPermissionsHandler } from '../middleware.ts'
-import { PERMISSION_MANAGEMENT_OVERVIEW_QUERY_KEY } from '@/lib/Permissions/permissionManagementCache.ts'
-import type { PermissionManagementOverview } from '../Types/permission-management-domain.types.ts'
+import { PUBLIC_ACCOUNT_DEFAULTS_QUERY_KEY } from '@/lib/Permissions/permissionManagementCache.ts'
+import type { PublicAccountDefaults } from '../Types/permission-management-domain.types.ts'
 import type {
     DefaultPermissionsHandler,
     DefaultPermissionsState,
@@ -28,20 +27,13 @@ export default function useDefaultPermissions({
 } {
     const { t } = useTranslationStore()
     const queryClient = useQueryClient()
-    const sanitizedDefaultPermissionKeys = withoutSuperUserPermission(
+    const [permissionKeys, setPermissionKeys] = useState<Array<string>>(
         defaultPermissionKeys,
     )
-    const [permissionKeys, setPermissionKeys] = useState<Array<string>>(
-        sanitizedDefaultPermissionKeys,
-    )
-    const previousDefaultPermissionKeysRef = useRef(
-        sanitizedDefaultPermissionKeys,
-    )
+    const previousDefaultPermissionKeysRef = useRef(defaultPermissionKeys)
 
     useEffect(() => {
-        const nextDefaultPermissionKeys = withoutSuperUserPermission(
-            defaultPermissionKeys,
-        )
+        const nextDefaultPermissionKeys = defaultPermissionKeys
         const previousDefaultPermissionKeys =
             previousDefaultPermissionKeysRef.current
 
@@ -82,11 +74,11 @@ export default function useDefaultPermissions({
             }
 
             toast.success(t('admin.permissions.defaults.saved'), {
-                title: t('admin.permissions.title'),
+                title: t('admin.permissions.defaults.title'),
             })
             setPermissionKeys(result.permissionKeys)
-            queryClient.setQueryData<PermissionManagementOverview>(
-                PERMISSION_MANAGEMENT_OVERVIEW_QUERY_KEY,
+            queryClient.setQueryData<PublicAccountDefaults>(
+                PUBLIC_ACCOUNT_DEFAULTS_QUERY_KEY,
                 (currentOverview) =>
                     currentOverview
                         ? {
@@ -121,7 +113,7 @@ export default function useDefaultPermissions({
         state: {
             permissionKeys,
             isDirty: !haveSamePermissionKeys(
-                sanitizedDefaultPermissionKeys,
+                defaultPermissionKeys,
                 permissionKeys,
             ),
             isSaving: saveMutation.isPending,

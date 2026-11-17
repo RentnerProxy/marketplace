@@ -5,7 +5,7 @@ import type { NormalizedUserUpdate } from './Types/user-update.types.ts'
 import { writeAuditLogInTransactionService } from '@/lib/AuditLogs/auditLogs.ts'
 import { lockAuditUsersInTransactionService } from '@/lib/AuditLogs/user-locks.ts'
 import type { PreparedAuditContext } from '@/lib/AuditLogs/Types/audit.types.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { getAccountManagementPermission } from '@/lib/UserManagement/accountManagementPermission.ts'
 import { hasPermission } from '@/lib/Permissions/permissions.ts'
 import { getUserPermissionPolicyContextInTransaction } from './permissionContext.service.ts'
 
@@ -37,6 +37,7 @@ export async function updateUserInTransaction(
     const previousUserData = await lockUserForUpdateInTransaction(
         transaction,
         input.id,
+        input.accountType,
     )
 
     if (!previousUserData || previousUserData.isDeleted) {
@@ -68,7 +69,7 @@ export async function updateUserInTransaction(
         !currentUserPermissionKeys ||
         !hasPermission(
             currentUserPermissionKeys,
-            PERMISSIONS.ADMIN_USER_MANAGEMENT,
+            getAccountManagementPermission(input.accountType),
         )
     ) {
         return {

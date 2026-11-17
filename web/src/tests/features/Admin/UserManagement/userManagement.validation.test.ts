@@ -1,7 +1,8 @@
 import { faker } from '@faker-js/faker'
 import { describe, expect, it } from 'bun:test'
+import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { inviteStaffInputSchema } from '@/features/Admin/StaffManagement/validation.ts'
 import {
-    createUserInputSchema,
     deleteUserInputSchema,
     resetUserPasswordInputSchema,
     setUserActiveInputSchema,
@@ -11,6 +12,7 @@ import {
 function createValidUpdateUserInput() {
     return {
         id: Bun.randomUUIDv7(),
+        accountType: 'public',
         username: faker.internet.username().slice(0, 50),
         email: faker.internet.email(),
         firstName: faker.person.firstName(),
@@ -24,11 +26,12 @@ function createValidUpdateUserInput() {
 }
 
 describe('UserManagement Validierung', function () {
-    it('akzeptiert gültige Create-User-Daten und trimmt Eingaben', function () {
+    it('normalizes a valid staff invitation', function () {
         const username = faker.internet.username().slice(0, 40)
         const email = faker.internet.email()
 
-        const result = createUserInputSchema.safeParse({
+        const result = inviteStaffInputSchema.safeParse({
+            permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD],
             username: ` ${username} `,
             email: ` ${email} `,
         })
@@ -37,12 +40,13 @@ describe('UserManagement Validierung', function () {
 
         if (result.success) {
             expect(result.data.username).toBe(username)
-            expect(result.data.email).toBe(email)
+            expect(result.data.email).toBe(email.toLowerCase())
         }
     })
 
-    it('lehnt ungültige Create-User-E-Mail-Adressen ab', function () {
-        const result = createUserInputSchema.safeParse({
+    it('rejects invalid staff invitation addresses', function () {
+        const result = inviteStaffInputSchema.safeParse({
+            permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD],
             username: faker.internet.username(),
             email: 'keine-email',
         })
@@ -78,14 +82,21 @@ describe('UserManagement Validierung', function () {
 
     it('lehnt ungültige User-IDs für Admin-Aktionen ab', function () {
         expect(
-            deleteUserInputSchema.safeParse({ id: 'ungueltig' }).success,
+            deleteUserInputSchema.safeParse({
+                id: 'ungueltig',
+                accountType: 'public',
+            }).success,
         ).toBe(false)
         expect(
-            resetUserPasswordInputSchema.safeParse({ id: 'ungueltig' }).success,
+            resetUserPasswordInputSchema.safeParse({
+                id: 'ungueltig',
+                accountType: 'staff',
+            }).success,
         ).toBe(false)
         expect(
             setUserActiveInputSchema.safeParse({
                 id: 'ungueltig',
+                accountType: 'staff',
                 isActive: true,
             }).success,
         ).toBe(false)

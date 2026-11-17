@@ -1,8 +1,6 @@
 import { dispatchRealtimeEvent } from '@/websockets/Server/realtimeConnectionRegistry.ts'
 import { ensureRealtimeServer } from '@/websockets/Server/realtimeServer.ts'
 import type {
-    AdminUserAccessRevokedEvent,
-    AdminUserUpdatedEvent,
     AdminPermissionsUpdatedEvent,
     AuditLogCreatedEvent,
     MaintenanceExtensionResolvedEvent,
@@ -23,6 +21,7 @@ import {
     ADMIN_BACKUPS_TOPIC,
     ADMIN_MAINTENANCE_TOPIC,
     ADMIN_USERS_TOPIC,
+    ADMIN_STAFF_TOPIC,
     MAINTENANCE_MODE_TOPIC,
     REALTIME_PUBLISH_PATH,
     SYSTEM_SETTINGS_TOPIC,
@@ -31,6 +30,7 @@ import {
 import { getValkeyPublisher } from '@/server/Valkey/valkey.service.ts'
 import { REALTIME_VALKEY_CHANNEL } from '@/websockets/Server/realtimeValkey.ts'
 import { logError } from '@/server/Logging/logger.ts'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 
 async function publishRealtimeEventViaBridgeService(
     topic: string,
@@ -129,38 +129,27 @@ export async function publishMaintenanceExtensionRequestedService(
     })
 }
 
-async function publishAdminUserUpdatedService(
-    payload: AdminUserUpdatedEvent['payload'],
-) {
-    await publishRealtimeEventService(ADMIN_USERS_TOPIC, {
-        type: 'admin-user.updated',
-        payload,
-    })
-}
-
-async function publishAdminUserAccessRevokedService(
-    payload: AdminUserAccessRevokedEvent['payload'],
-) {
-    await publishRealtimeEventService(ADMIN_USERS_TOPIC, {
-        type: 'admin-user.access-revoked',
-        payload,
-    })
-}
-
 export async function publishUserUpdatedService(
     payload: UserUpdatedEvent['payload'],
+    accountType: AccountType,
 ) {
     await publishRealtimeEventService(getUserTopic(payload.userId), {
         type: 'user.updated',
         payload,
     })
-    await publishAdminUserUpdatedService(payload)
+    await publishRealtimeEventService(
+        accountType === 'staff' ? ADMIN_STAFF_TOPIC : ADMIN_USERS_TOPIC,
+        {
+            type: 'admin-user.updated',
+            payload,
+        },
+    )
 }
 
 export async function publishPermissionManagementUpdatedService(
     payload: AdminPermissionsUpdatedEvent['payload'],
 ) {
-    await publishRealtimeEventService(ADMIN_USERS_TOPIC, {
+    await publishRealtimeEventService(ADMIN_STAFF_TOPIC, {
         type: 'admin-permissions.updated',
         payload,
     })
@@ -177,12 +166,19 @@ export async function publishNotificationCreatedService(
 
 export async function publishUserAccessRevokedService(
     payload: UserAccessRevokedEvent['payload'],
+    accountType: AccountType,
 ) {
     await publishRealtimeEventService(getUserTopic(payload.userId), {
         type: 'user.access-revoked',
         payload,
     })
-    await publishAdminUserAccessRevokedService(payload)
+    await publishRealtimeEventService(
+        accountType === 'staff' ? ADMIN_STAFF_TOPIC : ADMIN_USERS_TOPIC,
+        {
+            type: 'admin-user.access-revoked',
+            payload,
+        },
+    )
 }
 
 export async function publishSessionRevokedService(

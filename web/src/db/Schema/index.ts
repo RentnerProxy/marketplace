@@ -1,5 +1,6 @@
 export * from './base.ts'
 export * from './users.ts'
+export * from './accounts.ts'
 export * from './permissions.ts'
 export * from './systemSettings.ts'
 export * from './auth.ts'

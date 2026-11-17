@@ -55,7 +55,12 @@
         "navigation": "Nawigacja",
         "systemSettings": "Ustawienia systemu",
         "userManagement": "Zarządzanie użytkownikami",
-        "auditLogs": "Dzienniki audytu"
+        "auditLogs": "Dzienniki audytu",
+        "publicAccounts": "Konta publiczne",
+        "accounts": "Konta",
+        "registrationDefaults": "Uprawnienia rejestracji",
+        "staff": "Zespół",
+        "staffAccounts": "Konta zespołu"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "To konto jest nieaktywne. Skontaktuj się z pomocą.",
             "expired": "Logowanie wygasło. Zacznij ponownie.",
             "link_failed": "Nie udało się połączyć dostawcy. Zaloguj się i spróbuj ponownie w ustawieniach bezpieczeństwa."
+        },
+        "staffInvitation": {
+            "title": "Zaproszenie do zespołu",
+            "description": "Ustaw hasło, aby aktywować konto zespołu.",
+            "accept": "Przyjmij zaproszenie",
+            "checking": "Wczytywanie zaproszenia…",
+            "invalid": "Link jest nieprawidłowy, wygasł lub został już użyty. Poproś zespół o nowe zaproszenie.",
+            "complete": "Twoje konto zespołu jest gotowe. Możesz się teraz zalogować.",
+            "failed": "Nie można teraz przyjąć zaproszenia. Spróbuj ponownie."
         }
     },
     "safeDelete": {

@@ -15,7 +15,10 @@ import type {
     BunUpgradeServer,
 } from '@/websockets/Types/bun.ts'
 import { getRealtimeRevocationEpoch } from '@/websockets/Server/realtimeSessionValidation.ts'
-import { ADMIN_USERS_TOPIC } from '@/lib/Realtime/realtimeProtocol.ts'
+import {
+    ADMIN_STAFF_TOPIC,
+    ADMIN_USERS_TOPIC,
+} from '@/lib/Realtime/realtimeProtocol.ts'
 
 const restoreStateMocks = (function () {
     return {
@@ -258,14 +261,15 @@ describe('Realtime-Server-Sicherheit', function () {
         }
     })
 
-    it('abonniert den Admin-User-Topic auch ausschließlich mit Superuser-Recht', function () {
+    it('subscribes a superuser to the staff topic', function () {
         const websocket = createWebSocket(undefined, [
             PERMISSIONS.ADMIN_SUPER_USER,
         ])
 
         realtimeWebSocketHandler.open(websocket)
 
-        expect(websocket.subscribe).toHaveBeenCalledWith(ADMIN_USERS_TOPIC)
+        expect(websocket.subscribe).toHaveBeenCalledWith(ADMIN_STAFF_TOPIC)
+        expect(websocket.subscribe).not.toHaveBeenCalledWith(ADMIN_USERS_TOPIC)
         realtimeWebSocketHandler.close(websocket)
     })
 

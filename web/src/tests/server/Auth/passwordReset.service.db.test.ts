@@ -142,6 +142,7 @@ async function createPasswordResetFixture(expiresAt: Date) {
     const insertedUsers = await db
         .insert(users)
         .values({
+            accountType: 'public',
             username: `test-db-reset-${suffix}`.slice(0, 50),
             email: `${TEST_EMAIL_PREFIX}${suffix}@example.com`,
             passwordHash,

@@ -2,7 +2,7 @@ export type AdminTestRow = Record<string, unknown>
 export type AdminTestTable = Record<string, string>
 export type AdminTestSelection = Record<string, unknown>
 export type AdminTestCondition = {
-    kind: 'and' | 'or' | 'eq' | 'ne' | 'inArray' | 'lowerEq'
+    kind: 'and' | 'or' | 'eq' | 'ne' | 'gt' | 'lte' | 'inArray' | 'lowerEq'
     values: unknown[]
 }
 export type AdminTestContext = Record<string, AdminTestRow>

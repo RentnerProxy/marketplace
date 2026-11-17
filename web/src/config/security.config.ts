@@ -31,6 +31,8 @@ export const RATE_LIMITS = {
     registrationIp: { limit: 10, windowMs: 60 * 60_000 },
     registrationAccount: { limit: 3, windowMs: 60 * 60_000 },
     registrationVerifyIp: { limit: 30, windowMs: 15 * 60_000 },
+    staffInvitationSend: { limit: 30, windowMs: 60 * 60_000 },
+    staffInvitationAccept: { limit: 15, windowMs: 60 * 60_000 },
     socialStartIp: { limit: 30, windowMs: 15 * 60_000 },
     socialCallbackIp: { limit: 60, windowMs: 15 * 60_000 },
     socialTwoFactorIp: { limit: 30, windowMs: 15 * 60_000 },

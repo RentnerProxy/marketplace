@@ -13,6 +13,10 @@ export const PERMISSIONS = {
     ADMIN_BACKUPS: 'admin.backups',
 } as const
 
+export const PUBLIC_PERMISSION_KEYS: ReadonlyArray<string> = [
+    PERMISSIONS.USER_DASHBOARD,
+] satisfies Array<PermissionKey>
+
 export const DEFAULT_PERMISSIONS = [
     {
         key: PERMISSIONS.ADMIN_DASHBOARD,
@@ -21,8 +25,8 @@ export const DEFAULT_PERMISSIONS = [
     },
     {
         key: PERMISSIONS.ADMIN_USER_MANAGEMENT,
-        name: 'Userverwaltung',
-        description: 'Darf Benutzerkonten verwalten.',
+        name: 'Öffentliche Konten',
+        description: 'Darf öffentlich registrierte Konten verwalten.',
     },
     {
         key: PERMISSIONS.ADMIN_SYSTEM_SETTINGS,
@@ -38,7 +42,7 @@ export const DEFAULT_PERMISSIONS = [
         key: PERMISSIONS.ADMIN_SUPER_USER,
         name: 'Superuser',
         description:
-            'Darf Benutzerrechte, Rechte-Presets und Standardrechte verwalten.',
+            'Darf Teamkonten einladen und verwalten sowie Teamrechte und öffentliche Standardrechte konfigurieren.',
     },
     {
         key: PERMISSIONS.USER_DASHBOARD,

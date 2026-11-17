@@ -39,7 +39,7 @@ function createSessionUser(id: string) {
         isActive: true,
         isDeleted: false,
         createdAt: new Date(),
-        createdByUserId: null,
+        accountType: 'public' as const,
         firstName: null,
         lastName: null,
         street: null,

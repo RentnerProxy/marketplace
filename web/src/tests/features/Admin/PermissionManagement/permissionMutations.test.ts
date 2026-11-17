@@ -9,9 +9,13 @@ import {
     success,
 } from '../UserManagement/user-management-hooks.test.helpers.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
-import { PERMISSION_MANAGEMENT_OVERVIEW_QUERY_KEY as overviewKey } from '@/lib/Permissions/permissionManagementCache.ts'
+import {
+    PERMISSION_MANAGEMENT_OVERVIEW_QUERY_KEY as overviewKey,
+    PUBLIC_ACCOUNT_DEFAULTS_QUERY_KEY as defaultsKey,
+} from '@/lib/Permissions/permissionManagementCache.ts'
 import type {
     PermissionManagementOverview,
+    PublicAccountDefaults,
     PermissionPreset,
 } from '@/features/Admin/PermissionManagement/Types/permission-management-domain.types.ts'
 
@@ -39,15 +43,14 @@ const preset: PermissionPreset = {
 }
 const other = { ...preset, id: 'other', name: 'Other' }
 const usePresets = () => usePermissionPresets({ presets: [preset, other] })
-const useDefaultsWithSuperUser = () =>
+const useDashboardDefaults = () =>
     useDefaultPermissions({
-        defaultPermissionKeys: [
-            PERMISSIONS.USER_DASHBOARD,
-            PERMISSIONS.ADMIN_SUPER_USER,
-        ],
+        defaultPermissionKeys: [PERMISSIONS.USER_DASHBOARD],
     })
 const useEmptyDefaults = () =>
     useDefaultPermissions({ defaultPermissionKeys: [] })
+const cachedDefaults = () =>
+    client.getQueryData<PublicAccountDefaults>(defaultsKey)
 const cached = () =>
     client.getQueryData<PermissionManagementOverview>(overviewKey)
 
@@ -61,11 +64,14 @@ beforeEach(() => {
     remove.mockReset().mockResolvedValue({ success: true })
     replaceDefaults.mockReset().mockResolvedValue({
         success: true,
-        permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD],
+        permissionKeys: [],
+    })
+    client.setQueryData(defaultsKey, {
+        permissions: [],
+        defaultPermissionKeys: [PERMISSIONS.USER_DASHBOARD],
     })
     client.setQueryData(overviewKey, {
         permissions: [],
-        defaultPermissionKeys: [],
         presets: [other],
     })
 })
@@ -225,30 +231,22 @@ describe('permission presets', () => {
 })
 
 describe('default permissions', () => {
-    it('sanitizes defaults and stores server-confirmed keys in the overview', async () => {
-        const useDefaults = useDefaultsWithSuperUser
-        let hook = render(useDefaults)
+    it('stores server-confirmed public defaults independently of the staff overview', async () => {
+        const before = cached()
+        let hook = render(useDashboardDefaults)
         expect(hook.state.permissionKeys).toEqual([PERMISSIONS.USER_DASHBOARD])
-        hook.handler.handleTogglePermission(PERMISSIONS.ADMIN_DASHBOARD)
-        hook = render(useDefaults)
+        hook.handler.handleTogglePermission(PERMISSIONS.USER_DASHBOARD)
+        hook = render(useDashboardDefaults)
         expect(hook.state.isDirty).toBe(true)
         hook.handler.handleSave()
-        expect(render(useDefaults).state.isSaving).toBe(true)
+        expect(render(useDashboardDefaults).state.isSaving).toBe(true)
         await settle()
         expect(replaceDefaults).toHaveBeenCalledWith({
-            data: {
-                permissionKeys: [
-                    PERMISSIONS.USER_DASHBOARD,
-                    PERMISSIONS.ADMIN_DASHBOARD,
-                ],
-            },
+            data: { permissionKeys: [] },
         })
-        expect(render(useDefaults).state.permissionKeys).toEqual([
-            PERMISSIONS.ADMIN_DASHBOARD,
-        ])
-        expect(cached()?.defaultPermissionKeys).toEqual([
-            PERMISSIONS.ADMIN_DASHBOARD,
-        ])
+        expect(render(useDashboardDefaults).state.permissionKeys).toEqual([])
+        expect(cachedDefaults()?.defaultPermissionKeys).toEqual([])
+        expect(cached()).toEqual(before)
     })
 
     it('adopts refreshed defaults while pristine and preserves local changes while dirty', () => {
@@ -256,15 +254,13 @@ describe('default permissions', () => {
         const useDefaults = () =>
             useDefaultPermissions({ defaultPermissionKeys: keys })
         render(useDefaults)
-        keys = [PERMISSIONS.ADMIN_DASHBOARD]
-        render(useDefaults)
-        let hook = render(useDefaults)
-        expect(hook.state.permissionKeys).toEqual(keys)
-        hook.handler.handleTogglePermission(PERMISSIONS.USER_DASHBOARD)
         keys = []
         render(useDefaults)
+        let hook = render(useDefaults)
+        expect(hook.state.permissionKeys).toEqual([])
+        hook.handler.handleTogglePermission(PERMISSIONS.USER_DASHBOARD)
         hook = render(useDefaults)
-        expect(hook.state.permissionKeys).toContain(PERMISSIONS.USER_DASHBOARD)
+        expect(hook.state.permissionKeys).toEqual([PERMISSIONS.USER_DASHBOARD])
         expect(hook.state.isDirty).toBe(true)
     })
 
@@ -281,10 +277,13 @@ describe('default permissions', () => {
             if (scenario === 'missing-cache') client.clear()
             render(useEmptyDefaults).handler.handleSave()
             await settle()
-            if (scenario === 'missing-cache') expect(cached()).toBeUndefined()
+            if (scenario === 'missing-cache')
+                expect(cachedDefaults()).toBeUndefined()
             else {
                 expect(success).not.toHaveBeenCalled()
-                expect(cached()?.defaultPermissionKeys).toEqual([])
+                expect(cachedDefaults()?.defaultPermissionKeys).toEqual([
+                    PERMISSIONS.USER_DASHBOARD,
+                ])
                 if (scenario === 'rejected')
                     expect(appError).toHaveBeenCalledTimes(1)
                 else

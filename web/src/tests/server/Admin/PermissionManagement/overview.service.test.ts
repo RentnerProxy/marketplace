@@ -12,7 +12,6 @@ vi.mock('@/db', () => ({ db: read.db }))
 vi.mock('drizzle-orm', () => operators)
 vi.mock('@/db/schema.ts', () => ({
     permissions: table('permissions', ['id', 'key', 'name', 'description']),
-    defaultUserPermissions: table('defaults', ['permissionId']),
     permissionPresets: table('presets', [
         'id',
         'name',
@@ -50,7 +49,6 @@ describe('permission management overview', () => {
         }
         read.results.push(
             [permission],
-            [{ key: PERMISSIONS.USER_DASHBOARD }],
             [
                 {
                     id: 'readers',
@@ -75,9 +73,6 @@ describe('permission management overview', () => {
         const overview = await getPermissionManagementOverviewService('actor')
         expect(authorize).toHaveBeenCalledWith('actor')
         expect(overview.permissions).toEqual([permission])
-        expect(overview.defaultPermissionKeys).toEqual([
-            PERMISSIONS.USER_DASHBOARD,
-        ])
         expect(overview.presets).toEqual([
             {
                 id: 'readers',
@@ -105,24 +100,22 @@ describe('permission management overview', () => {
             values: Object.values(PERMISSIONS),
         }
         expect(read.queries[0]?.where).toHaveBeenCalledWith(configured)
-        for (const index of [1, 3])
-            expect(read.queries[index]?.where).toHaveBeenCalledWith({
-                op: 'and',
-                conditions: [
-                    configured,
-                    {
-                        op: 'ne',
-                        left: 'permissions.key',
-                        right: PERMISSIONS.ADMIN_SUPER_USER,
-                    },
-                ],
-            })
+        expect(read.queries[2]?.where).toHaveBeenCalledWith({
+            op: 'and',
+            conditions: [
+                configured,
+                {
+                    op: 'ne',
+                    left: 'permissions.key',
+                    right: PERMISSIONS.ADMIN_SUPER_USER,
+                },
+            ],
+        })
     })
 
     it('returns empty collections when the configured rows have not been seeded', async () => {
         expect(await getPermissionManagementOverviewService('actor')).toEqual({
             permissions: [],
-            defaultPermissionKeys: [],
             presets: [],
         })
     })
