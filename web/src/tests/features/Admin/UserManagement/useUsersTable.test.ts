@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { createElement, isValidElement } from 'react'
 import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { DataTableProps, TableRow } from '@rentnerkev/table/types'
+import { useDataTableLogic } from '@rentnerkev/table'
+import type {
+    DataTableLogicResult,
+    DataTableProps,
+} from '@rentnerkev/table/types'
 import { query, render, reset } from './user-management-hooks.test.helpers.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import type { UserManagementUser } from '@/features/Admin/UserManagement/Types/user-management-domain.types.ts'
@@ -64,10 +68,6 @@ function renderTable() {
     return element.props
 }
 
-function tableRow(original: UserManagementUser): TableRow<UserManagementUser> {
-    return { original } as TableRow<UserManagementUser>
-}
-
 beforeEach(() => {
     reset()
     actor = 'actor'
@@ -96,15 +96,26 @@ describe('users table view', () => {
         const table = renderTable()
         expect(table.searchPlaceholder).toBe('admin.users.searchPlaceholder')
         expect(table.isLoading).toBe(true)
-        expect(table.messages?.loading).toBe('admin.users.loading')
+        expect(table.locale).toMatchObject({
+            code: 'de',
+            messages: { loading: 'admin.users.loading' },
+        })
         expect(table.columnSettings).toBe(true)
         expect(table.resizableColumns).toBe(true)
+        expect(table.columnWidthMode).toBe('scroll')
+        expect(table.pageSizeOptions).toEqual(
+            [5, 10, 20, 50].map((value) => ({
+                value,
+                label: 'admin.users.userCount',
+            })),
+        )
     })
 
     it('offers sorted unique permission filters and sorts newest users first', () => {
         const table = renderTable()
         expect(table.columns[2]?.meta?.filter).toMatchObject({
             type: 'select',
+            match: 'includes',
             options: [
                 { value: 'a.read', label: 'a.read' },
                 { value: 'm.read', label: 'm.read' },
@@ -117,26 +128,56 @@ describe('users table view', () => {
         expect(table.getRowId(user, 0)).toBe(user.id)
     })
 
-    it.each(['  ADA ', 'EXAMPLE.INVALID', 'augusta', 'LOVELACE', '', '   '])(
-        'finds users by %s across identity fields',
-        (value) => {
-            const filter = renderTable().tableOptions?.globalFilterFn
-            if (typeof filter !== 'function')
-                throw new Error('Missing user search')
-            const addMeta = vi.fn()
-            expect(filter(tableRow(user), 'username', value, addMeta)).toBe(
-                true,
-            )
-            expect(
-                filter(
-                    tableRow({ ...user, firstName: null, lastName: null }),
-                    'username',
-                    'missing',
-                    addMeta,
-                ),
-            ).toBe(false)
-        },
-    )
+    it('supplies all identity fields, including names without columns, to the table search', () => {
+        const getSearchValues = renderTable().getSearchValues
+        if (!getSearchValues) throw new Error('Missing user search values')
+        expect(renderTable().getSearchValues).toBe(getSearchValues)
+        expect(getSearchValues(user)).toEqual([
+            user.username,
+            user.email,
+            user.firstName,
+            user.lastName,
+        ])
+        expect(
+            getSearchValues({ ...user, firstName: null, lastName: null }),
+        ).toEqual([user.username, user.email, null, null])
+    })
+
+    it('filters hidden names and exact permissions through the table instance', () => {
+        const options = renderTable()
+        const data = [
+            { ...user, permissions: ['a.read', 'z.read'] },
+            {
+                ...user,
+                id: 'other',
+                firstName: null,
+                lastName: null,
+                permissions: ['a.read.extended'],
+            },
+        ]
+        let logic: DataTableLogicResult<UserManagementUser> | undefined
+        function Capture() {
+            logic = useDataTableLogic({ ...options, data })
+            return null
+        }
+        renderToStaticMarkup(createElement(Capture))
+        if (!logic) throw new Error('Missing user table logic')
+        const { table, handler } = logic
+        const rowIds = () =>
+            table.getFilteredRowModel().rows.map((row) => row.id)
+
+        for (const search of [' augusta ', 'LOVELACE']) {
+            handler.handleSearch(search)
+            expect(rowIds()).toEqual([user.id])
+        }
+        handler.handleSearch('')
+        const permissions = table.getColumn('permissions')
+        if (!permissions) throw new Error('Missing user permissions column')
+        permissions.setFilterValue('a.read')
+        expect(rowIds()).toEqual([user.id])
+        permissions.setFilterValue('')
+        expect(rowIds()).toEqual([user.id, 'other'])
+    })
 
     it('uses actor/visibility-specific queries, exposes background loading and hides anonymous cached rows', () => {
         expect(renderTable().data).toEqual([user])
@@ -191,19 +232,6 @@ describe('users table view', () => {
         }>
         actions.props.onEditUser(actions.props.user)
         expect(props.onEditUser).toHaveBeenCalledWith(user)
-        const permissionColumn = columns[2]
-        const filter = permissionColumn?.filterFn as (
-            row: unknown,
-            columnId: string,
-            value: string,
-        ) => boolean
-        const row = { getValue: () => user.permissions }
-        expect(filter(row, 'permissions', PERMISSIONS.USER_DASHBOARD)).toBe(
-            true,
-        )
-        expect(filter(row, 'permissions', PERMISSIONS.ADMIN_SUPER_USER)).toBe(
-            false,
-        )
         const statusColumn = columns[3]
         if (
             !statusColumn ||

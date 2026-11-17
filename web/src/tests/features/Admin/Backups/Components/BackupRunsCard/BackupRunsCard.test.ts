@@ -141,9 +141,12 @@ describe('Backup runs card', () => {
         expect(
             logic.table.getRowModel().rows[0]!.getValue('includesStorage'),
         ).toBe('included')
-        expect(logic.state.pageSizes.map((option) => option.value)).toEqual([
-            10, 20, 50, 100,
-        ])
+        expect(logic.state.pageSizes).toEqual(
+            [10, 20, 50, 100].map((value) => ({
+                value,
+                label: `admin.backups.table.entryCount{"count":${value}}`,
+            })),
+        )
         expect(logic.table.state.sorting).toEqual([
             { id: 'startedAt', desc: true },
         ])
@@ -209,39 +212,36 @@ describe('Backup runs card', () => {
         ).toBe('excluded')
     })
 
-    it('allows the table to close only the selected restore confirmation when idle', () => {
+    it('renders only the selected inline restore confirmation without an expand column', () => {
         const fixture = props()
         const secondRun = { ...completedRun, id: 'backup-2' }
         fixture.state.runs = [completedRun, secondRun]
         const closed = capture(fixture).table
-        const other = closed.getRow(secondRun.id)
-        expect(other.getCanExpand()).toBe(false)
-        other.getToggleExpandedHandler()()
-        expect(fixture.handler.handleOpenRestore).not.toHaveBeenCalled()
-        expect(fixture.handler.handleCancelRestore).not.toHaveBeenCalled()
+        expect(closed.getRow(completedRun.id).getIsExpanded()).toBe(false)
+        expect(closed.getRow(secondRun.id).getIsExpanded()).toBe(false)
 
         fixture.state.restoreBackupId = completedRun.id
         const open = capture(fixture).table
-        const selected = open.getRow(completedRun.id)
-        expect(selected.getIsExpanded()).toBe(true)
+        expect(open.getRow(completedRun.id).getIsExpanded()).toBe(true)
         expect(open.getRow(secondRun.id).getIsExpanded()).toBe(false)
-        selected.getToggleExpandedHandler()()
-        expect(fixture.handler.handleCancelRestore).toHaveBeenCalledTimes(1)
+
+        const idleHtml = renderToStaticMarkup(
+            createElement(BackupRunsCard, fixture),
+        )
+        expect(idleHtml).toContain('common.cancel')
+        expect(idleHtml).toContain('admin.backups.restoreConfirm')
 
         fixture.state.activeActionId = completedRun.id
         const busy = capture(fixture).table.getRow(completedRun.id)
         expect(busy.getIsExpanded()).toBe(true)
-        expect(busy.getCanExpand()).toBe(false)
-        busy.getToggleExpandedHandler()()
-        expect(fixture.handler.handleCancelRestore).toHaveBeenCalledTimes(1)
-        expect(fixture.handler.handleRestoreBackup).not.toHaveBeenCalled()
 
         const html = renderToStaticMarkup(
             createElement(BackupRunsCard, fixture),
         )
         expect(html).toContain('data-row-details-for="backup-1"')
         expect(html).not.toContain('data-row-details-for="backup-2"')
-        expect(html.match(/<td[^>]*colSpan="8"[^>]*>/g)).toHaveLength(1)
+        expect(html).not.toContain('data-table-slot="expandButton"')
+        expect(html.match(/<td[^>]*colSpan="7"[^>]*>/g)).toHaveLength(1)
         expect(html.match(/<tr\b/g)).toHaveLength(4)
     })
 

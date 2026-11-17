@@ -1,4 +1,4 @@
-import type { DataTableProps, TableColumn } from '@rentnerkev/table/types'
+import type { TableColumn } from '@rentnerkev/table/types'
 import { ShieldCheck } from 'lucide-react'
 import { useMemo } from 'react'
 import { formatDate } from '@/lib/Date/date.ts'
@@ -9,19 +9,6 @@ import UserAvatar from '../../UserAvatar.tsx'
 import UserTableActions from '../Components/UserTableActions.tsx'
 import type { UsersTableProps } from '../Types/user-management-table.types.ts'
 import type { UserManagementUser } from '../../../Types/user-management-domain.types.ts'
-
-export const usersTableOptions = {
-    initialState: { sorting: [{ id: 'createdAt', desc: true }] },
-    globalFilterFn: ({ original }, _columnId, value) => {
-        const search = String(value).trim().toLocaleLowerCase()
-        return [
-            original.username,
-            original.email,
-            original.firstName,
-            original.lastName,
-        ].some((part) => part?.toLocaleLowerCase().includes(search))
-    },
-} satisfies NonNullable<DataTableProps<UserManagementUser>['tableOptions']>
 
 export default function useUsersTableColumns({
     availablePermissions,
@@ -44,7 +31,6 @@ export default function useUsersTableColumns({
                 size: 230,
                 minSize: 150,
                 enableHiding: false,
-                enableGlobalFilter: true,
                 meta: {
                     filter: {
                         type: 'text',
@@ -78,7 +64,6 @@ export default function useUsersTableColumns({
                 header: t('admin.users.email'),
                 size: 260,
                 minSize: 140,
-                enableGlobalFilter: false,
                 meta: {
                     filter: {
                         type: 'text',
@@ -97,10 +82,10 @@ export default function useUsersTableColumns({
                 header: t('common.rights'),
                 size: 160,
                 minSize: 125,
-                enableGlobalFilter: false,
                 meta: {
                     filter: {
                         type: 'select',
+                        match: 'includes',
                         placeholder: t(
                             'admin.users.permissionFilterPlaceholder',
                         ),
@@ -112,11 +97,6 @@ export default function useUsersTableColumns({
                             .toSorted()
                             .map((key) => ({ value: key, label: key })),
                     },
-                },
-                filterFn: (row, columnId, filterValue) => {
-                    const permissions = row.getValue<Array<string>>(columnId)
-
-                    return permissions.includes(String(filterValue))
                 },
                 cell: ({ row }) => (
                     <span className="inline-flex items-center gap-2 rounded-sm border border-border-dark bg-input-dark px-2.5 py-1 text-xs font-medium text-foreground">
@@ -134,7 +114,6 @@ export default function useUsersTableColumns({
                 header: t('common.status'),
                 size: 135,
                 minSize: 110,
-                enableGlobalFilter: false,
                 meta: {
                     filter: {
                         type: 'select',
@@ -163,7 +142,6 @@ export default function useUsersTableColumns({
                 header: t('admin.users.created'),
                 size: 180,
                 minSize: 135,
-                enableGlobalFilter: false,
                 meta: {
                     filter: {
                         type: 'dateRange',
@@ -185,7 +163,6 @@ export default function useUsersTableColumns({
                 enableResizing: false,
                 enableSorting: false,
                 enableColumnFilter: false,
-                enableGlobalFilter: false,
                 cell: ({ row }) => (
                     <UserTableActions
                         user={row.original}

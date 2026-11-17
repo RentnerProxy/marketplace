@@ -142,27 +142,34 @@ describe('audit table behavior', () => {
         expect(tableProps.tableOptions?.initialState?.sorting).toEqual([
             { id: 'createdAt', desc: true },
         ])
-        expect(tableProps.pageSizeOptions).toEqual([10, 20, 50, 100])
+        expect(tableProps.pageSizeOptions).toEqual(
+            [10, 20, 50, 100].map((value) => ({
+                value,
+                label: 'admin.auditLogs.entryCount',
+            })),
+        )
         expect(tableProps.searchPlaceholder).toBe(
             'admin.auditLogs.searchPlaceholder',
         )
         expect(tableProps.columnSettings).toBe(true)
         expect(tableProps.resizableColumns).toBe(true)
+        expect(tableProps.columnWidthMode).toBe('scroll')
+        expect(tableProps.dateRangeOptions).toEqual({
+            locale: 'de',
+            weekStartsOn: 1,
+            showHolidays: true,
+            fastEdit: true,
+            backdrop: true,
+        })
         expect(tableProps.columns[0]?.enableHiding).toBe(false)
         expect(tableProps.columns[1]?.enableHiding).toBe(false)
-        expect(tableProps.columns[0]?.meta?.filter).toMatchObject({
+        expect(tableProps.columns[0]?.meta?.filter).toEqual({
             type: 'select',
-            options: [
-                { value: 'session.created', label: 'session.created' },
-                { value: 'user.updated', label: 'user.updated' },
-            ],
+            placeholder: 'admin.auditLogs.action',
         })
-        expect(tableProps.columns[3]?.meta?.filter).toMatchObject({
+        expect(tableProps.columns[3]?.meta?.filter).toEqual({
             type: 'select',
-            options: [
-                { value: 'GET', label: 'GET' },
-                { value: 'POST', label: 'POST' },
-            ],
+            placeholder: 'admin.auditLogs.method',
         })
         expect(tableProps.columns[1]?.meta?.filter).toEqual({
             type: 'text',
@@ -201,36 +208,22 @@ describe('audit table behavior', () => {
         expect(actorColumn.accessorFn(systemEntry, 0)).toBe('system')
     })
 
-    it('allows one eligible audit row to be expanded at a time', () => {
+    it('opts into single expansion for rows with audit details', () => {
         renderAuditLogs()
-        const { getRowCanExpand, onExpandedChange } =
-            tableProps.tableOptions ?? {}
-        if (!getRowCanExpand || !onExpandedChange)
-            throw new Error('Missing audit expansion options')
+        const getRowCanExpand = tableProps.tableOptions?.getRowCanExpand
+        if (!getRowCanExpand) throw new Error('Missing audit row eligibility')
+        expect(tableProps.expansionMode).toBe('single')
+        expect(tableProps.expandedRowId).toBeUndefined()
         expect(getRowCanExpand(tableRow(entry))).toBe(true)
         expect(getRowCanExpand(tableRow(systemEntry))).toBe(false)
-        expect(tableProps.messages?.expandRow?.('')).toBe(
+        const locale = tableProps.locale
+        if (typeof locale !== 'object') throw new Error('Missing audit locale')
+        expect(locale.messages?.expandRow?.('')).toBe(
             'admin.auditLogs.details',
         )
         expect(tableProps.getRowLabel?.(entry)).not.toBe(
             tableProps.getRowLabel?.(secondEntry),
         )
-        onExpandedChange({ [entry.id]: true })
-        renderAuditLogs()
-        expect(tableProps.tableOptions?.state?.expanded).toEqual({
-            [entry.id]: true,
-        })
-        onExpandedChange((current) => ({
-            ...(current === true ? {} : current),
-            [secondEntry.id]: true,
-        }))
-        renderAuditLogs()
-        expect(tableProps.tableOptions?.state?.expanded).toEqual({
-            [secondEntry.id]: true,
-        })
-        onExpandedChange({})
-        renderAuditLogs()
-        expect(tableProps.tableOptions?.state?.expanded).toEqual({})
     })
 
     it('formats changed values only and renders the before/after diff and empty state', () => {

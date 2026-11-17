@@ -6,15 +6,7 @@ import useTranslationStore from '@/language/useTranslationStore.ts'
 
 const SYSTEM_ACTOR_FILTER_VALUE = 'system'
 
-function sortedFilterOptions(values: Array<string | null>) {
-    return [
-        ...new Set(values.filter((value): value is string => Boolean(value))),
-    ]
-        .toSorted()
-        .map((value) => ({ value, label: value }))
-}
-
-export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
+export default function useAuditTableColumns() {
     const { language, t } = useTranslationStore()
 
     return useMemo<Array<TableColumn<AuditLogEntry>>>(
@@ -27,9 +19,6 @@ export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
                     filter: {
                         type: 'select',
                         placeholder: t('admin.auditLogs.action'),
-                        options: sortedFilterOptions(
-                            auditLogs.map((entry) => entry.action),
-                        ),
                     },
                 },
                 size: 180,
@@ -98,9 +87,6 @@ export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
                     filter: {
                         type: 'select',
                         placeholder: t('admin.auditLogs.method'),
-                        options: sortedFilterOptions(
-                            auditLogs.map((entry) => entry.method),
-                        ),
                     },
                 },
                 size: 90,
@@ -153,6 +139,6 @@ export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
                 ),
             },
         ],
-        [auditLogs, language, t],
+        [language, t],
     )
 }

@@ -1,8 +1,10 @@
 import { Clock3, History } from 'lucide-react'
 import { DataTable } from '@rentnerkev/table'
-import { TABLE_LOCALES } from '@/config/language-library.config.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import { getMarketplaceTableMessages } from '@/lib/Table/tableMessages.ts'
+import {
+    getMarketplaceTableDateRangeOptions,
+    getMarketplaceTableLocale,
+} from '@/lib/Table/tableMessages.ts'
 import BackupRestorePanel from '../BackupRestorePanel.tsx'
 import BackupStatBadge from '../BackupStatBadge.tsx'
 import useBackupCountdown from './Hooks/useBackupCountdown.ts'
@@ -25,16 +27,15 @@ export default function BackupRunsCard({
         onOpenRestore: backupHandler.handleOpenRestore,
         onDeleteBackup: backupHandler.handleDeleteBackup,
     })
-    const expanded = restoreBackupId ? { [restoreBackupId]: true } : {}
-
     return (
         <DataTable<BackupRun>
-            locale={TABLE_LOCALES[language]}
-            messages={getMarketplaceTableMessages(
+            locale={getMarketplaceTableLocale(
+                language,
                 t,
                 t('admin.backups.table.itemLabel'),
             )}
             title={t('admin.backups.historyTitle')}
+            showRowCount={false}
             icon={<History size={20} />}
             description={
                 backupState.isAutomaticBackupEnabled && (
@@ -52,9 +53,7 @@ export default function BackupRunsCard({
                     </span>
                 )
             }
-            className="[&_[data-table-slot=expandButton]:disabled[aria-expanded=false]]:invisible"
             classNames={{
-                table: 'min-w-[1270px]',
                 toolbarControls:
                     'flex flex-wrap items-center gap-2 lg:justify-end',
             }}
@@ -93,34 +92,18 @@ export default function BackupRunsCard({
             getRowLabel={(run) => run.fileName ?? run.id}
             tableOptions={{
                 initialState: { sorting: [{ id: 'startedAt', desc: true }] },
-                autoResetExpanded: false,
-                state: { expanded },
-                getRowCanExpand: (row) =>
-                    row.id === restoreBackupId && row.id !== activeActionId,
-                onExpandedChange: (updater) => {
-                    if (
-                        isLoading ||
-                        !restoreBackupId ||
-                        restoreBackupId === activeActionId
-                    )
-                        return
-
-                    // Only the restore action selects a backup. The table may cancel that selection.
-                    const nextExpanded =
-                        typeof updater === 'function'
-                            ? updater(expanded)
-                            : updater
-                    if (
-                        nextExpanded !== true &&
-                        !nextExpanded[restoreBackupId]
-                    ) {
-                        backupHandler.handleCancelRestore()
-                    }
-                },
             }}
             columnSettings
             resizableColumns
-            pageSizeOptions={pageSizeOptions}
+            columnWidthMode="scroll"
+            dateRangeOptions={getMarketplaceTableDateRangeOptions(language)}
+            expansionMode="single"
+            expandedRowId={restoreBackupId}
+            showExpandColumn={false}
+            pageSizeOptions={pageSizeOptions.map((count) => ({
+                value: count,
+                label: t('admin.backups.table.entryCount', { count }),
+            }))}
             searchPlaceholder={t('admin.backups.table.searchPlaceholder')}
             isLoading={isLoading}
             loadingState={t('admin.backups.loading')}
