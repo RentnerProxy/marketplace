@@ -2,6 +2,7 @@ import { createBrowserTokenHandoff } from '@/lib/Auth/TokenHandoff/browserTokenH
 
 export const STAFF_INVITATION_PATH = '/staff-invitation'
 export const STAFF_INVITATION_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/u
+const invitationFragmentPrefix = '#invite='
 
 export function isStaffInvitationPath(pathname: string) {
     return (
@@ -10,12 +11,19 @@ export function isStaffInvitationPath(pathname: string) {
     )
 }
 
+function isInvitationFragment(fragment: string) {
+    return fragment.startsWith(invitationFragmentPrefix)
+}
+
 export const staffInvitationTokenHandoff = createBrowserTokenHandoff({
     canonicalPath: STAFF_INVITATION_PATH,
     isActivePath: isStaffInvitationPath,
+    shouldCaptureFragmentChange: isInvitationFragment,
     parseFragment(fragment) {
         if (!fragment) return { status: 'missing' }
-        const token = fragment.startsWith('#invite=') ? fragment.slice(8) : ''
+        const token = isInvitationFragment(fragment)
+            ? fragment.slice(invitationFragmentPrefix.length)
+            : ''
         return STAFF_INVITATION_TOKEN_PATTERN.test(token)
             ? { status: 'captured', token }
             : { status: 'invalid' }

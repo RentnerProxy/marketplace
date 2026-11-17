@@ -1,18 +1,14 @@
-import { getUserPermissionKeys } from '@/lib/Permissions/userPermissions.ts'
-import { getActiveUserPermissionKeysInTransaction } from '@/server/Auth/transaction-authorization.service.ts'
 import { describe, expect, it, vi } from 'bun:test'
-import {
-    getAddedPermissionKeys,
-    getRemovedPermissionKeys,
-    getUserPermissionPolicyContextInTransaction,
-    lockAndCountActiveSuperUsers,
-} from '@/server/Admin/UserManagement/permissionContext.service.ts'
 
 const schemaMock = (function () {
     return {
         permissions: {
             id: 'permissions.id',
             key: 'permissions.key',
+        },
+        accountPermissions: {
+            permissionId: 'accountPermissions.permissionId',
+            userId: 'accountPermissions.userId',
         },
         staffUserPermissions: {
             permissionId: 'staffUserPermissions.permissionId',
@@ -47,6 +43,17 @@ vi.mock('drizzle-orm', function () {
         }),
     }
 })
+
+const { getUserPermissionKeys } =
+    await import('@/lib/Permissions/userPermissions.ts')
+const { getActiveUserPermissionKeysInTransaction } =
+    await import('@/server/Auth/transaction-authorization.service.ts')
+const {
+    getAddedPermissionKeys,
+    getRemovedPermissionKeys,
+    getUserPermissionPolicyContextInTransaction,
+    lockAndCountActiveSuperUsers,
+} = await import('@/server/Admin/UserManagement/permissionContext.service.ts')
 
 function createSelectChain(
     terminal: 'for' | 'limit' | 'where',
@@ -104,16 +111,18 @@ describe('UserManagement Permission-Kontext', function () {
     })
 
     it('liest Permission-Keys aus der Transaktion', async function () {
-        const transaction = createTransaction(
-            createSelectChain('where', [
-                { key: 'admin.dashboard' },
-                { key: 'admin.users' },
-            ]),
-        )
+        const permissionQuery = createSelectChain('where', [
+            { key: 'admin.dashboard' },
+            { key: 'admin.users' },
+        ])
+        const transaction = createTransaction(permissionQuery)
 
         await expect(
             getUserPermissionKeys('user-1', transaction as never),
         ).resolves.toEqual(['admin.dashboard', 'admin.users'])
+        expect(permissionQuery.from).toHaveBeenCalledWith(
+            schemaMock.accountPermissions,
+        )
     })
 
     it('liefert nur für aktive, nicht gelöschte Benutzer Berechtigungen', async function () {

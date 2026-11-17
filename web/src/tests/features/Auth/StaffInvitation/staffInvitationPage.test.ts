@@ -107,6 +107,50 @@ describe('staff invitation page', () => {
         },
     )
 
+    it('preserves the invitation and password draft across the skip link and fragment history', async () => {
+        const browser = browse('/staff-invitation#invite=' + token)
+        render(useStaffInvitationLogic)
+        await Promise.resolve()
+        fillPassword()
+
+        browser.location.hash = '#main-content'
+        browser.dispatchEvent(new Event('hashchange'))
+        expect(browser.location.hash).toBe('#main-content')
+        expect(render(useStaffInvitationLogic).state).toMatchObject({
+            phase: 'form',
+            password,
+            confirmPassword: password,
+        })
+
+        browser.location.hash = ''
+        browser.dispatchEvent(new Event('popstate'))
+        render(useStaffInvitationLogic).handler.handleSubmit(submit)
+        expect(accept).toHaveBeenCalledWith({ data: { token, password } })
+        await Promise.resolve()
+    })
+
+    it('captures a replacement invitation and discards it when leaving the page', async () => {
+        const browser = browse('/staff-invitation#invite=' + token)
+        render(useStaffInvitationLogic)
+        await Promise.resolve()
+        fillPassword()
+
+        browser.location.hash = '#invite=' + 'n'.repeat(43)
+        browser.dispatchEvent(new Event('hashchange'))
+        expect(browser.location.hash).toBe('')
+        expect(render(useStaffInvitationLogic).state).toMatchObject({
+            phase: 'form',
+            password: '',
+            confirmPassword: '',
+        })
+
+        browser.location.pathname = '/login'
+        browser.dispatchEvent(new Event('popstate'))
+        expect(render(useStaffInvitationLogic).state.phase).toBe('invalid')
+        render(useStaffInvitationLogic).handler.handleSubmit(submit)
+        expect(accept).not.toHaveBeenCalled()
+    })
+
     it('allows a retry on a temporary error and then discards the rejected token', async () => {
         browse('/staff-invitation#invite=' + token)
         accept.mockResolvedValueOnce({ success: false, unavailable: true })
