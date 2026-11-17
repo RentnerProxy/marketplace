@@ -1,6 +1,12 @@
 import { z } from 'zod'
 
-export const contractVersion = '1.0.0-alpha.1'
+export const contractVersion = '1.0.0-alpha.2'
+export const protocolVersion = z.literal('1.0.0')
+export const runtimeProfile = z
+    .literal('rentnerproxy-linux-v1')
+    .describe(
+        'Native Linux appliance profile exercised on AMD64 and ARM64. Runtime compatibility is checked against the supported appliance profile at installation.',
+    )
 export const formatVersion = z
     .literal(1)
     .describe(

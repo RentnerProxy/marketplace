@@ -6,6 +6,7 @@ import {
     formatVersion,
     packagePath,
     protocolRange,
+    runtimeProfile,
     sourceIdentity,
     stateVersion,
     summary,
@@ -48,11 +49,7 @@ export const providerProfile = z.enum([
 ])
 
 const requirements = z.strictObject({
-    runtimeProfile: z
-        .literal('rentnerproxy-linux-v1')
-        .describe(
-            'Provisional runtime profile identifier. ABI, CPU, libc and kernel baselines await native platform feasibility verification.',
-        ),
+    runtimeProfile,
     platformApi: protocolRange,
     appProtocol: protocolRange,
     uiBridge: protocolRange.optional(),
