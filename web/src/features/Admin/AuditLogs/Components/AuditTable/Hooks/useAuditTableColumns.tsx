@@ -42,9 +42,8 @@ export default function useAuditTableColumns() {
                         placeholder: t('admin.auditLogs.userFilterPlaceholder'),
                     },
                 },
-                size: 170,
+                size: 260,
                 minSize: 150,
-                maxSize: 220,
                 cell: ({ row }) => (
                     <div className="flex min-w-0 flex-col">
                         <span className="truncate font-medium text-white">
@@ -73,7 +72,6 @@ export default function useAuditTableColumns() {
                 },
                 size: 280,
                 minSize: 180,
-                maxSize: 360,
                 cell: ({ row }) => (
                     <span className="block w-full truncate text-secondary-text">
                         {row.original.message ?? '-'}
