@@ -1,6 +1,7 @@
 import type { CalendarLocale } from '@rentnerkev/calendar'
 import type { PickerLocale } from '@rentnerkev/picker'
 import type { SelectLocale } from '@rentnerkev/select'
+import type { TableLocale } from '@rentnerkev/table/types'
 import type { ToastLocale } from '@rentnerkev/toasts'
 import type { AppLanguage } from '@/shared/Types/config.types.ts'
 
@@ -20,6 +21,7 @@ export const CALENDAR_LOCALES: Record<AppLanguage, CalendarLocale> =
     BILINGUAL_LOCALES
 export const PICKER_LOCALES: Record<AppLanguage, PickerLocale> =
     BILINGUAL_LOCALES
+export const TABLE_LOCALES: Record<AppLanguage, TableLocale> = BILINGUAL_LOCALES
 export const TOAST_LOCALES: Record<AppLanguage, ToastLocale> = BILINGUAL_LOCALES
 
 export const SELECT_LOCALES: Record<AppLanguage, SelectLocale> = {

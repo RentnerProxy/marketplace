@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { createElement } from 'react'
-import type { ReactElement, ReactNode } from 'react'
+import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
     cleanup,
@@ -11,74 +11,37 @@ import {
 } from '../UserManagement/user-management-hooks.test.helpers.ts'
 import type { AuditLogEntry } from '@/lib/AuditLogs/Types/auditLog.types.ts'
 import type { RealtimeEvent } from '@/websockets/Types/events.ts'
-import type { ColumnDef } from '@tanstack/react-table'
-import type { ClientTableFeatures } from '@/shared/Table/Types/client-table.types.ts'
+import type { DataTableProps, TableRow } from '@rentnerkev/table'
 
-type TableOptions = {
-    data: Array<AuditLogEntry>
-    columns: Array<ColumnDef<ClientTableFeatures, AuditLogEntry>>
-    getRowId: (entry: AuditLogEntry) => string
-    initialSorting: Array<{ id: string; desc: boolean }>
-}
-let tableOptions: TableOptions
+let tableProps: DataTableProps<AuditLogEntry>
 let receiveEvent: (event: RealtimeEvent) => void
 const unsubscribe = vi.fn()
 const subscribe = vi.fn((listener: typeof receiveEvent) => {
     receiveEvent = listener
     return unsubscribe
 })
-const search = vi.fn()
 let entries: Array<AuditLogEntry> | undefined
 let loading = false
-let bodyLoading = false
 vi.mock('@/features/Admin/AuditLogs/middleware.ts', () => ({
     getAuditLogsHandler: vi.fn(),
 }))
 vi.mock('@/websockets/Client/realtimeEventsClient.ts', () => ({
     subscribeToRealtimeEvents: subscribe,
 }))
-vi.mock('@/shared/Table/Hooks/useClientTable.ts', () => ({
-    default(options: TableOptions) {
-        tableOptions = options
-        return {
-            table: {},
-            state: { searchInput: '' },
-            handler: { handleSearchInputChange: search },
-        }
-    },
-}))
-vi.mock('@/shared/Table/TableHead.tsx', () => ({
-    default: () => createElement('thead'),
-}))
-vi.mock('@/shared/Table/TableFooter.tsx', () => ({
-    default: () => createElement('tfoot'),
-}))
-vi.mock('@/shared/Table/TableSearchToolbar.tsx', () => ({
-    default: () => null,
-}))
-vi.mock('@/shared/Table/TableBody.tsx', () => ({
-    default({
-        renderExpandedRow,
-        isLoading,
-    }: {
-        renderExpandedRow: (row: { original: AuditLogEntry }) => ReactNode
-        isLoading: boolean
-    }) {
-        bodyLoading = isLoading
+vi.mock('@rentnerkev/table', () => ({
+    DataTable(props: DataTableProps<AuditLogEntry>) {
+        tableProps = props
         return createElement(
-            'tbody',
-            {},
-            ...tableOptions.data.map((original) =>
-                renderExpandedRow({ original }),
-            ),
+            'section',
+            null,
+            createElement('h2', null, props.title),
         )
     },
 }))
 import AuditLogs from '@/features/Admin/AuditLogs/index.tsx'
 import useAuditLogic from '@/features/Admin/AuditLogs/Hooks/useAuditLogic.ts'
-import useAuditTableLogic from '@/features/Admin/AuditLogs/Components/AuditTable/Hooks/useAuditTableLogic.ts'
 import useAuditLogDetailsLogic from '@/features/Admin/AuditLogs/Components/AuditTable/Hooks/useAuditLogDetailsLogic.ts'
-import { AuditLogDetailsRow } from '@/features/Admin/AuditLogs/Components/AuditTable/Components/AuditLogDetailsRow.tsx'
+import { AuditLogDetails } from '@/features/Admin/AuditLogs/Components/AuditTable/Components/AuditLogDetails.tsx'
 
 const entry: AuditLogEntry = {
     id: 'audit-1',
@@ -104,17 +67,21 @@ const systemEntry: AuditLogEntry = {
     oldValues: null,
     newValues: null,
 }
-const useTable = () =>
-    useAuditTableLogic({
-        auditLogs: entries ?? [],
-        isLoadingAuditLogs: loading,
-    })
+const secondEntry = { ...entry, id: 'audit-3', method: 'GET' }
+
+function renderAuditLogs() {
+    return renderToStaticMarkup(render(AuditLogs))
+}
+
+function tableRow(original: AuditLogEntry): TableRow<AuditLogEntry> {
+    return { id: original.id, original } as TableRow<AuditLogEntry>
+}
 
 function cell(
     index: number,
     original = entry,
 ): ReactElement<Record<string, unknown>> {
-    const renderCell = tableOptions.columns[index]?.cell as (input: {
+    const renderCell = tableProps.columns[index]?.cell as (input: {
         row: { original: AuditLogEntry }
     }) => ReactElement<Record<string, unknown>>
     return renderCell({ row: { original } })
@@ -122,7 +89,7 @@ function cell(
 
 beforeEach(() => {
     reset()
-    entries = [entry, systemEntry, { ...entry, id: 'audit-3', method: 'GET' }]
+    entries = [entry, systemEntry, secondEntry]
     loading = false
     query.mockImplementation(() => ({ data: entries, isLoading: loading }))
 })
@@ -169,34 +136,53 @@ describe('audit log query and realtime', () => {
 })
 
 describe('audit table behavior', () => {
-    it('builds sorted unique filters, forwards search and toggles column filtering', () => {
-        let hook = render(useTable)
-        expect(tableOptions.getRowId(entry)).toBe(entry.id)
-        expect(tableOptions.initialSorting).toEqual([
+    it('configures audit sorting, pagination, and localized filters', () => {
+        renderAuditLogs()
+        expect(tableProps.getRowId(entry, 0)).toBe(entry.id)
+        expect(tableProps.tableOptions?.initialState?.sorting).toEqual([
             { id: 'createdAt', desc: true },
         ])
-        expect(hook.state.columnFilterConfigs.action).toMatchObject({
-            options: [
-                { value: 'session.created', label: 'session.created' },
-                { value: 'user.updated', label: 'user.updated' },
-            ],
+        expect(tableProps.pageSizeOptions).toEqual(
+            [10, 20, 50, 100].map((value) => ({
+                value,
+                label: 'admin.auditLogs.entryCount',
+            })),
+        )
+        expect(tableProps.searchPlaceholder).toBe(
+            'admin.auditLogs.searchPlaceholder',
+        )
+        expect(tableProps.columnSettings).toBe(true)
+        expect(tableProps.resizableColumns).toBe(true)
+        expect(tableProps.columnWidthMode).toBe('scroll')
+        expect(tableProps.dateRangeOptions).toEqual({
+            locale: 'de',
+            weekStartsOn: 1,
+            showHolidays: true,
+            fastEdit: true,
+            backdrop: true,
         })
-        expect(hook.state.columnFilterConfigs.method).toMatchObject({
-            options: [
-                { value: 'GET', label: 'GET' },
-                { value: 'POST', label: 'POST' },
-            ],
+        expect(tableProps.columns[0]?.enableHiding).toBe(false)
+        expect(tableProps.columns[1]?.enableHiding).toBe(false)
+        expect(tableProps.columns[0]?.meta?.filter).toEqual({
+            type: 'select',
+            placeholder: 'admin.auditLogs.action',
         })
-        expect(hook.state.showColumnFilters).toBe(false)
-        hook.handler.handleToggleColumnFilters()
-        hook = render(useTable)
-        expect(hook.state.showColumnFilters).toBe(true)
-        hook.handler.handleSearchInputChange('Ada')
-        expect(search).toHaveBeenCalledWith('Ada')
+        expect(tableProps.columns[3]?.meta?.filter).toEqual({
+            type: 'select',
+            placeholder: 'admin.auditLogs.method',
+        })
+        expect(tableProps.columns[1]?.meta?.filter).toEqual({
+            type: 'text',
+            placeholder: 'admin.auditLogs.userFilterPlaceholder',
+        })
+        expect(tableProps.columns[5]?.meta?.filter).toEqual({
+            type: 'dateRange',
+            placeholder: 'admin.auditLogs.createdFilterPlaceholder',
+        })
     })
 
     it('renders populated and system fallback cells and uses system as a filterable actor value', () => {
-        render(useTable)
+        renderAuditLogs()
         expect(renderToStaticMarkup(cell(0))).toContain('user.updated')
         expect(renderToStaticMarkup(cell(1))).toContain('Ada')
         expect(renderToStaticMarkup(cell(1))).toContain('actor-1')
@@ -211,7 +197,7 @@ describe('audit table behavior', () => {
             expect(renderToStaticMarkup(cell(index, systemEntry))).toContain(
                 '-',
             )
-        const actorColumn = tableOptions.columns[1]
+        const actorColumn = tableProps.columns[1]
         if (
             !actorColumn ||
             !('accessorFn' in actorColumn) ||
@@ -222,22 +208,20 @@ describe('audit table behavior', () => {
         expect(actorColumn.accessorFn(systemEntry, 0)).toBe('system')
     })
 
-    it('expands and collapses details, disabling detail actions for empty records', () => {
-        render(useTable)
-        let details = cell(6)
-        expect(details.props.disabled).toBe(false)
-        const expand = details.props.onClick
-        if (typeof expand !== 'function')
-            throw new Error('Missing expand action')
-        expand()
-        expect(render(useTable).state.expandedAuditLogId).toBe(entry.id)
-        details = cell(6)
-        const collapse = details.props.onClick
-        if (typeof collapse !== 'function')
-            throw new Error('Missing collapse action')
-        collapse()
-        expect(render(useTable).state.expandedAuditLogId).toBeNull()
-        expect(cell(6, systemEntry).props.disabled).toBe(true)
+    it('opts into single expansion for rows with audit details', () => {
+        renderAuditLogs()
+        const getRowCanExpand = tableProps.tableOptions?.getRowCanExpand
+        if (!getRowCanExpand) throw new Error('Missing audit row eligibility')
+        expect(tableProps.expansionMode).toBe('single')
+        expect(tableProps.expandedRowId).toBeUndefined()
+        expect(getRowCanExpand(tableRow(entry))).toBe(true)
+        expect(getRowCanExpand(tableRow(systemEntry))).toBe(false)
+        const locale = tableProps.locale
+        if (typeof locale !== 'object') throw new Error('Missing audit locale')
+        expect(locale.messages?.expandRow?.('')).toBe('admin.auditLogs.details')
+        expect(tableProps.getRowLabel?.(entry)).not.toBe(
+            tableProps.getRowLabel?.(secondEntry),
+        )
     })
 
     it('formats changed values only and renders the before/after diff and empty state', () => {
@@ -245,31 +229,27 @@ describe('audit table behavior', () => {
         expect(hook.state.rows).toEqual([
             { key: 'username', oldValue: 'Old', newValue: 'New' },
         ])
-        const html = renderToStaticMarkup(
-            AuditLogDetailsRow({ auditLog: entry, columnCount: 7 }),
-        )
-        expect(html).toContain('colSpan="7"')
+        const html = renderToStaticMarkup(AuditLogDetails({ auditLog: entry }))
+        expect(html).toStartWith('<div')
         expect(html).toContain('Old')
         expect(html).toContain('New')
         expect(html).not.toContain('unchanged')
         const empty = renderToStaticMarkup(
-            AuditLogDetailsRow({ auditLog: systemEntry, columnCount: 7 }),
+            AuditLogDetails({ auditLog: systemEntry }),
         )
         expect(empty).toContain('admin.auditLogs.emptyDiff')
     })
 
-    it('renders the screen with loading status and expands the requested row through the table body callback', () => {
+    it('forwards loading status and renders the diff for the requested row', () => {
         loading = true
-        let html = renderToStaticMarkup(render(AuditLogs))
+        const html = renderAuditLogs()
         expect(html).toContain('admin.auditLogs.entriesTitle')
-        expect(bodyLoading).toBe(true)
-        expect(html).not.toContain('Old')
-        const expand = cell(6).props.onClick
-        if (typeof expand !== 'function')
-            throw new Error('Missing expand action')
-        expand()
-        html = renderToStaticMarkup(render(AuditLogs))
-        expect(html).toContain('Old')
-        expect(html).toContain('New')
+        expect(tableProps.isLoading).toBe(true)
+        expect(tableProps.data).toEqual([entry, systemEntry, secondEntry])
+        const diff = renderToStaticMarkup(
+            tableProps.renderExpandedRow?.(tableRow(entry)),
+        )
+        expect(diff).toContain('Old')
+        expect(diff).toContain('New')
     })
 })

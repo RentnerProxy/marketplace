@@ -16,9 +16,8 @@ export type BackupSettingsCardProps = {
     >
 }
 
-export type BackupRestoreRowProps = {
+export type BackupRestorePanelProps = {
     backupId: string
-    columnCount: number
     state: Pick<
         BackupLogicState,
         'restoreBackupId' | 'restoreConfirmation' | 'activeActionId'

@@ -1,20 +1,16 @@
 import { useMemo } from 'react'
 import { CustomTooltip } from '@rentnerkev/tooltips'
 import { Download, RotateCcw, Trash2 } from 'lucide-react'
-import { filterFn_equalsString } from '@tanstack/react-table'
+import type { TableColumn } from '@rentnerkev/table'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import { BACKUP_ARCHIVE_EXTENSION } from '@/config/backup.config.ts'
 import { formatDate } from '@/lib/Date/date.ts'
 import { formatFileSize } from '@/lib/Format/format.ts'
-import { createTimestampRangeFilter } from '@/lib/Table/tableFilters.ts'
 import StatusIndicator from '@/shared/StatusIndicator.tsx'
 import type { StatusIndicatorTone } from '@/shared/Types/status-indicator.types.ts'
 import type { BackupRunStatus } from '@/lib/Backups/Types/backup.types.ts'
 import type { BackupRun } from '../../../Types/backup-domain.types.ts'
-import type {
-    BackupTableColumns,
-    UseBackupTableColumnsParams,
-} from '../Types/backup-table.types.ts'
+import type { UseBackupTableColumnsParams } from '../Types/backup-table.types.ts'
 
 const statusToneByBackupStatus: Record<BackupRunStatus, StatusIndicatorTone> = {
     queued: 'neutral',
@@ -27,14 +23,23 @@ export default function useBackupTableColumns({
     activeActionId,
     onOpenRestore,
     onDeleteBackup,
-}: UseBackupTableColumnsParams): BackupTableColumns {
-    const { language, t } = useTranslationStore()
+}: UseBackupTableColumnsParams): TableColumn<BackupRun>[] {
+    const { t, language } = useTranslationStore()
 
     return useMemo(
         () => [
             {
                 accessorKey: 'fileName',
                 header: t('admin.backups.table.file', { lng: language }),
+                enableHiding: false,
+                meta: {
+                    filter: {
+                        type: 'text',
+                        placeholder: t('admin.backups.table.file', {
+                            lng: language,
+                        }),
+                    },
+                },
                 size: 280,
                 minSize: 260,
                 cell: ({ row }) => (
@@ -66,7 +71,12 @@ export default function useBackupTableColumns({
             {
                 accessorKey: 'startedAt',
                 header: t('admin.backups.table.createdAt'),
-                filterFn: createTimestampRangeFilter<BackupRun>(),
+                meta: {
+                    filter: {
+                        type: 'dateRange',
+                        placeholder: t('admin.backups.table.createdAt'),
+                    },
+                },
                 size: 210,
                 minSize: 200,
                 cell: ({ row }) => (
@@ -78,7 +88,22 @@ export default function useBackupTableColumns({
             {
                 accessorKey: 'trigger',
                 header: t('admin.backups.table.trigger'),
-                filterFn: filterFn_equalsString,
+                meta: {
+                    filter: {
+                        type: 'select',
+                        placeholder: t('admin.backups.table.trigger'),
+                        options: [
+                            'manual',
+                            'scheduled',
+                            'import',
+                            'restore-safety',
+                            'restore',
+                        ].map((value) => ({
+                            value,
+                            label: t(`admin.backups.trigger.${value}`),
+                        })),
+                    },
+                },
                 size: 180,
                 minSize: 170,
                 cell: ({ row }) => (
@@ -93,6 +118,7 @@ export default function useBackupTableColumns({
                 size: 110,
                 minSize: 100,
                 enableColumnFilter: false,
+                meta: { align: 'right' },
                 cell: ({ row }) => (
                     <span className="block text-right font-mono text-secondary-text">
                         {row.original.fileSize === null
@@ -106,7 +132,16 @@ export default function useBackupTableColumns({
                 accessorFn: (backup) =>
                     backup.includesStorage ? 'included' : 'excluded',
                 header: t('admin.backups.table.storage'),
-                filterFn: filterFn_equalsString,
+                meta: {
+                    filter: {
+                        type: 'select',
+                        placeholder: t('admin.backups.table.storage'),
+                        options: [
+                            { value: 'included', label: t('common.yes') },
+                            { value: 'excluded', label: t('common.no') },
+                        ],
+                    },
+                },
                 size: 170,
                 minSize: 160,
                 cell: ({ row }) => (
@@ -120,7 +155,21 @@ export default function useBackupTableColumns({
             {
                 accessorKey: 'status',
                 header: t('common.status'),
-                filterFn: filterFn_equalsString,
+                meta: {
+                    filter: {
+                        type: 'select',
+                        placeholder: t('common.status'),
+                        options: [
+                            'queued',
+                            'running',
+                            'completed',
+                            'failed',
+                        ].map((value) => ({
+                            value,
+                            label: t(`admin.backups.status.${value}`),
+                        })),
+                    },
+                },
                 size: 170,
                 minSize: 160,
                 cell: ({ row }) => (
@@ -138,6 +187,8 @@ export default function useBackupTableColumns({
                 minSize: 180,
                 enableSorting: false,
                 enableColumnFilter: false,
+                enableHiding: false,
+                enableResizing: false,
                 cell: ({ row }) => {
                     const backup = row.original
                     const canUseBackup =

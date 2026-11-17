@@ -1,88 +1,60 @@
-import TableFooter from '@/shared/Table/TableFooter.tsx'
-import TableSearchToolbar from '@/shared/Table/TableSearchToolbar.tsx'
-import TableBody from '@/shared/Table/TableBody.tsx'
-import TableHead from '@/shared/Table/TableHead.tsx'
-import HeadingIcon from '@/shared/HeadingIcon.tsx'
-import useTranslationStore from '@/language/useTranslationStore.ts'
+import { DataTable } from '@rentnerkev/table'
 import { UsersRound } from 'lucide-react'
-import useUsersTableViewLogic from './Hooks/useUsersTableViewLogic.ts'
+import useTranslationStore from '@/language/useTranslationStore.ts'
+import {
+    getMarketplaceTableDateRangeOptions,
+    getMarketplaceTableLocale,
+} from '@/lib/Table/tableMessages.ts'
+import type { UserManagementUser } from '../../Types/user-management-domain.types.ts'
+import useUsersTableColumns from './Hooks/useUsersTableColumns.tsx'
+import useUsersTableQuery from './Hooks/useUsersTableQuery.ts'
 import type { UsersTableProps } from './Types/user-management-table.types.ts'
 
-export default function UsersTable({
-    availablePermissions,
-    isDeletingUser,
-    isResendingPasswordReset,
-    isTogglingUserActive,
-    canManageSuperUsers,
-    onEditUser,
-    onDeleteUser,
-    onToggleUserActive,
-    onPasswordReset,
-}: UsersTableProps) {
-    const { t } = useTranslationStore()
+const pageSizeOptions = [5, 10, 20, 50] as const
+const getUserSearchValues = (user: UserManagementUser) => [
+    user.username,
+    user.email,
+    user.firstName,
+    user.lastName,
+]
 
-    const { state, handler, table } = useUsersTableViewLogic({
-        availablePermissions,
-        isDeletingUser,
-        isTogglingUserActive,
-        isResendingPasswordReset,
-        canManageSuperUsers,
-        onEditUser,
-        onDeleteUser,
-        onToggleUserActive,
-        onPasswordReset,
-    })
+export default function UsersTable(props: UsersTableProps) {
+    const { language, t } = useTranslationStore()
+    const { state } = useUsersTableQuery()
+    const columns = useUsersTableColumns(props)
+    const searchLabel = t('admin.users.searchPlaceholder')
 
     return (
-        <section className="rounded-xl border border-border-dark bg-surface-dark">
-            <div className="flex flex-col gap-4 border-b border-border-dark px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-start gap-3">
-                    <HeadingIcon icon={UsersRound} />
-                    <div>
-                        <h2 className="text-lg font-bold text-white">
-                            {t('admin.users.tableTitle')}
-                        </h2>
-                        <p className="text-sm text-secondary-text">
-                            {t('admin.users.tableDescription')}
-                        </p>
-                    </div>
-                </div>
-
-                <TableSearchToolbar
-                    table={table}
-                    value={state.searchInput}
-                    placeholder={t('admin.users.searchPlaceholder')}
-                    showColumnFilters={state.showColumnFilters}
-                    onChange={handler.handleSearchInputChange}
-                    onToggleFilters={handler.handleToggleColumnFilters}
-                    maxLength={200}
-                />
-            </div>
-
-            <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-left text-sm">
-                    <TableHead
-                        table={table}
-                        showColumnFilters={state.showColumnFilters}
-                        columnFilterConfigs={state.columnFilterConfigs}
-                    />
-
-                    <TableBody
-                        table={table}
-                        columnCount={state.columns.length}
-                        isLoading={state.isLoadingUsers}
-                        searchInput={state.searchInput}
-                        loadingState={{ description: t('admin.users.loading') }}
-                    />
-
-                    <TableFooter
-                        table={table}
-                        columnCount={state.columns.length}
-                        itemLabel={t('admin.users.itemLabel')}
-                        pageSizeOptions={state.userRowsOptions}
-                    />
-                </table>
-            </div>
-        </section>
+        <DataTable
+            data={state.users}
+            columns={columns}
+            getRowId={(user) => user.id}
+            title={t('admin.users.tableTitle')}
+            description={t('admin.users.tableDescription')}
+            icon={<UsersRound className="size-5" />}
+            locale={getMarketplaceTableLocale(
+                language,
+                t,
+                t('admin.users.itemLabel'),
+                {
+                    loading: t('admin.users.loading'),
+                    search: searchLabel,
+                },
+            )}
+            searchPlaceholder={searchLabel}
+            getSearchValues={getUserSearchValues}
+            isLoading={state.isLoadingUsers}
+            pageSizeOptions={pageSizeOptions.map((count) => ({
+                value: count,
+                label: t('admin.users.userCount', { count }),
+            }))}
+            tableOptions={{
+                initialState: { sorting: [{ id: 'createdAt', desc: true }] },
+            }}
+            columnWidthMode="scroll"
+            dateRangeOptions={getMarketplaceTableDateRangeOptions(language)}
+            resizableColumns
+            columnSettings
+        />
     )
 }

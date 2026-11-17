@@ -46,12 +46,13 @@
         "test:core-integration": "bun --no-env-file test --isolate --timeout 30000 --path-ignore-patterns __no_ignored_core_tests__ .core.test.ts"
     },
     "dependencies": {
-        "@rentnerkev/calendar": "^2.9.0",
-        "@rentnerkev/inputs": "^2.8.1",
-        "@rentnerkev/picker": "^2.4.0",
-        "@rentnerkev/select": "^6.1.0",
+        "@rentnerkev/calendar": "^2.9.1",
+        "@rentnerkev/inputs": "^2.8.2",
+        "@rentnerkev/picker": "^2.4.1",
+        "@rentnerkev/select": "^6.2.0",
+        "@rentnerkev/table": "^1.4.0",
         "@rentnerkev/toasts": "^3.9.0",
-        "@rentnerkev/tooltips": "^2.3.1",
+        "@rentnerkev/tooltips": "^2.3.2",
         "@simplewebauthn/browser": "^14.0.0",
         "@simplewebauthn/server": "^14.1.0",
         "@tanstack/react-form": "^1.33.5",

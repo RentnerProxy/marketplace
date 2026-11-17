@@ -1,76 +1,67 @@
-import TableFooter from '@/shared/Table/TableFooter.tsx'
-import TableSearchToolbar from '@/shared/Table/TableSearchToolbar.tsx'
-import TableHead from '@/shared/Table/TableHead.tsx'
-import TableBody from '@/shared/Table/TableBody.tsx'
-import HeadingIcon from '@/shared/HeadingIcon.tsx'
-import useTranslationStore from '@/language/useTranslationStore.ts'
+import { DataTable, type DataTableProps } from '@rentnerkev/table'
 import { ScrollText } from 'lucide-react'
-import useAuditTableLogic from './Hooks/useAuditTableLogic.ts'
+import useTranslationStore from '@/language/useTranslationStore.ts'
+import { hasAuditJsonValue } from '@/lib/AuditLogs/auditLogValues.ts'
+import type { AuditLogEntry } from '@/lib/AuditLogs/Types/auditLog.types.ts'
+import {
+    getMarketplaceTableDateRangeOptions,
+    getMarketplaceTableLocale,
+} from '@/lib/Table/tableMessages.ts'
+import { AuditLogDetails } from './Components/AuditLogDetails.tsx'
+import useAuditTableColumns from './Hooks/useAuditTableColumns.tsx'
 import type { AuditTableProps } from './Types/audit-table.types.ts'
-import { AuditLogDetailsRow } from './Components/AuditLogDetailsRow.tsx'
 
-export default function AuditTable(props: AuditTableProps) {
-    const { t } = useTranslationStore()
-    const { state, handler, table } = useAuditTableLogic(props)
-    const { isLoadingAuditLogs } = props
+const pageSizes = [10, 20, 50, 100]
+const tableOptions: DataTableProps<AuditLogEntry>['tableOptions'] = {
+    initialState: { sorting: [{ id: 'createdAt', desc: true }] },
+    getRowCanExpand: ({ original }) =>
+        hasAuditJsonValue(original.oldValues) ||
+        hasAuditJsonValue(original.newValues),
+}
+
+export default function AuditTable({
+    auditLogs,
+    isLoadingAuditLogs,
+}: AuditTableProps) {
+    const { language, t } = useTranslationStore()
+    const columns = useAuditTableColumns()
 
     return (
-        <section className="rounded-xl border border-border-dark bg-surface-dark">
-            <div className="flex flex-col gap-4 border-b border-border-dark px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-start gap-3">
-                    <HeadingIcon icon={ScrollText} />
-                    <div>
-                        <h2 className="text-lg font-bold text-white">
-                            {t('admin.auditLogs.entriesTitle')}
-                        </h2>
-
-                        <p className="text-sm text-secondary-text">
-                            {t('admin.auditLogs.entriesDescription')}
-                        </p>
-                    </div>
-                </div>
-
-                <TableSearchToolbar
-                    table={table}
-                    value={state.searchInput}
-                    placeholder={t('admin.auditLogs.searchPlaceholder')}
-                    showColumnFilters={state.showColumnFilters}
-                    onChange={handler.handleSearchInputChange}
-                    onToggleFilters={handler.handleToggleColumnFilters}
-                />
-            </div>
-
-            <div className="overflow-x-auto">
-                <table className="w-full table-fixed border-collapse text-left text-sm">
-                    <TableHead
-                        table={table}
-                        showColumnFilters={state.showColumnFilters}
-                        columnFilterConfigs={state.columnFilterConfigs}
-                    />
-
-                    <TableBody
-                        table={table}
-                        columnCount={state.columnCount}
-                        isLoading={isLoadingAuditLogs}
-                        searchInput={state.searchInput}
-                        renderExpandedRow={(row) =>
-                            state.expandedAuditLogId === row.original.id ? (
-                                <AuditLogDetailsRow
-                                    auditLog={row.original}
-                                    columnCount={state.columnCount}
-                                />
-                            ) : null
-                        }
-                    />
-
-                    <TableFooter
-                        table={table}
-                        columnCount={state.columnCount}
-                        itemLabel={t('admin.auditLogs.itemLabel')}
-                        pageSizeOptions={state.auditRowsOptions}
-                    />
-                </table>
-            </div>
-        </section>
+        <DataTable
+            locale={getMarketplaceTableLocale(
+                language,
+                t,
+                t('admin.auditLogs.itemLabel'),
+                {
+                    expandRow: (label) =>
+                        label
+                            ? `${t('admin.auditLogs.showDetails')} (${label})`
+                            : t('admin.auditLogs.details'),
+                },
+            )}
+            data={auditLogs}
+            columns={columns}
+            getRowId={(entry) => entry.id}
+            getRowLabel={(entry) => `${entry.action}, ${entry.id}`}
+            tableOptions={tableOptions}
+            pageSizeOptions={pageSizes.map((count) => ({
+                value: count,
+                label: t('admin.auditLogs.entryCount', { count }),
+            }))}
+            columnWidthMode="scroll"
+            dateRangeOptions={getMarketplaceTableDateRangeOptions(language)}
+            expansionMode="single"
+            isLoading={isLoadingAuditLogs}
+            title={t('admin.auditLogs.entriesTitle')}
+            description={t('admin.auditLogs.entriesDescription')}
+            icon={<ScrollText className="size-5" />}
+            searchPlaceholder={t('admin.auditLogs.searchPlaceholder')}
+            renderExpandedRow={({ original }) => (
+                <AuditLogDetails auditLog={original} />
+            )}
+            columnSettings
+            resizableColumns
+            striped
+        />
     )
 }

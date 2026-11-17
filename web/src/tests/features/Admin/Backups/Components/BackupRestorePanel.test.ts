@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import BackupRestoreRow from '@/features/Admin/Backups/Components/BackupRestoreRow.tsx'
-import type { BackupRestoreRowProps } from '@/features/Admin/Backups/Types/backup-component-props.types.ts'
+import BackupRestorePanel from '@/features/Admin/Backups/Components/BackupRestorePanel.tsx'
+import type { BackupRestorePanelProps } from '@/features/Admin/Backups/Types/backup-component-props.types.ts'
 import {
     findElement,
     invoke,
@@ -10,10 +10,9 @@ import {
 mock.module('@/language/useTranslationStore.ts', () => ({
     default: () => ({ t: (key: string) => key }),
 }))
-function props(): BackupRestoreRowProps {
+function props(): BackupRestorePanelProps {
     return {
         backupId: 'backup-1',
-        columnCount: 7,
         state: {
             restoreBackupId: 'backup-1',
             restoreConfirmation: '',
@@ -30,10 +29,10 @@ function props(): BackupRestoreRowProps {
 describe('Backup restore confirmation', () => {
     it('renders only for the selected backup and associates warnings with confirmation input', () => {
         const fixture = props()
-        expect(BackupRestoreRow({ ...fixture, backupId: 'other' })).toBeNull()
-        const tree = BackupRestoreRow(fixture)
+        expect(BackupRestorePanel({ ...fixture, backupId: 'other' })).toBeNull()
+        const tree = BackupRestorePanel(fixture)
         const html = renderToStaticMarkup(tree)
-        expect(html).toContain('colSpan="7"')
+        expect(html).toStartWith('<div')
         expect(html).toContain(
             'admin.backups.restoreWarningPrivateBackgroundCoverage',
         )
@@ -62,7 +61,7 @@ describe('Backup restore confirmation', () => {
     it('requires exact confirmation and locks restore and cancellation during execution', () => {
         const fixture = props()
         fixture.state.restoreConfirmation = 'WIEDERHERSTELLEN'
-        const tree = BackupRestoreRow(fixture)
+        const tree = BackupRestorePanel(fixture)
         const restore = findElement(
             tree,
             (element) =>
@@ -82,7 +81,7 @@ describe('Backup restore confirmation', () => {
         expect(fixture.handler.handleRestoreBackup).toHaveBeenCalledTimes(1)
         expect(fixture.handler.handleCancelRestore).toHaveBeenCalledTimes(1)
         fixture.state.activeActionId = 'backup-1'
-        const pending = BackupRestoreRow(fixture)
+        const pending = BackupRestorePanel(fixture)
         expect(
             findElement(
                 pending,

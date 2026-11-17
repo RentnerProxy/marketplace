@@ -1,7 +1,4 @@
-import type { ClientTableFeatures } from '@/shared/Table/Types/client-table.types.ts'
 import { describe, expect, it } from 'bun:test'
-import type { Column, RowData } from '@tanstack/react-table'
-import { parseCalendarValue } from '@rentnerkev/calendar/value'
 
 import {
     formatCountdown,
@@ -9,8 +6,6 @@ import {
     formatMaintenanceDate,
     formatNullableDate,
     formatRemainingTime,
-    getCalendarRangeFilterValue,
-    getDateRangeFilterValue,
 } from '@/lib/Date/date.ts'
 
 describe('Datumsformatierung', function () {
@@ -52,80 +47,4 @@ describe('Datumsformatierung', function () {
         expect(formatMaintenanceDate('kein-datum')).toBe('-')
         expect(formatMaintenanceDate(null)).toBe('-')
     })
-
-    it('wandelt Kalenderbereiche nur bei mindestens einer Grenze um', function () {
-        const from = new Date('2026-01-01T00:00:00.000Z')
-        const to = new Date('2026-01-31T00:00:00.000Z')
-
-        expect(getCalendarRangeFilterValue(from)).toBeUndefined()
-        expect(getCalendarRangeFilterValue([null, null])).toBeUndefined()
-        expect(getCalendarRangeFilterValue([from, null])).toEqual({
-            from: from.toISOString(),
-            to: undefined,
-        })
-        expect(getCalendarRangeFilterValue([null, to])).toEqual({
-            from: undefined,
-            to: to.toISOString(),
-        })
-    })
-
-    it('übernimmt serialisierte Filter mit dem nativen Kalenderparser', function () {
-        const from = '2026-01-01T00:00:00.000Z'
-        const to = '2026-01-31T23:59:59.999Z'
-
-        expect(
-            getCalendarRangeFilterValue(parseCalendarValue([from, to])),
-        ).toEqual({ from, to })
-        expect(
-            getCalendarRangeFilterValue(parseCalendarValue([from, null])),
-        ).toEqual({ from, to: undefined })
-        expect(
-            getCalendarRangeFilterValue(parseCalendarValue([null, to])),
-        ).toEqual({ from: undefined, to })
-        expect(
-            getCalendarRangeFilterValue(parseCalendarValue([null, null])),
-        ).toBeUndefined()
-    })
-
-    it('verwirft ungültige Filtergrenzen ohne einen Kalendertag zu verschieben', function () {
-        const to = '2026-03-31T23:59:59.999Z'
-
-        for (const from of ['kein-datum', '2026-02-30T00:00:00.000Z']) {
-            expect(
-                getCalendarRangeFilterValue(parseCalendarValue([from, to])),
-            ).toEqual({ from: undefined, to })
-        }
-    })
-
-    it('liest vorhandene Tabellenfilter und liefert sonst ein leeres Objekt', function () {
-        const value = { from: '2026-01-01', to: '2026-01-31' }
-        const populatedColumn = {
-            getFilterValue: function () {
-                return value
-            },
-        } as Column<ClientTableFeatures, RowData>
-        const emptyColumn = {
-            getFilterValue: function () {
-                return undefined
-            },
-        } as Column<ClientTableFeatures, RowData>
-
-        expect(getDateRangeFilterValue(populatedColumn)).toBe(value)
-        expect(getDateRangeFilterValue(emptyColumn)).toEqual({})
-    })
-
-    it.each(
-        [null, '2026-01-01', [], { from: 42 }, { to: false }].map((value) => ({
-            value,
-        })),
-    )(
-        'verwirft einen Filter ohne gültigen Bereichsvertrag: %p',
-        function ({ value }) {
-            const column = { getFilterValue: () => value } as Column<
-                ClientTableFeatures,
-                RowData
-            >
-            expect(getDateRangeFilterValue(column)).toEqual({})
-        },
-    )
 })

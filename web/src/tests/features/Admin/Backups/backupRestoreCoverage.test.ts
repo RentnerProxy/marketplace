@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import de from '@/language/Locales/de.json'
 import en from '@/language/Locales/en.json'
-import type { BackupRestoreRowProps } from '@/features/Admin/Backups/Types/backup-component-props.types.ts'
+import type { BackupRestorePanelProps } from '@/features/Admin/Backups/Types/backup-component-props.types.ts'
 
 const locales = { de, en }
 let language: keyof typeof locales = 'de'
@@ -23,8 +23,8 @@ function translate(key: string) {
 vi.mock('@/language/useTranslationStore.ts', () => ({
     default: () => ({ t: translate }),
 }))
-const { default: BackupRestoreRow } =
-    await import('@/features/Admin/Backups/Components/BackupRestoreRow.tsx')
+const { default: BackupRestorePanel } =
+    await import('@/features/Admin/Backups/Components/BackupRestorePanel.tsx')
 const state = {
     restoreBackupId: 'synthetic-backup',
     restoreConfirmation: '',
@@ -35,18 +35,8 @@ const handler = {
     handleRestoreConfirmationChange() {},
     handleRestoreBackup() {},
 }
-function render(props: BackupRestoreRowProps) {
-    return renderToStaticMarkup(
-        createElement(
-            'table',
-            null,
-            createElement(
-                'tbody',
-                null,
-                createElement(BackupRestoreRow, props),
-            ),
-        ),
-    )
+function render(props: BackupRestorePanelProps) {
+    return renderToStaticMarkup(createElement(BackupRestorePanel, props))
 }
 describe('Historical background restore notice', () => {
     it.each(['de', 'en'] as const)(
@@ -55,7 +45,6 @@ describe('Historical background restore notice', () => {
             language = selected
             const html = render({
                 backupId: 'synthetic-backup',
-                columnCount: 4,
                 state,
                 handler,
             })
@@ -75,10 +64,9 @@ describe('Historical background restore notice', () => {
     it('does not add a separate wizard or render a notice for a closed restore row', () => {
         const html = render({
             backupId: 'different-backup',
-            columnCount: 4,
             state,
             handler,
         })
-        expect(html).toBe('<table><tbody></tbody></table>')
+        expect(html).toBe('')
     })
 })
