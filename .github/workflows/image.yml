@@ -48,7 +48,7 @@ jobs:
                   TRIVY_BINARY: ${{ runner.temp }}/trivy
               run: |
                   sudo apt-get update
-                  sudo apt-get install --yes --no-install-recommends skopeo
+                  sudo apt-get install --yes --no-install-recommends skopeo umoci
                   bash .github/scripts/ci/verify-oci-scan.sh
             - name: Verify isolated appliance startup, recovery and cleanup
               env:

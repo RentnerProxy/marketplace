@@ -1,14 +1,17 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
+import {
+    assertPicomatchSha256,
+    patchedPicomatchVersion,
+    picomatchParserSha256,
+} from './picomatch-patch.ts'
 
-const patchedPackage = 'picomatch@4.0.7'
+const patchedPackage = 'picomatch@' + patchedPicomatchVersion
 const advisory = 'GHSA-fc5q-39xc-vjpf'
 const patchPath = 'patches/picomatch@4.0.7.patch'
 const patchSha256 =
     '550d716012d83ec38cb7c7001e2421a7bcbd4b4a61c34f12a0e936945808d15d'
-const parserSha256 =
-    '46c326dda81c8afdb936e69773d03a5233534ddfec054d74ce5bdb68ab8cc337'
 
 const patchDeclarations = z.object({
     patchedDependencies: z.record(z.string(), z.string()).optional(),
@@ -16,16 +19,6 @@ const patchDeclarations = z.object({
 const lockSchema = patchDeclarations.extend({
     packages: z.record(z.string(), z.tuple([z.string()]).rest(z.unknown())),
 })
-
-async function assertSha256(file: URL, expected: string) {
-    const bytes = await readFile(file)
-    const digest = new Bun.CryptoHasher('sha256').update(bytes).digest('hex')
-    if (digest !== expected) {
-        throw new Error(
-            'Unexpected picomatch patch or installed parser digest.',
-        )
-    }
-}
 
 export async function bunAuditArguments(root: URL) {
     const args = ['--no-env-file', 'audit', '--audit-level=moderate']
@@ -52,7 +45,7 @@ export async function bunAuditArguments(root: URL) {
         )
     }
 
-    await assertSha256(new URL(patchPath, root), patchSha256)
+    await assertPicomatchSha256(new URL(patchPath, root), patchSha256)
     const store = new URL('node_modules/.bun/', root)
     const copies = (await readdir(store)).filter((name) =>
         name.startsWith('picomatch@'),
@@ -62,13 +55,13 @@ export async function bunAuditArguments(root: URL) {
     }
     await Promise.all(
         copies.map((name) =>
-            assertSha256(
+            assertPicomatchSha256(
                 new URL(
                     encodeURIComponent(name) +
                         '/node_modules/picomatch/lib/parse.js',
                     store,
                 ),
-                parserSha256,
+                picomatchParserSha256,
             ),
         ),
     )
