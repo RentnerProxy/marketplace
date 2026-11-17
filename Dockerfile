@@ -65,6 +65,7 @@ CMD ["start"]
 FROM base AS deps
 
 COPY package.json bun.lock bunfig.toml ./
+COPY patches ./patches
 RUN export BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER=1 && \
     if ! bun ci --linker=isolated; then \
         echo "Bun cache is corrupt or download incomplete; retrying with an empty cache."; \
@@ -89,6 +90,7 @@ RUN bun run build
 FROM base AS production-deps
 
 COPY package.json bun.lock bunfig.toml ./
+COPY patches ./patches
 RUN export BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER=1 && \
     if ! bun ci --linker=isolated --production --omit=peer; then \
         echo "Bun cache is corrupt or download incomplete; retrying with an empty cache."; \

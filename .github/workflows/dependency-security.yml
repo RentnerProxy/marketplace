@@ -27,6 +27,6 @@ jobs:
             - run: bun ci --linker=isolated
               env:
                   BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER: '1'
-            - run: bun --no-env-file audit --audit-level=moderate
+            - run: bun --no-env-file .github/scripts/security/audit-bun-dependencies.ts
             - run: bash .github/scripts/security/install-cargo-audit.sh
             - run: '"$RUNNER_TEMP/cargo-audit/bin/cargo-audit" audit --file core/Cargo.lock'
