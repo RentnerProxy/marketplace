@@ -1,135 +1,117 @@
 import { Clock3, History } from 'lucide-react'
+import { DataTable } from '@rentnerkev/table'
+import { TABLE_LOCALES } from '@/config/language-library.config.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import TableBody from '@/shared/Table/TableBody.tsx'
-import TableFooter from '@/shared/Table/TableFooter.tsx'
-import TableHead from '@/shared/Table/TableHead.tsx'
-import TableSearchToolbar from '@/shared/Table/TableSearchToolbar.tsx'
-import HeadingIcon from '@/shared/HeadingIcon.tsx'
-import BackupRestoreRow from '../BackupRestoreRow.tsx'
+import { getMarketplaceTableMessages } from '@/lib/Table/tableMessages.ts'
+import BackupRestorePanel from '../BackupRestorePanel.tsx'
 import BackupStatBadge from '../BackupStatBadge.tsx'
-import useBackupRunsCardLogic from './Hooks/useBackupRunsCardLogic.ts'
+import useBackupCountdown from './Hooks/useBackupCountdown.ts'
+import useBackupTableColumns from './Hooks/useBackupTableColumns.tsx'
+import type { BackupRun } from '../../Types/backup-domain.types.ts'
 import type { BackupRunsCardProps } from './Types/backup-table.types.ts'
+
+const pageSizeOptions = [10, 20, 50, 100]
+const getBackupRunRowId = (backupRun: BackupRun) => backupRun.id
 
 export default function BackupRunsCard({
     state: backupState,
     handler: backupHandler,
 }: BackupRunsCardProps) {
-    const { t } = useTranslationStore()
-    const { state, handler, table } = useBackupRunsCardLogic({
-        runs: backupState.runs,
-        nextBackupAt: backupState.nextBackupAt,
-        activeActionId: backupState.activeActionId,
+    const { language, t } = useTranslationStore()
+    const { activeActionId, restoreBackupId, isLoading } = backupState
+    const nextBackupIn = useBackupCountdown(backupState.nextBackupAt)
+    const columns = useBackupTableColumns({
+        activeActionId,
         onOpenRestore: backupHandler.handleOpenRestore,
         onDeleteBackup: backupHandler.handleDeleteBackup,
     })
+    const expanded = restoreBackupId ? { [restoreBackupId]: true } : {}
 
     return (
-        <section className="overflow-hidden rounded-xl border border-border-dark bg-surface-dark">
-            <div className="flex flex-col gap-4 border-b border-border-dark px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex items-start gap-3">
-                    <HeadingIcon icon={History} />
-                    <div>
-                        <h2 className="text-lg font-bold text-white">
-                            {t('admin.backups.historyTitle')}
-                        </h2>
-                        {backupState.isAutomaticBackupEnabled && (
-                            <div className="mt-1 flex items-center gap-2 text-xs text-secondary-text">
-                                <Clock3 size={14} className="text-primary" />
-                                {state.nextBackupIn
-                                    ? t('admin.backups.nextBackupIn', {
-                                          time: state.nextBackupIn,
-                                      })
-                                    : t('admin.backups.nextBackupCalculating')}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-3 xl:items-end">
-                    <div className="flex flex-wrap gap-2">
-                        <BackupStatBadge
-                            label={t('admin.backups.stats.total')}
-                            value={backupState.stats.total}
-                            className="border-border-dark bg-input-dark text-white"
-                        />
-                        <BackupStatBadge
-                            label={t('admin.backups.stats.successful')}
-                            value={backupState.stats.successful}
-                            className="border-border-dark bg-input-dark text-secondary-text"
-                        />
-                        <BackupStatBadge
-                            label={t('admin.backups.stats.failed')}
-                            value={backupState.stats.failed}
-                            className="border-border-dark bg-input-dark text-secondary-text"
-                        />
-                        <BackupStatBadge
-                            label={t('admin.backups.stats.imported')}
-                            value={backupState.stats.imported}
-                            className="border-border-dark bg-input-dark text-secondary-text"
-                        />
-                        <BackupStatBadge
-                            label={t('admin.backups.stats.restored')}
-                            value={backupState.stats.restored}
-                            className="border-border-dark bg-input-dark text-secondary-text"
-                        />
-                    </div>
-                    <TableSearchToolbar
-                        table={table}
-                        value={state.searchInput}
-                        placeholder={t('admin.backups.table.searchPlaceholder')}
-                        showColumnFilters={state.showColumnFilters}
-                        onChange={handler.handleSearchInputChange}
-                        onToggleFilters={handler.handleToggleColumnFilters}
+        <DataTable<BackupRun>
+            locale={TABLE_LOCALES[language]}
+            messages={getMarketplaceTableMessages(t, t('admin.backups.table.itemLabel'))}
+            title={t('admin.backups.historyTitle')}
+            icon={<History size={20} />}
+            description={
+                backupState.isAutomaticBackupEnabled && (
+                    <span className="flex items-center gap-2">
+                        <Clock3 size={14} className="text-primary" aria-hidden />
+                        {nextBackupIn
+                            ? t('admin.backups.nextBackupIn', { time: nextBackupIn })
+                            : t('admin.backups.nextBackupCalculating')}
+                    </span>
+                )
+            }
+            className="[&_[data-table-slot=expandButton]:disabled[aria-expanded=false]]:invisible"
+            classNames={{
+                table: 'min-w-[1270px]',
+                toolbarControls: 'flex flex-wrap items-center gap-2 lg:justify-end',
+            }}
+            toolbarActions={
+                <div className="-order-1 flex basis-full flex-wrap gap-2 lg:justify-end">
+                    <BackupStatBadge
+                        label={t('admin.backups.stats.total')}
+                        value={backupState.stats.total}
+                        className="border-border-dark bg-input-dark text-white"
+                    />
+                    <BackupStatBadge
+                        label={t('admin.backups.stats.successful')}
+                        value={backupState.stats.successful}
+                        className="border-border-dark bg-input-dark text-secondary-text"
+                    />
+                    <BackupStatBadge
+                        label={t('admin.backups.stats.failed')}
+                        value={backupState.stats.failed}
+                        className="border-border-dark bg-input-dark text-secondary-text"
+                    />
+                    <BackupStatBadge
+                        label={t('admin.backups.stats.imported')}
+                        value={backupState.stats.imported}
+                        className="border-border-dark bg-input-dark text-secondary-text"
+                    />
+                    <BackupStatBadge
+                        label={t('admin.backups.stats.restored')}
+                        value={backupState.stats.restored}
+                        className="border-border-dark bg-input-dark text-secondary-text"
                     />
                 </div>
-            </div>
+            }
+            data={backupState.runs}
+            columns={columns}
+            getRowId={getBackupRunRowId}
+            getRowLabel={(run) => run.fileName ?? run.id}
+            tableOptions={{
+                initialState: { sorting: [{ id: 'startedAt', desc: true }] },
+                autoResetExpanded: false,
+                state: { expanded },
+                getRowCanExpand: (row) =>
+                    row.id === restoreBackupId && row.id !== activeActionId,
+                onExpandedChange: (updater) => {
+                    if (isLoading || !restoreBackupId || restoreBackupId === activeActionId) return
 
-            <div className="overflow-x-auto">
-                <table className="w-full min-w-315 border-collapse text-left text-sm">
-                    <TableHead
-                        table={table}
-                        showColumnFilters={state.showColumnFilters}
-                        columnFilterConfigs={state.columnFilterConfigs}
-                    />
-                    <TableBody
-                        table={table}
-                        columnCount={state.columnCount}
-                        isLoading={backupState.isLoading}
-                        searchInput={state.searchInput}
-                        loadingState={{
-                            description: t('admin.backups.loading'),
-                        }}
-                        emptyState={{ description: t('admin.backups.empty') }}
-                        renderExpandedRow={(row) => (
-                            <BackupRestoreRow
-                                backupId={row.original.id}
-                                columnCount={state.columnCount}
-                                state={{
-                                    restoreBackupId:
-                                        backupState.restoreBackupId,
-                                    restoreConfirmation:
-                                        backupState.restoreConfirmation,
-                                    activeActionId: backupState.activeActionId,
-                                }}
-                                handler={{
-                                    handleCancelRestore:
-                                        backupHandler.handleCancelRestore,
-                                    handleRestoreConfirmationChange:
-                                        backupHandler.handleRestoreConfirmationChange,
-                                    handleRestoreBackup:
-                                        backupHandler.handleRestoreBackup,
-                                }}
-                            />
-                        )}
-                    />
-                    <TableFooter
-                        table={table}
-                        columnCount={state.columnCount}
-                        itemLabel={t('admin.backups.table.itemLabel')}
-                        pageSizeOptions={state.pageSizeOptions}
-                    />
-                </table>
-            </div>
-        </section>
+                    // Only the restore action selects a backup. The table may cancel that selection.
+                    const nextExpanded =
+                        typeof updater === 'function' ? updater(expanded) : updater
+                    if (nextExpanded !== true && !nextExpanded[restoreBackupId]) {
+                        backupHandler.handleCancelRestore()
+                    }
+                },
+            }}
+            columnSettings
+            resizableColumns
+            pageSizeOptions={pageSizeOptions}
+            searchPlaceholder={t('admin.backups.table.searchPlaceholder')}
+            isLoading={isLoading}
+            loadingState={t('admin.backups.loading')}
+            emptyState={t('admin.backups.empty')}
+            renderExpandedRow={(row) => (
+                <BackupRestorePanel
+                    backupId={row.original.id}
+                    state={backupState}
+                    handler={backupHandler}
+                />
+            )}
+        />
     )
 }

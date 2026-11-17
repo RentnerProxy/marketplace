@@ -5,6 +5,7 @@
 @import '@rentnerkev/calendar/tailwind.css';
 @import '@rentnerkev/select/tailwind.css';
 @import '@rentnerkev/picker/tailwind.css';
+@import '@rentnerkev/table/tailwind.css';
 
 @font-face {
     font-family: 'Lilita One';

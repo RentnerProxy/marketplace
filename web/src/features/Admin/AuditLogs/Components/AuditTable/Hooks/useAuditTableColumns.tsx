@@ -1,30 +1,35 @@
-import type { ClientTableFeatures } from '@/shared/Table/Types/client-table.types.ts'
-import { filterFn_equalsString } from '@tanstack/react-table'
-import type { ColumnDef } from '@tanstack/react-table'
-import { ChevronDown, ChevronUp, GitCompare } from 'lucide-react'
+import type { TableColumn } from '@rentnerkev/table'
 import { useMemo } from 'react'
 import type { AuditLogEntry } from '@/lib/AuditLogs/Types/auditLog.types.ts'
-import { hasAuditJsonValue } from '@/lib/AuditLogs/auditLogValues.ts'
 import { formatDate } from '@/lib/Date/date.ts'
-import { createTimestampRangeFilter } from '@/lib/Table/tableFilters.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-
-import type { UseAuditTableColumnsParams } from '../Types/audit-table.types.ts'
 
 const SYSTEM_ACTOR_FILTER_VALUE = 'system'
 
-export default function useAuditTableColumns({
-    expandedAuditLogId,
-    onExpandedAuditLogIdChange,
-}: UseAuditTableColumnsParams) {
+function sortedFilterOptions(values: Array<string | null>) {
+    return [...new Set(values.filter((value): value is string => Boolean(value)))]
+        .toSorted()
+        .map((value) => ({ value, label: value }))
+}
+
+export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
     const { language, t } = useTranslationStore()
 
-    return useMemo<Array<ColumnDef<ClientTableFeatures, AuditLogEntry>>>(
+    return useMemo<Array<TableColumn<AuditLogEntry>>>(
         () => [
             {
                 accessorKey: 'action',
                 header: t('admin.auditLogs.action', { lng: language }),
-                filterFn: filterFn_equalsString,
+                enableHiding: false,
+                meta: {
+                    filter: {
+                        type: 'select',
+                        placeholder: t('admin.auditLogs.action'),
+                        options: sortedFilterOptions(
+                            auditLogs.map((entry) => entry.action),
+                        ),
+                    },
+                },
                 size: 180,
                 minSize: 160,
                 maxSize: 220,
@@ -39,6 +44,13 @@ export default function useAuditTableColumns({
                 accessorFn: (auditLog) =>
                     auditLog.actorUsername ?? SYSTEM_ACTOR_FILTER_VALUE,
                 header: t('admin.auditLogs.user'),
+                enableHiding: false,
+                meta: {
+                    filter: {
+                        type: 'text',
+                        placeholder: t('admin.auditLogs.userFilterPlaceholder'),
+                    },
+                },
                 size: 170,
                 minSize: 150,
                 maxSize: 220,
@@ -60,6 +72,12 @@ export default function useAuditTableColumns({
             {
                 accessorKey: 'message',
                 header: t('admin.auditLogs.message'),
+                meta: {
+                    filter: {
+                        type: 'text',
+                        placeholder: t('admin.auditLogs.messageFilterPlaceholder'),
+                    },
+                },
                 size: 280,
                 minSize: 180,
                 maxSize: 360,
@@ -72,7 +90,15 @@ export default function useAuditTableColumns({
             {
                 accessorKey: 'method',
                 header: t('admin.auditLogs.method'),
-                filterFn: filterFn_equalsString,
+                meta: {
+                    filter: {
+                        type: 'select',
+                        placeholder: t('admin.auditLogs.method'),
+                        options: sortedFilterOptions(
+                            auditLogs.map((entry) => entry.method),
+                        ),
+                    },
+                },
                 size: 90,
                 minSize: 80,
                 maxSize: 110,
@@ -85,6 +111,12 @@ export default function useAuditTableColumns({
             {
                 accessorKey: 'route',
                 header: t('admin.auditLogs.route'),
+                meta: {
+                    filter: {
+                        type: 'text',
+                        placeholder: t('admin.auditLogs.routeFilterPlaceholder'),
+                    },
+                },
                 size: 260,
                 minSize: 180,
                 maxSize: 360,
@@ -97,7 +129,12 @@ export default function useAuditTableColumns({
             {
                 accessorKey: 'createdAt',
                 header: t('admin.auditLogs.created'),
-                filterFn: createTimestampRangeFilter<AuditLogEntry>(),
+                meta: {
+                    filter: {
+                        type: 'dateRange',
+                        placeholder: t('admin.auditLogs.createdFilterPlaceholder'),
+                    },
+                },
                 size: 160,
                 minSize: 150,
                 maxSize: 190,
@@ -107,45 +144,7 @@ export default function useAuditTableColumns({
                     </span>
                 ),
             },
-            {
-                id: 'details',
-                header: t('admin.auditLogs.details'),
-                enableSorting: false,
-                enableColumnFilter: false,
-                size: 120,
-                minSize: 120,
-                maxSize: 120,
-                cell: ({ row }) => {
-                    const hasDetails =
-                        hasAuditJsonValue(row.original.oldValues) ||
-                        hasAuditJsonValue(row.original.newValues)
-
-                    const isExpanded = expandedAuditLogId === row.original.id
-
-                    return (
-                        <button
-                            type="button"
-                            disabled={!hasDetails}
-                            onClick={() =>
-                                onExpandedAuditLogIdChange(
-                                    isExpanded ? null : row.original.id,
-                                )
-                            }
-                            className="mx-auto flex h-9 w-16 cursor-pointer items-center justify-center gap-2 rounded-md border border-border-dark bg-input-dark text-secondary-text transition-colors hover:border-primary/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                            aria-label={t('admin.auditLogs.showDetails')}
-                        >
-                            <GitCompare className="h-4 w-4 shrink-0" />
-
-                            {isExpanded ? (
-                                <ChevronUp className="h-4 w-4 shrink-0" />
-                            ) : (
-                                <ChevronDown className="h-4 w-4 shrink-0" />
-                            )}
-                        </button>
-                    )
-                },
-            },
         ],
-        [expandedAuditLogId, language, onExpandedAuditLogIdChange, t],
+        [auditLogs, language, t],
     )
 }

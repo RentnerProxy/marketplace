@@ -1,25 +1,30 @@
-import type { ClientTableFeatures } from '@/shared/Table/Types/client-table.types.ts'
-import { filterFn_equalsString } from '@tanstack/react-table'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { DataTableProps, TableColumn } from '@rentnerkev/table/types'
 import { ShieldCheck } from 'lucide-react'
 import { useMemo } from 'react'
 import { formatDate } from '@/lib/Date/date.ts'
-import {
-    createTimestampRangeFilter,
-    createTrimmedIncludesStringFilter,
-} from '@/lib/Table/tableFilters.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import StatusIndicator from '@/shared/StatusIndicator.tsx'
 
 import UserAvatar from '../../UserAvatar.tsx'
 import UserTableActions from '../Components/UserTableActions.tsx'
-import type { UseUsersTableColumnsParams } from '../Types/user-management-table.types.ts'
+import type { UsersTableProps } from '../Types/user-management-table.types.ts'
 import type { UserManagementUser } from '../../../Types/user-management-domain.types.ts'
 
-const trimmedIncludesStringFilter =
-    createTrimmedIncludesStringFilter<UserManagementUser>()
+export const usersTableOptions = {
+    initialState: { sorting: [{ id: 'createdAt', desc: true }] },
+    globalFilterFn: ({ original }, _columnId, value) => {
+        const search = String(value).trim().toLocaleLowerCase()
+        return [
+            original.username,
+            original.email,
+            original.firstName,
+            original.lastName,
+        ].some((part) => part?.toLocaleLowerCase().includes(search))
+    },
+} satisfies NonNullable<DataTableProps<UserManagementUser>['tableOptions']>
 
 export default function useUsersTableColumns({
+    availablePermissions,
     isDeletingUser,
     isTogglingUserActive,
     isResendingPasswordReset,
@@ -28,18 +33,27 @@ export default function useUsersTableColumns({
     onDeleteUser,
     onToggleUserActive,
     onPasswordReset,
-}: UseUsersTableColumnsParams) {
+}: UsersTableProps) {
     const { language, t } = useTranslationStore()
 
-    return useMemo<Array<ColumnDef<ClientTableFeatures, UserManagementUser>>>(
+    return useMemo<Array<TableColumn<UserManagementUser>>>(
         () => [
             {
                 accessorKey: 'username',
                 header: t('admin.users.username', { lng: language }),
-                filterFn: trimmedIncludesStringFilter,
+                size: 230,
+                minSize: 150,
+                enableHiding: false,
                 enableGlobalFilter: true,
+                meta: {
+                    filter: {
+                        type: 'text',
+                        maxLength: 50,
+                        placeholder: t('admin.users.usernameFilterPlaceholder'),
+                    },
+                },
                 cell: ({ row }) => (
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <UserAvatar
                             userId={row.original.id}
                             profileImageVersion={
@@ -47,7 +61,7 @@ export default function useUsersTableColumns({
                             }
                             username={row.original.username}
                         />
-                        <span className="font-medium text-white">
+                        <span className="min-w-0 wrap-anywhere font-medium text-white">
                             {row.original.username}
                         </span>
                         {row.original.isSuperUser && (
@@ -62,10 +76,18 @@ export default function useUsersTableColumns({
             {
                 accessorKey: 'email',
                 header: t('admin.users.email'),
-                filterFn: trimmedIncludesStringFilter,
+                size: 260,
+                minSize: 140,
                 enableGlobalFilter: false,
+                meta: {
+                    filter: {
+                        type: 'text',
+                        maxLength: 255,
+                        placeholder: t('admin.users.emailFilterPlaceholder'),
+                    },
+                },
                 cell: ({ getValue }) => (
-                    <span className="text-secondary-text">
+                    <span className="wrap-anywhere text-secondary-text">
                         {String(getValue())}
                     </span>
                 ),
@@ -73,7 +95,18 @@ export default function useUsersTableColumns({
             {
                 accessorKey: 'permissions',
                 header: t('common.rights'),
+                size: 160,
+                minSize: 125,
                 enableGlobalFilter: false,
+                meta: {
+                    filter: {
+                        type: 'select',
+                        placeholder: t('admin.users.permissionFilterPlaceholder'),
+                        options: [
+                            ...new Set(availablePermissions.map(({ key }) => key)),
+                        ].toSorted().map((key) => ({ value: key, label: key })),
+                    },
+                },
                 filterFn: (row, columnId, filterValue) => {
                     const permissions = row.getValue<Array<string>>(columnId)
 
@@ -93,8 +126,22 @@ export default function useUsersTableColumns({
                 accessorFn: (user) =>
                     user.isActive ? 'active' : 'deactivated',
                 header: t('common.status'),
-                filterFn: filterFn_equalsString,
+                size: 135,
+                minSize: 110,
                 enableGlobalFilter: false,
+                meta: {
+                    filter: {
+                        type: 'select',
+                        placeholder: t('common.status'),
+                        options: [
+                            { value: 'active', label: t('common.active') },
+                            {
+                                value: 'deactivated',
+                                label: t('admin.users.deactivated'),
+                            },
+                        ],
+                    },
+                },
                 cell: ({ row }) => (
                     <StatusIndicator
                         tone={row.original.isActive ? 'success' : 'danger'}
@@ -108,8 +155,15 @@ export default function useUsersTableColumns({
             {
                 accessorKey: 'createdAt',
                 header: t('admin.users.created'),
-                filterFn: createTimestampRangeFilter<UserManagementUser>(),
+                size: 180,
+                minSize: 135,
                 enableGlobalFilter: false,
+                meta: {
+                    filter: {
+                        type: 'dateRange',
+                        placeholder: t('admin.users.createdFilterPlaceholder'),
+                    },
+                },
                 cell: ({ row }) => (
                     <span className="text-secondary-text">
                         {formatDate(row.original.createdAt)}
@@ -119,6 +173,10 @@ export default function useUsersTableColumns({
             {
                 id: 'actions',
                 header: t('common.actions'),
+                size: 200,
+                minSize: 200,
+                enableHiding: false,
+                enableResizing: false,
                 enableSorting: false,
                 enableColumnFilter: false,
                 enableGlobalFilter: false,
@@ -138,6 +196,7 @@ export default function useUsersTableColumns({
             },
         ],
         [
+            availablePermissions,
             canManageSuperUsers,
             isDeletingUser,
             isResendingPasswordReset,

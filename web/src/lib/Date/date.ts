@@ -1,13 +1,4 @@
-import type { ClientTableFeatures } from '@/shared/Table/Types/client-table.types.ts'
 import type { MaintenanceDateValue } from './Types/date.types.ts'
-import type { TableDateRangeFilterValue } from '@/shared/Table/Types/table.types.ts'
-import {
-    isCalendarRange,
-    serializeCalendarISOString,
-    type CalendarValue,
-} from '@rentnerkev/calendar'
-import type { Column, RowData } from '@tanstack/react-table'
-import { isRecord } from '@/lib/Validation/isRecord.ts'
 
 const dateFormatter = new Intl.DateTimeFormat('de-DE', {
     dateStyle: 'medium',
@@ -76,38 +67,4 @@ export function formatMaintenanceDate(value: MaintenanceDateValue) {
     }
 
     return maintenanceDateFormatter.format(date)
-}
-
-export function getCalendarRangeFilterValue(value: CalendarValue) {
-    if (!isCalendarRange(value)) {
-        return undefined
-    }
-
-    const [from, to] = value
-
-    if (!from && !to) {
-        return undefined
-    }
-
-    return {
-        from: serializeCalendarISOString(from),
-        to: serializeCalendarISOString(to),
-    } satisfies TableDateRangeFilterValue
-}
-
-export function getDateRangeFilterValue<TData extends RowData>(
-    column: Column<ClientTableFeatures, TData>,
-): TableDateRangeFilterValue {
-    const value = column.getFilterValue()
-    return isTableDateRangeFilterValue(value) ? value : {}
-}
-
-function isTableDateRangeFilterValue(
-    value: unknown,
-): value is TableDateRangeFilterValue {
-    return (
-        isRecord(value) &&
-        (value.from === undefined || typeof value.from === 'string') &&
-        (value.to === undefined || typeof value.to === 'string')
-    )
 }

@@ -1,24 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { createElement, isValidElement } from 'react'
-import type { ReactElement, ReactNode } from 'react'
+import type { ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { DataTableProps, TableRow } from '@rentnerkev/table/types'
 import { query, render, reset } from './user-management-hooks.test.helpers.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import type { UserManagementUser } from '@/features/Admin/UserManagement/Types/user-management-domain.types.ts'
 import type { UsersTableProps } from '@/features/Admin/UserManagement/Components/UsersTable/Types/user-management-table.types.ts'
 
-type TableOptions = {
-    data: Array<UserManagementUser>
-    getRowId: (user: UserManagementUser) => string
-    globalFilterFn: (
-        row: { original: UserManagementUser },
-        columnId: string,
-        value: unknown,
-    ) => boolean
-    initialSorting: Array<{ id: string; desc: boolean }>
-}
-let options: TableOptions
-const search = vi.fn()
 let actor: string | undefined = 'actor'
 let superUser = false
 let fetching = false
@@ -41,16 +30,6 @@ const user: UserManagementUser = {
     profileImageVersion: null,
     permissions: [PERMISSIONS.USER_DASHBOARD],
 }
-vi.mock('@/shared/Table/Hooks/useClientTable.ts', () => ({
-    default(input: TableOptions) {
-        options = input
-        return {
-            table: {},
-            state: { searchInput: 'draft search' },
-            handler: { handleSearchInputChange: search },
-        }
-    },
-}))
 vi.mock('@/features/Admin/UserManagement/middleware.ts', () => ({
     getUsersHandler: vi.fn(),
 }))
@@ -58,7 +37,6 @@ vi.mock('@/features/Admin/UserManagement/Components/UserAvatar.tsx', () => ({
     default: ({ username }: { username: string }) =>
         createElement('img', { alt: username }),
 }))
-import useUsersTableViewLogic from '@/features/Admin/UserManagement/Components/UsersTable/Hooks/useUsersTableViewLogic.ts'
 import UsersTable from '@/features/Admin/UserManagement/Components/UsersTable/index.tsx'
 import useUserTableActionsLogic from '@/features/Admin/UserManagement/Components/UsersTable/Hooks/useUserTableActionsLogic.ts'
 
@@ -78,7 +56,17 @@ const props: UsersTableProps = {
     onToggleUserActive: vi.fn(),
     onPasswordReset: vi.fn(),
 }
-const useView = () => useUsersTableViewLogic(props)
+function renderTable() {
+    const element = render(() => UsersTable(props))
+    if (!isValidElement<DataTableProps<UserManagementUser>>(element)) {
+        throw new Error('Expected the users data table')
+    }
+    return element.props
+}
+
+function tableRow(original: UserManagementUser): TableRow<UserManagementUser> {
+    return { original } as TableRow<UserManagementUser>
+}
 
 beforeEach(() => {
     reset()
@@ -102,36 +90,20 @@ beforeEach(() => {
     })
 })
 
-function descendants(
-    node: ReactNode,
-): Array<ReactElement<Record<string, unknown>>> {
-    if (Array.isArray(node)) return node.flatMap(descendants)
-    if (!isValidElement<Record<string, unknown>>(node)) return []
-    return [node, ...descendants(node.props.children as ReactNode)]
-}
 describe('users table view', () => {
-    it('wires table search and the loading state through its visible table controls', () => {
+    it('configures search, loading state, and the column layout controls', () => {
         fetching = true
-        const tree = render(() => UsersTable(props))
-        const nodes = descendants(tree)
-        const toolbar = nodes.find(
-            (node) => typeof node.props.onChange === 'function',
-        )
-        const onChange = toolbar?.props.onChange
-        if (typeof onChange !== 'function')
-            throw new Error('Missing search control')
-        onChange('Ada')
-        expect(search).toHaveBeenCalledWith('Ada')
-        const body = nodes.find((node) => 'loadingState' in node.props)
-        expect(body?.props.isLoading).toBe(true)
-        expect(body?.props.loadingState).toEqual({
-            description: 'admin.users.loading',
-        })
+        const table = renderTable()
+        expect(table.searchPlaceholder).toBe('admin.users.searchPlaceholder')
+        expect(table.isLoading).toBe(true)
+        expect(table.messages?.loading).toBe('admin.users.loading')
+        expect(table.columnSettings).toBe(true)
+        expect(table.resizableColumns).toBe(true)
     })
 
-    it('offers sorted unique permission filters and toggles the column filter panel', () => {
-        let hook = render(useView)
-        expect(hook.state.columnFilterConfigs.permissions).toMatchObject({
+    it('offers sorted unique permission filters and sorts newest users first', () => {
+        const table = renderTable()
+        expect(table.columns[2]?.meta?.filter).toMatchObject({
             type: 'select',
             options: [
                 { value: 'a.read', label: 'a.read' },
@@ -139,38 +111,32 @@ describe('users table view', () => {
                 { value: 'z.read', label: 'z.read' },
             ],
         })
-        expect(hook.state.showColumnFilters).toBe(false)
-        hook.handler.handleToggleColumnFilters()
-        hook = render(useView)
-        expect(hook.state.showColumnFilters).toBe(true)
-        hook.handler.handleSearchInputChange('Ada')
-        expect(search).toHaveBeenCalledWith('Ada')
-        expect(options.initialSorting).toEqual([
+        expect(table.tableOptions?.initialState?.sorting).toEqual([
             { id: 'createdAt', desc: true },
         ])
-        expect(options.getRowId(user)).toBe(user.id)
+        expect(table.getRowId(user, 0)).toBe(user.id)
     })
 
     it.each(['  ADA ', 'EXAMPLE.INVALID', 'augusta', 'LOVELACE', '', '   '])(
         'finds users by %s across identity fields',
         (value) => {
-            render(useView)
-            expect(options.globalFilterFn({ original: user }, '', value)).toBe(
-                true,
-            )
+            const filter = renderTable().tableOptions?.globalFilterFn
+            if (typeof filter !== 'function') throw new Error('Missing user search')
+            const addMeta = vi.fn()
+            expect(filter(tableRow(user), 'username', value, addMeta)).toBe(true)
             expect(
-                options.globalFilterFn(
-                    { original: { ...user, firstName: null, lastName: null } },
-                    '',
+                filter(
+                    tableRow({ ...user, firstName: null, lastName: null }),
+                    'username',
                     'missing',
+                    addMeta,
                 ),
             ).toBe(false)
         },
     )
 
     it('uses actor/visibility-specific queries, exposes background loading and hides anonymous cached rows', () => {
-        render(useView)
-        expect(options.data).toEqual([user])
+        expect(renderTable().data).toEqual([user])
         expect(query).toHaveBeenLastCalledWith(
             expect.objectContaining({
                 queryKey: ['admin-users', 'actor', 'restricted'],
@@ -179,24 +145,23 @@ describe('users table view', () => {
         )
         superUser = true
         fetching = true
-        expect(render(useView).state.isLoadingUsers).toBe(true)
+        expect(renderTable().isLoading).toBe(true)
         expect(query).toHaveBeenLastCalledWith(
             expect.objectContaining({
                 queryKey: ['admin-users', 'actor', 'full'],
             }),
         )
         actor = undefined
-        render(useView)
-        expect(options.data).toEqual([])
+        expect(renderTable().data).toEqual([])
         expect(query).toHaveBeenLastCalledWith(
             expect.objectContaining({ enabled: false }),
         )
     })
 
     it('renders user identity, rights, status, dates and forwards actions for the selected row', () => {
-        const hook = render(useView)
+        const { columns } = renderTable()
         function cell(index: number, original = user) {
-            const renderer = hook.state.columns[index]?.cell as (
+            const renderer = columns[index]?.cell as (
                 input: unknown,
             ) => ReactElement
             return renderer({
@@ -223,7 +188,7 @@ describe('users table view', () => {
         }>
         actions.props.onEditUser(actions.props.user)
         expect(props.onEditUser).toHaveBeenCalledWith(user)
-        const permissionColumn = hook.state.columns[2]
+        const permissionColumn = columns[2]
         const filter = permissionColumn?.filterFn as (
             row: unknown,
             columnId: string,
@@ -236,7 +201,7 @@ describe('users table view', () => {
         expect(filter(row, 'permissions', PERMISSIONS.ADMIN_SUPER_USER)).toBe(
             false,
         )
-        const statusColumn = hook.state.columns[3]
+        const statusColumn = columns[3]
         if (
             !statusColumn ||
             !('accessorFn' in statusColumn) ||

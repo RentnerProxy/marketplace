@@ -1,13 +1,12 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
+import { useDataTableLogic } from '@rentnerkev/table'
+import type { DataTableLogicResult, DataTableProps } from '@rentnerkev/table'
 import { renderToStaticMarkup } from 'react-dom/server'
 import BackupRunsCard from '@/features/Admin/Backups/Components/BackupRunsCard/index.tsx'
-import useBackupRunsCardLogic from '@/features/Admin/Backups/Components/BackupRunsCard/Hooks/useBackupRunsCardLogic.ts'
-import type {
-    BackupRunsCardProps,
-    BackupRunsCardLogicReturn,
-} from '@/features/Admin/Backups/Components/BackupRunsCard/Types/backup-table.types.ts'
+import type { BackupRun } from '@/features/Admin/Backups/Types/backup-domain.types.ts'
+import type { BackupRunsCardProps } from '@/features/Admin/Backups/Components/BackupRunsCard/Types/backup-table.types.ts'
 import { completedRun } from '../backupFixtures.ts'
 import {
     elements,
@@ -51,24 +50,21 @@ function props(): BackupRunsCardProps {
     }
 }
 
-function capture(fixture: BackupRunsCardProps): BackupRunsCardLogicReturn {
-    let captured: BackupRunsCardLogicReturn | undefined
+function capture(fixture: BackupRunsCardProps) {
+    let options: DataTableProps<BackupRun> | undefined
+    let logic: DataTableLogicResult<BackupRun> | undefined
     function Capture() {
-        captured = useBackupRunsCardLogic({
-            runs: fixture.state.runs,
-            nextBackupAt: fixture.state.nextBackupAt,
-            activeActionId: fixture.state.activeActionId,
-            onOpenRestore: fixture.handler.handleOpenRestore,
-            onDeleteBackup: fixture.handler.handleDeleteBackup,
-        })
+        options = BackupRunsCard(fixture).props
+        if (!options) throw new Error('Missing backup table options')
+        logic = useDataTableLogic(options)
         return null
     }
     renderToStaticMarkup(createElement(Capture))
-    if (!captured) throw new Error('Missing backup table logic')
-    return captured
+    if (!options || !logic) throw new Error('Missing backup table logic')
+    return logic
 }
 
-function actionCell(logic: BackupRunsCardLogicReturn): ReactNode {
+function actionCell(logic: DataTableLogicResult<BackupRun>): ReactNode {
     const cell = logic.table
         .getRowModel()
         .rows[0]!.getAllCells()
@@ -145,16 +141,17 @@ describe('Backup runs card', () => {
         expect(
             logic.table.getRowModel().rows[0]!.getValue('includesStorage'),
         ).toBe('included')
-        expect(logic.state.columnCount).toBe(7)
-        expect(
-            logic.state.pageSizeOptions.map((option) => option.value),
-        ).toEqual([10, 20, 50, 100])
-        expect(logic.state.columnFilterConfigs.trigger).toMatchObject({
+        expect(logic.state.pageSizes.map((option) => option.value)).toEqual([
+            10, 20, 50, 100,
+        ])
+        expect(logic.table.state.sorting).toEqual([{ id: 'startedAt', desc: true }])
+        expect(logic.table.getColumn('trigger')?.columnDef.meta?.filter).toMatchObject({
             type: 'select',
         })
-        expect(logic.state.columnFilterConfigs.startedAt).toMatchObject({
+        expect(logic.table.getColumn('startedAt')?.columnDef.meta?.filter).toMatchObject({
             type: 'dateRange',
         })
+        expect(logic.table.getColumn('actions')?.getCanHide()).toBe(false)
         const tree = actionCell(logic)
         const html = renderToStaticMarkup(tree)
         expect(html).toContain('href="/api/admin/backups/backup-1"')
@@ -204,5 +201,62 @@ describe('Backup runs card', () => {
                 .table.getRowModel()
                 .rows[0]!.getValue('includesStorage'),
         ).toBe('excluded')
+    })
+
+    it('allows the table to close only the selected restore confirmation when idle', () => {
+        const fixture = props()
+        const secondRun = { ...completedRun, id: 'backup-2' }
+        fixture.state.runs = [completedRun, secondRun]
+        const closed = capture(fixture).table
+        const other = closed.getRow(secondRun.id)
+        expect(other.getCanExpand()).toBe(false)
+        other.getToggleExpandedHandler()()
+        expect(fixture.handler.handleOpenRestore).not.toHaveBeenCalled()
+        expect(fixture.handler.handleCancelRestore).not.toHaveBeenCalled()
+
+        fixture.state.restoreBackupId = completedRun.id
+        const open = capture(fixture).table
+        const selected = open.getRow(completedRun.id)
+        expect(selected.getIsExpanded()).toBe(true)
+        expect(open.getRow(secondRun.id).getIsExpanded()).toBe(false)
+        selected.getToggleExpandedHandler()()
+        expect(fixture.handler.handleCancelRestore).toHaveBeenCalledTimes(1)
+
+        fixture.state.activeActionId = completedRun.id
+        const busy = capture(fixture).table.getRow(completedRun.id)
+        expect(busy.getIsExpanded()).toBe(true)
+        expect(busy.getCanExpand()).toBe(false)
+        busy.getToggleExpandedHandler()()
+        expect(fixture.handler.handleCancelRestore).toHaveBeenCalledTimes(1)
+        expect(fixture.handler.handleRestoreBackup).not.toHaveBeenCalled()
+
+        const html = renderToStaticMarkup(createElement(BackupRunsCard, fixture))
+        expect(html).toContain('data-row-details-for="backup-1"')
+        expect(html).not.toContain('data-row-details-for="backup-2"')
+        expect(html.match(/<td[^>]*colSpan="8"[^>]*>/g)).toHaveLength(1)
+        expect(html.match(/<tr\b/g)).toHaveLength(4)
+    })
+
+    it('applies text, select and local calendar date filters to backup runs', () => {
+        const fixture = props()
+        fixture.state.runs = [
+            { ...completedRun, startedAt: new Date(2030, 0, 2, 23, 59).toISOString() },
+            { ...completedRun, id: 'earlier', startedAt: new Date(2030, 0, 1).toISOString() },
+            { ...completedRun, id: 'scheduled', trigger: 'scheduled' },
+        ]
+        const { table, handler } = capture(fixture)
+        const rowIds = () => table.getRowModel().rows.map((row) => row.id)
+
+        handler.handleSearch('ARCHIVE')
+        expect(rowIds()).toHaveLength(3)
+        handler.handleSearch('unknown backup')
+        expect(rowIds()).toEqual([])
+        handler.handleSearch('')
+
+        table.getColumn('fileName')?.setFilterValue('archive')
+        table.getColumn('trigger')?.setFilterValue('manual')
+        expect(rowIds()).toEqual([completedRun.id, 'earlier'])
+        table.getColumn('startedAt')?.setFilterValue({ from: '2030-01-02', to: '2030-01-02' })
+        expect(rowIds()).toEqual([completedRun.id])
     })
 })
