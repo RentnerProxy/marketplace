@@ -218,9 +218,7 @@ describe('audit table behavior', () => {
         expect(getRowCanExpand(tableRow(systemEntry))).toBe(false)
         const locale = tableProps.locale
         if (typeof locale !== 'object') throw new Error('Missing audit locale')
-        expect(locale.messages?.expandRow?.('')).toBe(
-            'admin.auditLogs.details',
-        )
+        expect(locale.messages?.expandRow?.('')).toBe('admin.auditLogs.details')
         expect(tableProps.getRowLabel?.(entry)).not.toBe(
             tableProps.getRowLabel?.(secondEntry),
         )
