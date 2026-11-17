@@ -1,7 +1,8 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:rentnerproxy:app-contracts:1.0.0-alpha.1",
+    "$id": "urn:rentnerproxy:app-contracts:1.0.0-alpha.2",
     "title": "RentnerProxy App Contracts",
+    "description": "Enable JSON Schema format assertions when validating these documents. The SDK validates formats including IP addresses and timestamps.",
     "$ref": "#/$defs/Catalog",
     "$defs": {
         "SourceIdentity": {
@@ -79,7 +80,7 @@
                         "runtimeProfile": {
                             "type": "string",
                             "const": "rentnerproxy-linux-v1",
-                            "description": "Provisional runtime profile identifier. ABI, CPU, libc and kernel baselines await native platform feasibility verification."
+                            "description": "Native Linux appliance profile exercised on AMD64 and ARM64. Runtime compatibility is checked against the supported appliance profile at installation."
                         },
                         "platformApi": {
                             "type": "string",
@@ -699,9 +700,7 @@
                     "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
                 },
                 "revision": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991
+                    "$ref": "#/$defs/Generation"
                 },
                 "releases": {
                     "maxItems": 4096,
@@ -736,13 +735,10 @@
                     "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
                 },
                 "id": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                    "$ref": "#/$defs/RecordId"
                 },
                 "revision": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991
+                    "$ref": "#/$defs/Generation"
                 },
                 "source": {
                     "$ref": "#/$defs/SourceIdentity"
@@ -768,9 +764,7 @@
                             "pattern": "^[1-9][0-9]{0,19}$"
                         },
                         "attempt": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 9007199254740991
+                            "$ref": "#/$defs/Generation"
                         }
                     },
                     "required": [
@@ -786,9 +780,7 @@
                     "type": "object",
                     "properties": {
                         "revision": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 9007199254740991
+                            "$ref": "#/$defs/Generation"
                         },
                         "report": {
                             "type": "object",
@@ -846,17 +838,13 @@
                     "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
                 },
                 "id": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                    "$ref": "#/$defs/RecordId"
                 },
                 "revision": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991
+                    "$ref": "#/$defs/Generation"
                 },
                 "actorId": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                    "$ref": "#/$defs/RecordId"
                 },
                 "approvedAt": {
                     "type": "string",
@@ -888,22 +876,16 @@
                     "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
                 },
                 "id": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                    "$ref": "#/$defs/RecordId"
                 },
                 "approvalId": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                    "$ref": "#/$defs/RecordId"
                 },
                 "approvalRevision": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991
+                    "$ref": "#/$defs/Generation"
                 },
                 "catalogRevision": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991
+                    "$ref": "#/$defs/Generation"
                 },
                 "publishedAt": {
                     "type": "string",
@@ -932,9 +914,7 @@
                             "pattern": "^[1-9][0-9]{0,19}$"
                         },
                         "attempt": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 9007199254740991
+                            "$ref": "#/$defs/Generation"
                         }
                     },
                     "required": [
@@ -963,6 +943,1731 @@
             "additionalProperties": false,
             "description": "Private publication receipt. Reconcile by immutable approval revision and exact release contents. Record publication only after the unchanged package bytes and matching signed catalog are available."
         },
+        "RecordId": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+        },
+        "Generation": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+        },
+        "BootstrapDescriptor": {
+            "type": "object",
+            "properties": {
+                "formatVersion": {
+                    "type": "number",
+                    "const": 1,
+                    "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
+                },
+                "appId": {
+                    "type": "string",
+                    "pattern": "^[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?\\.[a-z](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+                },
+                "installationId": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "generation": {
+                    "$ref": "#/$defs/Generation"
+                },
+                "runtimeProfile": {
+                    "type": "string",
+                    "const": "rentnerproxy-linux-v1",
+                    "description": "Native Linux appliance profile exercised on AMD64 and ARM64. Runtime compatibility is checked against the supported appliance profile at installation."
+                },
+                "versions": {
+                    "type": "object",
+                    "properties": {
+                        "appProtocol": {
+                            "type": "string",
+                            "const": "1.0.0"
+                        },
+                        "platformApi": {
+                            "type": "string",
+                            "const": "1.0.0"
+                        },
+                        "uiBridge": {
+                            "type": "string",
+                            "const": "1.0.0"
+                        }
+                    },
+                    "required": [
+                        "appProtocol",
+                        "platformApi"
+                    ],
+                    "additionalProperties": false
+                },
+                "appSocket": {
+                    "type": "string",
+                    "maxLength": 107,
+                    "pattern": "^(?:\\/[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*)+\\/app\\.sock$"
+                },
+                "coreSocket": {
+                    "type": "string",
+                    "maxLength": 107,
+                    "pattern": "^(?:\\/[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*)+\\/core\\.sock$"
+                },
+                "appCredential": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]{32,128}$",
+                    "description": "Opaque credential issued for one socket direction and installation generation."
+                },
+                "coreCredential": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9_-]{32,128}$",
+                    "description": "Opaque credential issued for one socket direction and installation generation."
+                }
+            },
+            "required": [
+                "formatVersion",
+                "appId",
+                "installationId",
+                "generation",
+                "runtimeProfile",
+                "versions",
+                "appSocket",
+                "coreSocket",
+                "appCredential",
+                "coreCredential"
+            ],
+            "additionalProperties": false,
+            "description": "The manager hands this descriptor to the restricted app process through a private inherited file descriptor. The SDK rejects reuse of a credential across socket directions. Keep the descriptor and credentials out of command lines, process environments, browser messages, and logs. The manager verifies socket ownership and the private run directory."
+        },
+        "AppHealth": {
+            "type": "object",
+            "properties": {
+                "healthy": {
+                    "type": "boolean",
+                    "const": true
+                }
+            },
+            "required": [
+                "healthy"
+            ],
+            "additionalProperties": {}
+        },
+        "AppReadiness": {
+            "type": "object",
+            "properties": {
+                "ready": {
+                    "type": "boolean",
+                    "const": true
+                },
+                "protocolVersion": {
+                    "type": "string",
+                    "const": "1.0.0"
+                },
+                "dataVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 2147483647
+                },
+                "providers": {
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ProviderRegistration"
+                    }
+                }
+            },
+            "required": [
+                "ready",
+                "protocolVersion",
+                "providers"
+            ],
+            "additionalProperties": {},
+            "description": "An absent dataVersion denotes an app without persisted data. The SDK checks unique provider registration IDs. Advertised providers become live only after the manager activates this generation."
+        },
+        "PlatformContext": {
+            "type": "object",
+            "properties": {
+                "appId": {
+                    "type": "string",
+                    "pattern": "^[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?\\.[a-z](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+                },
+                "installationId": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "generation": {
+                    "$ref": "#/$defs/Generation"
+                },
+                "runtimeProfile": {
+                    "type": "string",
+                    "const": "rentnerproxy-linux-v1",
+                    "description": "Native Linux appliance profile exercised on AMD64 and ARM64. Runtime compatibility is checked against the supported appliance profile at installation."
+                },
+                "versions": {
+                    "type": "object",
+                    "properties": {
+                        "appProtocol": {
+                            "type": "string",
+                            "const": "1.0.0"
+                        },
+                        "platformApi": {
+                            "type": "string",
+                            "const": "1.0.0"
+                        },
+                        "uiBridge": {
+                            "type": "string",
+                            "const": "1.0.0"
+                        }
+                    },
+                    "required": [
+                        "appProtocol",
+                        "platformApi"
+                    ],
+                    "additionalProperties": false
+                },
+                "capabilities": {
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "proxy.hosts.read.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "proxy.hosts.manage-owned.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "ownedProxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "diagnostics.upstream.probe.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "notifications.publish.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "installation"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "docker.inventory.observe.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "dockerConnections"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "dns.challenge.manage.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "dnsZones"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "engine.contributions.submit.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "ownedEngineResources"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "identity.provider.register.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "identityProviders"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "access.logs.read.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "security.enforcement.contribute.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "ownedEngineResources"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            }
+                        ],
+                        "description": "Requested resource scope type. Grants and resource IDs are assigned by the local administrator."
+                    }
+                }
+            },
+            "required": [
+                "appId",
+                "installationId",
+                "generation",
+                "runtimeProfile",
+                "versions",
+                "capabilities"
+            ],
+            "additionalProperties": {},
+            "description": "The platform derives this context from the authenticated installation. For each operation the platform rechecks current grants, actor permissions, resource scope, and generation."
+        },
+        "AuthorizationRequest": {
+            "type": "object",
+            "properties": {
+                "capability": {
+                    "anyOf": [
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "proxy.hosts.read.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "proxyHosts"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "proxy.hosts.manage-owned.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "ownedProxyHosts"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "diagnostics.upstream.probe.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "proxyHosts"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "notifications.publish.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "installation"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "docker.inventory.observe.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "dockerConnections"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "dns.challenge.manage.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "dnsZones"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "engine.contributions.submit.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "ownedEngineResources"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "identity.provider.register.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "identityProviders"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "access.logs.read.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "proxyHosts"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "security.enforcement.contribute.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "ownedEngineResources"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        }
+                    ],
+                    "description": "Requested resource scope type. Grants and resource IDs are assigned by the local administrator."
+                },
+                "resourceId": {
+                    "$ref": "#/$defs/RecordId"
+                }
+            },
+            "required": [
+                "capability",
+                "resourceId"
+            ],
+            "additionalProperties": false,
+            "description": "Check a specific capability and resource. For installation scope resourceId is the verified installation ID. The platform derives actor identity from its issued delegation."
+        },
+        "AuthorizationResult": {
+            "type": "object",
+            "properties": {
+                "allowed": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "allowed"
+            ],
+            "additionalProperties": {},
+            "description": "A point-in-time check. Mutating operations authorize the actor and resource again."
+        },
+        "EventCursor": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,256}$",
+            "description": "Opaque resume cursor. Reconnect with the cursor from the last processed event."
+        },
+        "PlatformEvent": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "cursor": {
+                    "$ref": "#/$defs/EventCursor"
+                },
+                "type": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-zA-Z0-9]{0,63}$"
+                },
+                "occurredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$",
+                    "description": "UTC timestamp with exactly three fractional digits. Time and actor authority are verified by the caller."
+                },
+                "resourceId": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "revision": {
+                    "$ref": "#/$defs/RecordId"
+                }
+            },
+            "required": [
+                "id",
+                "cursor",
+                "type",
+                "occurredAt"
+            ],
+            "additionalProperties": {},
+            "description": "Durable authorized event data delivered at least once. Deduplicate by id. An absent resourceId or revision means the event carries no corresponding resource or revision."
+        },
+        "ProviderRegistration": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "profile": {
+                    "type": "string",
+                    "enum": [
+                        "monitoring",
+                        "docker-discovery",
+                        "load-balancer",
+                        "dns",
+                        "oidc",
+                        "crowdsec"
+                    ]
+                },
+                "version": {
+                    "type": "string",
+                    "const": "1.0.0"
+                }
+            },
+            "required": [
+                "id",
+                "profile",
+                "version"
+            ],
+            "additionalProperties": false
+        },
+        "ProviderRequest": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "monitoring"
+                            ]
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "limit": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 100
+                                }
+                            },
+                            "required": [
+                                "limit"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "docker-discovery"
+                            ]
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "connectionId": {
+                                    "$ref": "#/$defs/RecordId"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 100
+                                }
+                            },
+                            "required": [
+                                "connectionId",
+                                "limit"
+                            ],
+                            "additionalProperties": false,
+                            "description": "The connection must be assigned to the installation by the platform."
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "load-balancer"
+                            ]
+                        },
+                        "payload": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "apply"
+                                        },
+                                        "contributionId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "revision": {
+                                            "type": "string",
+                                            "pattern": "^[1-9][0-9]{0,19}$",
+                                            "description": "Canonical positive decimal revision, ordered numerically within a contribution."
+                                        },
+                                        "policy": {
+                                            "type": "string",
+                                            "enum": [
+                                                "roundRobin",
+                                                "leastConnections"
+                                            ]
+                                        },
+                                        "upstreams": {
+                                            "minItems": 1,
+                                            "maxItems": 64,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "address": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string",
+                                                                "format": "ipv4",
+                                                                "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+                                                            },
+                                                            {
+                                                                "type": "string",
+                                                                "format": "ipv6"
+                                                            }
+                                                        ]
+                                                    },
+                                                    "port": {
+                                                        "type": "integer",
+                                                        "minimum": 1,
+                                                        "maximum": 65535
+                                                    }
+                                                },
+                                                "required": [
+                                                    "address",
+                                                    "port"
+                                                ],
+                                                "additionalProperties": false
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "contributionId",
+                                        "revision",
+                                        "policy",
+                                        "upstreams"
+                                    ],
+                                    "additionalProperties": false
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "readStatus"
+                                        },
+                                        "contributionId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "contributionId"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "dns"
+                            ]
+                        },
+                        "payload": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "present"
+                                        },
+                                        "challengeId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "zoneId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "maxLength": 253,
+                                            "pattern": "^(?:[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?\\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+                                        },
+                                        "value": {
+                                            "type": "string",
+                                            "pattern": "^[\\x20-\\x7e]{1,255}$"
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "challengeId",
+                                        "zoneId",
+                                        "name",
+                                        "value"
+                                    ],
+                                    "additionalProperties": false
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "check"
+                                        },
+                                        "challengeId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "challengeId"
+                                    ],
+                                    "additionalProperties": false
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "cleanup"
+                                        },
+                                        "challengeId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "challengeId"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "oidc"
+                            ]
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "transactionId": {
+                                    "$ref": "#/$defs/RecordId"
+                                }
+                            },
+                            "required": [
+                                "transactionId"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Resolve only the platform-brokered transaction bound to this installation."
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "crowdsec"
+                            ]
+                        },
+                        "payload": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "consumeLogs"
+                                        },
+                                        "batchId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "entries": {
+                                            "minItems": 1,
+                                            "maxItems": 100,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "proxyHostId": {
+                                                        "$ref": "#/$defs/RecordId"
+                                                    },
+                                                    "observedAt": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$",
+                                                        "description": "UTC timestamp with exactly three fractional digits. Time and actor authority are verified by the caller."
+                                                    },
+                                                    "clientAddress": {
+                                                        "anyOf": [
+                                                            {
+                                                                "type": "string",
+                                                                "format": "ipv4",
+                                                                "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+                                                            },
+                                                            {
+                                                                "type": "string",
+                                                                "format": "ipv6"
+                                                            }
+                                                        ]
+                                                    },
+                                                    "status": {
+                                                        "type": "integer",
+                                                        "minimum": 100,
+                                                        "maximum": 599
+                                                    }
+                                                },
+                                                "required": [
+                                                    "proxyHostId",
+                                                    "observedAt",
+                                                    "clientAddress",
+                                                    "status"
+                                                ],
+                                                "additionalProperties": false
+                                            },
+                                            "description": "Platform-projected access events for proxy hosts granted to this installation."
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "batchId",
+                                        "entries"
+                                    ],
+                                    "additionalProperties": false
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "evaluate"
+                                        },
+                                        "proxyHostId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "clientAddress": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "string",
+                                                    "format": "ipv4",
+                                                    "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+                                                },
+                                                {
+                                                    "type": "string",
+                                                    "format": "ipv6"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "proxyHostId",
+                                        "clientAddress"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "ProviderResult": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "monitoring"
+                            ]
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "samples": {
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "serviceId": {
+                                                "$ref": "#/$defs/RecordId"
+                                            },
+                                            "observedAt": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$",
+                                                "description": "UTC timestamp with exactly three fractional digits. Time and actor authority are verified by the caller."
+                                            },
+                                            "healthy": {
+                                                "type": "boolean"
+                                            }
+                                        },
+                                        "required": [
+                                            "serviceId",
+                                            "observedAt",
+                                            "healthy"
+                                        ],
+                                        "additionalProperties": {}
+                                    }
+                                }
+                            },
+                            "required": [
+                                "samples"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Read-only health samples up to the requested limit."
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "docker-discovery"
+                            ]
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "connectionId": {
+                                    "$ref": "#/$defs/RecordId"
+                                },
+                                "observations": {
+                                    "maxItems": 100,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "workloadId": {
+                                                "$ref": "#/$defs/RecordId"
+                                            },
+                                            "observedAt": {
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$",
+                                                "description": "UTC timestamp with exactly three fractional digits. Time and actor authority are verified by the caller."
+                                            },
+                                            "address": {
+                                                "anyOf": [
+                                                    {
+                                                        "type": "string",
+                                                        "format": "ipv4",
+                                                        "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+                                                    },
+                                                    {
+                                                        "type": "string",
+                                                        "format": "ipv6"
+                                                    }
+                                                ]
+                                            },
+                                            "port": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 65535
+                                            }
+                                        },
+                                        "required": [
+                                            "workloadId",
+                                            "observedAt",
+                                            "address",
+                                            "port"
+                                        ],
+                                        "additionalProperties": {}
+                                    }
+                                }
+                            },
+                            "required": [
+                                "connectionId",
+                                "observations"
+                            ],
+                            "additionalProperties": {},
+                            "description": "Observations apply only to records owned by this installation and connection."
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "load-balancer"
+                            ]
+                        },
+                        "payload": {
+                            "type": "object",
+                            "properties": {
+                                "contributionId": {
+                                    "$ref": "#/$defs/RecordId"
+                                },
+                                "revisionStatus": {
+                                    "oneOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "string",
+                                                    "const": "applied"
+                                                },
+                                                "appliedRevision": {
+                                                    "type": "string",
+                                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                                    "description": "Canonical positive decimal revision, ordered numerically within a contribution."
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "appliedRevision"
+                                            ],
+                                            "additionalProperties": {}
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "unchanged",
+                                                        "rejected",
+                                                        "unavailable"
+                                                    ]
+                                                },
+                                                "appliedRevision": {
+                                                    "anyOf": [
+                                                        {
+                                                            "type": "string",
+                                                            "pattern": "^[1-9][0-9]{0,19}$",
+                                                            "description": "Canonical positive decimal revision, ordered numerically within a contribution."
+                                                        },
+                                                        {
+                                                            "type": "null"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "status",
+                                                "appliedRevision"
+                                            ],
+                                            "additionalProperties": {}
+                                        }
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "contributionId",
+                                "revisionStatus"
+                            ],
+                            "additionalProperties": {},
+                            "description": "A stale, invalid, or unavailable update leaves the last applied revision intact."
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "dns"
+                            ]
+                        },
+                        "payload": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "enum": [
+                                                "present",
+                                                "cleanup"
+                                            ]
+                                        },
+                                        "challengeId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "operation": {
+                                            "$ref": "#/$defs/Operation"
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "challengeId",
+                                        "operation"
+                                    ],
+                                    "additionalProperties": {}
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "check"
+                                        },
+                                        "challengeId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "outcome": {
+                                            "type": "string",
+                                            "enum": [
+                                                "verified",
+                                                "missing",
+                                                "unavailable"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "challengeId",
+                                        "outcome"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            ],
+                            "description": "Presentation and cleanup are bound to an owned challenge. A failure preserves the serving certificate."
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "oidc"
+                            ]
+                        },
+                        "payload": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "outcome": {
+                                            "type": "string",
+                                            "const": "verified"
+                                        },
+                                        "transactionId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "identity": {
+                                            "type": "object",
+                                            "properties": {
+                                                "subject": {
+                                                    "type": "string",
+                                                    "pattern": "^[^\\p{Cc}\\p{Cs}]{1,255}$"
+                                                },
+                                                "groups": {
+                                                    "maxItems": 64,
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "pattern": "^[^\\p{Cc}\\p{Cs}]{1,255}$"
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "subject",
+                                                "groups"
+                                            ],
+                                            "additionalProperties": {}
+                                        }
+                                    },
+                                    "required": [
+                                        "outcome",
+                                        "transactionId",
+                                        "identity"
+                                    ],
+                                    "additionalProperties": {}
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "outcome": {
+                                            "type": "string",
+                                            "enum": [
+                                                "invalid",
+                                                "unavailable"
+                                            ]
+                                        },
+                                        "transactionId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        }
+                                    },
+                                    "required": [
+                                        "outcome",
+                                        "transactionId"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            ],
+                            "description": "The verified identity is a proposal. Session issuance and authorization stay with the platform."
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "profile": {
+                            "type": "string",
+                            "enum": [
+                                "crowdsec"
+                            ]
+                        },
+                        "payload": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "consumeLogs"
+                                        },
+                                        "batchId": {
+                                            "$ref": "#/$defs/RecordId"
+                                        },
+                                        "outcome": {
+                                            "type": "string",
+                                            "enum": [
+                                                "processed",
+                                                "unavailable"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "batchId",
+                                        "outcome"
+                                    ],
+                                    "additionalProperties": {}
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "const": "evaluate"
+                                        },
+                                        "decision": {
+                                            "oneOf": [
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "outcome": {
+                                                            "type": "string",
+                                                            "const": "allow"
+                                                        },
+                                                        "allowed": {
+                                                            "type": "boolean",
+                                                            "const": true
+                                                        },
+                                                        "cachedBlock": {
+                                                            "type": "boolean",
+                                                            "const": false
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "outcome",
+                                                        "allowed",
+                                                        "cachedBlock"
+                                                    ],
+                                                    "additionalProperties": {}
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "outcome": {
+                                                            "type": "string",
+                                                            "const": "deny"
+                                                        },
+                                                        "allowed": {
+                                                            "type": "boolean",
+                                                            "const": false
+                                                        },
+                                                        "cachedBlock": {
+                                                            "type": "boolean",
+                                                            "const": true
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "outcome",
+                                                        "allowed",
+                                                        "cachedBlock"
+                                                    ],
+                                                    "additionalProperties": {}
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "outcome": {
+                                                            "type": "string",
+                                                            "const": "unavailable"
+                                                        },
+                                                        "allowed": {
+                                                            "type": "boolean",
+                                                            "const": false
+                                                        },
+                                                        "cachedBlock": {
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "required": [
+                                                        "outcome",
+                                                        "allowed",
+                                                        "cachedBlock"
+                                                    ],
+                                                    "additionalProperties": {}
+                                                }
+                                            ],
+                                            "description": "Unavailability confirms no allow decision and preserves any cached block."
+                                        }
+                                    },
+                                    "required": [
+                                        "action",
+                                        "decision"
+                                    ],
+                                    "additionalProperties": {}
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "profile",
+                        "payload"
+                    ],
+                    "additionalProperties": {}
+                }
+            ]
+        },
+        "UiBridgeMessage": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "runtime:ready"
+                        },
+                        "nonce": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9_-]+$"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "nonce"
+                    ],
+                    "additionalProperties": false,
+                    "description": "The iframe targets the exact host origin and transfers one private document control port. The host checks the expected iframe WindowProxy, the opaque origin (the string \"null\"), and the nonce issued for this frame before accepting the port."
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "runtime:bootstrap"
+                        },
+                        "bridgeVersion": {
+                            "type": "string",
+                            "const": "1.0.0"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "bridgeVersion",
+                        "installId",
+                        "installationGeneration",
+                        "generation"
+                    ],
+                    "additionalProperties": false,
+                    "description": "The host selects the bridge version and transfers one fresh session port over the private document control port. Validate the port transfer separately from the payload."
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "connected"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "installId",
+                        "installationGeneration",
+                        "generation"
+                    ],
+                    "additionalProperties": false,
+                    "description": "The iframe acknowledges the bootstrap on the active session port."
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "context"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "theme": {
+                            "type": "string",
+                            "enum": [
+                                "light",
+                                "dark"
+                            ]
+                        },
+                        "locale": {
+                            "type": "string",
+                            "maxLength": 64,
+                            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+                        },
+                        "route": {
+                            "description": "Route ID from the host route allowlist.",
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "ready": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "installId",
+                        "installationGeneration",
+                        "generation",
+                        "theme",
+                        "locale",
+                        "route",
+                        "ready"
+                    ],
+                    "additionalProperties": false,
+                    "description": "The host sends current UI context on the active session port."
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "navigate"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "route": {
+                            "description": "Route ID from the host route allowlist.",
+                            "$ref": "#/$defs/RecordId"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "installId",
+                        "installationGeneration",
+                        "generation",
+                        "route"
+                    ],
+                    "additionalProperties": false,
+                    "description": "The iframe requests a host route on the active session port."
+                }
+            ],
+            "description": "Check the transfer count and ports outside payload validation. Require the active session port and matching install ID, installation generation, and channel generation for session messages. Close replaced session ports and revoke both ports when the document or installation binding expires. Protected resource actions require the current installation generation and authorization through the authenticated gateway."
+        },
         "Problem": {
             "type": "object",
             "properties": {
@@ -985,8 +2690,7 @@
                     "pattern": "^[a-z][a-zA-Z0-9]{0,63}$"
                 },
                 "requestId": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                    "$ref": "#/$defs/RecordId"
                 }
             },
             "required": [
@@ -1005,8 +2709,7 @@
                     "type": "object",
                     "properties": {
                         "id": {
-                            "type": "string",
-                            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                            "$ref": "#/$defs/RecordId"
                         },
                         "status": {
                             "type": "string",
@@ -1029,8 +2732,7 @@
                     "type": "object",
                     "properties": {
                         "id": {
-                            "type": "string",
-                            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                            "$ref": "#/$defs/RecordId"
                         },
                         "status": {
                             "type": "string",
@@ -1050,5 +2752,23 @@
             ],
             "description": "Accepted work has a durable operation ID. Cancellation is an operation request. A disconnect or timeout does not confirm cancellation or rollback."
         }
-    }
+    },
+    "x-rentnerproxy-protocol-documents": [
+        "RecordId",
+        "Generation",
+        "BootstrapDescriptor",
+        "AppHealth",
+        "AppReadiness",
+        "PlatformContext",
+        "AuthorizationRequest",
+        "AuthorizationResult",
+        "EventCursor",
+        "PlatformEvent",
+        "ProviderRegistration",
+        "ProviderRequest",
+        "ProviderResult",
+        "UiBridgeMessage",
+        "Problem",
+        "Operation"
+    ]
 }

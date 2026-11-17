@@ -1,9 +1,12 @@
+mod protocol;
 mod validation;
 
 use std::{error::Error, fmt};
 
 use jsonschema::Validator;
 use serde_json::Value;
+
+pub use protocol::ProtocolContracts;
 
 use validation::{
     array, matches_record, string, validate_candidate, validate_catalog, validate_manifest,
@@ -49,6 +52,24 @@ impl fmt::Display for ContractError {
 
 impl Error for ContractError {}
 
+fn embedded_schema() -> Result<Value, ContractError> {
+    let schema: Value = serde_json::from_str(SCHEMA).map_err(|_| ContractError::InvalidSchema)?;
+    let id = concat!("urn:rentnerproxy:app-contracts:", env!("CARGO_PKG_VERSION"));
+    if schema["$id"] != id {
+        return Err(ContractError::InvalidSchema);
+    }
+    Ok(schema)
+}
+
+fn compile_schema(schema: &mut Value, name: &str) -> Result<Validator, ContractError> {
+    schema["$ref"] = Value::String(format!("#/$defs/{name}"));
+    jsonschema::draft202012::options()
+        .offline()
+        .should_validate_formats(true)
+        .build(schema)
+        .map_err(|_| ContractError::InvalidSchema)
+}
+
 /// Offline validators for the bundled preview contract. Callers admit bounded
 /// JSON, reject duplicate members at decoding, and authenticate signed input.
 pub struct Contracts {
@@ -62,20 +83,8 @@ pub struct Contracts {
 impl Contracts {
     /// Compile the embedded schema once and reuse the validators.
     pub fn new() -> Result<Self, ContractError> {
-        let mut schema: Value =
-            serde_json::from_str(SCHEMA).map_err(|_| ContractError::InvalidSchema)?;
-        let id = concat!("urn:rentnerproxy:app-contracts:", env!("CARGO_PKG_VERSION"));
-        if schema["$id"] != id {
-            return Err(ContractError::InvalidSchema);
-        }
-        let mut compile = |name| {
-            schema["$ref"] = Value::String(format!("#/$defs/{name}"));
-            jsonschema::draft202012::options()
-                .offline()
-                .should_validate_formats(true)
-                .build(&schema)
-                .map_err(|_| ContractError::InvalidSchema)
-        };
+        let mut schema = embedded_schema()?;
+        let mut compile = |name| compile_schema(&mut schema, name);
         Ok(Self {
             manifest: compile("AppManifest")?,
             catalog: compile("Catalog")?,

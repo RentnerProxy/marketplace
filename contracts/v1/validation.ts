@@ -7,11 +7,14 @@ import {
 } from './catalog.ts'
 import { appManifest } from './manifest.ts'
 import { approval, candidate, publication } from './publication.ts'
+import { protocolSchemas } from './schemas.ts'
 import type {
     AppManifest,
     Candidate,
     CatalogRelease,
     ContractErrorCode,
+    ProtocolDocument,
+    ProtocolDocumentName,
 } from './Types/contract.types.ts'
 
 export class ContractError extends Error {
@@ -24,10 +27,10 @@ export class ContractError extends Error {
     }
 }
 
-function parseStructure<Schema extends z.ZodType>(
-    schema: Schema,
+function parseStructure<Output>(
+    schema: z.core.$ZodType<Output>,
     input: unknown,
-): z.output<Schema> {
+): Output {
     const result = z.safeParse(schema, input)
     if (!result.success) {
         throw new ContractError(
@@ -36,6 +39,20 @@ function parseStructure<Schema extends z.ZodType>(
         )
     }
     return result.data
+}
+
+const protocolValidators: {
+    [Name in ProtocolDocumentName]: z.core.$ZodType<ProtocolDocument<Name>>
+} = protocolSchemas
+
+export function parseProtocolDocument<Name extends ProtocolDocumentName>(
+    name: Name,
+    input: unknown,
+): ProtocolDocument<Name> {
+    if (!Object.hasOwn(protocolValidators, name)) {
+        throw new ContractError('invalidShape', 'Unknown v1 protocol document.')
+    }
+    return parseStructure(protocolValidators[name], input)
 }
 
 function unique(values: readonly (string | number)[]) {
