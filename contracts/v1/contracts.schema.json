@@ -1,0 +1,1054 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "urn:rentnerproxy:app-contracts:1.0.0-alpha.1",
+    "title": "RentnerProxy App Contracts",
+    "$ref": "#/$defs/Catalog",
+    "$defs": {
+        "SourceIdentity": {
+            "type": "object",
+            "properties": {
+                "repositoryId": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$"
+                },
+                "commit": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{40}$"
+                }
+            },
+            "required": [
+                "repositoryId",
+                "commit"
+            ],
+            "additionalProperties": false,
+            "description": "Immutable GitHub repository ID and exact source commit."
+        },
+        "AppManifest": {
+            "type": "object",
+            "properties": {
+                "formatVersion": {
+                    "type": "number",
+                    "const": 1,
+                    "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
+                },
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?\\.[a-z](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+                },
+                "version": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})(?:-(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?$"
+                },
+                "target": {
+                    "type": "string",
+                    "enum": [
+                        "linux-amd64",
+                        "linux-arm64"
+                    ]
+                },
+                "source": {
+                    "$ref": "#/$defs/SourceIdentity"
+                },
+                "display": {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "pattern": "^[^\\p{Cc}\\p{Cs}]{1,80}$"
+                        },
+                        "summary": {
+                            "type": "string",
+                            "pattern": "^[^\\p{Cc}\\p{Cs}]{1,400}$"
+                        },
+                        "license": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9.+-]{0,63}$"
+                        }
+                    },
+                    "required": [
+                        "name",
+                        "summary",
+                        "license"
+                    ],
+                    "additionalProperties": false
+                },
+                "requires": {
+                    "type": "object",
+                    "properties": {
+                        "runtimeProfile": {
+                            "type": "string",
+                            "const": "rentnerproxy-linux-v1",
+                            "description": "Provisional runtime profile identifier. ABI, CPU, libc and kernel baselines await native platform feasibility verification."
+                        },
+                        "platformApi": {
+                            "type": "string",
+                            "pattern": "^>=1\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5}) <(?:1\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})|2\\.0\\.0)$",
+                            "description": "Inclusive minimum and exclusive maximum within protocol major 1. The minimum must be less than the maximum."
+                        },
+                        "appProtocol": {
+                            "type": "string",
+                            "pattern": "^>=1\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5}) <(?:1\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})|2\\.0\\.0)$",
+                            "description": "Inclusive minimum and exclusive maximum within protocol major 1. The minimum must be less than the maximum."
+                        },
+                        "uiBridge": {
+                            "type": "string",
+                            "pattern": "^>=1\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5}) <(?:1\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})|2\\.0\\.0)$",
+                            "description": "Inclusive minimum and exclusive maximum within protocol major 1. The minimum must be less than the maximum."
+                        },
+                        "engineCapabilities": {
+                            "maxItems": 2,
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "caddy.load-balancing.v1",
+                                    "caddy.crowdsec.v1"
+                                ]
+                            }
+                        }
+                    },
+                    "required": [
+                        "runtimeProfile",
+                        "platformApi",
+                        "appProtocol",
+                        "engineCapabilities"
+                    ],
+                    "additionalProperties": false
+                },
+                "entrypoint": {
+                    "type": "string",
+                    "const": "bin/app"
+                },
+                "api": {
+                    "type": "string",
+                    "const": "api/openapi.json"
+                },
+                "configSchema": {
+                    "type": "string",
+                    "maxLength": 240,
+                    "pattern": "^schemas\\/(?:[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*\\/)*[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*\\.(?:json)$"
+                },
+                "ui": {
+                    "type": "object",
+                    "properties": {
+                        "entrypoint": {
+                            "type": "string",
+                            "maxLength": 240,
+                            "pattern": "^ui\\/(?:[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*\\/)*[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*\\.(?:html)$"
+                        },
+                        "slots": {
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "navigation",
+                                    "proxyHostTab",
+                                    "dashboardWidget",
+                                    "search"
+                                ]
+                            }
+                        }
+                    },
+                    "required": [
+                        "entrypoint",
+                        "slots"
+                    ],
+                    "additionalProperties": false
+                },
+                "providers": {
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "monitoring",
+                            "docker-discovery",
+                            "load-balancer",
+                            "dns",
+                            "oidc",
+                            "crowdsec"
+                        ]
+                    }
+                },
+                "capabilities": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "proxy.hosts.read.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "proxy.hosts.manage-owned.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "ownedProxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "diagnostics.upstream.probe.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "notifications.publish.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "installation"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "docker.inventory.observe.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "dockerConnections"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "dns.challenge.manage.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "dnsZones"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "engine.contributions.submit.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "ownedEngineResources"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "identity.provider.register.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "identityProviders"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "access.logs.read.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "security.enforcement.contribute.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "ownedEngineResources"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            }
+                        ],
+                        "description": "Requested resource scope type. Grants and resource IDs are assigned by the local administrator."
+                    }
+                },
+                "permissions": {
+                    "maxItems": 64,
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{0,31}$"
+                    },
+                    "description": "App-owned permission keys. The platform qualifies keys with the app ID."
+                },
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "targetVersion": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                        },
+                        "readVersions": {
+                            "minItems": 1,
+                            "maxItems": 64,
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                            }
+                        },
+                        "writeVersions": {
+                            "minItems": 1,
+                            "maxItems": 64,
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 2147483647
+                            }
+                        },
+                        "migrations": {
+                            "maxItems": 64,
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "fromVersion": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 2147483646
+                                    },
+                                    "toVersion": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 2147483647
+                                    },
+                                    "path": {
+                                        "type": "string",
+                                        "maxLength": 240,
+                                        "pattern": "^migrations\\/(?:[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*\\/)*[a-zA-Z0-9_-]+(?:\\.[a-zA-Z0-9_-]+)*\\.(?:sql|json)$"
+                                    }
+                                },
+                                "required": [
+                                    "fromVersion",
+                                    "toVersion",
+                                    "path"
+                                ],
+                                "additionalProperties": false
+                            }
+                        }
+                    },
+                    "required": [
+                        "targetVersion",
+                        "readVersions",
+                        "writeVersions",
+                        "migrations"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Write versions must be readable and include the target version. Order migrations by source version. Every declared forward migration must lead to the target, with one outgoing step per source version. Zero denotes fresh state."
+                },
+                "resources": {
+                    "type": "object",
+                    "properties": {
+                        "startupTimeoutMs": {
+                            "type": "integer",
+                            "minimum": 100,
+                            "maximum": 120000
+                        },
+                        "drainTimeoutMs": {
+                            "type": "integer",
+                            "minimum": 100,
+                            "maximum": 120000
+                        },
+                        "memoryMiB": {
+                            "type": "integer",
+                            "minimum": 16,
+                            "maximum": 16384
+                        },
+                        "processLimit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 64
+                        }
+                    },
+                    "required": [
+                        "startupTimeoutMs",
+                        "drainTimeoutMs",
+                        "memoryMiB",
+                        "processLimit"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "formatVersion",
+                "id",
+                "version",
+                "target",
+                "source",
+                "display",
+                "requires",
+                "entrypoint",
+                "api",
+                "providers",
+                "capabilities",
+                "permissions",
+                "resources"
+            ],
+            "additionalProperties": false,
+            "description": "app.json inside a self-contained tar.zst. Omitted optional blocks are absent, never null. Runtime compatibility, safe extraction, and signed approval are independent checks."
+        },
+        "PackageArtifact": {
+            "type": "object",
+            "properties": {
+                "manifest": {
+                    "$ref": "#/$defs/AppManifest"
+                },
+                "archive": {
+                    "type": "object",
+                    "properties": {
+                        "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "sizeBytes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                        }
+                    },
+                    "required": [
+                        "sha256",
+                        "sizeBytes"
+                    ],
+                    "additionalProperties": false
+                },
+                "manifestSha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "SHA-256 of the exact app.json bytes inside the archive."
+                },
+                "sbom": {
+                    "type": "object",
+                    "properties": {
+                        "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "sizeBytes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 16777216
+                        }
+                    },
+                    "required": [
+                        "sha256",
+                        "sizeBytes"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Release asset <archive filename>.sbom.json."
+                },
+                "provenance": {
+                    "type": "object",
+                    "properties": {
+                        "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "sizeBytes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 16777216
+                        }
+                    },
+                    "required": [
+                        "sha256",
+                        "sizeBytes"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Release asset <archive filename>.provenance.json."
+                }
+            },
+            "required": [
+                "manifest",
+                "archive",
+                "manifestSha256",
+                "sbom",
+                "provenance"
+            ],
+            "additionalProperties": false
+        },
+        "CatalogRelease": {
+            "type": "object",
+            "properties": {
+                "appId": {
+                    "type": "string",
+                    "pattern": "^[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?\\.[a-z](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+                },
+                "version": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})(?:-(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?$"
+                },
+                "source": {
+                    "$ref": "#/$defs/SourceIdentity"
+                },
+                "publisher": {
+                    "type": "object",
+                    "properties": {
+                        "namespace": {
+                            "type": "string",
+                            "pattern": "^[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?$"
+                        },
+                        "name": {
+                            "type": "string",
+                            "pattern": "^[^\\p{Cc}\\p{Cs}]{1,80}$"
+                        }
+                    },
+                    "required": [
+                        "namespace",
+                        "name"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Signed public display identity. The namespace must match the app ID. Only the trusted RentnerProxy publisher owns rentnerproxy."
+                },
+                "packages": {
+                    "minItems": 1,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/PackageArtifact"
+                    }
+                },
+                "icon": {
+                    "type": "object",
+                    "properties": {
+                        "format": {
+                            "type": "string",
+                            "enum": [
+                                "png",
+                                "webp"
+                            ]
+                        },
+                        "sha256": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "sizeBytes": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2097152
+                        }
+                    },
+                    "required": [
+                        "format",
+                        "sha256",
+                        "sizeBytes"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Verified catalog target at assets/<sha256>.<format>, relative to the catalog repository."
+                },
+                "notes": {
+                    "type": "string",
+                    "pattern": "^(?:[^\\p{Cc}\\p{Cs}]|\\n){1,2000}$"
+                }
+            },
+            "required": [
+                "appId",
+                "version",
+                "source",
+                "publisher",
+                "packages"
+            ],
+            "additionalProperties": false,
+            "description": "Public install/display data for one version. Each target has its own manifest and archive identity. The release tag is <appId>-v<version> and the asset is <appId>-<version>-<target>.tar.zst in RentnerProxy/app-catalog."
+        },
+        "Revocation": {
+            "type": "object",
+            "properties": {
+                "appId": {
+                    "type": "string",
+                    "pattern": "^[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?\\.[a-z](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+                },
+                "version": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})\\.(?:0|[1-9][0-9]{0,5})(?:-(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?$"
+                },
+                "revokedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$",
+                    "description": "UTC timestamp with exactly three fractional digits. Time and actor authority are verified by the caller."
+                },
+                "reason": {
+                    "type": "string",
+                    "enum": [
+                        "withdrawn",
+                        "security",
+                        "invalidPublication"
+                    ]
+                }
+            },
+            "required": [
+                "appId",
+                "version",
+                "revokedAt",
+                "reason"
+            ],
+            "additionalProperties": false,
+            "description": "Revocation applies to all targets of the specified app version."
+        },
+        "Catalog": {
+            "type": "object",
+            "properties": {
+                "formatVersion": {
+                    "type": "number",
+                    "const": 1,
+                    "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
+                },
+                "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                },
+                "releases": {
+                    "maxItems": 4096,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/CatalogRelease"
+                    }
+                },
+                "revocations": {
+                    "maxItems": 4096,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Revocation"
+                    }
+                }
+            },
+            "required": [
+                "formatVersion",
+                "revision",
+                "releases",
+                "revocations"
+            ],
+            "additionalProperties": false,
+            "description": "Catalog target payload for TUF. Verify its bytes and metadata before use. Releases and revocations are unique by app ID and version and disjoint. Website account, rating, and statistics data are outside this contract."
+        },
+        "Candidate": {
+            "type": "object",
+            "properties": {
+                "formatVersion": {
+                    "type": "number",
+                    "const": 1,
+                    "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
+                },
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                },
+                "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                },
+                "source": {
+                    "$ref": "#/$defs/SourceIdentity"
+                },
+                "build": {
+                    "type": "object",
+                    "properties": {
+                        "repositoryId": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$"
+                        },
+                        "workflowCommit": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{40}$"
+                        },
+                        "workflowPath": {
+                            "type": "string",
+                            "maxLength": 160,
+                            "pattern": "^\\.github\\/workflows\\/[a-zA-Z0-9_-]+\\.ya?ml$"
+                        },
+                        "runId": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$"
+                        },
+                        "attempt": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                        }
+                    },
+                    "required": [
+                        "repositoryId",
+                        "workflowCommit",
+                        "workflowPath",
+                        "runId",
+                        "attempt"
+                    ],
+                    "additionalProperties": false
+                },
+                "evidence": {
+                    "type": "object",
+                    "properties": {
+                        "revision": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                        },
+                        "report": {
+                            "type": "object",
+                            "properties": {
+                                "sha256": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "sizeBytes": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 2147483647
+                                }
+                            },
+                            "required": [
+                                "sha256",
+                                "sizeBytes"
+                            ],
+                            "additionalProperties": false
+                        },
+                        "result": {
+                            "type": "string",
+                            "const": "passed"
+                        }
+                    },
+                    "required": [
+                        "revision",
+                        "report",
+                        "result"
+                    ],
+                    "additionalProperties": false
+                },
+                "release": {
+                    "$ref": "#/$defs/CatalogRelease"
+                }
+            },
+            "required": [
+                "formatVersion",
+                "id",
+                "revision",
+                "source",
+                "build",
+                "evidence",
+                "release"
+            ],
+            "additionalProperties": false,
+            "description": "Private candidate snapshot. The validation report and each target archive have their own byte identity. A record claiming success does not establish trusted validation evidence."
+        },
+        "Approval": {
+            "type": "object",
+            "properties": {
+                "formatVersion": {
+                    "type": "number",
+                    "const": 1,
+                    "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
+                },
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                },
+                "revision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                },
+                "actorId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                },
+                "approvedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$",
+                    "description": "UTC timestamp with exactly three fractional digits. Time and actor authority are verified by the caller."
+                },
+                "candidate": {
+                    "$ref": "#/$defs/Candidate"
+                }
+            },
+            "required": [
+                "formatVersion",
+                "id",
+                "revision",
+                "actorId",
+                "approvedAt",
+                "candidate"
+            ],
+            "additionalProperties": false,
+            "description": "Private approval for the entire candidate snapshot, including ordered arrays. Resolve actor permissions and current approval state at the trusted publication boundary."
+        },
+        "Publication": {
+            "type": "object",
+            "properties": {
+                "formatVersion": {
+                    "type": "number",
+                    "const": 1,
+                    "description": "Wire version. Readers reject unknown versions and unknown fields. Changes to a closed shape, allowed value, or meaning require a new wire version after v1 stabilizes."
+                },
+                "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                },
+                "approvalId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                },
+                "approvalRevision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                },
+                "catalogRevision": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991
+                },
+                "publishedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}(?:Z))$",
+                    "description": "UTC timestamp with exactly three fractional digits. Time and actor authority are verified by the caller."
+                },
+                "run": {
+                    "type": "object",
+                    "properties": {
+                        "repositoryId": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$"
+                        },
+                        "workflowCommit": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{40}$"
+                        },
+                        "workflowPath": {
+                            "type": "string",
+                            "maxLength": 160,
+                            "pattern": "^\\.github\\/workflows\\/[a-zA-Z0-9_-]+\\.ya?ml$"
+                        },
+                        "runId": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$"
+                        },
+                        "attempt": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                        }
+                    },
+                    "required": [
+                        "repositoryId",
+                        "workflowCommit",
+                        "workflowPath",
+                        "runId",
+                        "attempt"
+                    ],
+                    "additionalProperties": false
+                },
+                "release": {
+                    "$ref": "#/$defs/CatalogRelease"
+                }
+            },
+            "required": [
+                "formatVersion",
+                "id",
+                "approvalId",
+                "approvalRevision",
+                "catalogRevision",
+                "publishedAt",
+                "run",
+                "release"
+            ],
+            "additionalProperties": false,
+            "description": "Private publication receipt. Reconcile by immutable approval revision and exact release contents. Record publication only after the unchanged package bytes and matching signed catalog are available."
+        },
+        "Problem": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "pattern": "^urn:rentnerproxy:problem:[a-z][a-zA-Z0-9]{0,63}$"
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                },
+                "status": {
+                    "type": "integer",
+                    "minimum": 400,
+                    "maximum": 599
+                },
+                "code": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-zA-Z0-9]{0,63}$"
+                },
+                "requestId": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                }
+            },
+            "required": [
+                "type",
+                "title",
+                "status",
+                "code",
+                "requestId"
+            ],
+            "additionalProperties": false,
+            "description": "RFC 9457 problem with stable machine code and no private error details."
+        },
+        "Operation": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                        },
+                        "status": {
+                            "type": "string",
+                            "enum": [
+                                "accepted",
+                                "running",
+                                "cancelling",
+                                "cancelled",
+                                "succeeded"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "id",
+                        "status"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+                        },
+                        "status": {
+                            "type": "string",
+                            "const": "failed"
+                        },
+                        "problem": {
+                            "$ref": "#/$defs/Problem"
+                        }
+                    },
+                    "required": [
+                        "id",
+                        "status",
+                        "problem"
+                    ],
+                    "additionalProperties": false
+                }
+            ],
+            "description": "Accepted work has a durable operation ID. Cancellation is an operation request. A disconnect or timeout does not confirm cancellation or rollback."
+        }
+    }
+}

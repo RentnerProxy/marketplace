@@ -1,0 +1,659 @@
+{
+    "manifest": {
+        "formatVersion": 1,
+        "id": "rentnerproxy.monitoring",
+        "version": "0.1.0-beta.1",
+        "target": "linux-amd64",
+        "source": {
+            "repositoryId": "8001234",
+            "commit": "0123456789abcdef0123456789abcdef01234567"
+        },
+        "display": {
+            "name": "Monitoring 🦦",
+            "summary": "Track service health, latency and uptime.",
+            "license": "MIT"
+        },
+        "requires": {
+            "runtimeProfile": "rentnerproxy-linux-v1",
+            "platformApi": ">=1.0.0 <2.0.0",
+            "appProtocol": ">=1.0.0 <2.0.0",
+            "uiBridge": ">=1.0.0 <1.4.0",
+            "engineCapabilities": []
+        },
+        "entrypoint": "bin/app",
+        "api": "api/openapi.json",
+        "configSchema": "schemas/settings.json",
+        "ui": {
+            "entrypoint": "ui/index.html",
+            "slots": ["navigation", "dashboardWidget"]
+        },
+        "providers": ["monitoring"],
+        "capabilities": [
+            {
+                "id": "proxy.hosts.read.v1",
+                "scope": "proxyHosts"
+            },
+            {
+                "id": "diagnostics.upstream.probe.v1",
+                "scope": "proxyHosts"
+            },
+            {
+                "id": "notifications.publish.v1",
+                "scope": "installation"
+            }
+        ],
+        "permissions": ["view", "manage"],
+        "data": {
+            "targetVersion": 3,
+            "readVersions": [2, 3],
+            "writeVersions": [3],
+            "migrations": [
+                {
+                    "fromVersion": 0,
+                    "toVersion": 2,
+                    "path": "migrations/initialize.sql"
+                },
+                {
+                    "fromVersion": 2,
+                    "toVersion": 3,
+                    "path": "migrations/v3.json"
+                }
+            ]
+        },
+        "resources": {
+            "startupTimeoutMs": 10000,
+            "drainTimeoutMs": 2000,
+            "memoryMiB": 128,
+            "processLimit": 4
+        }
+    },
+    "profiles": [
+        {
+            "profile": "monitoring",
+            "name": "Monitoring 🦦",
+            "capabilities": [
+                {
+                    "id": "proxy.hosts.read.v1",
+                    "scope": "proxyHosts"
+                },
+                {
+                    "id": "diagnostics.upstream.probe.v1",
+                    "scope": "proxyHosts"
+                },
+                {
+                    "id": "notifications.publish.v1",
+                    "scope": "installation"
+                }
+            ],
+            "engineCapabilities": []
+        },
+        {
+            "profile": "docker-discovery",
+            "name": "Docker Discovery",
+            "capabilities": [
+                {
+                    "id": "docker.inventory.observe.v1",
+                    "scope": "dockerConnections"
+                },
+                {
+                    "id": "proxy.hosts.manage-owned.v1",
+                    "scope": "ownedProxyHosts"
+                }
+            ],
+            "engineCapabilities": []
+        },
+        {
+            "profile": "load-balancer",
+            "name": "Load Balancer",
+            "capabilities": [
+                {
+                    "id": "engine.contributions.submit.v1",
+                    "scope": "ownedEngineResources"
+                }
+            ],
+            "engineCapabilities": ["caddy.load-balancing.v1"]
+        },
+        {
+            "profile": "dns",
+            "name": "DNS",
+            "capabilities": [
+                {
+                    "id": "dns.challenge.manage.v1",
+                    "scope": "dnsZones"
+                }
+            ],
+            "engineCapabilities": []
+        },
+        {
+            "profile": "oidc",
+            "name": "OIDC",
+            "capabilities": [
+                {
+                    "id": "identity.provider.register.v1",
+                    "scope": "identityProviders"
+                }
+            ],
+            "engineCapabilities": []
+        },
+        {
+            "profile": "crowdsec",
+            "name": "CrowdSec",
+            "capabilities": [
+                {
+                    "id": "access.logs.read.v1",
+                    "scope": "proxyHosts"
+                },
+                {
+                    "id": "security.enforcement.contribute.v1",
+                    "scope": "ownedEngineResources"
+                }
+            ],
+            "engineCapabilities": ["caddy.crowdsec.v1"]
+        }
+    ],
+    "targets": [
+        {
+            "target": "linux-amd64",
+            "archive": {
+                "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+                "sizeBytes": 512000
+            },
+            "manifestSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sbom": {
+                "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+                "sizeBytes": 2048
+            },
+            "provenance": {
+                "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+                "sizeBytes": 1024
+            }
+        },
+        {
+            "target": "linux-arm64",
+            "archive": {
+                "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+                "sizeBytes": 480000
+            },
+            "manifestSha256": "6666666666666666666666666666666666666666666666666666666666666666",
+            "sbom": {
+                "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+                "sizeBytes": 2048
+            },
+            "provenance": {
+                "sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+                "sizeBytes": 1024
+            }
+        }
+    ],
+    "records": {
+        "candidate": {
+            "formatVersion": 1,
+            "id": "candidate-1",
+            "revision": 2,
+            "source": {
+                "repositoryId": "8001234",
+                "commit": "0123456789abcdef0123456789abcdef01234567"
+            },
+            "build": {
+                "repositoryId": "8008800",
+                "workflowCommit": "1234567890abcdef1234567890abcdef12345678",
+                "workflowPath": ".github/workflows/app-package.yml",
+                "runId": "900880141",
+                "attempt": 1
+            },
+            "evidence": {
+                "revision": 4,
+                "report": {
+                    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "sizeBytes": 4096
+                },
+                "result": "passed"
+            }
+        },
+        "approval": {
+            "formatVersion": 1,
+            "id": "approval-1",
+            "revision": 3,
+            "actorId": "example-reviewer",
+            "approvedAt": "2026-10-05T12:30:00.000Z"
+        },
+        "receipt": {
+            "formatVersion": 1,
+            "id": "publication-1",
+            "approvalId": "approval-1",
+            "approvalRevision": 3,
+            "catalogRevision": 10,
+            "publishedAt": "2026-10-06T08:00:00.000Z",
+            "run": {
+                "repositoryId": "8008800",
+                "workflowCommit": "1234567890abcdef1234567890abcdef12345678",
+                "workflowPath": ".github/workflows/app-publish.yml",
+                "runId": "900880142",
+                "attempt": 1
+            }
+        },
+        "catalog": {
+            "formatVersion": 1,
+            "revision": 10,
+            "revocations": [
+                {
+                    "appId": "rentnerproxy.monitoring",
+                    "version": "0.0.9",
+                    "revokedAt": "2026-10-04T00:00:00.000Z",
+                    "reason": "withdrawn"
+                }
+            ]
+        },
+        "release": {
+            "appId": "rentnerproxy.monitoring",
+            "version": "0.1.0-beta.1",
+            "source": {
+                "repositoryId": "8001234",
+                "commit": "0123456789abcdef0123456789abcdef01234567"
+            },
+            "publisher": {
+                "namespace": "rentnerproxy",
+                "name": "RentnerProxy"
+            },
+            "icon": {
+                "format": "webp",
+                "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "sizeBytes": 512
+            },
+            "notes": "Adds service uptime checks.\nFixes display of failed probes."
+        }
+    },
+    "published": {
+        "downloadUrl": "https://github.com/RentnerProxy/app-catalog/releases/download/rentnerproxy.monitoring-v0.1.0-beta.1/rentnerproxy.monitoring-0.1.0-beta.1-linux-arm64.tar.zst",
+        "iconPath": "assets/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.webp",
+        "archiveSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+        "archiveSizeBytes": 480000,
+        "manifestSha256": "6666666666666666666666666666666666666666666666666666666666666666"
+    },
+    "cases": [
+        {
+            "name": "unknown format version",
+            "check": "manifest",
+            "path": "/manifest/formatVersion",
+            "value": 2,
+            "error": "invalidShape"
+        },
+        {
+            "name": "unknown Linux runtime profile",
+            "check": "manifest",
+            "path": "/manifest/requires/runtimeProfile",
+            "value": "rentnerproxy-linux-unknown",
+            "error": "invalidShape"
+        },
+        {
+            "name": "unsupported protocol major",
+            "check": "manifest",
+            "path": "/manifest/requires/appProtocol",
+            "value": ">=2.0.0 <3.0.0",
+            "error": "invalidShape"
+        },
+        {
+            "name": "empty compatibility range",
+            "check": "manifest",
+            "path": "/manifest/requires/platformApi",
+            "value": ">=1.2.0 <1.2.0",
+            "error": "invalidManifest"
+        },
+        {
+            "name": "reversed compatibility range",
+            "check": "manifest",
+            "path": "/manifest/requires/appProtocol",
+            "value": ">=1.4.0 <1.3.0",
+            "error": "invalidManifest"
+        },
+        {
+            "name": "UI bridge must match declared UI",
+            "check": "manifest",
+            "path": "/manifest/requires/uiBridge",
+            "value": null,
+            "error": "invalidManifest",
+            "remove": true
+        },
+        {
+            "name": "null is not omission",
+            "check": "manifest",
+            "path": "/manifest/configSchema",
+            "value": null,
+            "error": "invalidShape"
+        },
+        {
+            "name": "unknown capability",
+            "check": "manifest",
+            "path": "/manifest/capabilities/0/id",
+            "value": "docker.host.control.v1",
+            "error": "invalidShape"
+        },
+        {
+            "name": "wrong resource scope",
+            "check": "manifest",
+            "path": "/manifest/capabilities/0/scope",
+            "value": "installation",
+            "error": "invalidShape"
+        },
+        {
+            "name": "duplicate permission",
+            "check": "manifest",
+            "path": "/manifest/permissions",
+            "value": ["view", "view"],
+            "error": "invalidManifest"
+        },
+        {
+            "name": "unsafe executable path",
+            "check": "manifest",
+            "path": "/manifest/entrypoint",
+            "value": "/bin/app",
+            "error": "invalidShape"
+        },
+        {
+            "name": "unsafe UI traversal",
+            "check": "manifest",
+            "path": "/manifest/ui/entrypoint",
+            "value": "ui/../index.html",
+            "error": "invalidShape"
+        },
+        {
+            "name": "encoded configuration path",
+            "check": "manifest",
+            "path": "/manifest/configSchema",
+            "value": "schemas/%2e%2e/settings.json",
+            "error": "invalidShape"
+        },
+        {
+            "name": "absolute migration path with JSON suffix",
+            "check": "manifest",
+            "path": "/manifest/data/migrations/1/path",
+            "value": "/outside.json",
+            "error": "invalidShape"
+        },
+        {
+            "name": "empty path segment",
+            "check": "manifest",
+            "path": "/manifest/ui/entrypoint",
+            "value": "ui//index.html",
+            "error": "invalidShape"
+        },
+        {
+            "name": "duplicate provider registration",
+            "check": "manifest",
+            "path": "/manifest/providers",
+            "value": ["monitoring", "monitoring"],
+            "error": "invalidManifest"
+        },
+        {
+            "name": "unknown engine capability",
+            "check": "manifest",
+            "path": "/manifest/requires/engineCapabilities",
+            "value": ["caddy.unknown.v1"],
+            "error": "invalidShape"
+        },
+        {
+            "name": "data writes without matching reads",
+            "check": "manifest",
+            "path": "/manifest/data/writeVersions",
+            "value": [3, 4],
+            "error": "invalidManifest"
+        },
+        {
+            "name": "data target must be writable",
+            "check": "manifest",
+            "path": "/manifest/data/writeVersions",
+            "value": [2],
+            "error": "invalidManifest"
+        },
+        {
+            "name": "migration branches from the same state",
+            "check": "manifest",
+            "path": "/manifest/data/migrations/1/fromVersion",
+            "value": 0,
+            "error": "invalidManifest"
+        },
+        {
+            "name": "migration chain does not reach target",
+            "check": "manifest",
+            "path": "/manifest/data/migrations/0/toVersion",
+            "value": 1,
+            "error": "invalidManifest"
+        },
+        {
+            "name": "build metadata cannot alias an approved version",
+            "check": "manifest",
+            "path": "/manifest/version",
+            "value": "0.1.0+different",
+            "error": "invalidShape"
+        },
+        {
+            "name": "control character in display metadata",
+            "check": "manifest",
+            "path": "/manifest/display/name",
+            "value": "Monitoring\ninvalid",
+            "error": "invalidShape"
+        },
+        {
+            "name": "duplicate release",
+            "check": "catalog",
+            "path": "/catalog/releases/1",
+            "value": true,
+            "error": "invalidCatalog",
+            "copyFrom": "/catalog/releases/0"
+        },
+        {
+            "name": "wrong publisher namespace",
+            "check": "catalog",
+            "path": "/catalog/releases/0/publisher/namespace",
+            "value": "unrelated",
+            "error": "invalidRelease"
+        },
+        {
+            "name": "duplicate target archive",
+            "check": "catalog",
+            "path": "/catalog/releases/0/packages/1/manifest/target",
+            "value": "linux-amd64",
+            "error": "invalidRelease"
+        },
+        {
+            "name": "official version must include both supported targets",
+            "check": "catalog",
+            "path": "/catalog/releases/0/packages/1",
+            "value": null,
+            "error": "invalidRelease",
+            "remove": true
+        },
+        {
+            "name": "package source differs from the catalog source",
+            "check": "catalog",
+            "path": "/catalog/releases/0/packages/0/manifest/source/commit",
+            "value": "1111111111111111111111111111111111111111",
+            "error": "invalidRelease"
+        },
+        {
+            "name": "conflicting localized display for another target",
+            "check": "catalog",
+            "path": "/catalog/releases/0/packages/1/manifest/display/name",
+            "value": "Another app",
+            "error": "invalidRelease"
+        },
+        {
+            "name": "active version cannot also be revoked",
+            "check": "catalog",
+            "path": "/catalog/revocations/0/version",
+            "value": "0.1.0-beta.1",
+            "error": "invalidCatalog"
+        },
+        {
+            "name": "no arbitrary download URL",
+            "check": "catalog",
+            "path": "/catalog/releases/0/packages/0/downloadUrl",
+            "value": "https://example.invalid/install?token=example",
+            "error": "invalidShape"
+        },
+        {
+            "name": "no account data in the signed publisher record",
+            "check": "catalog",
+            "path": "/catalog/releases/0/publisher/email",
+            "value": "reviewer@example.invalid",
+            "error": "invalidShape"
+        },
+        {
+            "name": "no approval actor in the public release",
+            "check": "catalog",
+            "path": "/catalog/releases/0/actorId",
+            "value": "example-reviewer",
+            "error": "invalidShape"
+        },
+        {
+            "name": "no rating fields in the signed snapshot",
+            "check": "catalog",
+            "path": "/catalog/ratings",
+            "value": [],
+            "error": "invalidShape"
+        },
+        {
+            "name": "wire integers beyond JavaScript's exact range",
+            "check": "catalog",
+            "path": "/catalog/revision",
+            "value": 9007199254740992,
+            "error": "invalidShape"
+        },
+        {
+            "name": "archive length above v1 maximum",
+            "check": "catalog",
+            "path": "/catalog/releases/0/packages/0/archive/sizeBytes",
+            "value": 2147483648,
+            "error": "invalidShape"
+        },
+        {
+            "name": "invalid revocation date",
+            "check": "catalog",
+            "path": "/catalog/revocations/0/revokedAt",
+            "value": "2026-02-30T00:00:00.000Z",
+            "error": "invalidShape"
+        },
+        {
+            "name": "candidate source differs from the released source",
+            "check": "candidate",
+            "path": "/candidate/source/repositoryId",
+            "value": "8001235",
+            "error": "invalidCandidate"
+        },
+        {
+            "name": "approval fails for another candidate ID",
+            "check": "approval",
+            "path": "/candidate/id",
+            "value": "candidate-2",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after candidate revision changes",
+            "check": "approval",
+            "path": "/candidate/revision",
+            "value": 3,
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after the build is rerun",
+            "check": "approval",
+            "path": "/candidate/build/attempt",
+            "value": 2,
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after the validation revision changes",
+            "check": "approval",
+            "path": "/candidate/evidence/revision",
+            "value": 5,
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after evidence bytes change",
+            "check": "approval",
+            "path": "/candidate/evidence/report/sha256",
+            "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after package bytes change",
+            "check": "approval",
+            "path": "/candidate/release/packages/0/archive/sha256",
+            "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after ARM64 archive length changes",
+            "check": "approval",
+            "path": "/candidate/release/packages/1/archive/sizeBytes",
+            "value": 480001,
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after manifest bytes change",
+            "check": "approval",
+            "path": "/candidate/release/packages/0/manifestSha256",
+            "value": "9999999999999999999999999999999999999999999999999999999999999999",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after capabilities change",
+            "check": "approval",
+            "path": "/candidate/release/packages/0/manifest/capabilities/0",
+            "value": {
+                "id": "proxy.hosts.manage-owned.v1",
+                "scope": "ownedProxyHosts"
+            },
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after provenance changes",
+            "check": "approval",
+            "path": "/candidate/release/packages/0/provenance/sha256",
+            "value": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after the public icon changes",
+            "check": "approval",
+            "path": "/candidate/release/icon/sha256",
+            "value": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "publication refers to a different approval",
+            "check": "publication",
+            "path": "/receipt/approvalId",
+            "value": "approval-2",
+            "error": "publicationMismatch"
+        },
+        {
+            "name": "publication refers to a stale approval revision",
+            "check": "publication",
+            "path": "/receipt/approvalRevision",
+            "value": 2,
+            "error": "publicationMismatch"
+        },
+        {
+            "name": "publication refers to a different catalog revision",
+            "check": "publication",
+            "path": "/receipt/catalogRevision",
+            "value": 11,
+            "error": "publicationMismatch"
+        },
+        {
+            "name": "published archive differs from review",
+            "check": "publication",
+            "path": "/receipt/release/packages/0/archive/sha256",
+            "value": "9999999999999999999999999999999999999999999999999999999999999999",
+            "error": "publicationMismatch"
+        },
+        {
+            "name": "published catalog points at different bytes",
+            "check": "publication",
+            "path": "/catalog/releases/0/packages/1/archive/sha256",
+            "value": "9999999999999999999999999999999999999999999999999999999999999999",
+            "error": "publicationMismatch"
+        }
+    ]
+}

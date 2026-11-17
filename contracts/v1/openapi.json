@@ -1,0 +1,45 @@
+{
+    "openapi": "3.1.2",
+    "info": {
+        "title": "RentnerProxy App Contract Components",
+        "version": "1.0.0-alpha.1",
+        "description": "Preview components for package, catalog, and approval consumers. Use the matching contract SDK for cross-record validation."
+    },
+    "components": {
+        "schemas": {
+            "SourceIdentity": {
+                "$ref": "./contracts.schema.json#/$defs/SourceIdentity"
+            },
+            "AppManifest": {
+                "$ref": "./contracts.schema.json#/$defs/AppManifest"
+            },
+            "PackageArtifact": {
+                "$ref": "./contracts.schema.json#/$defs/PackageArtifact"
+            },
+            "CatalogRelease": {
+                "$ref": "./contracts.schema.json#/$defs/CatalogRelease"
+            },
+            "Revocation": {
+                "$ref": "./contracts.schema.json#/$defs/Revocation"
+            },
+            "Catalog": {
+                "$ref": "./contracts.schema.json#/$defs/Catalog"
+            },
+            "Candidate": {
+                "$ref": "./contracts.schema.json#/$defs/Candidate"
+            },
+            "Approval": {
+                "$ref": "./contracts.schema.json#/$defs/Approval"
+            },
+            "Publication": {
+                "$ref": "./contracts.schema.json#/$defs/Publication"
+            },
+            "Problem": {
+                "$ref": "./contracts.schema.json#/$defs/Problem"
+            },
+            "Operation": {
+                "$ref": "./contracts.schema.json#/$defs/Operation"
+            }
+        }
+    }
+}

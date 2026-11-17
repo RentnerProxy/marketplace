@@ -37,5 +37,7 @@ ignorePatterns = [
     ".output/",
     "node_modules/",
     "web/src/routeTree.gen.ts",
+    "contracts/v1/contracts.schema.json",
+    "contracts/v1/openapi.json",
     "bun.lock",
 ]

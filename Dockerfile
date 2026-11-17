@@ -6,6 +6,9 @@ WORKDIR /app/core
 RUN apk add --no-cache musl-dev
 COPY core/Cargo.toml core/Cargo.lock core/rust-toolchain.toml ./
 COPY core/src ./src
+COPY core/app-contracts/Cargo.toml ./app-contracts/Cargo.toml
+COPY core/app-contracts/src ./app-contracts/src
+COPY contracts/v1/contracts.schema.json /app/contracts/v1/contracts.schema.json
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,id=rentnerproxy-marketplace-cargo-musl-release,target=/app/core/target,sharing=locked \
     cargo build --release --locked --bins \
