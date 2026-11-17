@@ -84,6 +84,7 @@ function RootDocument({ children }: { children: ReactNode }) {
                             >
                                 <CalendarProvider
                                     locale={CALENDAR_LOCALES[language]}
+                                    popoverMaxWidth={340}
                                     messages={{
                                         keyboardHelp: t(
                                             'shared.calendar.keyboardHelp',
