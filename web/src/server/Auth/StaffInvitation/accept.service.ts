@@ -94,14 +94,12 @@ export async function acceptStaffInvitationService(input: {
             invitedByUserId: invitation.invitedByUserId,
         })
         await transaction.insert(user_profiles).values({ userId })
-        await transaction
-            .insert(staffUserPermissions)
-            .values(
-                selection.permissions.map(({ id }) => ({
-                    userId,
-                    permissionId: id,
-                })),
-            )
+        await transaction.insert(staffUserPermissions).values(
+            selection.permissions.map(({ id }) => ({
+                userId,
+                permissionId: id,
+            })),
+        )
         const audit = await writeAuditLogInTransactionService(transaction, {
             ...prepareAuditContextService(null),
             actorUserId: userId,

@@ -93,14 +93,12 @@ export async function createPublicAccountInTransactionService(
     await transaction.insert(publicAccounts).values({ userId: user.id })
     await transaction.insert(user_profiles).values({ userId: user.id })
     if (defaults.length > 0) {
-        await transaction
-            .insert(publicUserPermissions)
-            .values(
-                defaults.map(({ id }) => ({
-                    userId: user.id,
-                    permissionId: id,
-                })),
-            )
+        await transaction.insert(publicUserPermissions).values(
+            defaults.map(({ id }) => ({
+                userId: user.id,
+                permissionId: id,
+            })),
+        )
     }
     if (input.provider && input.subject)
         await transaction.insert(socialAccounts).values({
