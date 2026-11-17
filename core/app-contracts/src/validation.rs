@@ -31,7 +31,7 @@ fn ordered_range(range: &Value) -> bool {
     version_number(minimum) < version_number(maximum)
 }
 
-fn unique_strings<'a>(mut values: impl Iterator<Item = &'a str>) -> bool {
+pub(super) fn unique_strings<'a>(mut values: impl Iterator<Item = &'a str>) -> bool {
     let mut unique = HashSet::new();
     values.all(|value| unique.insert(value))
 }
