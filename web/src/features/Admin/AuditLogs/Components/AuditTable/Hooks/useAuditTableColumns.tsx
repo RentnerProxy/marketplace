@@ -7,7 +7,9 @@ import useTranslationStore from '@/language/useTranslationStore.ts'
 const SYSTEM_ACTOR_FILTER_VALUE = 'system'
 
 function sortedFilterOptions(values: Array<string | null>) {
-    return [...new Set(values.filter((value): value is string => Boolean(value)))]
+    return [
+        ...new Set(values.filter((value): value is string => Boolean(value))),
+    ]
         .toSorted()
         .map((value) => ({ value, label: value }))
 }
@@ -75,7 +77,9 @@ export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
                 meta: {
                     filter: {
                         type: 'text',
-                        placeholder: t('admin.auditLogs.messageFilterPlaceholder'),
+                        placeholder: t(
+                            'admin.auditLogs.messageFilterPlaceholder',
+                        ),
                     },
                 },
                 size: 280,
@@ -114,7 +118,9 @@ export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
                 meta: {
                     filter: {
                         type: 'text',
-                        placeholder: t('admin.auditLogs.routeFilterPlaceholder'),
+                        placeholder: t(
+                            'admin.auditLogs.routeFilterPlaceholder',
+                        ),
                     },
                 },
                 size: 260,
@@ -132,7 +138,9 @@ export default function useAuditTableColumns(auditLogs: Array<AuditLogEntry>) {
                 meta: {
                     filter: {
                         type: 'dateRange',
-                        placeholder: t('admin.auditLogs.createdFilterPlaceholder'),
+                        placeholder: t(
+                            'admin.auditLogs.createdFilterPlaceholder',
+                        ),
                     },
                 },
                 size: 160,

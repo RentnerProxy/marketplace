@@ -35,7 +35,9 @@ export default function useBackupTableColumns({
                 meta: {
                     filter: {
                         type: 'text',
-                        placeholder: t('admin.backups.table.file', { lng: language }),
+                        placeholder: t('admin.backups.table.file', {
+                            lng: language,
+                        }),
                     },
                 },
                 size: 280,
@@ -90,9 +92,16 @@ export default function useBackupTableColumns({
                     filter: {
                         type: 'select',
                         placeholder: t('admin.backups.table.trigger'),
-                        options: ['manual', 'scheduled', 'import', 'restore-safety', 'restore'].map(
-                            (value) => ({ value, label: t(`admin.backups.trigger.${value}`) }),
-                        ),
+                        options: [
+                            'manual',
+                            'scheduled',
+                            'import',
+                            'restore-safety',
+                            'restore',
+                        ].map((value) => ({
+                            value,
+                            label: t(`admin.backups.trigger.${value}`),
+                        })),
                     },
                 },
                 size: 180,
@@ -150,9 +159,15 @@ export default function useBackupTableColumns({
                     filter: {
                         type: 'select',
                         placeholder: t('common.status'),
-                        options: ['queued', 'running', 'completed', 'failed'].map(
-                            (value) => ({ value, label: t(`admin.backups.status.${value}`) }),
-                        ),
+                        options: [
+                            'queued',
+                            'running',
+                            'completed',
+                            'failed',
+                        ].map((value) => ({
+                            value,
+                            label: t(`admin.backups.status.${value}`),
+                        })),
                     },
                 },
                 size: 170,

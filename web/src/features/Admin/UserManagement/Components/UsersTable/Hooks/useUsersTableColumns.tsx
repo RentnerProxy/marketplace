@@ -101,10 +101,16 @@ export default function useUsersTableColumns({
                 meta: {
                     filter: {
                         type: 'select',
-                        placeholder: t('admin.users.permissionFilterPlaceholder'),
+                        placeholder: t(
+                            'admin.users.permissionFilterPlaceholder',
+                        ),
                         options: [
-                            ...new Set(availablePermissions.map(({ key }) => key)),
-                        ].toSorted().map((key) => ({ value: key, label: key })),
+                            ...new Set(
+                                availablePermissions.map(({ key }) => key),
+                            ),
+                        ]
+                            .toSorted()
+                            .map((key) => ({ value: key, label: key })),
                     },
                 },
                 filterFn: (row, columnId, filterValue) => {

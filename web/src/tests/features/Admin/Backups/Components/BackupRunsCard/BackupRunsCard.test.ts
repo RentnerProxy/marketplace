@@ -144,11 +144,17 @@ describe('Backup runs card', () => {
         expect(logic.state.pageSizes.map((option) => option.value)).toEqual([
             10, 20, 50, 100,
         ])
-        expect(logic.table.state.sorting).toEqual([{ id: 'startedAt', desc: true }])
-        expect(logic.table.getColumn('trigger')?.columnDef.meta?.filter).toMatchObject({
+        expect(logic.table.state.sorting).toEqual([
+            { id: 'startedAt', desc: true },
+        ])
+        expect(
+            logic.table.getColumn('trigger')?.columnDef.meta?.filter,
+        ).toMatchObject({
             type: 'select',
         })
-        expect(logic.table.getColumn('startedAt')?.columnDef.meta?.filter).toMatchObject({
+        expect(
+            logic.table.getColumn('startedAt')?.columnDef.meta?.filter,
+        ).toMatchObject({
             type: 'dateRange',
         })
         expect(logic.table.getColumn('actions')?.getCanHide()).toBe(false)
@@ -230,7 +236,9 @@ describe('Backup runs card', () => {
         expect(fixture.handler.handleCancelRestore).toHaveBeenCalledTimes(1)
         expect(fixture.handler.handleRestoreBackup).not.toHaveBeenCalled()
 
-        const html = renderToStaticMarkup(createElement(BackupRunsCard, fixture))
+        const html = renderToStaticMarkup(
+            createElement(BackupRunsCard, fixture),
+        )
         expect(html).toContain('data-row-details-for="backup-1"')
         expect(html).not.toContain('data-row-details-for="backup-2"')
         expect(html.match(/<td[^>]*colSpan="8"[^>]*>/g)).toHaveLength(1)
@@ -240,8 +248,15 @@ describe('Backup runs card', () => {
     it('applies text, select and local calendar date filters to backup runs', () => {
         const fixture = props()
         fixture.state.runs = [
-            { ...completedRun, startedAt: new Date(2030, 0, 2, 23, 59).toISOString() },
-            { ...completedRun, id: 'earlier', startedAt: new Date(2030, 0, 1).toISOString() },
+            {
+                ...completedRun,
+                startedAt: new Date(2030, 0, 2, 23, 59).toISOString(),
+            },
+            {
+                ...completedRun,
+                id: 'earlier',
+                startedAt: new Date(2030, 0, 1).toISOString(),
+            },
             { ...completedRun, id: 'scheduled', trigger: 'scheduled' },
         ]
         const { table, handler } = capture(fixture)
@@ -256,7 +271,9 @@ describe('Backup runs card', () => {
         table.getColumn('fileName')?.setFilterValue('archive')
         table.getColumn('trigger')?.setFilterValue('manual')
         expect(rowIds()).toEqual([completedRun.id, 'earlier'])
-        table.getColumn('startedAt')?.setFilterValue({ from: '2030-01-02', to: '2030-01-02' })
+        table
+            .getColumn('startedAt')
+            ?.setFilterValue({ from: '2030-01-02', to: '2030-01-02' })
         expect(rowIds()).toEqual([completedRun.id])
     })
 })

@@ -19,9 +19,7 @@ export default function BackupRestorePanel({
             >
                 {t('admin.backups.restoreWarning')}
                 <br />
-                {t(
-                    'admin.backups.restoreWarningPrivateBackgroundCoverage',
-                )}
+                {t('admin.backups.restoreWarningPrivateBackgroundCoverage')}
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <TextInput
@@ -32,9 +30,7 @@ export default function BackupRestorePanel({
                         )
                     }
                     placeholder="WIEDERHERSTELLEN"
-                    aria-label={t(
-                        'admin.backups.restoreConfirmationLabel',
-                    )}
+                    aria-label={t('admin.backups.restoreConfirmationLabel')}
                     aria-describedby={`restore-warning-${backupId}`}
                     autoComplete="off"
                     spellCheck={false}
@@ -46,8 +42,7 @@ export default function BackupRestorePanel({
                     type="button"
                     onClick={handler.handleRestoreBackup}
                     disabled={
-                        state.restoreConfirmation !==
-                            'WIEDERHERSTELLEN' ||
+                        state.restoreConfirmation !== 'WIEDERHERSTELLEN' ||
                         state.activeActionId === backupId
                     }
                     className="h-10 cursor-pointer whitespace-nowrap rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"

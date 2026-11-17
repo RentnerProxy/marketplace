@@ -28,7 +28,8 @@ export default function AuditTable({
             hasAuditJsonValue(original.newValues),
         onExpandedChange: (update) =>
             setExpanded((current) => {
-                const next = typeof update === 'function' ? update(current) : update
+                const next =
+                    typeof update === 'function' ? update(current) : update
                 if (next === true) return current
 
                 const rowId =
@@ -42,7 +43,10 @@ export default function AuditTable({
         <DataTable
             locale={TABLE_LOCALES[language]}
             messages={{
-                ...getMarketplaceTableMessages(t, t('admin.auditLogs.itemLabel')),
+                ...getMarketplaceTableMessages(
+                    t,
+                    t('admin.auditLogs.itemLabel'),
+                ),
                 expandRow: (label) =>
                     label
                         ? `${t('admin.auditLogs.showDetails')} (${label})`

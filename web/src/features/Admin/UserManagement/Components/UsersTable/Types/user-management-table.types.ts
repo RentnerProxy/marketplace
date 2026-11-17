@@ -23,7 +23,10 @@ export type UsersTableProps = {
     onPasswordReset: (user: UserManagementUser) => void
 }
 
-export type UserTableActionsProps = Omit<UsersTableProps, 'availablePermissions'> & {
+export type UserTableActionsProps = Omit<
+    UsersTableProps,
+    'availablePermissions'
+> & {
     user: UserManagementUser
 }
 

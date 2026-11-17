@@ -30,15 +30,24 @@ export default function BackupRunsCard({
     return (
         <DataTable<BackupRun>
             locale={TABLE_LOCALES[language]}
-            messages={getMarketplaceTableMessages(t, t('admin.backups.table.itemLabel'))}
+            messages={getMarketplaceTableMessages(
+                t,
+                t('admin.backups.table.itemLabel'),
+            )}
             title={t('admin.backups.historyTitle')}
             icon={<History size={20} />}
             description={
                 backupState.isAutomaticBackupEnabled && (
                     <span className="flex items-center gap-2">
-                        <Clock3 size={14} className="text-primary" aria-hidden />
+                        <Clock3
+                            size={14}
+                            className="text-primary"
+                            aria-hidden
+                        />
                         {nextBackupIn
-                            ? t('admin.backups.nextBackupIn', { time: nextBackupIn })
+                            ? t('admin.backups.nextBackupIn', {
+                                  time: nextBackupIn,
+                              })
                             : t('admin.backups.nextBackupCalculating')}
                     </span>
                 )
@@ -46,7 +55,8 @@ export default function BackupRunsCard({
             className="[&_[data-table-slot=expandButton]:disabled[aria-expanded=false]]:invisible"
             classNames={{
                 table: 'min-w-[1270px]',
-                toolbarControls: 'flex flex-wrap items-center gap-2 lg:justify-end',
+                toolbarControls:
+                    'flex flex-wrap items-center gap-2 lg:justify-end',
             }}
             toolbarActions={
                 <div className="-order-1 flex basis-full flex-wrap gap-2 lg:justify-end">
@@ -88,12 +98,22 @@ export default function BackupRunsCard({
                 getRowCanExpand: (row) =>
                     row.id === restoreBackupId && row.id !== activeActionId,
                 onExpandedChange: (updater) => {
-                    if (isLoading || !restoreBackupId || restoreBackupId === activeActionId) return
+                    if (
+                        isLoading ||
+                        !restoreBackupId ||
+                        restoreBackupId === activeActionId
+                    )
+                        return
 
                     // Only the restore action selects a backup. The table may cancel that selection.
                     const nextExpanded =
-                        typeof updater === 'function' ? updater(expanded) : updater
-                    if (nextExpanded !== true && !nextExpanded[restoreBackupId]) {
+                        typeof updater === 'function'
+                            ? updater(expanded)
+                            : updater
+                    if (
+                        nextExpanded !== true &&
+                        !nextExpanded[restoreBackupId]
+                    ) {
                         backupHandler.handleCancelRestore()
                     }
                 },

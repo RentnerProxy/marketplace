@@ -16,9 +16,7 @@ export function AuditLogDetails({ auditLog }: AuditLogDetailsProps) {
                 <div className="overflow-x-auto">
                     <div className="min-w-225">
                         <div className="grid grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] border-b border-border-dark bg-input-dark/60 text-xs font-semibold uppercase tracking-wide text-secondary-text">
-                            <div className="px-4 py-3">
-                                {t('common.field')}
-                            </div>
+                            <div className="px-4 py-3">{t('common.field')}</div>
 
                             <div className="border-l border-border-dark px-4 py-3 text-red-300">
                                 {t('admin.auditLogs.oldValue')}

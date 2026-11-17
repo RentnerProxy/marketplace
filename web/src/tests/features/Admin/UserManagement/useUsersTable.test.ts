@@ -121,9 +121,12 @@ describe('users table view', () => {
         'finds users by %s across identity fields',
         (value) => {
             const filter = renderTable().tableOptions?.globalFilterFn
-            if (typeof filter !== 'function') throw new Error('Missing user search')
+            if (typeof filter !== 'function')
+                throw new Error('Missing user search')
             const addMeta = vi.fn()
-            expect(filter(tableRow(user), 'username', value, addMeta)).toBe(true)
+            expect(filter(tableRow(user), 'username', value, addMeta)).toBe(
+                true,
+            )
             expect(
                 filter(
                     tableRow({ ...user, firstName: null, lastName: null }),

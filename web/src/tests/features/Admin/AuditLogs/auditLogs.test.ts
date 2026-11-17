@@ -143,7 +143,9 @@ describe('audit table behavior', () => {
             { id: 'createdAt', desc: true },
         ])
         expect(tableProps.pageSizeOptions).toEqual([10, 20, 50, 100])
-        expect(tableProps.searchPlaceholder).toBe('admin.auditLogs.searchPlaceholder')
+        expect(tableProps.searchPlaceholder).toBe(
+            'admin.auditLogs.searchPlaceholder',
+        )
         expect(tableProps.columnSettings).toBe(true)
         expect(tableProps.resizableColumns).toBe(true)
         expect(tableProps.columns[0]?.enableHiding).toBe(false)
@@ -201,24 +203,31 @@ describe('audit table behavior', () => {
 
     it('allows one eligible audit row to be expanded at a time', () => {
         renderAuditLogs()
-        const { getRowCanExpand, onExpandedChange } = tableProps.tableOptions ?? {}
+        const { getRowCanExpand, onExpandedChange } =
+            tableProps.tableOptions ?? {}
         if (!getRowCanExpand || !onExpandedChange)
             throw new Error('Missing audit expansion options')
         expect(getRowCanExpand(tableRow(entry))).toBe(true)
         expect(getRowCanExpand(tableRow(systemEntry))).toBe(false)
-        expect(tableProps.messages?.expandRow?.('')).toBe('admin.auditLogs.details')
+        expect(tableProps.messages?.expandRow?.('')).toBe(
+            'admin.auditLogs.details',
+        )
         expect(tableProps.getRowLabel?.(entry)).not.toBe(
             tableProps.getRowLabel?.(secondEntry),
         )
         onExpandedChange({ [entry.id]: true })
         renderAuditLogs()
-        expect(tableProps.tableOptions?.state?.expanded).toEqual({ [entry.id]: true })
+        expect(tableProps.tableOptions?.state?.expanded).toEqual({
+            [entry.id]: true,
+        })
         onExpandedChange((current) => ({
             ...(current === true ? {} : current),
             [secondEntry.id]: true,
         }))
         renderAuditLogs()
-        expect(tableProps.tableOptions?.state?.expanded).toEqual({ [secondEntry.id]: true })
+        expect(tableProps.tableOptions?.state?.expanded).toEqual({
+            [secondEntry.id]: true,
+        })
         onExpandedChange({})
         renderAuditLogs()
         expect(tableProps.tableOptions?.state?.expanded).toEqual({})
@@ -229,9 +238,7 @@ describe('audit table behavior', () => {
         expect(hook.state.rows).toEqual([
             { key: 'username', oldValue: 'Old', newValue: 'New' },
         ])
-        const html = renderToStaticMarkup(
-            AuditLogDetails({ auditLog: entry }),
-        )
+        const html = renderToStaticMarkup(AuditLogDetails({ auditLog: entry }))
         expect(html).toStartWith('<div')
         expect(html).toContain('Old')
         expect(html).toContain('New')
@@ -248,7 +255,9 @@ describe('audit table behavior', () => {
         expect(html).toContain('admin.auditLogs.entriesTitle')
         expect(tableProps.isLoading).toBe(true)
         expect(tableProps.data).toEqual([entry, systemEntry, secondEntry])
-        const diff = renderToStaticMarkup(tableProps.renderExpandedRow?.(tableRow(entry)))
+        const diff = renderToStaticMarkup(
+            tableProps.renderExpandedRow?.(tableRow(entry)),
+        )
         expect(diff).toContain('Old')
         expect(diff).toContain('New')
     })

@@ -40,12 +40,16 @@ describe('Backup runs countdown', () => {
 
     it('ticks a scheduled countdown and cleans up its timer on unmount', () => {
         const nextBackupAt = new Date(Date.now() + 120000).toISOString()
-        expect(renderHook(() => useBackupCountdown(nextBackupAt))).not.toBeNull()
+        expect(
+            renderHook(() => useBackupCountdown(nextBackupAt)),
+        ).not.toBeNull()
         const cleanup = runEffects()
         expect(setInterval).toHaveBeenCalledTimes(1)
         expect(tick).toBeDefined()
         tick?.()
-        expect(renderHook(() => useBackupCountdown(nextBackupAt))).not.toBeNull()
+        expect(
+            renderHook(() => useBackupCountdown(nextBackupAt)),
+        ).not.toBeNull()
         cleanup()
         expect(clearInterval).toHaveBeenCalledWith(123)
     })
