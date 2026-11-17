@@ -21,7 +21,7 @@ jobs:
               with:
                   bun-version: 1.4.4
             - name: Format allowed web source and root configuration
-              run: bun --no-env-file fmt web/src package.json tsconfig.json tsconfig.github.json vite.config.ts bunfig.toml .coderabbit.yaml
+              run: bun --no-env-file fmt web/src contracts/v1 package.json tsconfig.json tsconfig.github.json vite.config.ts bunfig.toml .coderabbit.yaml
             - name: Preserve generated routes
               run: git restore --worktree -- web/src/routeTree.gen.ts
             - name: Apply formatting fixes

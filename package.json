@@ -10,8 +10,10 @@
         "build": "vite build",
         "typecheck": "tsc --noEmit",
         "test": "bun run --no-env-file web/src/scripts/test-coverage.ts",
+        "contracts:generate": "bun run --no-env-file web/src/scripts/Contracts/generate-contracts.ts",
+        "contracts:check": "bun run --no-env-file web/src/scripts/Contracts/generate-contracts.ts --check",
         "test:deployment": "bun run --no-env-file web/src/scripts/verify-appliance.ts",
-        "verify": "bun run core:format:check && bun run core:lint && bun run core:coverage && bun run core:build && bun run project:check && bun run typecheck && bun run test && bun run test:core-integration && bun run lint && bun run format:check && bun run build",
+        "verify": "bun run core:format:check && bun run core:lint && bun run core:coverage && bun run core:build && bun run project:check && bun run contracts:check && bun run typecheck && bun run test && bun run test:core-integration && bun run lint && bun run format:check && bun run build",
         "test:db:prepare": "bun run web/src/scripts/prepare-test-database.ts",
         "test:db": "bun test --isolate --timeout 30000 --preload ./web/src/tests/shared/setupDbTests.ts --path-ignore-patterns __never_match_bun_db_tests__ .db.test.ts",
         "start": "bun run web/src/server/productionEntrypoint.ts",
@@ -99,5 +101,8 @@
     },
     "overrides": {
         "@esbuild-kit/core-utils>esbuild": "0.28.2"
+    },
+    "patchedDependencies": {
+        "picomatch@4.0.7": "patches/picomatch@4.0.7.patch"
     }
 }

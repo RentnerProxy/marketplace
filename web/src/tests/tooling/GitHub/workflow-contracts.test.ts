@@ -55,7 +55,7 @@ test('autofix uses the real pinned service with a narrow formatter path list and
         step.run?.startsWith('bun --no-env-file fmt '),
     )
     expect(format?.run).toBe(
-        'bun --no-env-file fmt web/src package.json tsconfig.json tsconfig.github.json vite.config.ts bunfig.toml .coderabbit.yaml',
+        'bun --no-env-file fmt web/src contracts/v1 package.json tsconfig.json tsconfig.github.json vite.config.ts bunfig.toml .coderabbit.yaml',
     )
     expect(format?.run).not.toMatch(
         /web\/drizzle|drizzle\.config|\.env|bun\.lock|core\/Cargo\.lock|(?:^|\s)\.github(?:\/|\s|$)/,
@@ -80,6 +80,7 @@ test('CI preserves language, coverage and native contract checks without prepare
         .join('\n')
     for (const command of [
         'project:check',
+        'run contracts:check',
         'run typecheck',
         'run lint',
         'run test',
