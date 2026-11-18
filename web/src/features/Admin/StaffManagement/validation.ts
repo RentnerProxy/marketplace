@@ -24,6 +24,7 @@ export const manageStaffInvitationInputSchema = z.discriminatedUnion('action', [
     }),
     staffInvitationIdSchema.extend({
         action: z.literal('permissions'),
+        expectedPermissionKeys: z.array(z.string().min(1).max(100)).max(100),
         permissionKeys: staffInvitationPermissionKeysSchema,
     }),
 ])

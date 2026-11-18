@@ -62,6 +62,11 @@ export default function useStaffInvitationManagementLogic(): StaffInvitationMana
                 toast.error(t(`admin.staff.inviteErrors.${result.error}`), {
                     title,
                 })
+                if (result.error === 'permissionConflict') {
+                    await queryClient.invalidateQueries({
+                        queryKey: STAFF_INVITATIONS_QUERY_KEY,
+                    })
+                }
                 if (result.error !== 'notFound') return
             } else {
                 const message =
@@ -75,9 +80,15 @@ export default function useStaffInvitationManagementLogic(): StaffInvitationMana
                     { title },
                 )
             }
-            setEditTarget((current) =>
-                current?.id === data.id ? null : current,
-            )
+            if (
+                !result.success ||
+                data.action === 'permissions' ||
+                data.action === 'revoke'
+            ) {
+                setEditTarget((current) =>
+                    current?.id === data.id ? null : current,
+                )
+            }
             setRevokeTarget(null)
             await queryClient.invalidateQueries({
                 queryKey: STAFF_INVITATIONS_QUERY_KEY,
@@ -129,6 +140,7 @@ export default function useStaffInvitationManagementLogic(): StaffInvitationMana
                     mutate({
                         id: editTarget.id,
                         action: 'permissions',
+                        expectedPermissionKeys: editTarget.permissionKeys,
                         permissionKeys,
                     })
                 }

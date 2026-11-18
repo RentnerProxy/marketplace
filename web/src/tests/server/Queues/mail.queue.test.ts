@@ -4,6 +4,7 @@ import {
     enqueueSecurityChangeMail,
     enqueuePasswordResetMail,
     enqueuePasswordSetupMail,
+    enqueueStaffInvitationResendMail,
     MAIL_QUEUE_NAME,
 } from '@/server/Queues/mail.queue.ts'
 import { readMailJobEnvelope } from '@/server/Queues/mail-payload.ts'
@@ -63,6 +64,14 @@ const setupMail = {
     to: 'setup@example.test',
     username: 'setup-user',
 }
+const invitationResend = {
+    resetLink: 'https://app.example.test/staff-invitation#invite=synthetic',
+    invitationId: '01941f29-7c00-7000-8000-000000000011',
+    actorUserId: '01941f29-7c00-7000-8000-000000000012',
+    previousTokenHash: 'a'.repeat(64),
+    previousIsActive: true,
+    tokenHash: 'b'.repeat(64),
+}
 const failedLoginAlertMail = {
     attemptedAt: '2026-07-15T10:00:00.000Z',
     browser: 'Firefox',
@@ -83,6 +92,7 @@ describe('Mail-Queue-Producer', function () {
     it('validiert und verschlüsselt alle Mailtypen über eine konfigurierte Queue-Instanz', async function () {
         await enqueuePasswordResetMail(resetMail)
         await enqueuePasswordSetupMail(setupMail)
+        await enqueueStaffInvitationResendMail(invitationResend)
         await enqueueFailedLoginAlertMail(failedLoginAlertMail)
 
         expect(bullMqMocks.queueConstructor).toHaveBeenCalledTimes(1)
@@ -102,7 +112,7 @@ describe('Mail-Queue-Producer', function () {
             },
         )
         expect(bullMqMocks.getConnectionOptions).toHaveBeenCalledTimes(1)
-        expect(bullMqMocks.add).toHaveBeenCalledTimes(3)
+        expect(bullMqMocks.add).toHaveBeenCalledTimes(4)
 
         const expectedJobs = [
             {
@@ -112,6 +122,10 @@ describe('Mail-Queue-Producer', function () {
             {
                 data: { ...setupMail, kind: 'password-setup' },
                 name: 'password-setup',
+            },
+            {
+                data: { ...invitationResend, kind: 'staff-invitation-resend' },
+                name: 'staff-invitation-resend',
             },
             {
                 data: {

@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { RefObject, SyntheticEvent } from 'react'
 
 export type SafeDeleteModalProps = {
     isOpen: boolean
@@ -16,8 +17,17 @@ export type SafeDeleteModalProps = {
 
 export type UseSafeDeleteModalLogicProps = {
     isOpen: boolean
+    isConfirming: boolean
+    onClose: () => void
 }
 
 export type SafeDeleteModalLogicReturn = {
     state: { shouldRender: boolean }
+    handler: {
+        handleCancel: (event: SyntheticEvent<HTMLDialogElement>) => void
+    }
+    refs: {
+        dialogRef: RefObject<HTMLDialogElement | null>
+        cancelButtonRef: RefObject<HTMLButtonElement | null>
+    }
 }

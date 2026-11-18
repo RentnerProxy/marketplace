@@ -19,6 +19,7 @@ import {
 } from '@/lib/Permissions/permissions.ts'
 import { lockAuditUsersInTransactionService } from '@/lib/AuditLogs/user-locks.ts'
 import { resolvePermissionSelectionInTransaction } from '@/server/Admin/PermissionManagement/permission-management-policy.service.ts'
+import { publishStaffInvitationsChangedService } from '@/server/Admin/StaffManagement/invitations.service.ts'
 import { getActiveUserPermissionKeysInTransaction } from '@/server/Auth/transaction-authorization.service.ts'
 import { publishUserUpdatedService } from '@/server/Realtime/publish.service.ts'
 import { runBestEffortSideEffectService } from '@/server/Logging/side-effect.service.ts'
@@ -33,6 +34,7 @@ export async function acceptStaffInvitationService(input: {
 }) {
     const tokenHash = await createTokenHash(input.token)
     const passwordHash = await Bun.password.hash(input.password)
+    const auditContext = prepareAuditContextService(null)
     const result = await db.transaction(async (transaction) => {
         await lockAccountUniquenessInTransactionService(transaction)
         const rows = await transaction
@@ -48,7 +50,7 @@ export async function acceptStaffInvitationService(input: {
             .limit(1)
             .for('update')
         const invitation = rows.at(0)
-        if (!invitation?.invitedByUserId) return null
+        if (!invitation) return null
 
         await lockAuditUsersInTransactionService(transaction, [
             invitation.invitedByUserId,
@@ -58,8 +60,25 @@ export async function acceptStaffInvitationService(input: {
                 transaction,
                 invitation.invitedByUserId,
             )
-        if (!inviterPermissions || !hasSuperUserPermission(inviterPermissions))
-            return null
+        if (
+            !invitation.invitedByUserId ||
+            !inviterPermissions ||
+            !hasSuperUserPermission(inviterPermissions)
+        ) {
+            await transaction
+                .update(staffInvitations)
+                .set({ isActive: false })
+                .where(eq(staffInvitations.id, invitation.id))
+            const audit = await writeAuditLogInTransactionService(transaction, {
+                ...auditContext,
+                action: 'auth.staff_invitation_deactivated',
+                message:
+                    'Eine Teameinladung wurde deaktiviert, weil der Aussteller keine wirksame Einladungsberechtigung mehr hat.',
+                oldValues: { invitationId: invitation.id, isActive: true },
+                newValues: { invitationId: invitation.id, isActive: false },
+            })
+            return { user: null, audit }
+        }
 
         const existingUsers = await transaction
             .select({ id: users.id })
@@ -108,7 +127,7 @@ export async function acceptStaffInvitationService(input: {
             })),
         )
         const audit = await writeAuditLogInTransactionService(transaction, {
-            ...prepareAuditContextService(null),
+            ...auditContext,
             actorUserId: userId,
             action: 'auth.staff_invitation_accepted',
             message: 'Eine Teameinladung wurde angenommen.',
@@ -119,25 +138,32 @@ export async function acceptStaffInvitationService(input: {
             },
         })
         return {
-            userId,
-            username: invitation.username,
-            permissionKeys: selection.permissionKeys,
+            user: {
+                userId,
+                username: invitation.username,
+                permissionKeys: selection.permissionKeys,
+            },
             audit,
         }
     })
     if (!result) return { success: false as const }
     await publishCommittedAuditLogService(result.audit)
+    const user = result.user
+    if (!user) {
+        await publishStaffInvitationsChangedService()
+        return { success: false as const }
+    }
     await runBestEffortSideEffectService(
         'auth.staff_invitation_publish_failed',
         () =>
             publishUserUpdatedService(
                 {
-                    userId: result.userId,
-                    username: result.username,
-                    previousUsername: result.username,
-                    permissionKeys: result.permissionKeys,
+                    userId: user.userId,
+                    username: user.username,
+                    previousUsername: user.username,
+                    permissionKeys: user.permissionKeys,
                     previousPermissionKeys: [],
-                    addedPermissionKeys: result.permissionKeys,
+                    addedPermissionKeys: user.permissionKeys,
                     removedPermissionKeys: [],
                     updatedAt: new Date().toISOString(),
                 },

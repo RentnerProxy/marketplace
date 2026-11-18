@@ -36,7 +36,6 @@ export async function getStaffInvitationsService(
     actorUserId: string,
 ): Promise<Array<StaffInvitationSummary>> {
     await requireSuperUserReadAccessService(actorUserId)
-    const now = Date.now()
     const rows = await db
         .select({
             id: staffInvitations.id,
@@ -48,6 +47,7 @@ export async function getStaffInvitationsService(
         })
         .from(staffInvitations)
         .orderBy(desc(staffInvitations.expiresAt), desc(staffInvitations.id))
+    const now = Date.now()
 
     return rows.map(
         ({ id, username, email, permissionKeys, isActive, expiresAt }) => ({
@@ -63,6 +63,19 @@ export async function getStaffInvitationsService(
                   : 'active',
         }),
     )
+}
+
+export async function lockStaffInvitationByIdService(
+    transaction: DatabaseTransaction,
+    id: string,
+) {
+    const [invitation] = await transaction
+        .select()
+        .from(staffInvitations)
+        .where(eq(staffInvitations.id, id))
+        .limit(1)
+        .for('update')
+    return invitation
 }
 
 export async function lockStaffInvitationMutationService(
@@ -107,6 +120,35 @@ export async function resolveStaffInvitationPermissionKeysService(
         getDefaultRouteForPermissions(selection.permissionKeys) !== '/login'
         ? selection.permissionKeys
         : null
+}
+
+export async function validateStaffInvitationAccessService(
+    transaction: DatabaseTransaction,
+    invitation: Pick<InviteStaffInput, 'username' | 'email' | 'permissionKeys'>,
+) {
+    if (await hasAccountForStaffInvitationService(transaction, invitation)) {
+        return { success: false as const, error: 'identityInUse' as const }
+    }
+    const permissionKeys = await resolveStaffInvitationPermissionKeysService(
+        transaction,
+        invitation.permissionKeys,
+    )
+    if (!permissionKeys) {
+        return { success: false as const, error: 'invalidPermissions' as const }
+    }
+    return { success: true as const, permissionKeys }
+}
+
+export function getStaffInvitationAuditValues(
+    invitation: typeof staffInvitations.$inferSelect,
+) {
+    return {
+        invitationId: invitation.id,
+        expiresAt: invitation.expiresAt,
+        permissionKeys: invitation.permissionKeys,
+        isActive: invitation.isActive,
+        invitedByUserId: invitation.invitedByUserId,
+    }
 }
 
 export async function createStaffInvitationLinkService() {

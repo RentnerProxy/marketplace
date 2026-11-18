@@ -1,6 +1,7 @@
 import { createLazyTestQuery } from '@/tests/shared/lazy-query.test.helpers.ts'
 import { vi } from 'bun:test'
 import type { AuthMailInput } from '@/lib/Mail/Types/mail-domain.types.ts'
+import type { StaffInvitationResendMailInput } from '@/server/Queues/Types/mail-job.types.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import type {
     AdminTestCondition,
@@ -573,6 +574,9 @@ export const adminAuditExternal = {
     publishNotification: vi.fn(async function () {}),
     enqueueReset: vi.fn(async function (_input: AuthMailInput) {}),
     enqueueInvitation: vi.fn(async function (_input: AuthMailInput) {}),
+    enqueueInvitationResend: vi.fn(async function (
+        _input: StaffInvitationResendMailInput,
+    ) {}),
     logError: vi.fn(),
 }
 export function installAdminAuditTestMocks() {
@@ -619,6 +623,8 @@ export function installAdminAuditTestMocks() {
     vi.mock('@/server/Queues/mail.queue.ts', () => ({
         enqueuePasswordResetMail: adminAuditExternal.enqueueReset,
         enqueuePasswordSetupMail: adminAuditExternal.enqueueInvitation,
+        enqueueStaffInvitationResendMail:
+            adminAuditExternal.enqueueInvitationResend,
     }))
     vi.mock('@/server/Realtime/publish.service.ts', () => ({
         publishAuditLogCreatedService: adminAuditExternal.publishAudit,

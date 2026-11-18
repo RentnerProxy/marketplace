@@ -839,6 +839,7 @@
                 "invalidPermissions": "Wähle mindestens ein Recht, das den Zugriff auf eine Seite erlaubt.",
                 "deliveryFailed": "Die Einladung konnte nicht zum Versand eingeplant werden.",
                 "notFound": "Die Einladung ist nicht mehr verfügbar.",
+                "permissionConflict": "Die Startrechte wurden zwischenzeitlich geändert. Öffne die Bearbeitung erneut, um die aktuellen Rechte zu laden.",
                 "expired": "Der Einladungslink ist abgelaufen. Sende die Einladung erneut."
             },
             "invitations": {
@@ -865,7 +866,7 @@
                 },
                 "feedback": {
                     "permissions": "Die Startrechte wurden gespeichert.",
-                    "resend": "Ein neuer Link wurde zum Versand eingeplant. Frühere Links sind ungültig.",
+                    "resend": "Die Einladung wurde erneut zum Versand eingeplant.",
                     "revoke": "Die Einladung wurde zurückgezogen.",
                     "activated": "Die Einladung wurde aktiviert.",
                     "deactivated": "Die Einladung wurde deaktiviert."

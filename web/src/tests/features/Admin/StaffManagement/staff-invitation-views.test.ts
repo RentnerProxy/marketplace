@@ -264,6 +264,9 @@ describe('staff invitation management table', () => {
             'onTogglePermission',
             PERMISSIONS.ADMIN_DASHBOARD,
         )
+        clickRowAction(activeInvitation, 'admin.staff.invitations.resend')
+        await settle()
+        expect(tableView().table.expandedRowId).toBe(activeInvitation.id)
         const save = getSaveButton(expanded())
         expect(save.props.disabled).toBe(false)
         invoke(save, 'onClick')
@@ -272,6 +275,7 @@ describe('staff invitation management table', () => {
             data: {
                 id: activeInvitation.id,
                 action: 'permissions',
+                expectedPermissionKeys: activeInvitation.permissionKeys,
                 permissionKeys: [
                     PERMISSIONS.USER_DASHBOARD,
                     PERMISSIONS.ADMIN_DASHBOARD,

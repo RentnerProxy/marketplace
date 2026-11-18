@@ -839,6 +839,7 @@
                 "invalidPermissions": "Choose at least one permission that grants access to a page.",
                 "deliveryFailed": "The invitation email could not be queued.",
                 "notFound": "The invitation is no longer available.",
+                "permissionConflict": "The initial permissions changed while you were editing. Reopen the editor to load the current permissions.",
                 "expired": "The invitation link has expired. Resend the invitation to issue a new link."
             },
             "invitations": {
@@ -865,7 +866,7 @@
                 },
                 "feedback": {
                     "permissions": "Initial permissions were saved.",
-                    "resend": "A new link was queued. Previous links are invalid.",
+                    "resend": "The invitation email was queued again.",
                     "revoke": "The invitation was withdrawn.",
                     "activated": "The invitation was activated.",
                     "deactivated": "The invitation was deactivated."

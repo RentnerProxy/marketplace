@@ -27,14 +27,19 @@ import {
 import type { AuthMailInput } from '@/lib/Mail/Types/mail-domain.types.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 import { getUserPermissionKeys } from '@/lib/Permissions/userPermissions.ts'
+import type { StaffInvitationResendMailInput } from '@/server/Queues/Types/mail-job.types.ts'
 
 const sendInvitation = vi.fn(async (_input: AuthMailInput) => {})
+const queueInvitationResend = vi.fn(
+    async (_input: StaffInvitationResendMailInput) => {},
+)
 const writeAudit = vi.fn(async () => ({
     id: Bun.randomUUIDv7(),
     createdAt: new Date(),
 }))
 vi.mock('@/server/Queues/mail.queue.ts', () => ({
     enqueuePasswordSetupMail: sendInvitation,
+    enqueueStaffInvitationResendMail: queueInvitationResend,
 }))
 vi.mock('@/lib/AuditLogs/auditLogs.ts', () => ({
     prepareAuditContextService: (actorUserId: string | null) => ({
@@ -55,6 +60,8 @@ const { getStaffInvitationsService, inviteStaffService } =
     await import('@/server/Admin/StaffManagement/invitations.service.ts')
 const { manageStaffInvitationService } =
     await import('@/server/Admin/StaffManagement/manageInvitation.service.ts')
+const { prepareStaffInvitationResendMailService } =
+    await import('@/server/Admin/StaffManagement/resendInvitation.service.ts')
 const { convertAccountTypeService } =
     await import('@/server/Admin/UserManagement/accountConversion.service.ts')
 const { acceptStaffInvitationService } =
@@ -364,6 +371,45 @@ describe('public and staff account separation in PostgreSQL', () => {
                 superUserId,
             ),
         ).resolves.toEqual({ success: false, error: 'identityInUse' })
+    })
+
+    it('rotates a queued resend in PostgreSQL before the worker receives the replacement mail', async () => {
+        const input = inviteInput('worker-resend')
+        await inviteStaffService(input, superUserId)
+        const oldToken = getInvitationToken()
+        const [invitation] = await db
+            .select()
+            .from(staffInvitations)
+            .where(eq(staffInvitations.email, input.email))
+        await expect(
+            manageStaffInvitationService(
+                { id: invitation.id, action: 'resend' },
+                superUserId,
+            ),
+        ).resolves.toEqual({ success: true })
+        const job = queueInvitationResend.mock.lastCall?.[0]
+        if (!job) throw new Error('Expected a queued invitation resend')
+        expect(job.previousTokenHash).toBe(await createTokenHash(oldToken))
+        expect(
+            await db
+                .select()
+                .from(staffInvitations)
+                .where(eq(staffInvitations.id, invitation.id)),
+        ).toMatchObject([{ tokenHash: job.previousTokenHash }])
+        await expect(
+            prepareStaffInvitationResendMailService(job),
+        ).resolves.toEqual({
+            to: input.email,
+            username: input.username,
+            resetLink: job.resetLink,
+        })
+        await expect(
+            acceptStaffInvitationService({ token: oldToken, password }),
+        ).resolves.toEqual({ success: false })
+        const newToken = new URL(job.resetLink).hash.slice(8)
+        await expect(
+            acceptStaffInvitationService({ token: newToken, password }),
+        ).resolves.toEqual({ success: true })
     })
 
     it('moves accounts across scopes atomically and revokes sessions, including on superuser demotion', async () => {

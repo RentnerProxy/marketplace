@@ -9,6 +9,7 @@ const mailRecipientSchema = z.object({
 const authMailJobSchema = mailRecipientSchema.extend({
     resetLink: z.url().max(2048),
 })
+const tokenHashSchema = z.string().regex(/^[a-f0-9]{64}$/u)
 const ipAddressSchema = z.union([z.ipv4(), z.ipv6()])
 
 const changedAtSchema = z
@@ -34,6 +35,15 @@ export const mailJobDataSchema = z.discriminatedUnion('kind', [
     authMailJobSchema.extend({ kind: z.literal('registration-verification') }),
     authMailJobSchema.extend({ kind: z.literal('password-reset') }),
     authMailJobSchema.extend({ kind: z.literal('password-setup') }),
+    z.object({
+        kind: z.literal('staff-invitation-resend'),
+        invitationId: z.uuidv7(),
+        actorUserId: z.uuidv7(),
+        previousTokenHash: tokenHashSchema,
+        previousIsActive: z.boolean(),
+        tokenHash: tokenHashSchema,
+        resetLink: z.url().max(2048),
+    }),
     mailRecipientSchema.extend({
         kind: z.literal('failed-login-alert'),
         ip: ipAddressSchema.nullable(),
