@@ -44,11 +44,15 @@ fn smoke_bootstrap_binds_contract_versions_and_socket_directions() {
         "expected different per-socket credentials"
     );
 
-    let rejected = bootstrap(&manifest, "2.0.0");
-    assert!(!rejected.status.success());
-    assert!(rejected.stdout.is_empty());
-    assert_eq!(
-        String::from_utf8(rejected.stderr).unwrap().trim(),
-        "Candidate is incompatible with its smoke runtime"
-    );
+    let incompatible_version = bootstrap(&manifest, "2.0.0");
+    manifest["requires"]["platformApi"] = ">=2.0.0 <3.0.0".into();
+    let incompatible_manifest = bootstrap(&manifest, "1.0.0");
+    for rejected in [incompatible_version, incompatible_manifest] {
+        assert!(!rejected.status.success());
+        assert!(rejected.stdout.is_empty());
+        assert_eq!(
+            String::from_utf8(rejected.stderr).unwrap().trim(),
+            "Candidate is incompatible with its smoke runtime"
+        );
+    }
 }

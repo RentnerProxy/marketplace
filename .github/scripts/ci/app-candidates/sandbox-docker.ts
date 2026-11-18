@@ -30,26 +30,55 @@ export function attach(
     return runAppPipeline<null>('sandbox-attach', { args, ...options })
 }
 
-export async function withSandbox<T>(
-    options: {
-        target: AppManifest['target']
-        network?: string
-        user?: string
-        memoryMiB: number
-        processLimit: number
-        mounts: string[]
-        command: string[]
-    },
-    run: (name: string) => Promise<T>,
-) {
-    const name = 'marketplace-candidate-' + randomUUID()
-    try {
-        await runAppPipeline('sandbox-create', {
+interface SandboxOptions {
+    target: AppManifest['target']
+    network?: string
+    user?: string
+    memoryMiB: number
+    processLimit: number
+    mounts: string[]
+    command: string[]
+}
+
+interface SandboxLifecycle {
+    create(name: string, options: SandboxOptions): Promise<unknown>
+    remove(name: string): Promise<unknown>
+}
+
+const dockerLifecycle: SandboxLifecycle = {
+    create(name, options) {
+        return runAppPipeline('sandbox-create', {
             name,
             config: { image: applianceImage, ...options },
         })
-        return await run(name)
-    } finally {
-        await docker(['rm', '--force', '--volumes', name])
+    },
+    remove(name) {
+        return docker(['rm', '--force', '--volumes', name])
+    },
+}
+
+export async function withSandbox<T>(
+    options: SandboxOptions,
+    run: (name: string) => Promise<T>,
+    lifecycle = dockerLifecycle,
+) {
+    const name = 'marketplace-candidate-' + randomUUID()
+    let result: { value: T } | { error: unknown }
+    try {
+        await lifecycle.create(name, options)
+        result = { value: await run(name) }
+    } catch (error) {
+        result = { error }
     }
+
+    try {
+        await lifecycle.remove(name)
+    } catch {
+        const message = `Candidate sandbox cleanup failed for ${name}.`
+        if ('value' in result) throw new Error(message)
+        console.warn(message)
+    }
+
+    if ('error' in result) throw result.error
+    return result.value
 }

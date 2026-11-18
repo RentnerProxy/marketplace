@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { packageArtifact } from '../../../../contracts/v1/catalog.ts'
 import type { AppManifest, Candidate } from '../../../../contracts/v1/index.ts'
 import { candidate } from '../../../../contracts/v1/publication.ts'
-import { runNativeToolSync } from '../Core/native-tool.ts'
+import { runNativeTool } from '../Core/native-tool.ts'
 
 export type BuildIdentity = Candidate['build']
 export type AppSource = AppManifest['source']
@@ -52,12 +52,12 @@ export function assetNames(manifest: AppManifest) {
     }
 }
 
-export function assembleCandidate(
+export async function assembleCandidate(
     records: [TargetRecord, TargetRecord],
     expected: TargetExpectation,
     publisherName: string,
 ) {
-    const { sealed, reportBytes } = runNativeToolSync<{
+    const { sealed, reportBytes } = await runNativeTool<{
         sealed: Candidate
         reportBytes: string
     }>('marketplace-app-pipeline', 'evidence-assemble', {

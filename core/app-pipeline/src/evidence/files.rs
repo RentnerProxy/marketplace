@@ -100,12 +100,23 @@ pub(super) fn prepare_output(path: &Path, names: &[String]) -> io::Result<()> {
     check_directory(path, names, true)
 }
 
+fn already_written(path: &Path, limit: u64, expected: &FileIdentity) -> io::Result<bool> {
+    match file_identity(path, limit, Some(expected)) {
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error),
+    }
+}
+
 pub(super) fn copy_asset(
     source: &Path,
     destination: &Path,
     limit: u64,
     expected: &FileIdentity,
 ) -> io::Result<()> {
+    if already_written(destination, limit, expected)? {
+        return file_identity(source, limit, Some(expected)).map(|_| ());
+    }
     match artifacts::copy_file(source, destination, limit, Some(expected)) {
         Ok(_) => Ok(()),
         Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
@@ -120,13 +131,18 @@ pub(super) fn save_metadata(directory: &Path, name: &str, bytes: &[u8]) -> io::R
         return Err(invalid("Candidate metadata violates its byte limit"));
     }
     let path = directory.join(name);
+    let expected = identity(bytes);
+    if already_written(&path, METADATA_LIMIT, &expected)? {
+        return Ok(());
+    }
     let mut target = tempfile::NamedTempFile::new_in(directory)?;
     target.write_all(bytes)?;
     target.flush()?;
     match target.persist_noclobber(&path) {
         Ok(_) => Ok(()),
         Err(error) if error.error.kind() == io::ErrorKind::AlreadyExists => {
-            file_identity(&path, METADATA_LIMIT, Some(&identity(bytes))).map(|_| ())
+            error.file.close()?;
+            file_identity(&path, METADATA_LIMIT, Some(&expected)).map(|_| ())
         }
         Err(error) => Err(error.error),
     }

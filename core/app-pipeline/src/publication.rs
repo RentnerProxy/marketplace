@@ -1,4 +1,5 @@
 use marketplace_artifacts::invalid;
+use rentnerproxy_app_contracts::Contracts;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::io;
@@ -28,6 +29,13 @@ struct Candidate {
 struct Plan {
     catalog: Value,
     work: Work,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Publish {
+    catalog: Value,
+    release: Value,
 }
 
 #[derive(Deserialize)]
@@ -175,16 +183,19 @@ pub fn execute(operation: &str, input: Value) -> io::Result<Value> {
             }))
         }
         "publish" => {
-            let catalog = &input["catalog"];
-            let mut releases = entries(catalog, "releases")?.clone();
-            let release = input["release"].clone();
-            if matching(&releases, &release).is_some()
-                || matching(entries(catalog, "revocations")?, &release).is_some()
+            let Publish { catalog, release } = serde_json::from_value(input)?;
+            Contracts::new()
+                .map_err(io::Error::other)?
+                .validate_release(&release)
+                .map_err(|error| invalid(format!("Invalid catalog release: {error}")))?;
+            let mut releases = entries(&catalog, "releases")?.clone();
+            let revocations = entries(&catalog, "revocations")?;
+            if matching(&releases, &release).is_some() || matching(revocations, &release).is_some()
             {
                 return Err(invalid("App version already used in the signed catalog"));
             }
             releases.push(release);
-            next_catalog(catalog, releases, entries(catalog, "revocations")?.clone())
+            next_catalog(&catalog, releases, revocations.clone())
         }
         "stop" => stop(serde_json::from_value(input)?),
         _ => Err(invalid("Unknown catalog publication operation")),

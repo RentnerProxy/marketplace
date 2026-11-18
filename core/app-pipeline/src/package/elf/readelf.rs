@@ -13,8 +13,12 @@ const REPORT_LIMIT: u64 = 2 * 1024 * 1024;
 const TIMEOUT: Duration = Duration::from_secs(10);
 
 pub(super) fn verify(path: &Path, needed: &[String]) -> io::Result<()> {
-    let report =
-        report(path).map_err(|_| invalid("Linux readelf could not verify the candidate binary"))?;
+    let report = report(path).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!("Linux readelf could not verify the candidate binary: {error}"),
+        )
+    })?;
     let reported = report
         .lines()
         .filter_map(|line| dynamic_value(line, "(NEEDED)", "Shared library: ["));
@@ -34,8 +38,12 @@ fn dynamic_value<'a>(line: &'a str, tag: &str, label: &str) -> Option<&'a str> {
 }
 
 pub(super) fn definitions(path: &Path, library: &str) -> io::Result<BTreeSet<String>> {
-    let report = report(path)
-        .map_err(|_| invalid("Linux readelf could not verify the pinned appliance library"))?;
+    let report = report(path).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!("Linux readelf could not verify the pinned appliance library: {error}"),
+        )
+    })?;
     parse_definitions(&report, library)
 }
 
@@ -151,5 +159,41 @@ Version needs section '.gnu.version_r' contains 1 entry:\n\
         assert!(
             parse_definitions(&report.replace("3 entries", "4 entries"), "libstdc++.so.6").is_err()
         );
+    }
+
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    #[test]
+    fn verifies_real_dynamic_links_and_appliance_library_versions_with_readelf() {
+        let lookup = Command::new("cc")
+            .arg("-print-file-name=libc.so.6")
+            .output()
+            .unwrap();
+        assert!(lookup.status.success());
+        let libc_path =
+            std::fs::canonicalize(String::from_utf8(lookup.stdout).unwrap().trim()).unwrap();
+        let versions = definitions(&libc_path, "libc.so.6").unwrap();
+        assert!(versions.contains("GLIBC_PRIVATE"));
+        assert!(
+            versions
+                .iter()
+                .any(|version| version.starts_with("GLIBC_2."))
+        );
+        assert!(definitions(&libc_path, "libstdc++.so.6").is_err());
+
+        let executable = std::env::current_exe().unwrap();
+        let needed: Vec<_> = report(&executable)
+            .unwrap()
+            .lines()
+            .filter_map(|line| dynamic_value(line, "(NEEDED)", "Shared library: ["))
+            .map(str::to_owned)
+            .collect();
+        assert!(needed.iter().any(|library| library == "libc.so.6"));
+        verify(&executable, &needed).unwrap();
+        assert!(verify(&executable, &[]).is_err());
+
+        let invalid = tempfile::NamedTempFile::new().unwrap();
+        assert!(verify(invalid.path(), &[]).is_err());
+        assert!(definitions(invalid.path(), "libc.so.6").is_err());
+        assert!(read_bounded(io::repeat(b'x').take(REPORT_LIMIT + 1)).is_err());
     }
 }

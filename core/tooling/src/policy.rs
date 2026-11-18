@@ -46,6 +46,15 @@ fn pull_request_labels(value: &Value) -> io::Result<Value> {
     Ok(json!(labels))
 }
 
+fn step_boolean(value: &Value, expected: bool) -> bool {
+    value.as_bool() == Some(expected)
+        || value.as_str().is_some_and(|value| {
+            value
+                .trim()
+                .eq_ignore_ascii_case(if expected { "true" } else { "false" })
+        })
+}
+
 fn workflow_errors(input: &Value) -> io::Result<Value> {
     static PR_HEAD: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
@@ -107,22 +116,30 @@ fn workflow_errors(input: &Value) -> io::Result<Value> {
                 let step = step
                     .as_object()
                     .ok_or_else(|| invalid("Invalid workflow step"))?;
-                if let Some(action) = step.get("uses") {
+                let action = step.get("uses");
+                if let Some(action) = action {
                     check_action(action, &mut errors);
                 }
-                if let Some(inputs) = step.get("with") {
-                    let inputs = inputs
-                        .as_object()
-                        .ok_or_else(|| invalid("Invalid workflow step inputs"))?;
-                    let persists = inputs.get("persist-credentials").is_some_and(|value| {
-                        value == true
-                            || value
-                                .as_str()
-                                .is_some_and(|value| value.trim().eq_ignore_ascii_case("true"))
-                    });
-                    if persists {
-                        errors.push(format!("{file}: persisted checkout credentials"));
-                    }
+                let checkout = action.and_then(Value::as_str).is_some_and(|action| {
+                    action
+                        .trim()
+                        .split('@')
+                        .next()
+                        .is_some_and(|name| name.eq_ignore_ascii_case("actions/checkout"))
+                });
+                let credentials = step
+                    .get("with")
+                    .map(|inputs| {
+                        inputs
+                            .as_object()
+                            .ok_or_else(|| invalid("Invalid workflow step inputs"))
+                    })
+                    .transpose()?
+                    .and_then(|inputs| inputs.get("persist-credentials"));
+                if checkout && !credentials.is_some_and(|value| step_boolean(value, false)) {
+                    errors.push(format!("{file}: persisted checkout credentials (actions/checkout requires explicit persist-credentials: false)"));
+                } else if credentials.is_some_and(|value| step_boolean(value, true)) {
+                    errors.push(format!("{file}: persisted checkout credentials"));
                 }
             }
         }

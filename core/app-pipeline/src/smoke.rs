@@ -1,5 +1,5 @@
 use marketplace_artifacts::invalid;
-use rentnerproxy_app_contracts::{Contracts, ManifestEnvironment, ProtocolContracts};
+use rentnerproxy_app_contracts::{Contracts, ProtocolContracts};
 use serde_json::{Value, json};
 use std::io;
 
@@ -11,28 +11,21 @@ pub fn bootstrap(input: &Value) -> io::Result<Value> {
     let version = input["version"]
         .as_str()
         .ok_or_else(|| invalid("Invalid app contract version"))?;
+    let runtime = crate::candidate_runtime(target);
+    if version != runtime.app_protocol {
+        return Err(invalid("Candidate is incompatible with its smoke runtime"));
+    }
     Contracts::new()
-        .and_then(|contracts| {
-            contracts.check_manifest_compatibility(
-                manifest,
-                &ManifestEnvironment {
-                    target,
-                    runtime_profile: "rentnerproxy-linux-v1",
-                    platform_api: version,
-                    app_protocol: version,
-                    ui_bridge: Some(version),
-                    engine_capabilities: &["caddy.load-balancing.v1", "caddy.crowdsec.v1"],
-                },
-            )
-        })
+        .and_then(|contracts| contracts.check_manifest_compatibility(manifest, &runtime))
         .map_err(|_| invalid("Candidate is incompatible with its smoke runtime"))?;
     let credential = || -> io::Result<String> {
         let mut secret = [0; 32];
         getrandom::fill(&mut secret).map_err(|_| invalid("Could not create smoke credential"))?;
         Ok(hex::encode(secret))
     };
-    let mut versions = json!({"appProtocol": version, "platformApi": version});
-    if !manifest["ui"].is_null() {
+    let mut versions =
+        json!({"appProtocol": runtime.app_protocol, "platformApi": runtime.platform_api});
+    if let Some(version) = runtime.ui_bridge.filter(|_| !manifest["ui"].is_null()) {
         versions["uiBridge"] = json!(version);
     }
     let descriptor = json!({
@@ -40,7 +33,7 @@ pub fn bootstrap(input: &Value) -> io::Result<Value> {
         "appId": manifest["id"],
         "installationId": "candidate-smoke",
         "generation": 1,
-        "runtimeProfile": "rentnerproxy-linux-v1",
+        "runtimeProfile": runtime.runtime_profile,
         "versions": versions,
         "appSocket": "/run-fixture/app/app.sock",
         "coreSocket": "/run-fixture/core/core.sock",

@@ -184,6 +184,51 @@ fn workflow_fails_closed_for_malformed_job_and_step_values() -> io::Result<()> {
 }
 
 #[test]
+fn official_checkout_requires_explicit_false_for_credential_persistence() -> io::Result<()> {
+    let checkout = format!("Actions/Checkout@{}", "a".repeat(40));
+    for (inputs, allowed) in [
+        (None, false),
+        (Some(json!({"fetch-depth": 1})), false),
+        (Some(json!({"persist-credentials": null})), false),
+        (Some(json!({"persist-credentials": true})), false),
+        (Some(json!({"persist-credentials": " TRUE "})), false),
+        (Some(json!({"persist-credentials": 0})), false),
+        (Some(json!({"persist-credentials": "off"})), false),
+        (Some(json!({"persist-credentials": ["false"]})), false),
+        (
+            Some(json!({"persist-credentials": "${{ inputs.allow_credentials }}"})),
+            false,
+        ),
+        (Some(json!({"persist-credentials": false})), true),
+        (Some(json!({"persist-credentials": " FALSE "})), true),
+    ] {
+        let mut input = workflow(json!("pull_request"), "checkout fixture");
+        let mut step = json!({"uses": checkout});
+        if let Some(inputs) = inputs {
+            step["with"] = inputs;
+        }
+        input["workflow"]["jobs"]["gate"]["steps"][0] = step;
+        let errors = execute("policy-workflow", input)?;
+        if allowed {
+            assert_eq!(errors, json!([]));
+        } else {
+            assert_eq!(
+                errors,
+                json!([
+                    ".github/workflows/pr-fixture.yml: persisted checkout credentials (actions/checkout requires explicit persist-credentials: false)"
+                ])
+            );
+        }
+    }
+
+    let mut input = workflow(json!("pull_request"), "unrelated action fixture");
+    input["workflow"]["jobs"]["gate"]["steps"][0] =
+        json!({"uses": format!("actions/setup-node@{}", "a".repeat(40))});
+    assert_eq!(execute("policy-workflow", input)?, json!([]));
+    Ok(())
+}
+
+#[test]
 fn pr_metadata_labels_match_repository_paths_and_reject_malformed_api_entries() -> io::Result<()> {
     assert_eq!(
         execute(

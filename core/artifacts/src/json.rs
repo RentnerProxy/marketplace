@@ -8,6 +8,8 @@ use serde_json::{Map, Number, Value};
 // Reject the ambiguity before verifying signatures or interpreting any fields.
 struct UniqueValue(Value);
 
+const DUPLICATE_MEMBER: &str = "Duplicate JSON member";
+
 impl<'de> Deserialize<'de> for UniqueValue {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> std::result::Result<Self, D::Error> {
         deserializer.deserialize_any(JsonVisitor).map(Self)
@@ -27,7 +29,7 @@ impl<'de> Visitor<'de> for JsonVisitor {
         let mut object = Map::new();
         while let Some(key) = map.next_key::<String>()? {
             if object.contains_key(&key) {
-                return Err(A::Error::custom("duplicate JSON member"));
+                return Err(A::Error::custom(DUPLICATE_MEMBER));
             }
             object.insert(key, map.next_value::<UniqueValue>()?.0);
         }
@@ -76,7 +78,13 @@ impl<'de> Visitor<'de> for JsonVisitor {
 pub fn parse_json(bytes: &[u8]) -> std::io::Result<Value> {
     serde_json::from_slice::<UniqueValue>(bytes)
         .map(|value| value.0)
-        .map_err(|_| crate::invalid("Invalid or ambiguous JSON"))
+        .map_err(|error| {
+            if error.to_string().starts_with(DUPLICATE_MEMBER) {
+                crate::invalid(DUPLICATE_MEMBER)
+            } else {
+                crate::invalid("Invalid or ambiguous JSON")
+            }
+        })
 }
 
 pub fn validate_wire_json(value: &Value) -> std::io::Result<()> {

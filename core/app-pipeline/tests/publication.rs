@@ -2,12 +2,30 @@ use marketplace_app_pipeline::publication::execute;
 use serde_json::{Value, json};
 
 fn release() -> Value {
-    json!({"appId": "publisher.app", "version": "1.2.3", "publisher": {"name": "Original"}})
+    let fixtures: Value =
+        serde_json::from_str(include_str!("../../../contracts/v1/fixtures.json")).unwrap();
+    let mut release = fixtures["records"]["release"].clone();
+    release["packages"] = Value::Array(
+        fixtures["targets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .cloned()
+            .map(|mut package| {
+                let mut manifest = fixtures["manifest"].clone();
+                manifest["target"] = package.as_object_mut().unwrap().remove("target").unwrap();
+                package["manifest"] = manifest;
+                package
+            })
+            .collect(),
+    );
+    release
 }
 
 fn revocation() -> Value {
+    let release = release();
     json!({
-        "appId": "publisher.app", "version": "1.2.3",
+        "appId": release["appId"], "version": release["version"],
         "reason": "security", "revokedAt": "2026-11-19T12:00:00.000Z",
     })
 }
@@ -170,7 +188,11 @@ fn stop_is_bound_to_the_recorded_release_and_retries_the_identical_revocation() 
 
 #[test]
 fn catalog_updates_preserve_existing_entries_and_reject_reuse_or_revision_overflow() {
-    let older = json!({"appId":"publisher.app", "version":"1.2.2"});
+    let mut older = release();
+    older["version"] = json!("0.1.0");
+    for package in older["packages"].as_array_mut().unwrap() {
+        package["manifest"]["version"] = json!("0.1.0");
+    }
     let empty = catalog(std::slice::from_ref(&older), &[]);
     let next = execute("publish", json!({"catalog":empty, "release":release()})).unwrap();
     assert_eq!(next["revision"], 24);
@@ -191,5 +213,38 @@ fn catalog_updates_preserve_existing_entries_and_reject_reuse_or_revision_overfl
             .unwrap_err()
             .to_string()
             .contains("next catalog revision")
+    );
+}
+
+#[test]
+fn publish_requires_a_complete_and_semantically_valid_release() {
+    let catalog = catalog(&[], &[]);
+    assert!(
+        execute("publish", json!({"catalog": catalog}))
+            .unwrap_err()
+            .to_string()
+            .contains("missing field `release`")
+    );
+    for release in [
+        Value::Null,
+        json!({"appId": "rentnerproxy.monitoring", "version": "0.1.0-beta.1"}),
+    ] {
+        assert_eq!(
+            execute("publish", json!({"catalog": catalog, "release": release}))
+                .unwrap_err()
+                .to_string(),
+            "Invalid catalog release: invalidShape",
+        );
+    }
+    let mut different_source = release();
+    different_source["packages"][0]["manifest"]["source"]["repositoryId"] = json!("42");
+    assert_eq!(
+        execute(
+            "publish",
+            json!({"catalog": catalog, "release": different_source})
+        )
+        .unwrap_err()
+        .to_string(),
+        "Invalid catalog release: invalidRelease",
     );
 }

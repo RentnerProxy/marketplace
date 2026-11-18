@@ -151,12 +151,18 @@ fn admits_only_sanitized_script_free_npm_dependency_inputs() {
             .contains("public npm registry")
     );
     assert!(!unused.exists());
-    fs::write(
-        path.join("bun.lock"),
-        b"{\"lockfileVersion\":3,\"lockfileVersion\":3}",
-    )
-    .unwrap();
-    assert!(dependency::execute("admit", rejected).is_err());
+    let duplicate = std::str::from_utf8(lock).unwrap().replacen(
+        "\"lockfileVersion\": 3,",
+        "\"lockfileVersion\": 3, \"lockfileVersion\": 3,",
+        1,
+    );
+    fs::write(path.join("bun.lock"), duplicate).unwrap();
+    assert_eq!(
+        dependency::execute("admit", rejected)
+            .unwrap_err()
+            .to_string(),
+        "Duplicate JSON member",
+    );
     assert!(!unused.exists());
 }
 

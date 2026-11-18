@@ -10,7 +10,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use marketplace_artifacts::{digest, invalid, open_regular};
-use rentnerproxy_app_contracts::{ContractError, Contracts, ManifestEnvironment};
+use rentnerproxy_app_contracts::{ContractError, Contracts};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
@@ -128,14 +128,7 @@ fn manifest_compatibility(
     source: &Source,
     target: elf::Target,
 ) -> io::Result<()> {
-    let environment = ManifestEnvironment {
-        target: target.name(),
-        runtime_profile: "rentnerproxy-linux-v1",
-        platform_api: "1.0.0",
-        app_protocol: "1.0.0",
-        ui_bridge: Some("1.0.0"),
-        engine_capabilities: &["caddy.load-balancing.v1", "caddy.crowdsec.v1"],
-    };
+    let environment = crate::candidate_runtime(target.name());
     Contracts::new()
         .and_then(|contracts| contracts.check_manifest_compatibility(manifest, &environment))
         .map_err(|error| match error {

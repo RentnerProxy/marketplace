@@ -169,13 +169,6 @@ pub fn file_identity(path: &Path, max_bytes: u64) -> io::Result<FileIdentity> {
     Ok(identity)
 }
 
-pub fn verify_file(path: &Path, expected: &FileIdentity) -> io::Result<()> {
-    if file_identity(path, expected.size_bytes)? != *expected {
-        return Err(invalid("Artifact digest or length mismatch"));
-    }
-    Ok(())
-}
-
 pub fn copy_file(
     source: &Path,
     destination: &Path,
@@ -193,9 +186,10 @@ pub fn copy_file(
         return Err(invalid("Artifact digest or length mismatch"));
     }
     target.flush()?;
-    target
-        .persist_noclobber(destination)
-        .map_err(|error| error.error)?;
+    if let Err(error) = target.persist_noclobber(destination) {
+        error.file.close()?;
+        return Err(error.error);
+    }
     Ok(identity)
 }
 

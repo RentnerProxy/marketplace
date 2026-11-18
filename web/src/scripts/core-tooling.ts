@@ -10,6 +10,7 @@ const toolchain = z
     .parse(Bun.TOML.parse(await Bun.file('core/rust-toolchain.toml').text()))
 const channel = toolchain.toolchain.channel
 const manifest = ['--manifest-path', 'core/Cargo.toml']
+const releaseBuild = ['build', ...manifest, '--locked', '--release']
 const commands: Record<string, string[]> = {
     build: [
         'build',
@@ -18,28 +19,21 @@ const commands: Record<string, string[]> = {
         '--bins',
         '-p',
         'marketplace-core',
-        '-p',
-        'marketplace-app-pipeline',
-        '-p',
-        'marketplace-tooling',
     ],
     'tools-build': [
-        'build',
-        ...manifest,
-        '--locked',
-        '--release',
+        ...releaseBuild,
         '-p',
         'marketplace-app-pipeline',
         '-p',
         'marketplace-tooling',
     ],
+    'tooling-build': [...releaseBuild, '-p', 'marketplace-tooling'],
     'catalog-build': [
-        'build',
-        ...manifest,
-        '--locked',
-        '--release',
+        ...releaseBuild,
         '-p',
         'marketplace-app-catalog',
+        '-p',
+        'marketplace-app-pipeline',
     ],
     check: [
         'check',
@@ -160,7 +154,12 @@ async function coverage() {
             env: testEnv,
         },
         {
-            args: [process.execPath, '--no-env-file', 'run', 'contracts:check'],
+            args: [
+                process.execPath,
+                '--no-env-file',
+                'web/src/scripts/Contracts/generate-contracts.ts',
+                '--check',
+            ],
             env: testEnv,
         },
         {
