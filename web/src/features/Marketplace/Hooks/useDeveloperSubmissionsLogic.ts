@@ -38,7 +38,7 @@ const candidateFields = [
 export function useDeveloperSubmissionsLogic(userId: string) {
     const client = useQueryClient()
     const [repository, setRepository] = useState('')
-    const [claimId, setClaimId] = useState('')
+    const [selectedClaimId, setClaimId] = useState('')
     const [fields, setFields] = useState(initialFields)
     const attempt = useRef<{ fingerprint: string; id: string }>(null)
     const feedback = useSubmissionFeedback()
@@ -46,7 +46,10 @@ export function useDeveloperSubmissionsLogic(userId: string) {
         queryKey: ['marketplace-claims', userId],
         queryFn: ({ signal }) => getRepositoryClaimsHandler({ signal }),
     })
-    const selected = claims.data?.claims.find((claim) => claim.id === claimId)
+    const selected =
+        claims.data?.claims.find((claim) => claim.id === selectedClaimId) ??
+        claims.data?.claims[0]
+    const claimId = selected?.id ?? ''
 
     const claimMutation = useMutation({
         mutationFn: async () => {

@@ -4,6 +4,7 @@ import type { marketplaceRepositoryClaims } from '@/db/schema.ts'
 import { repositoryName } from '@/lib/Marketplace/sourceRequest.ts'
 import { commit } from '../../../../../contracts/v1/primitives.ts'
 import {
+    candidateGitHubToken,
     GitHubRequestError,
     githubJson,
     githubNumericId,
@@ -22,10 +23,16 @@ const repositoryResponse = z.object({
     owner: z.object({ id: githubNumericId }),
 })
 
-export async function readPublicRepository(repository: string) {
+export async function readPublicRepository(
+    repository: string,
+    token = candidateGitHubToken(),
+) {
     try {
         const info = repositoryResponse.parse(
-            await githubJson('/repos/' + repository, { redirect: 'manual' }),
+            await githubJson('/repos/' + repository, {
+                token,
+                redirect: 'manual',
+            }),
         )
         if (
             info.private ||
@@ -64,7 +71,8 @@ export async function verifyRepositoryClaim(
     sourceCommit?: string,
 ) {
     try {
-        const info = await readPublicRepository(claim.repository)
+        const token = candidateGitHubToken()
+        const info = await readPublicRepository(claim.repository, token)
         if (
             info.repositoryId !== claim.repositoryId ||
             info.ownerId !== claim.ownerId
@@ -75,6 +83,7 @@ export async function verifyRepositoryClaim(
         const proof = proofFile.safeParse(
             await githubJson(
                 '/repos/' + info.repository + '/contents/' + pipeline.proofPath,
+                { token },
             ),
         )
         if (
@@ -94,6 +103,7 @@ export async function verifyRepositoryClaim(
                             info.repository +
                             '/git/commits/' +
                             sourceCommit,
+                        { token },
                     ),
                 )
             if (infoAtCommit.sha !== sourceCommit)

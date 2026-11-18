@@ -26,7 +26,7 @@ import {
 import { assertRuntimeDatabaseRolePolicyService } from '@/server/Runtime/database-role-policy.service.ts'
 import { createWorkerShutdownService } from '@/server/Runtime/worker-shutdown.service.ts'
 import type { startMailWorker } from '@/server/Queues/mail.worker.ts'
-import { runCandidateValidationWorker } from '@/server/Marketplace/Submissions/validation.worker.ts'
+import { candidateGitHubToken } from '@/server/Marketplace/Submissions/github.service.ts'
 
 setRuntimeLogProcessService('worker')
 installStorageMutationBarrierFatalExitHandlerService()
@@ -128,10 +128,15 @@ async function startWorkers() {
     }
     if (shutdown.signal.aborted) return
 
-    candidateWorker = runCandidateValidationWorker(
-        shutdown.signal,
-        currentMailWorker.isRestoreQuiescenceActive,
-    )
+    if (candidateGitHubToken()) {
+        const { runCandidateValidationWorker } =
+            await import('@/server/Marketplace/Submissions/validation.worker.ts')
+        if (shutdown.signal.aborted) return
+        candidateWorker = runCandidateValidationWorker(
+            shutdown.signal,
+            currentMailWorker.isRestoreQuiescenceActive,
+        )
+    }
 
     logInfo('background_worker.started', {
         backupConcurrency: backupStarter.getWorker() ? 1 : 0,

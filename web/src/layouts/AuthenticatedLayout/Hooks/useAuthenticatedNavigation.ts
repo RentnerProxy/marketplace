@@ -54,11 +54,9 @@ export default function useAuthenticatedNavigation(
 
     const navigation = useMemo(() => {
         const visibleNavItems = getVisibleNavigationItems(
-            NAVBAR_ITEMS.filter(
-                (item: AuthenticatedNavItem) =>
-                    !item.requiresVerifiedDeveloper || canSubmitMarketplaceApps,
-            ),
+            NAVBAR_ITEMS,
             permissions,
+            canSubmitMarketplaceApps,
         )
 
         return {

@@ -4,11 +4,16 @@ import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
 export function getVisibleNavigationItems(
     navItems: Array<AuthenticatedNavItem>,
     permissions: Array<string>,
+    canSubmitMarketplaceApps = false,
 ): Array<AuthenticatedNavItem> {
     return navItems.flatMap((item) => {
+        if (item.requiresVerifiedDeveloper && !canSubmitMarketplaceApps) {
+            return []
+        }
         const visibleChildren = getVisibleNavigationItems(
             item.children ?? [],
             permissions,
+            canSubmitMarketplaceApps,
         )
         const canViewItem =
             !item.permission || hasPermission(permissions, item.permission)
