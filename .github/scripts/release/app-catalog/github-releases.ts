@@ -236,7 +236,7 @@ export function githubReleases(
         return assets
     }
 
-    async function verifyPublished(
+    async function verifyPublishedMetadata(
         expected: ReleaseIdentity,
         published: RemoteRelease,
     ) {
@@ -254,6 +254,13 @@ export function githubReleases(
             throw new Error(
                 'Published GitHub release is missing expected assets',
             )
+    }
+
+    async function verifyPublished(
+        expected: ReleaseIdentity,
+        published: RemoteRelease,
+    ) {
+        await verifyPublishedMetadata(expected, published)
         for (const asset of expected.assets.values()) {
             // eslint-disable-next-line no-await-in-loop -- keep archive downloads bounded in flight
             await verifyPublicBytes(http, asset)
@@ -286,7 +293,7 @@ export function githubReleases(
         await assertDistributionRepository()
         const state = await locateRelease(expected)
         if (state.status === 'published')
-            await verifyPublished(expected, state.release)
+            await verifyPublishedMetadata(expected, state.release)
         return state.status
     }
 

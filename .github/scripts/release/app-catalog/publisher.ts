@@ -246,7 +246,9 @@ export async function publishCatalogQueue(options: PublisherOptions) {
                 )
             observe(revision)
         }
-        if (recovery?.releaseState !== 'published') {
+        if (recovery?.releaseState === 'published') {
+            await distribution.verifyRelease(release)
+        } else {
             await options.withBundle(handoff, async (assets) => {
                 await authorize()
                 await distribution.ensureRelease(release, assets, authorize)

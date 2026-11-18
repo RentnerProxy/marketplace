@@ -392,6 +392,11 @@ export async function exerciseSubmissionLifecycle() {
         expect(approval.actorId).toBe(staff)
         expect(approval.candidate).toEqual(candidate)
         expect(approved.publication).toBeNull()
+        const firstPublisher = {
+            ...candidate.build,
+            workflowPath: catalogPublisherWorkflow,
+            runId: '7777',
+        }
         const decisionReason = approved.history.at(-1)?.reason
         if (!decisionReason) throw new Error('Expected a review reason')
         await expect(
@@ -434,7 +439,11 @@ export async function exerciseSubmissionLifecycle() {
         expect(blockedQueue.map(({ submissionId }) => submissionId)).toEqual(
             prefixIds,
         )
-        await Promise.all(blockedQueue.map(deferCatalogPublicationWorkService))
+        await Promise.all(
+            blockedQueue.map((item) =>
+                deferCatalogPublicationWorkService(item, firstPublisher),
+            ),
+        )
         expect(
             (await listCatalogPublicationWorkService()).map(
                 ({ submissionId }) => submissionId,
@@ -479,11 +488,7 @@ export async function exerciseSubmissionLifecycle() {
         ).toEqual(fixture.bundle)
         const firstAttempt = {
             ...publication,
-            run: {
-                ...candidate.build,
-                workflowPath: catalogPublisherWorkflow,
-                runId: '7777',
-            },
+            run: firstPublisher,
         }
         const interrupted = {
             ...publication,
@@ -510,6 +515,40 @@ export async function exerciseSubmissionLifecycle() {
             kind: 'recover',
             run: firstAttempt.run,
         })
+        const observedApproval = { ...publication, revision: approved.revision }
+        expect(authorized.revision).toBe(observedApproval.revision + 1)
+        await expect(
+            deferCatalogPublicationWorkService(
+                observedApproval,
+                interrupted.run,
+            ),
+        ).rejects.toThrow('submissionConflict')
+        await expect(
+            deferCatalogPublicationWorkService(observedApproval, {
+                ...firstPublisher,
+                attempt: firstPublisher.attempt + 1,
+            }),
+        ).rejects.toThrow('submissionConflict')
+        await expect(
+            deferCatalogPublicationWorkService(
+                {
+                    ...observedApproval,
+                    revision: observedApproval.revision - 1,
+                },
+                firstPublisher,
+            ),
+        ).rejects.toThrow('submissionConflict')
+        await expect(
+            deferCatalogPublicationWorkService(
+                observedApproval,
+                firstPublisher,
+            ),
+        ).resolves.toBe('publishing')
+        expect(
+            (await listCatalogPublicationWorkService()).some(
+                ({ submissionId }) => submissionId === first.id,
+            ),
+        ).toBe(false)
         const abortAttempt = {
             neverPromoted: true as const,
             previousRun: { runId: '7777', attempt: 1 },
@@ -717,7 +756,7 @@ export async function exerciseSubmissionLifecycle() {
         })
         const deferred = { ...stagedIdentity, revision: stagedRevision }
         await expect(
-            deferCatalogPublicationWorkService(deferred),
+            deferCatalogPublicationWorkService(deferred, firstPublisher),
         ).resolves.toBe('publishing')
         expect(
             (await listCatalogPublicationWorkService()).some(
@@ -735,7 +774,7 @@ export async function exerciseSubmissionLifecycle() {
         const stagedRevocation = stopped.revocation
         expect(stagedRevocation.reason).toBe('withdrawn')
         await expect(
-            deferCatalogPublicationWorkService(deferred),
+            deferCatalogPublicationWorkService(deferred, firstPublisher),
         ).rejects.toThrow('submissionConflict')
         expect(
             (await submissionDetailService(staged.id, owner)).revocationPending,

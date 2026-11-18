@@ -193,8 +193,11 @@ function publicationWorkIsDue(now: Date) {
 
 export async function deferCatalogPublicationWorkService(
     input: PublicationIdentity & { revision: number },
+    caller: Publication['run'],
 ) {
-    const { id, revision, approval, status } = marketplaceSubmissions
+    assertCatalogPublisherRun(caller)
+    const { id, revision, approval, status, publicationRun } =
+        marketplaceSubmissions
     const now = new Date()
     const [deferred] = await db
         .update(marketplaceSubmissions)
@@ -202,7 +205,15 @@ export async function deferCatalogPublicationWorkService(
         .where(
             and(
                 eq(id, input.submissionId),
-                eq(revision, input.revision),
+                or(
+                    eq(revision, input.revision),
+                    // The authorize response may be lost after committing this caller's claim.
+                    and(
+                        eq(status, 'publishing'),
+                        eq(revision, input.revision + 1),
+                        eq(publicationRun, caller),
+                    ),
+                ),
                 sql`(${approval}->>'revision')::integer = ${input.approvalRevision}`,
                 pendingPublicationWork(),
                 publicationWorkIsDue(now),

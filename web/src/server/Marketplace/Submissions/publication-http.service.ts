@@ -106,7 +106,10 @@ export async function handleCatalogPublicationRequest({
         switch (input.operation) {
             case 'defer':
                 return privateResponse({
-                    status: await deferCatalogPublicationWorkService(input),
+                    status: await deferCatalogPublicationWorkService(
+                        input,
+                        run,
+                    ),
                 })
             case 'authorizeDraftCleanup':
                 return privateResponse({

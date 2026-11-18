@@ -554,8 +554,6 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
         async inspectRelease(release) {
             if (!publicReleases.has(release.version))
                 return drafts.has(release.version) ? 'draft' : 'absent'
-            if (faults.verification)
-                throw new Error('Public release asset unavailable')
             return 'published'
         },
         async discardUnpublishedDraft(release, authorize) {
@@ -637,6 +635,7 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
                 if (faults.receipt) throw new Error('simulated lost receipt')
                 expect(publicReleases.has(release.version)).toBe(true)
                 expect(state.catalog.releases).toContainEqual(release)
+                expect(input.release).toEqual(release)
                 expect(work.run?.runId).toBe(
                     input.previousRun?.runId ?? currentRun.runId,
                 )
@@ -778,7 +777,7 @@ test('publisher refresh atomically rotates an expired installed root before ordi
     expect((await fixture.catalog()).revision).toBe(1)
 })
 
-test('signs a withdrawal of already immutable unstaged bytes despite another failing queue item', async () => {
+test('signs a withdrawal of an unlisted immutable release even when its CDN and another queue item fail', async () => {
     const fixture = await publicationFixture(['2.0.0', '1.0.0'])
     fixture.faults.bundleVersion = '2.0.0'
     fixture.faults.promotion = true
@@ -787,6 +786,7 @@ test('signs a withdrawal of already immutable unstaged bytes despite another fai
     )
     expect((await fixture.catalog()).releases).toEqual([])
     fixture.faults.promotion = false
+    fixture.faults.verification = true
     fixture.nextRun()
     const stopped = fixture.approvals[1]!
     const { appId, version } = stopped.approval.candidate.release
@@ -802,6 +802,26 @@ test('signs a withdrawal of already immutable unstaged bytes despite another fai
     )
     expect((await fixture.catalog()).revocations).toEqual([stopped.revocation])
     expect(fixture.events).toContain('confirmed:1.0.0')
+})
+
+test('verifies public bytes before recovering an approved release that is absent from the catalog', async () => {
+    const fixture = await publicationFixture(['1.0.0'])
+    fixture.faults.promotion = true
+    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+        'stale branch head',
+    )
+    fixture.faults.promotion = false
+    fixture.faults.verification = true
+    fixture.nextRun()
+    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+        'Public release asset unavailable',
+    )
+    expect((await fixture.catalog()).releases).toEqual([])
+    fixture.faults.verification = false
+    await publishCatalogQueue(fixture.options)
+    expect(
+        fixture.events.filter((entry) => !entry.startsWith('authorized:')),
+    ).toEqual(['release:1.0.0', 'verified:1.0.0', 'promoted', 'recorded:1.0.0'])
 })
 
 test('revokes a signed release after a lost receipt when its public package cannot be verified', async () => {

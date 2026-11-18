@@ -501,6 +501,7 @@ test('rejects mutable releases, mismatched anonymous bytes and redirects outside
 test('detects and verifies an immutable release during a repository settings outage', async () => {
     let releaseReads = 0
     let settingsReads = 0
+    let downloadsAvailable = false
     const downloads: string[] = []
     const fetcher = fixtureFetch((url, options) => {
         expect(options.method ?? 'GET').toBe('GET')
@@ -527,15 +528,24 @@ test('detects and verifies an immutable release during a repository settings out
         )
         if (!asset) throw new Error('Unexpected HTTP request')
         downloads.push(url.href)
-        return rawResponse(asset.bytes)
+        return downloadsAvailable
+            ? rawResponse(asset.bytes)
+            : new Response(null, { status: 503 })
     })
     const distribution = createDistribution(token, fetcher)
     expect(await distribution.inspectRelease(release)).toBe('published')
     expect(releaseReads).toBe(1)
+    expect(downloads).toEqual([])
+    await expect(distribution.verifyRelease(release)).rejects.toThrow(
+        'download returned HTTP 503',
+    )
+    expect(downloads.length).toBeGreaterThan(0)
+    downloads.length = 0
+    downloadsAvailable = true
+    await distribution.verifyRelease(release)
     expect(downloads).toEqual(
         assets.map(({ browser_download_url }) => browser_download_url),
     )
-    await distribution.verifyRelease(release)
     expect(settingsReads).toBe(0)
 })
 
