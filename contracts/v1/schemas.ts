@@ -6,7 +6,9 @@ import {
     revocation,
 } from './catalog.ts'
 import { httpComponents, httpPaths } from './http.ts'
+import { rpcLimits } from './http-operations.ts'
 import { appManifest } from './manifest.ts'
+import { jsonValue, platformApiSchemas } from './platform-api.ts'
 import { contractVersion, sourceIdentity } from './primitives.ts'
 import { providerSchemas } from './provider-api.ts'
 import { approval, candidate, publication } from './publication.ts'
@@ -17,12 +19,14 @@ import { operation, problem } from './wire.ts'
 export const protocolSchemas = {
     ...runtimeSchemas,
     ...providerSchemas,
+    ...platformApiSchemas,
     ...uiBridgeSchemas,
     Problem: problem,
     Operation: operation,
 }
 
 const schemas = {
+    JsonValue: jsonValue,
     SourceIdentity: sourceIdentity,
     AppManifest: appManifest,
     PackageArtifact: packageArtifact,
@@ -33,6 +37,28 @@ const schemas = {
     Approval: approval,
     Publication: publication,
     ...protocolSchemas,
+}
+
+const compatibility = {
+    requests: 'Versioned requests and closed package, approval, credential and bridge records reject unknown fields. Omitted optional fields are absent. Null is valid only where explicitly declared.',
+    responses: 'Readers tolerate additional fields only in open response schemas. Unknown discriminants, required capabilities and security-relevant values are rejected.',
+    encoding: 'JSON member names use camelCase. IDs, revisions and cursors are strings. Timestamps use UTC with milliseconds. Integers stay within the exact JSON range. Decoders must reject duplicate members.',
+    evolution: 'Within v1 preserve required fields, units, defaults and semantics. Add new optional response fields only to open shapes. Breaking wire changes require a new major version and negotiation before use.',
+    admission: 'Check payload bounds and authenticated identity before dispatch. Recheck current installation generation, user delegation, capability and resource scope at the platform boundary. Bound concurrent requests per installation.',
+    optionalMarketplace: 'Use separate bounded background requests and keep enrichment outside trusted catalog and installation decisions. Cache or omit enrichment if unavailable. Respect the advertised request size, page and deadline limits.',
+}
+
+const runtimeEvidence = {
+    profile: 'rentnerproxy-linux-v1',
+    platformCommit: '195bd9b66dec662c9bb81ca2b1a3a4f889f15f3f',
+    workflowRun: 'https://github.com/RentnerProxy/platform/actions/runs/44192659551',
+    bunVersion: '1.4.4',
+    highestReferencedGlibc: '2.17',
+    testedTargets: [
+        { target: 'linux-amd64', machine: 'x86_64', kernel: '7.0.0-1014-aws', libc: 'glibc 2.41', elfAbi: 'Linux 3.2.0' },
+        { target: 'linux-arm64', machine: 'aarch64', kernel: '7.0.0-1017-azure', libc: 'glibc 2.41', elfAbi: 'Linux 3.7.0' },
+    ],
+    description: 'Observed appliances verified both private sockets, generation revocation, frame-bound UI and signed local installation followed by offline startup. These measurements describe the exercised environments. Package admission checks the target and runtime profile on the actual appliance.',
 }
 
 export function buildContractDocuments() {
@@ -64,22 +90,20 @@ export function buildContractDocuments() {
             $ref: '#/$defs/Catalog',
             $defs: definitions,
             'x-rentnerproxy-protocol-documents': Object.keys(protocolSchemas),
+            'x-rentnerproxy-compatibility': compatibility,
         },
         'openapi.json': {
             openapi: '3.1.2',
             info: {
-                title: 'RentnerProxy App Protocol Preview',
+                title: 'RentnerProxy App Protocol',
                 version: contractVersion,
                 description:
-                    'Preview contract for native apps. HTTP uses the declared private Unix socket for each operation. Platform authorization is required at the runtime boundary. Package and publication records use the matching SDK for cross-record checks.',
+                    'Stable version 1 contract for native apps. HTTP uses the declared private Unix socket for each operation. The matching SDK verifies cross-record invariants. Platform authorization is required at the runtime boundary.',
             },
             paths: httpPaths,
-            'x-rentnerproxy-rpc-limits': {
-                maxJsonBytes: 1_048_576,
-                maxListEntries: 100,
-                defaultDeadlineMs: 10_000,
-                maxDeadlineMs: 30_000,
-            },
+            'x-rentnerproxy-rpc-limits': rpcLimits,
+            'x-rentnerproxy-compatibility': compatibility,
+            'x-rentnerproxy-runtime-evidence': runtimeEvidence,
             components: {
                 ...httpComponents,
                 schemas: Object.fromEntries(

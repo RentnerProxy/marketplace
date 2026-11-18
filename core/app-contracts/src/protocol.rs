@@ -67,6 +67,33 @@ impl ProtocolContracts {
         {
             return Err(ContractError::InvalidShape);
         }
+        let problem = match name {
+            "Problem" => Some(document),
+            "Operation" if document["status"] == "failed" => Some(&document["problem"]),
+            "ProviderResult"
+                if document["profile"] == "dns"
+                    && matches!(
+                        document["payload"]["action"].as_str(),
+                        Some("present" | "cleanup")
+                    )
+                    && document["payload"]["operation"]["status"] == "failed" =>
+            {
+                Some(&document["payload"]["operation"]["problem"])
+            }
+            "UiBridgeMessage"
+                if document["type"] == "apiResult"
+                    && document["result"]["ok"].as_bool() == Some(false) =>
+            {
+                Some(&document["result"]["problem"])
+            }
+            _ => None,
+        };
+        if let Some(problem) = problem
+            && string(&problem["type"]).strip_prefix("urn:rentnerproxy:problem:")
+                != Some(string(&problem["code"]))
+        {
+            return Err(ContractError::InvalidShape);
+        }
         Ok(())
     }
 }

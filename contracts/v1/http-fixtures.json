@@ -1,0 +1,278 @@
+{
+    "requests": [
+        {
+            "title": "readiness uses the app socket",
+            "operation": "getAppReadiness",
+            "options": {},
+            "expected": { "method": "GET", "socket": "app.sock", "path": "/app/v1/ready" }
+        },
+        {
+            "title": "authorization uses the core socket and a JSON body",
+            "operation": "checkAuthorization",
+            "options": {
+                "body": {
+                    "capability": { "id": "proxy.hosts.read.v1", "scope": "proxyHosts" },
+                    "resourceId": "host-1"
+                }
+            },
+            "expected": { "method": "POST", "socket": "core.sock", "path": "/platform/v1/authorization" }
+        },
+        {
+            "title": "authorization requires a body",
+            "operation": "checkAuthorization",
+            "options": {}
+        },
+        {
+            "title": "authorization validates the admitted body",
+            "operation": "checkAuthorization",
+            "options": { "body": { "resourceId": "host-1" } }
+        },
+        {
+            "title": "null is a body even on a bodyless request",
+            "operation": "getAppReadiness",
+            "options": { "body": null }
+        },
+        {
+            "title": "cancellation uses a validated path parameter and idempotency key",
+            "operation": "cancelOperation",
+            "options": { "pathParameter": "operation-1", "idempotencyKey": "cancel_1" },
+            "expected": { "method": "POST", "socket": "core.sock", "path": "/platform/v1/operations/operation-1/cancel" }
+        },
+        {
+            "title": "cancellation requires a path parameter",
+            "operation": "cancelOperation",
+            "options": { "idempotencyKey": "cancel_1" }
+        },
+        {
+            "title": "a path parameter cannot add URL syntax",
+            "operation": "cancelOperation",
+            "options": { "pathParameter": "%2Fother?x=1", "idempotencyKey": "cancel_1" }
+        },
+        {
+            "title": "a path parameter cannot be supplied to readiness",
+            "operation": "getAppReadiness",
+            "options": { "pathParameter": "operation-1" }
+        },
+        {
+            "title": "cancellation requires an idempotency key",
+            "operation": "cancelOperation",
+            "options": { "pathParameter": "operation-1" }
+        },
+        {
+            "title": "a line break is invalid in an idempotency key",
+            "operation": "cancelOperation",
+            "options": { "pathParameter": "operation-1", "idempotencyKey": "cancel_1\n" }
+        },
+        {
+            "title": "an idempotency key cannot be supplied to readiness",
+            "operation": "getAppReadiness",
+            "options": { "idempotencyKey": "readiness-1" }
+        },
+        {
+            "title": "an event subscription can start without a cursor",
+            "operation": "subscribeToEvents",
+            "options": {},
+            "expected": { "method": "GET", "socket": "core.sock", "path": "/platform/v1/events" }
+        },
+        {
+            "title": "an event subscription can resume with a cursor",
+            "operation": "subscribeToEvents",
+            "options": { "resumeCursor": "Cursor_01" },
+            "expected": { "method": "GET", "socket": "core.sock", "path": "/platform/v1/events" }
+        },
+        {
+            "title": "a supplied cursor must be nonempty",
+            "operation": "subscribeToEvents",
+            "options": { "resumeCursor": "" }
+        },
+        {
+            "title": "a resume cursor cannot be supplied to readiness",
+            "operation": "getAppReadiness",
+            "options": { "resumeCursor": "Cursor_01" }
+        },
+        {
+            "title": "owned host creation explicitly requires no existing revision",
+            "operation": "updateOwnedProxyHost",
+            "options": {
+                "idempotencyKey": "host-change-1",
+                "body": {
+                    "action": "upsert",
+                    "hostId": "host-1",
+                    "expectedRevision": null,
+                    "hostname": "app.example.net",
+                    "upstream": { "scheme": "https", "address": "192.0.2.1", "port": 8443 }
+                }
+            },
+            "expected": { "method": "POST", "socket": "core.sock", "path": "/platform/v1/proxy-hosts/owned" }
+        },
+        {
+            "title": "owned host removal requires a revision",
+            "operation": "updateOwnedProxyHost",
+            "options": {
+                "idempotencyKey": "host-change-1",
+                "body": { "action": "remove", "hostId": "host-1", "expectedRevision": null }
+            }
+        },
+        {
+            "title": "an app-owned operation accepts a nested JSON object",
+            "operation": "callAppApi",
+            "options": {
+                "pathParameter": "update-settings",
+                "idempotencyKey": "settings-1",
+                "body": { "items": [null, { "enabled": true, "count": 3 }] }
+            },
+            "expected": { "method": "POST", "socket": "app.sock", "path": "/app/v1/api/update-settings" }
+        },
+        {
+            "title": "an app-owned operation requires a JSON object at the top level",
+            "operation": "callAppApi",
+            "options": {
+                "pathParameter": "update-settings",
+                "idempotencyKey": "settings-1",
+                "body": [null, { "enabled": true, "count": 3 }]
+            }
+        }
+    ],
+    "responses": [
+        {
+            "title": "readiness accepts compatible metadata",
+            "operation": "getAppReadiness",
+            "status": 200,
+            "body": { "ready": true, "protocolVersion": "1.0.0", "providers": [], "metadata": { "label": "fixture" } },
+            "valid": true
+        },
+        {
+            "title": "readiness requires the declared JSON body",
+            "operation": "getAppReadiness",
+            "status": 200,
+            "valid": false
+        },
+        {
+            "title": "cancellation returns an operation at its declared success status",
+            "operation": "cancelOperation",
+            "status": 202,
+            "body": { "id": "operation-1", "status": "cancelling" },
+            "valid": true
+        },
+        {
+            "title": "cancellation rejects a different success status",
+            "operation": "cancelOperation",
+            "status": 200,
+            "body": { "id": "operation-1", "status": "cancelling" },
+            "valid": false
+        },
+        {
+            "title": "an activation success carries no body",
+            "operation": "activateApp",
+            "status": 204,
+            "valid": true
+        },
+        {
+            "title": "an activation success rejects a null body",
+            "operation": "activateApp",
+            "status": 204,
+            "body": null,
+            "valid": false
+        },
+        {
+            "title": "an event stream opens without a JSON body",
+            "operation": "subscribeToEvents",
+            "status": 200,
+            "valid": true
+        },
+        {
+            "title": "an event stream opening rejects a null body",
+            "operation": "subscribeToEvents",
+            "status": 200,
+            "body": null,
+            "valid": false
+        },
+        {
+            "title": "failure carries a matching problem status",
+            "operation": "subscribeToEvents",
+            "status": 410,
+            "body": {
+                "type": "urn:rentnerproxy:problem:cursorExpired",
+                "title": "The cursor expired",
+                "status": 410,
+                "code": "cursorExpired",
+                "requestId": "request-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "failure rejects a mismatched problem status",
+            "operation": "subscribeToEvents",
+            "status": 403,
+            "body": {
+                "type": "urn:rentnerproxy:problem:cursorExpired",
+                "title": "The cursor expired",
+                "status": 410,
+                "code": "cursorExpired",
+                "requestId": "request-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "failure rejects an absent problem",
+            "operation": "getAppReadiness",
+            "status": 503,
+            "valid": false
+        },
+        {
+            "title": "failure rejects a mismatched problem type and code",
+            "operation": "getAppReadiness",
+            "status": 503,
+            "body": {
+                "type": "urn:rentnerproxy:problem:unavailable",
+                "title": "The app is unavailable",
+                "status": 503,
+                "code": "unexpectedCode",
+                "requestId": "request-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "redirections are outside the operation contract",
+            "operation": "getAppReadiness",
+            "status": 302,
+            "valid": false
+        }
+    ],
+    "events": [
+        {
+            "title": "a decoded event validates against its own schema",
+            "operation": "subscribeToEvents",
+            "body": {
+                "id": "event-1",
+                "cursor": "Cursor_01",
+                "type": "proxyHostChanged",
+                "occurredAt": "2026-11-17T10:00:00.000Z",
+                "resourceId": "host-1",
+                "revision": "revision-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "an event requires its resume cursor",
+            "operation": "subscribeToEvents",
+            "body": {
+                "id": "event-1",
+                "type": "proxyHostChanged",
+                "occurredAt": "2026-11-17T10:00:00.000Z"
+            },
+            "valid": false
+        },
+        {
+            "title": "a nonstreaming operation cannot validate events",
+            "operation": "getAppReadiness",
+            "body": {
+                "id": "event-1",
+                "cursor": "Cursor_01",
+                "type": "proxyHostChanged",
+                "occurredAt": "2026-11-17T10:00:00.000Z"
+            },
+            "valid": false
+        }
+    ]
+}

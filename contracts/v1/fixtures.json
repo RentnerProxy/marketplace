@@ -67,6 +67,14 @@
             "processLimit": 4
         }
     },
+    "environment": {
+        "target": "linux-amd64",
+        "runtimeProfile": "rentnerproxy-linux-v1",
+        "platformApi": "1.0.0",
+        "appProtocol": "1.0.0",
+        "uiBridge": "1.0.0",
+        "engineCapabilities": []
+    },
     "profiles": [
         {
             "profile": "monitoring",
@@ -264,6 +272,18 @@
         }
     },
     "published": {
+        "iconSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "iconSizeBytes": 512,
+        "sbom": {
+            "url": "https://github.com/RentnerProxy/app-catalog/releases/download/rentnerproxy.monitoring-v0.1.0-beta.1/rentnerproxy.monitoring-0.1.0-beta.1-linux-arm64.tar.zst.sbom.json",
+            "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+            "sizeBytes": 2048
+        },
+        "provenance": {
+            "url": "https://github.com/RentnerProxy/app-catalog/releases/download/rentnerproxy.monitoring-v0.1.0-beta.1/rentnerproxy.monitoring-0.1.0-beta.1-linux-arm64.tar.zst.provenance.json",
+            "sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+            "sizeBytes": 1024
+        },
         "downloadUrl": "https://github.com/RentnerProxy/app-catalog/releases/download/rentnerproxy.monitoring-v0.1.0-beta.1/rentnerproxy.monitoring-0.1.0-beta.1-linux-arm64.tar.zst",
         "iconPath": "assets/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.webp",
         "archiveSha256": "5555555555555555555555555555555555555555555555555555555555555555",
@@ -271,6 +291,203 @@
         "manifestSha256": "6666666666666666666666666666666666666666666666666666666666666666"
     },
     "cases": [
+        {
+            "name": "future minor requirements are structurally valid",
+            "check": "manifest",
+            "path": "/manifest/requires/appProtocol",
+            "value": ">=1.1.0 <2.0.0"
+        },
+        {
+            "name": "installed protocol must meet the minimum",
+            "check": "compatibility",
+            "path": "/manifest/requires/appProtocol",
+            "value": ">=1.1.0 <2.0.0",
+            "error": "incompatibleManifest"
+        },
+        {
+            "name": "installed protocol may match the inclusive minimum",
+            "check": "compatibility",
+            "path": "/manifest/requires/appProtocol",
+            "value": ">=1.1.0 <2.0.0",
+            "also": [
+                {
+                    "path": "/environment/appProtocol",
+                    "value": "1.1.0"
+                }
+            ]
+        },
+        {
+            "name": "installed protocol may not match the exclusive maximum",
+            "check": "compatibility",
+            "path": "/environment/uiBridge",
+            "value": "1.4.0",
+            "error": "incompatibleManifest"
+        },
+        {
+            "name": "installed protocol must have a concrete supported version",
+            "check": "compatibility",
+            "path": "/environment/appProtocol",
+            "value": "1.00.0",
+            "error": "incompatibleManifest"
+        },
+        {
+            "name": "required UI bridge must be available",
+            "check": "compatibility",
+            "path": "/environment/uiBridge",
+            "remove": true,
+            "error": "incompatibleManifest"
+        },
+        {
+            "name": "install target must match the package",
+            "check": "compatibility",
+            "path": "/environment/target",
+            "value": "linux-arm64",
+            "error": "incompatibleManifest"
+        },
+        {
+            "name": "local runtime must match the required profile",
+            "check": "compatibility",
+            "path": "/environment/runtimeProfile",
+            "value": "rentnerproxy-linux-v2",
+            "error": "incompatibleManifest"
+        },
+        {
+            "name": "required engine capabilities must be available",
+            "check": "compatibility",
+            "path": "/manifest/requires/engineCapabilities",
+            "value": [
+                "caddy.load-balancing.v1"
+            ],
+            "error": "incompatibleManifest"
+        },
+        {
+            "name": "approval fails after the source repository changes consistently",
+            "check": "approval",
+            "path": "/candidate/source/repositoryId",
+            "value": "8001235",
+            "error": "approvalMismatch",
+            "also": [
+                {
+                    "path": "/candidate/release/source/repositoryId",
+                    "value": "8001235"
+                },
+                {
+                    "path": "/candidate/release/packages/0/manifest/source/repositoryId",
+                    "value": "8001235"
+                },
+                {
+                    "path": "/candidate/release/packages/1/manifest/source/repositoryId",
+                    "value": "8001235"
+                }
+            ]
+        },
+        {
+            "name": "approval fails after the source commit changes consistently",
+            "check": "approval",
+            "path": "/candidate/source/commit",
+            "value": "dddddddddddddddddddddddddddddddddddddddd",
+            "error": "approvalMismatch",
+            "also": [
+                {
+                    "path": "/candidate/release/source/commit",
+                    "value": "dddddddddddddddddddddddddddddddddddddddd"
+                },
+                {
+                    "path": "/candidate/release/packages/0/manifest/source/commit",
+                    "value": "dddddddddddddddddddddddddddddddddddddddd"
+                },
+                {
+                    "path": "/candidate/release/packages/1/manifest/source/commit",
+                    "value": "dddddddddddddddddddddddddddddddddddddddd"
+                }
+            ]
+        },
+        {
+            "name": "approval fails after the app and publisher identities change consistently",
+            "check": "approval",
+            "path": "/candidate/release/appId",
+            "value": "other.monitoring",
+            "error": "approvalMismatch",
+            "also": [
+                {
+                    "path": "/candidate/release/publisher/namespace",
+                    "value": "other"
+                },
+                {
+                    "path": "/candidate/release/packages/0/manifest/id",
+                    "value": "other.monitoring"
+                },
+                {
+                    "path": "/candidate/release/packages/1/manifest/id",
+                    "value": "other.monitoring"
+                }
+            ]
+        },
+        {
+            "name": "approval fails after the publisher display name changes",
+            "check": "approval",
+            "path": "/candidate/release/publisher/name",
+            "value": "Example Publisher",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after the release version changes consistently",
+            "check": "approval",
+            "path": "/candidate/release/version",
+            "value": "0.1.1",
+            "error": "approvalMismatch",
+            "also": [
+                {
+                    "path": "/candidate/release/packages/0/manifest/version",
+                    "value": "0.1.1"
+                },
+                {
+                    "path": "/candidate/release/packages/1/manifest/version",
+                    "value": "0.1.1"
+                }
+            ]
+        },
+        {
+            "name": "approval fails after the package architectures are swapped",
+            "check": "approval",
+            "path": "/candidate/release/packages/0/manifest/target",
+            "value": "linux-arm64",
+            "error": "approvalMismatch",
+            "also": [
+                {
+                    "path": "/candidate/release/packages/1/manifest/target",
+                    "value": "linux-amd64"
+                }
+            ]
+        },
+        {
+            "name": "approval fails after the validation report length changes",
+            "check": "approval",
+            "path": "/candidate/evidence/report/sizeBytes",
+            "value": 4097,
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after the build run changes",
+            "check": "approval",
+            "path": "/candidate/build/runId",
+            "value": "900880143",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after the SBOM changes",
+            "check": "approval",
+            "path": "/candidate/release/packages/0/sbom/sha256",
+            "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "error": "approvalMismatch"
+        },
+        {
+            "name": "approval fails after the provenance length changes",
+            "check": "approval",
+            "path": "/candidate/release/packages/1/provenance/sizeBytes",
+            "value": 1025,
+            "error": "approvalMismatch"
+        },
         {
             "name": "unknown format version",
             "check": "manifest",

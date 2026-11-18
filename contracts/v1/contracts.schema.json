@@ -1,10 +1,41 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:rentnerproxy:app-contracts:1.0.0-alpha.2",
+    "$id": "urn:rentnerproxy:app-contracts:1.0.0",
     "title": "RentnerProxy App Contracts",
     "description": "Enable JSON Schema format assertions when validating these documents. The SDK validates formats including IP addresses and timestamps.",
     "$ref": "#/$defs/Catalog",
     "$defs": {
+        "JsonValue": {
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "boolean"
+                },
+                {
+                    "type": "null"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/JsonValue"
+                    }
+                },
+                {
+                    "type": "object",
+                    "propertyNames": {
+                        "type": "string"
+                    },
+                    "additionalProperties": {
+                        "$ref": "#/$defs/JsonValue"
+                    }
+                }
+            ]
+        },
         "SourceIdentity": {
             "type": "object",
             "properties": {
@@ -2497,6 +2528,305 @@
                 }
             ]
         },
+        "AppApiPayload": {
+            "type": "object",
+            "propertyNames": {
+                "type": "string"
+            },
+            "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+            },
+            "description": "A bounded JSON object. The gateway and app validate its content against the installed operation schema."
+        },
+        "ProxyHostQuery": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "cursor": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                }
+            },
+            "required": [
+                "limit"
+            ],
+            "additionalProperties": false
+        },
+        "ProxyHostPage": {
+            "type": "object",
+            "properties": {
+                "hosts": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "$ref": "#/$defs/RecordId"
+                            },
+                            "revision": {
+                                "$ref": "#/$defs/RecordId"
+                            },
+                            "hostname": {
+                                "type": "string",
+                                "maxLength": 253,
+                                "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                                "description": "Lowercase ASCII hostname. Encode international names as A-labels."
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "revision",
+                            "hostname"
+                        ],
+                        "additionalProperties": {}
+                    }
+                },
+                "nextCursor": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,256}$"
+                }
+            },
+            "required": [
+                "hosts"
+            ],
+            "additionalProperties": {}
+        },
+        "OwnedProxyHostChange": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "const": "upsert"
+                        },
+                        "hostId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "expectedRevision": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/$defs/RecordId"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Null requires that the host does not yet exist."
+                        },
+                        "hostname": {
+                            "type": "string",
+                            "maxLength": 253,
+                            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                            "description": "Lowercase ASCII hostname. Encode international names as A-labels."
+                        },
+                        "upstream": {
+                            "type": "object",
+                            "properties": {
+                                "scheme": {
+                                    "type": "string",
+                                    "enum": [
+                                        "http",
+                                        "https"
+                                    ]
+                                },
+                                "address": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string",
+                                            "format": "ipv4",
+                                            "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+                                        },
+                                        {
+                                            "type": "string",
+                                            "format": "ipv6"
+                                        },
+                                        {
+                                            "type": "string",
+                                            "maxLength": 253,
+                                            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                                            "description": "Lowercase ASCII hostname. Encode international names as A-labels."
+                                        }
+                                    ]
+                                },
+                                "port": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                }
+                            },
+                            "required": [
+                                "scheme",
+                                "address",
+                                "port"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "action",
+                        "hostId",
+                        "expectedRevision",
+                        "hostname",
+                        "upstream"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "const": "remove"
+                        },
+                        "hostId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "expectedRevision": {
+                            "$ref": "#/$defs/RecordId"
+                        }
+                    },
+                    "required": [
+                        "action",
+                        "hostId",
+                        "expectedRevision"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "UpstreamProbe": {
+            "type": "object",
+            "properties": {
+                "hostId": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "timeoutMs": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                }
+            },
+            "required": [
+                "hostId",
+                "timeoutMs"
+            ],
+            "additionalProperties": false
+        },
+        "UpstreamProbeResult": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "outcome": {
+                            "type": "string",
+                            "const": "reachable"
+                        },
+                        "durationMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10000
+                        }
+                    },
+                    "required": [
+                        "outcome",
+                        "durationMs"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "outcome": {
+                            "type": "string",
+                            "enum": [
+                                "unreachable",
+                                "timedOut"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "outcome"
+                    ],
+                    "additionalProperties": {}
+                }
+            ]
+        },
+        "AppNotification": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "severity": {
+                    "type": "string",
+                    "enum": [
+                        "info",
+                        "warning",
+                        "error"
+                    ]
+                },
+                "title": {
+                    "type": "string",
+                    "pattern": "^[^\\p{Cc}\\p{Cs}]{1,80}$"
+                },
+                "message": {
+                    "type": "string",
+                    "pattern": "^[^\\p{Cc}\\p{Cs}]{1,400}$"
+                }
+            },
+            "required": [
+                "category",
+                "severity",
+                "title",
+                "message"
+            ],
+            "additionalProperties": false
+        },
+        "AppAuditEvent": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "$ref": "#/$defs/RecordId"
+                },
+                "outcome": {
+                    "type": "string",
+                    "enum": [
+                        "succeeded",
+                        "rejected",
+                        "failed"
+                    ]
+                },
+                "resourceId": {
+                    "$ref": "#/$defs/RecordId"
+                }
+            },
+            "required": [
+                "action",
+                "outcome"
+            ],
+            "additionalProperties": false
+        },
+        "AppSecret": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 16384
+                }
+            },
+            "required": [
+                "value"
+            ],
+            "additionalProperties": false,
+            "description": "Return only to the authorized backend. Keep secret values out of logs and browser messages."
+        },
         "UiBridgeMessage": {
             "oneOf": [
                 {
@@ -2664,6 +2994,195 @@
                     ],
                     "additionalProperties": false,
                     "description": "The iframe requests a host route on the active session port."
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "dialog"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "requestId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "dialogId": {
+                            "description": "A dialog declared by the installed app. The host controls rendering and focus.",
+                            "$ref": "#/$defs/RecordId"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "installId",
+                        "installationGeneration",
+                        "generation",
+                        "requestId",
+                        "dialogId"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "dialogResult"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "requestId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "outcome": {
+                            "type": "string",
+                            "enum": [
+                                "confirmed",
+                                "cancelled"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "installId",
+                        "installationGeneration",
+                        "generation",
+                        "requestId",
+                        "outcome"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "apiRequest"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "requestId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "operationId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "idempotencyKey": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "payload": {
+                            "$ref": "#/$defs/AppApiPayload"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "installId",
+                        "installationGeneration",
+                        "generation",
+                        "requestId",
+                        "operationId",
+                        "idempotencyKey",
+                        "payload"
+                    ],
+                    "additionalProperties": false,
+                    "description": "Only call a declared operation through the authenticated app gateway with current permissions."
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "const": "apiResult"
+                        },
+                        "installId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "installationGeneration": {
+                            "description": "Installation generation assigned by the native manager.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "generation": {
+                            "description": "Session channel generation. Each bootstrap increases it within the frame.",
+                            "$ref": "#/$defs/Generation"
+                        },
+                        "requestId": {
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "result": {
+                            "oneOf": [
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean",
+                                            "const": true
+                                        },
+                                        "payload": {
+                                            "$ref": "#/$defs/AppApiPayload"
+                                        }
+                                    },
+                                    "required": [
+                                        "ok",
+                                        "payload"
+                                    ],
+                                    "additionalProperties": false
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean",
+                                            "const": false
+                                        },
+                                        "problem": {
+                                            "$ref": "#/$defs/Problem"
+                                        }
+                                    },
+                                    "required": [
+                                        "ok",
+                                        "problem"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "installId",
+                        "installationGeneration",
+                        "generation",
+                        "requestId",
+                        "result"
+                    ],
+                    "additionalProperties": false
                 }
             ],
             "description": "Check the transfer count and ports outside payload validation. Require the active session port and matching install ID, installation generation, and channel generation for session messages. Close replaced session ports and revoke both ports when the document or installation binding expires. Protected resource actions require the current installation generation and authorization through the authenticated gateway."
@@ -2701,7 +3220,7 @@
                 "requestId"
             ],
             "additionalProperties": false,
-            "description": "RFC 9457 problem with stable machine code and no private error details."
+            "description": "RFC 9457 problem with a stable machine code and no private error details. The type URN suffix equals code; on HTTP the status also equals the status line."
         },
         "Operation": {
             "oneOf": [
@@ -2720,13 +3239,16 @@
                                 "cancelled",
                                 "succeeded"
                             ]
+                        },
+                        "problem": {
+                            "not": {}
                         }
                     },
                     "required": [
                         "id",
                         "status"
                     ],
-                    "additionalProperties": false
+                    "additionalProperties": {}
                 },
                 {
                     "type": "object",
@@ -2747,7 +3269,7 @@
                         "status",
                         "problem"
                     ],
-                    "additionalProperties": false
+                    "additionalProperties": {}
                 }
             ],
             "description": "Accepted work has a durable operation ID. Cancellation is an operation request. A disconnect or timeout does not confirm cancellation or rollback."
@@ -2767,8 +3289,25 @@
         "ProviderRegistration",
         "ProviderRequest",
         "ProviderResult",
+        "AppApiPayload",
+        "ProxyHostQuery",
+        "ProxyHostPage",
+        "OwnedProxyHostChange",
+        "UpstreamProbe",
+        "UpstreamProbeResult",
+        "AppNotification",
+        "AppAuditEvent",
+        "AppSecret",
         "UiBridgeMessage",
         "Problem",
         "Operation"
-    ]
+    ],
+    "x-rentnerproxy-compatibility": {
+        "requests": "Versioned requests and closed package, approval, credential and bridge records reject unknown fields. Omitted optional fields are absent. Null is valid only where explicitly declared.",
+        "responses": "Readers tolerate additional fields only in open response schemas. Unknown discriminants, required capabilities and security-relevant values are rejected.",
+        "encoding": "JSON member names use camelCase. IDs, revisions and cursors are strings. Timestamps use UTC with milliseconds. Integers stay within the exact JSON range. Decoders must reject duplicate members.",
+        "evolution": "Within v1 preserve required fields, units, defaults and semantics. Add new optional response fields only to open shapes. Breaking wire changes require a new major version and negotiation before use.",
+        "admission": "Check payload bounds and authenticated identity before dispatch. Recheck current installation generation, user delegation, capability and resource scope at the platform boundary. Bound concurrent requests per installation.",
+        "optionalMarketplace": "Use separate bounded background requests and keep enrichment outside trusted catalog and installation decisions. Cache or omit enrichment if unavailable. Respect the advertised request size, page and deadline limits."
+    }
 }

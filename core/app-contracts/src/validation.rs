@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use serde_json::Value;
 
-use crate::ContractError;
+use crate::{ContractError, ManifestEnvironment};
 
 // Internal accessors run only after the bundled schema has accepted the value.
 pub(super) fn string(value: &Value) -> &str {
@@ -19,16 +19,42 @@ pub(super) fn integer(value: &Value) -> u64 {
     value.as_f64().expect("validated integer") as u64
 }
 
-fn ordered_range(range: &Value) -> bool {
-    fn version_number(version: &str) -> u64 {
-        version.split('.').fold(0, |value, part| {
-            value * 1_000_000 + part.parse::<u64>().expect("validated version component")
-        })
-    }
+fn version_number(version: &str) -> u64 {
+    version.split('.').fold(0, |value, part| {
+        value * 1_000_000 + part.parse::<u64>().expect("validated version component")
+    })
+}
+
+fn range_bounds(range: &Value) -> (u64, u64) {
     let (minimum, maximum) = string(range)[2..]
         .split_once(" <")
         .expect("validated range");
-    version_number(minimum) < version_number(maximum)
+    (version_number(minimum), version_number(maximum))
+}
+
+fn ordered_range(range: &Value) -> bool {
+    let (minimum, maximum) = range_bounds(range);
+    minimum < maximum
+}
+
+fn supports_protocol(range: &Value, available: &str) -> bool {
+    fn valid_component(part: &str) -> bool {
+        !part.is_empty()
+            && part.len() <= 6
+            && (part == "0" || !part.starts_with('0'))
+            && part.bytes().all(|byte| byte.is_ascii_digit())
+    }
+    let Some((minor, patch)) = available
+        .strip_prefix("1.")
+        .and_then(|version| version.split_once('.'))
+    else {
+        return false;
+    };
+    if !valid_component(minor) || !valid_component(patch) {
+        return false;
+    }
+    let (minimum, maximum) = range_bounds(range);
+    (minimum..maximum).contains(&version_number(available))
 }
 
 pub(super) fn unique_strings<'a>(mut values: impl Iterator<Item = &'a str>) -> bool {
@@ -93,6 +119,33 @@ pub(super) fn validate_manifest(manifest: &Value) -> Result<(), ContractError> {
             .is_some_and(|data| !valid_data_versions(data))
     {
         return Err(ContractError::InvalidManifest);
+    }
+    Ok(())
+}
+
+pub(super) fn check_manifest_compatibility(
+    manifest: &Value,
+    environment: &ManifestEnvironment<'_>,
+) -> Result<(), ContractError> {
+    let requires = &manifest["requires"];
+    if manifest["target"] != environment.target
+        || requires["runtimeProfile"] != environment.runtime_profile
+        || !supports_protocol(&requires["platformApi"], environment.platform_api)
+        || !supports_protocol(&requires["appProtocol"], environment.app_protocol)
+        || requires.get("uiBridge").is_some_and(|range| {
+            !environment
+                .ui_bridge
+                .is_some_and(|version| supports_protocol(range, version))
+        })
+        || array(&requires["engineCapabilities"])
+            .iter()
+            .any(|capability| {
+                !environment
+                    .engine_capabilities
+                    .contains(&string(capability))
+            })
+    {
+        return Err(ContractError::IncompatibleManifest);
     }
     Ok(())
 }

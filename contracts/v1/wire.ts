@@ -11,13 +11,14 @@ export const problem = z
         code: z.string().regex(/^[a-z][a-zA-Z0-9]{0,63}$/),
         requestId: recordId,
     })
+    .refine(({ type, code }) => type === 'urn:rentnerproxy:problem:' + code)
     .describe(
-        'RFC 9457 problem with stable machine code and no private error details.',
+        'RFC 9457 problem with a stable machine code and no private error details. The type URN suffix equals code; on HTTP the status also equals the status line.',
     )
 
 export const operation = z
     .discriminatedUnion('status', [
-        z.strictObject({
+        z.looseObject({
             id: recordId,
             status: z.enum([
                 'accepted',
@@ -26,8 +27,9 @@ export const operation = z
                 'cancelled',
                 'succeeded',
             ]),
+            problem: z.never().optional(),
         }),
-        z.strictObject({ id: recordId, status: z.literal('failed'), problem }),
+        z.looseObject({ id: recordId, status: z.literal('failed'), problem }),
     ])
     .describe(
         'Accepted work has a durable operation ID. Cancellation is an operation request. A disconnect or timeout does not confirm cancellation or rollback.',

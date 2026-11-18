@@ -35,16 +35,20 @@ jobs:
             - run: bun --no-env-file run lint
             - run: bun --no-env-file run test
             - run: bun --no-env-file run build
-            - name: Archive the preview contract and SDK sources
+            - name: Build and verify the app contract SDK packages
+              if: github.workflow == 'CI' && (github.event_name == 'pull_request' || github.event_name == 'push')
+              id: app_contracts
+              env:
+                  RUSTUP_TOOLCHAIN: ${{ env.RUST_VERSION }}
+              run: |
+                  rustup toolchain install "$RUST_VERSION" --profile minimal
+                  bun --no-env-file .github/scripts/ci/package-app-contracts.ts "$RUNNER_TEMP/app-contracts" "$GITHUB_SHA"
+            - name: Upload the verified app contract packages
               if: github.workflow == 'CI' && (github.event_name == 'pull_request' || github.event_name == 'push')
               uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
               with:
-                  name: app-contracts-${{ github.sha }}
-                  path: |
-                      LICENSE
-                      contracts/v1/
-                      core/app-contracts/Cargo.toml
-                      core/app-contracts/src/
+                  name: app-contracts-${{ steps.app_contracts.outputs.version }}-${{ github.sha }}
+                  path: ${{ runner.temp }}/app-contracts/
                   if-no-files-found: error
                   retention-days: 14
     rust:
