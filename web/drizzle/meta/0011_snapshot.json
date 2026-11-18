@@ -1,5 +1,5 @@
 {
-  "id": "97ef6fa0-5b6c-4835-a91d-95f889398f0e",
+  "id": "44cf1333-30df-4c7f-8673-5795d60a4887",
   "prevId": "b00da219-8cef-4bb9-81e3-c0f6cc43f292",
   "version": "7",
   "dialect": "postgresql",
@@ -621,18 +621,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "isActive": {
-          "name": "isActive",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
         "invitedByUserId": {
           "name": "invitedByUserId",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "permissionKeys": {
           "name": "permissionKeys",
@@ -715,7 +708,7 @@
           "columnsTo": [
             "userId"
           ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -2559,6 +2552,389 @@
         "backup_settings_retention_count_check": {
           "name": "backup_settings_retention_count_check",
           "value": "\"marketplace\".\"backup_settings\".\"retentionCount\" between 1 and 1000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "marketplace.marketplace_official_apps": {
+      "name": "marketplace_official_apps",
+      "schema": "marketplace",
+      "columns": {
+        "app_id": {
+          "name": "app_id",
+          "type": "varchar(97)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "claim_id": {
+          "name": "claim_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "marketplace_official_apps_claim_id_marketplace_repository_claims_id_fk": {
+          "name": "marketplace_official_apps_claim_id_marketplace_repository_claims_id_fk",
+          "tableFrom": "marketplace_official_apps",
+          "tableTo": "marketplace_repository_claims",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "claim_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.marketplace_repository_claims": {
+      "name": "marketplace_repository_claims",
+      "schema": "marketplace",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "submitter_id": {
+          "name": "submitter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repository": {
+          "name": "repository",
+          "type": "varchar(140)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "repository_id": {
+          "name": "repository_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "marketplace_repository_claim_identity_idx": {
+          "name": "marketplace_repository_claim_identity_idx",
+          "columns": [
+            {
+              "expression": "submitter_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "repository_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "repository",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "marketplace.marketplace_submissions": {
+      "name": "marketplace_submissions",
+      "schema": "marketplace",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "submitter_id": {
+          "name": "submitter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claim_id": {
+          "name": "claim_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "namespace_revision": {
+          "name": "namespace_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "app_id": {
+          "name": "app_id",
+          "type": "varchar(97)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request": {
+          "name": "request",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "history": {
+          "name": "history",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "next_check_at": {
+          "name": "next_check_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dispatch_requested_at": {
+          "name": "dispatch_requested_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "build_key": {
+          "name": "build_key",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "build_run_id": {
+          "name": "build_run_id",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "validation": {
+          "name": "validation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approval": {
+          "name": "approval",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "publication_run": {
+          "name": "publication_run",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "publication": {
+          "name": "publication",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "marketplace_submission_active_version_idx": {
+          "name": "marketplace_submission_active_version_idx",
+          "columns": [
+            {
+              "expression": "app_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"marketplace\".\"marketplace_submissions\".\"status\" in (\n                'submitted', 'validating', 'awaitingReview', 'approved',\n                'publishing', 'published', 'revoked'\n            ) or \"marketplace\".\"marketplace_submissions\".\"publication_run\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "marketplace_submission_build_run_idx": {
+          "name": "marketplace_submission_build_run_idx",
+          "columns": [
+            {
+              "expression": "build_run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "marketplace_submission_build_key_idx": {
+          "name": "marketplace_submission_build_key_idx",
+          "columns": [
+            {
+              "expression": "build_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "marketplace_submission_due_idx": {
+          "name": "marketplace_submission_due_idx",
+          "columns": [
+            {
+              "expression": "next_check_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"marketplace\".\"marketplace_submissions\".\"next_check_at\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "marketplace_submission_owner_idx": {
+          "name": "marketplace_submission_owner_idx",
+          "columns": [
+            {
+              "expression": "submitter_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "marketplace_submission_history_idx": {
+          "name": "marketplace_submission_history_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "marketplace_submissions_claim_id_marketplace_repository_claims_id_fk": {
+          "name": "marketplace_submissions_claim_id_marketplace_repository_claims_id_fk",
+          "tableFrom": "marketplace_submissions",
+          "tableTo": "marketplace_repository_claims",
+          "schemaTo": "marketplace",
+          "columnsFrom": [
+            "claim_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "marketplace_submission_status_check": {
+          "name": "marketplace_submission_status_check",
+          "value": "\"marketplace\".\"marketplace_submissions\".\"status\" in (\n            'submitted', 'validating', 'awaitingReview', 'approved', 'publishing',\n            'published', 'rejected', 'failed', 'withdrawn', 'revoked'\n        )"
         }
       },
       "isRLSEnabled": false

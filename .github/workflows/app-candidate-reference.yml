@@ -5,6 +5,8 @@ on:
         paths:
             - '.github/workflows/app-candidate*.yml'
             - '.github/scripts/ci/app-candidates/**'
+            - 'web/src/lib/Marketplace/**'
+            - web/src/config/submissions.config.ts
             - '.github/scripts/ci/fixtures/app-candidate/**'
             - .github/scripts/security/install-trivy.sh
             - 'contracts/v1/**'
@@ -17,6 +19,8 @@ on:
         paths:
             - '.github/workflows/app-candidate*.yml'
             - '.github/scripts/ci/app-candidates/**'
+            - 'web/src/lib/Marketplace/**'
+            - web/src/config/submissions.config.ts
             - '.github/scripts/ci/fixtures/app-candidate/**'
             - .github/scripts/security/install-trivy.sh
             - 'contracts/v1/**'

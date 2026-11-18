@@ -21,4 +21,6 @@ export const ROUTE_PERMISSIONS = {
     '/user/dashboard': PERMISSIONS.USER_DASHBOARD,
     '/admin/audit-logs': PERMISSIONS.ADMIN_AUDIT_LOGS,
     '/admin/backups': PERMISSIONS.ADMIN_BACKUPS,
+    '/admin/app-reviews': PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+    '/admin/app-namespaces': PERMISSIONS.ADMIN_MARKETPLACE_NAMESPACE,
 }

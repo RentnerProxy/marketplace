@@ -1,5 +1,9 @@
 import { join } from 'node:path'
 import {
+    byteIdentity,
+    jsonBytes,
+} from '../../../../web/src/lib/Marketplace/evidenceIdentity.ts'
+import {
     parseAppManifest,
     parseCandidate,
     type AppManifest,
@@ -7,12 +11,10 @@ import {
 import { sha256 } from '../../../../contracts/v1/primitives.ts'
 import {
     assertDirectory,
-    byteIdentity,
     checkDirectory,
     copyAsset,
     evidenceLimit,
     fileIdentity,
-    jsonBytes,
     metadataLimit,
     packageLimit,
     prepareOutput,
@@ -41,9 +43,12 @@ import {
     type Purpose,
     type TargetExpectation,
     type TargetRecord,
-} from './evidence-records.ts'
+} from '../../../../web/src/lib/Marketplace/candidateEvidence.ts'
 
-export type { BuildIdentity, Purpose } from './evidence-records.ts'
+export type {
+    BuildIdentity,
+    Purpose,
+} from '../../../../web/src/lib/Marketplace/candidateEvidence.ts'
 
 function assetsFor(record: TargetRecord) {
     const names = assetNames(record.package.manifest)

@@ -12,6 +12,10 @@ fn scrubbed_environment_cannot_inherit_runtime_injection_or_other_credentials() 
         ("NODE_OPTIONS".into(), "--require=bad".into()),
         ("BUN_OPTIONS".into(), "--preload=bad".into()),
         ("UNRELATED_SECRET".into(), "secret".into()),
+        (
+            "MARKETPLACE_CANDIDATE_GITHUB_TOKEN".into(),
+            "synthetic-actions-token".into(),
+        ),
     ]);
     let env = create_environment(&input, true).unwrap();
     assert_eq!(env["POSTGRES_PASSWORD"], input["POSTGRES_PASSWORD"]);
@@ -19,6 +23,7 @@ fn scrubbed_environment_cannot_inherit_runtime_injection_or_other_credentials() 
     assert!(!env.contains_key("NODE_OPTIONS"));
     assert!(!env.contains_key("BUN_OPTIONS"));
     assert!(!env.contains_key("UNRELATED_SECRET"));
+    assert!(!env.contains_key("MARKETPLACE_CANDIDATE_GITHUB_TOKEN"));
     assert_ne!(env["PATH"], input["PATH"]);
     assert!(create_environment(&input, false).is_err());
     assert!(
@@ -65,9 +70,17 @@ fn production_environment() -> BTreeMap<String, String> {
 
 #[test]
 fn production_environment_rejects_invalid_credentials_transport_and_mail_before_startup() {
-    let env = production_environment();
+    let mut env = production_environment();
+    env.insert(
+        "MARKETPLACE_CANDIDATE_GITHUB_TOKEN".into(),
+        "synthetic-actions-token".into(),
+    );
     let parsed = create_environment(&env, false).unwrap();
     assert_eq!(parsed["MAIL_FROM"], "mail@example.test");
+    assert_eq!(
+        parsed["MARKETPLACE_CANDIDATE_GITHUB_TOKEN"],
+        "synthetic-actions-token"
+    );
     for (key, value) in [
         ("POSTGRES_USER", ""),
         ("POSTGRES_USER", "bad\0user"),

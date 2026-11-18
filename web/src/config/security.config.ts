@@ -71,6 +71,9 @@ export const RATE_LIMITS = {
     backupCreate: { limit: 5, windowMs: 60 * 60000 },
     backupDownload: { limit: 30, windowMs: 60 * 60000 },
     backupImport: { limit: 5, windowMs: 60 * 60000 },
+    marketplaceMutation: { limit: 20, windowMs: 60 * 60_000 },
+    marketplaceSubmission: { limit: 5, windowMs: 60 * 60_000 },
+    marketplaceBuildBudget: { limit: 12, windowMs: 60 * 60_000 },
 } as const
 
 export const REGISTRATION_POLICY = {

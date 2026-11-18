@@ -6,7 +6,10 @@ import {
     HardDriveDownload,
     KeyRound,
     Mail,
+    ShieldCheck,
     ContactRound,
+    PackagePlus,
+    ClipboardCheck,
 } from 'lucide-react'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
@@ -83,11 +86,35 @@ export const NAVBAR_ITEMS = [
         description: 'admin.backups.description',
     },
     {
+        labelKey: 'submissions.reviewTitle',
+        to: '/admin/app-reviews',
+        icon: ClipboardCheck,
+        permission: PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+        title: 'submissions.reviewTitle',
+        description: 'submissions.reviewDescription',
+    },
+    {
+        labelKey: 'submissions.namespaceTitle',
+        to: '/admin/app-namespaces',
+        icon: ShieldCheck,
+        permission: PERMISSIONS.ADMIN_MARKETPLACE_NAMESPACE,
+        title: 'submissions.namespaceTitle',
+        description: 'submissions.namespaceDescription',
+    },
+    {
         labelKey: 'nav.dashboard',
         to: '/user/dashboard',
         icon: LayoutDashboard,
         permission: PERMISSIONS.USER_DASHBOARD,
         title: 'user.dashboard.title',
         description: 'user.dashboard.loggedIn',
+    },
+    {
+        labelKey: 'submissions.title',
+        to: '/user/app-submissions',
+        icon: PackagePlus,
+        requiresVerifiedDeveloper: true,
+        title: 'submissions.title',
+        description: 'submissions.description',
     },
 ] satisfies Array<AuthenticatedNavItem>

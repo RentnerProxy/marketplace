@@ -94,7 +94,10 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
         : DEFAULT_FONT_SIZE
 
     const permissions = sessionData?.permissions ?? EMPTY_PERMISSIONS
-    const navigation = useAuthenticatedNavigation(permissions)
+    const navigation = useAuthenticatedNavigation(
+        permissions,
+        sessionData?.canSubmitMarketplaceApps,
+    )
     const canManageBackups = hasPermission(
         permissions,
         PERMISSIONS.ADMIN_BACKUPS,
