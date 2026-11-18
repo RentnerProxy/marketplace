@@ -87,6 +87,20 @@ describe('User settings modal composition', () => {
                 expect(panel?.props.className).toContain(
                     'marketplace-dialog-panel',
                 )
+                const tabPanels = contents.filter(
+                    (element) => element.props.role === 'tabpanel',
+                )
+                expect(tabPanels).toHaveLength(3)
+                expect(
+                    tabPanels
+                        .filter((element) => element.props.hidden === false)
+                        .map((element) => element.props),
+                ).toMatchObject([
+                    {
+                        id: `user-settings-panel-${activeTab}`,
+                        'aria-labelledby': `user-settings-tab-${activeTab}`,
+                    },
+                ])
                 const sections = contents.filter((element) =>
                     [
                         AccountSection,
@@ -135,6 +149,7 @@ describe('User settings modal composition', () => {
         const change = mock()
         const nav = NavTabs({ activeTab: 'account', onTabChange: change })
         const rendered = renderToStaticMarkup(nav)
+        expect(rendered).toContain('role="tablist"')
         for (const label of [
             'userSettings.account',
             'userSettings.appearance',
@@ -143,9 +158,20 @@ describe('User settings modal composition', () => {
             expect(rendered).toContain(label)
         const active = findElement(
             nav,
-            (element) => element.props['aria-pressed'] === true,
+            (element) => element.props['aria-selected'] === true,
         )
         expect(active.props.children).toContain('userSettings.account')
+        expect(active.props).toMatchObject({
+            role: 'tab',
+            id: 'user-settings-tab-account',
+            'aria-controls': 'user-settings-panel-account',
+            tabIndex: 0,
+        })
+        expect(
+            elements(nav)
+                .filter((element) => element.props.role === 'tab')
+                .map((element) => element.props.tabIndex),
+        ).toEqual([0, -1, -1])
         invoke(
             findElement(
                 nav,
@@ -157,6 +183,34 @@ describe('User settings modal composition', () => {
             'onClick',
         )
         expect(change).toHaveBeenCalledWith('appearance')
+    })
+
+    it.each([
+        ['account', 'ArrowLeft', 'security'],
+        ['security', 'ArrowRight', 'account'],
+        ['appearance', 'Home', 'account'],
+        ['appearance', 'End', 'security'],
+    ] as const)('moves from %s with %s to %s', (activeTab, key, nextTab) => {
+        const change = mock()
+        const focus = mock()
+        const preventDefault = mock()
+        const getElementById = mock(() => ({ focus }))
+        const nav = NavTabs({ activeTab, onTabChange: change })
+        const active = findElement(
+            nav,
+            (element) => element.props['aria-selected'] === true,
+        )
+        invoke(active, 'onKeyDown', {
+            key,
+            preventDefault,
+            currentTarget: { ownerDocument: { getElementById } },
+        })
+        expect(preventDefault).toHaveBeenCalledTimes(1)
+        expect(change).toHaveBeenCalledWith(nextTab)
+        expect(getElementById).toHaveBeenCalledWith(
+            `user-settings-tab-${nextTab}`,
+        )
+        expect(focus).toHaveBeenCalledTimes(1)
     })
 
     it('passes account identity and personal information to their dedicated sections', () => {

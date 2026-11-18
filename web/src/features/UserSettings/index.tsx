@@ -7,6 +7,12 @@ import AccountSection from '@/features/UserSettings/Components/Account/index.tsx
 import AppearanceSection from '@/features/UserSettings/Components/AppearanceSection/index.tsx'
 import SecuritySection from '@/features/UserSettings/Components/SecuritySection/index.tsx'
 
+const settingsSections = {
+    account: AccountSection,
+    appearance: AppearanceSection,
+    security: SecuritySection,
+}
+
 export default function UserSettingsModal({
     username,
 }: UserSettingsModalProps) {
@@ -29,11 +35,18 @@ export default function UserSettingsModal({
                 />
 
                 <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
-                    {state.activeTab === 'account' && <AccountSection />}
-
-                    {state.activeTab === 'appearance' && <AppearanceSection />}
-
-                    {state.activeTab === 'security' && <SecuritySection />}
+                    {Object.entries(settingsSections).map(([tab, Section]) => (
+                        <div
+                            key={tab}
+                            role="tabpanel"
+                            id={`user-settings-panel-${tab}`}
+                            aria-labelledby={`user-settings-tab-${tab}`}
+                            tabIndex={0}
+                            hidden={state.activeTab !== tab}
+                        >
+                            {state.activeTab === tab && <Section />}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>,
