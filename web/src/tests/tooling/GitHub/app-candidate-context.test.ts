@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, sep } from 'node:path'
 import {
     classifyRun,
     readCandidateContext,
+    requireDriverCheckout,
+    writeWorkflowOutputs,
 } from '../../../../../.github/scripts/ci/app-candidates/context.ts'
 import {
     checkSourceTree,
@@ -117,6 +122,48 @@ describe('app candidate workflow identity', () => {
                 GITHUB_RUN_ATTEMPT: '9007199254740992',
             }),
         ).toThrow()
+    })
+
+    test('requires the exact checked-out workflow revision', async () => {
+        const current = Bun.spawnSync(['git', 'rev-parse', 'HEAD'], {
+            stdout: 'pipe',
+            stderr: 'ignore',
+        })
+        expect(current.exitCode).toBe(0)
+        const sha = current.stdout.toString().trim()
+        await expect(requireDriverCheckout(sha)).resolves.toBeUndefined()
+        const unrelated = (sha.startsWith('a') ? 'b' : 'a').repeat(40)
+        await expect(requireDriverCheckout(unrelated)).rejects.toThrow(
+            'Candidate builder checkout differs',
+        )
+    })
+
+    test('rejects malformed workflow output atomically', async () => {
+        const parent = await realpath(tmpdir())
+        const directory = await mkdtemp(
+            join(parent, 'candidate-workflow-output-'),
+        )
+        if (!directory.startsWith(parent + sep))
+            throw new Error('Unexpected test folder')
+        const previous = process.env.GITHUB_OUTPUT
+        const file = join(directory, 'outputs')
+        process.env.GITHUB_OUTPUT = file
+        try {
+            await writeWorkflowOutputs({ artifact_key: 'reference-v1-39-2' })
+            await expect(
+                writeWorkflowOutputs({ candidate_id: 'malformed\nvalue' }),
+            ).rejects.toThrow('Invalid candidate workflow output')
+            await expect(
+                writeWorkflowOutputs({ 'invalid-key': 'value' }),
+            ).rejects.toThrow('Invalid candidate workflow output')
+            expect(await readFile(file, 'utf8')).toBe(
+                'artifact_key=reference-v1-39-2\n',
+            )
+        } finally {
+            if (previous === undefined) delete process.env.GITHUB_OUTPUT
+            else process.env.GITHUB_OUTPUT = previous
+            await rm(directory, { recursive: true, force: true })
+        }
     })
 
     test('rejects mutable refs and repository or path syntax that could change the source', () => {

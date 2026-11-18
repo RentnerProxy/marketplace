@@ -177,11 +177,40 @@ export async function stageSource(
     expected: ResolvedSource,
     token?: string,
 ) {
+    return stageGitSource(directory, expected, {
+        origin: (repository) =>
+            new URL('https://github.com/' + repository + '.git'),
+        resolve: (request) => resolveSource(request, token),
+        readTree: (repository, tree) =>
+            githubJson(
+                '/repos/' + repository + '/git/trees/' + tree + '?recursive=1',
+                token,
+            ),
+    })
+}
+
+interface GitTransport {
+    origin: (repository: string) => URL
+    resolve: (request: SourceRequest) => Promise<ResolvedSource>
+    readTree: (repository: string, tree: string) => Promise<unknown>
+}
+
+/** The caller supplies the trusted transport. Workflow inputs go through stageSource. */
+export async function stageGitSource(
+    directory: string,
+    expected: ResolvedSource,
+    transport: GitTransport,
+) {
     const request = sourceRequest.parse({
         repository: expected.repository,
         commit: expected.commit,
         path: expected.path,
     })
+    const origin = transport.origin(request.repository)
+    if (origin.protocol !== 'https:' && origin.protocol !== 'file:') {
+        throw new Error('Unsupported source Git transport')
+    }
+    const protocol = origin.protocol.slice(0, -1)
     const cwd = await realpath(directory)
     const home = join(cwd, 'git-home')
     const dependencies = join(cwd, 'dependencies')
@@ -193,7 +222,7 @@ export async function stageSource(
                 '-c',
                 'protocol.allow=never',
                 '-c',
-                'protocol.https.allow=always',
+                'protocol.' + protocol + '.allow=always',
                 '-c',
                 'http.followRedirects=false',
                 '-c',
@@ -218,12 +247,7 @@ export async function stageSource(
             },
         )
     await captureGit(['init', '--bare', '--template=', '.'])
-    await captureGit([
-        'remote',
-        'add',
-        'origin',
-        'https://github.com/' + request.repository + '.git',
-    ])
+    await captureGit(['remote', 'add', 'origin', origin.href])
     await captureGit(['config', 'remote.origin.promisor', 'true'])
     await captureGit([
         'config',
@@ -247,7 +271,7 @@ export async function stageSource(
         throw new Error(
             'Fetched source commit differs from the resolved commit',
         )
-    const rechecked = await resolveSource(request, token)
+    const rechecked = await transport.resolve(request)
     if (
         rechecked.source.repositoryId !== expected.source.repositoryId ||
         rechecked.source.commit !== fetched
@@ -256,35 +280,24 @@ export async function stageSource(
             'Fetched Git repository differs from the resolved source',
         )
     }
-    const tree = commitSha.parse(
-        (
-            await captureGit([
-                'rev-parse',
-                '--verify',
-                fetched +
-                    (request.path === '.' ? '^{tree}' : ':' + request.path),
-            ])
-        )
-            .toString()
-            .trim(),
-    )
-    if (
-        (await captureGit(['cat-file', '-t', tree])).toString().trim() !==
-        'tree'
-    ) {
-        throw new Error('Submitted source path must be a committed directory')
-    }
+    const tree =
+        request.path === '.'
+            ? commitSha.parse(
+                  (
+                      await captureGit([
+                          'rev-parse',
+                          '--verify',
+                          fetched + '^{tree}',
+                      ])
+                  )
+                      .toString()
+                      .trim(),
+              )
+            : await findCommittedDirectory(captureGit, fetched, request.path)
     // Admit the scoped tree's size before any blob reads hydrate the shallow
     // partial fetch. GitHub reports truncation explicitly and we fail closed.
     const blobs = checkSourceTree(
-        await githubJson(
-            '/repos/' +
-                rechecked.repository +
-                '/git/trees/' +
-                tree +
-                '?recursive=1',
-            token,
-        ),
+        await transport.readTree(rechecked.repository, tree),
         tree,
     )
     if (blobs.length > 0) {
@@ -335,4 +348,21 @@ export async function stageSource(
     )
     await writeFile(sourceArchive, tar, { mode: 0o644, flag: 'wx' })
     return { sourceArchive, dependencies }
+}
+
+async function findCommittedDirectory(
+    git: (args: string[]) => Promise<Buffer>,
+    commit: string,
+    path: string,
+) {
+    // Inspect mode and type from the tree entry without fetching a blob if
+    // the submitted directory name actually resolves to a file.
+    const entry = (
+        await git(['ls-tree', '-d', '-z', commit, '--', path])
+    ).toString()
+    const match = /^040000 tree ([a-f0-9]{40})\t([^\0]+)\0$/.exec(entry)
+    if (match?.[2] !== path) {
+        throw new Error('Submitted source path must be a committed directory')
+    }
+    return match[1]
 }
