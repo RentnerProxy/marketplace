@@ -83,7 +83,10 @@ export async function updatePasswordByTokenService(
 
         const updatedUsers = await transaction
             .update(users)
-            .set({ passwordHash: hashedPassword })
+            .set({
+                passwordHash: hashedPassword,
+                emailVerifiedAt: new Date(),
+            })
             .where(
                 and(
                     eq(users.id, userId),

@@ -115,12 +115,17 @@ describe('Administrative mutations with required audit persistence', function ()
         },
     )
     it('allows case-only changes to the same user', async function () {
+        const verifiedAt = new Date('2026-11-01T10:00:00.000Z')
+        adminAuditDb.state.rows.users[0].emailVerifiedAt = verifiedAt
         const result = await updateUserProfileService({
             ...updateInput(),
             username: 'TARGET',
             email: 'TARGET@EXAMPLE.TEST',
         })
         expect(result.success).toBe(true)
+        expect(adminAuditDb.state.rows.users[0].emailVerifiedAt).toEqual(
+            verifiedAt,
+        )
     })
     it('locks account uniqueness before user rows during profile changes', async () => {
         expect((await updateUserProfileService(updateInput())).success).toBe(
@@ -133,6 +138,7 @@ describe('Administrative mutations with required audit persistence', function ()
         ).toEqual(['begin', 'lock:identity', 'lock:update'])
     })
     it('commits profile, identity, revocation and audit together', async function () {
+        adminAuditDb.state.rows.users[0].emailVerifiedAt = new Date()
         const previousPermissions = structuredClone(
             adminAuditDb.state.rows.staffUserPermissions,
         )
@@ -141,8 +147,11 @@ describe('Administrative mutations with required audit persistence', function ()
         const rows = adminAuditDb.state.rows
         expect(rows.staffUserPermissions).toEqual(previousPermissions)
         expect(
-            rows.users.find((row) => row.id === ADMIN_TARGET_ID)?.email,
-        ).toBe('changed@example.test')
+            rows.users.find((row) => row.id === ADMIN_TARGET_ID),
+        ).toMatchObject({
+            email: 'changed@example.test',
+            emailVerifiedAt: null,
+        })
         expect(
             rows.user_profiles.find((row) => row.userId === ADMIN_TARGET_ID)
                 ?.firstName,
@@ -268,6 +277,7 @@ describe('Administrative mutations with required audit persistence', function ()
         },
     )
     it('releases deleted user provider mappings and rejects an outstanding social two-factor login', async () => {
+        adminAuditDb.state.rows.users[0].emailVerifiedAt = new Date()
         await expect(
             deleteUserService({ id: ADMIN_TARGET_ID, accountType: 'staff' }),
         ).resolves.toEqual({ success: true })
@@ -287,6 +297,7 @@ describe('Administrative mutations with required audit persistence', function ()
             isDeleted: true,
             isActive: false,
             isTwoFactorEnabled: false,
+            emailVerifiedAt: null,
         })
         const events = adminAuditDb.state.events
         const userLock = events.findIndex(

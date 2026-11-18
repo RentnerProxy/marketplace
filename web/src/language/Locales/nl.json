@@ -161,7 +161,8 @@
             "verify": "E-mail bevestigen",
             "verifyDescription": "Bevestig je e-mailadres om je account te activeren.",
             "invalidVerification": "Deze link is ongeldig of verlopen. Registreer opnieuw.",
-            "verificationFailed": "Bevestigen is mislukt. Probeer het opnieuw."
+            "verificationFailed": "Bevestigen is mislukt. Probeer het opnieuw.",
+            "retryRegistration": "Registratie opnieuw starten"
         },
         "passwordReset": {
             "newPasswordTitle": "Nieuw wachtwoord",

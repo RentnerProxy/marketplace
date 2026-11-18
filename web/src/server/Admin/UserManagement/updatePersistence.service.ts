@@ -111,10 +111,15 @@ export async function hasDuplicateVisibleUserInTransaction(
 export async function writeUserAndProfileInTransaction(
     transaction: DatabaseTransaction,
     input: NormalizedUserUpdate,
+    emailChanged: boolean,
 ) {
     const updatedUsers = await transaction
         .update(users)
-        .set({ username: input.username, email: input.email })
+        .set({
+            username: input.username,
+            email: input.email,
+            ...(emailChanged ? { emailVerifiedAt: null } : {}),
+        })
         .where(eq(users.id, input.id))
         .returning({
             id: users.id,

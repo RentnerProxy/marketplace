@@ -180,6 +180,7 @@ describe('Public registration', () => {
         ])
         expect(fixture.inserts[0]?.values).toMatchObject({
             accountType: 'public',
+            emailVerifiedAt: expect.any(Date),
         })
         expect(fixture.inserts[3]?.values).toEqual([
             {

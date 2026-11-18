@@ -173,6 +173,30 @@ describe('stable v1 app contract', () => {
         )
     })
 
+    test('accepts only an opaque approver identity and keeps account data out of app metadata', () => {
+        const docs = documents()
+        const account = {
+            email: 'reviewer@example.test',
+            username: 'reviewer',
+            sessionHash: 'synthetic-authentication-marker',
+        }
+        const release = checkApprovalBinding(docs.candidate, docs.approval)
+        for (const value of Object.values(account))
+            expect(JSON.stringify(release)).not.toContain(value)
+        expect(() => parseAppManifest({ ...docs.manifest, account })).toThrow(
+            ContractError,
+        )
+        expect(() => parseCandidate({ ...docs.candidate, account })).toThrow(
+            ContractError,
+        )
+        expect(() =>
+            checkApprovalBinding(docs.candidate, {
+                ...docs.approval,
+                actor: account,
+            }),
+        ).toThrow(ContractError)
+    })
+
     for (const fixture of fixtures.cases) {
         test(fixture.name, () => {
             const docs = documents()

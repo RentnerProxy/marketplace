@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace"."users" ADD COLUMN "emailVerifiedAt" timestamp with time zone;

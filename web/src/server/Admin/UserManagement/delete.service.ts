@@ -163,6 +163,7 @@ export async function deleteUserService(data: DeleteUserInput) {
                 .update(users)
                 .set({
                     ...deletedUserIdentity,
+                    emailVerifiedAt: null,
                     isActive: false,
                     isDeleted: true,
                     isTwoFactorEnabled: false,

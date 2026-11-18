@@ -28,6 +28,10 @@ export const users = appSchema.table(
         email: varchar('email', { length: 255 }).notNull(),
 
         passwordHash: text('passwordHash').notNull(),
+        emailVerifiedAt: timestamp('emailVerifiedAt', {
+            withTimezone: true,
+            mode: 'date',
+        }),
         accountType: varchar('accountType', { length: 6 })
             .$type<AccountType>()
             .notNull(),

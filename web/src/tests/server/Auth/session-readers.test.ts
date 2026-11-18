@@ -12,7 +12,11 @@ import { sessionConfig, SESSION_COOKIE_NAME } from '@/config/session.config.ts'
 const STARTED_AT = Date.parse('2026-09-06T02:00:00.000Z')
 const entropy = Buffer.alloc(32, 7).toString('base64url')
 const schema = {
-    users: { id: 'users.id' },
+    users: {
+        id: 'users.id',
+        accountType: 'users.accountType',
+        emailVerifiedAt: 'users.emailVerifiedAt',
+    },
     sessions: { id: 'sessions.id', userId: 'sessions.userId' },
     user_profiles: { userId: 'user_profiles.userId' },
     user_settings: { userId: 'user_settings.userId' },
@@ -34,6 +38,8 @@ const state = {
         id: 'user-1',
         username: 'synthetic',
         email: 'synthetic@example.test',
+        accountType: 'public',
+        emailVerifiedAt: new Date(STARTED_AT - 60_000),
         passwordHash: 'must-not-be-exposed',
         isActive: true,
         isDeleted: false,
@@ -295,7 +301,11 @@ describe('passive permission access', () => {
 })
 
 describe('read-only public session validation', () => {
-    it('returns bounded ISO deadlines and omits password, token and hash', async () => {
+    it('keeps email proof available to server policy and exposes bounded client deadlines', async () => {
+        expect(await getActiveCurrentSessionUser()).toMatchObject({
+            accountType: 'public',
+            emailVerifiedAt: state.user.emailVerifiedAt,
+        })
         const result = await validateSessionService()
         expect(result).toMatchObject({
             user: { id: state.user.id, username: state.user.username },
@@ -308,6 +318,7 @@ describe('read-only public session validation', () => {
         expect(serialized).not.toContain(state.cookie!)
         expect(serialized).not.toContain(state.sessionHash)
         expect(serialized).not.toContain(state.user.passwordHash)
+        expect(result.user).not.toHaveProperty('emailVerifiedAt')
     })
 
     it('caps the displayed idle deadline at the absolute deadline', async () => {

@@ -74,6 +74,8 @@ export async function getActiveCurrentSessionUser() {
             sessionHash: sessions.id,
             username: users.username,
             email: users.email,
+            accountType: users.accountType,
+            emailVerifiedAt: users.emailVerifiedAt,
             isActive: users.isActive,
             isDeleted: users.isDeleted,
             expiresAt: sessions.expiresAt,

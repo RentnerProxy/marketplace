@@ -193,6 +193,8 @@ describe('serverseitige Berechtigungsprüfung', function () {
             sessionHash: 'b'.repeat(64),
             username: 'normal-user',
             email: 'normal@example.test',
+            accountType: 'public' as const,
+            emailVerifiedAt: null,
             isActive: true,
             isDeleted: false,
             expiresAt: new Date(Date.now() + 300_000),

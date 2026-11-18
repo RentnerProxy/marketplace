@@ -161,7 +161,8 @@
             "verify": "Potwierdź e-mail",
             "verifyDescription": "Potwierdź adres e-mail, aby aktywować konto.",
             "invalidVerification": "Link jest nieprawidłowy lub wygasł. Zarejestruj się ponownie.",
-            "verificationFailed": "Nie udało się potwierdzić adresu. Spróbuj ponownie."
+            "verificationFailed": "Nie udało się potwierdzić adresu. Spróbuj ponownie.",
+            "retryRegistration": "Rozpocznij rejestrację ponownie"
         },
         "passwordReset": {
             "newPasswordTitle": "Nowe hasło",

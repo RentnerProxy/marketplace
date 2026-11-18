@@ -25,6 +25,8 @@ export const passkeyTestSession = {
     username: 'kevin',
     email: 'kevin@example.test',
     sessionHash: PASSKEY_TEST_SESSION_HASH,
+    accountType: 'staff' as const,
+    emailVerifiedAt: null,
     isActive: true,
     isDeleted: false,
     expiresAt: new Date('2030-01-01T00:00:00.000Z'),

@@ -162,7 +162,8 @@
             "verify": "Confirm email",
             "verifyDescription": "Confirm your email address to activate your account.",
             "invalidVerification": "This confirmation link is invalid or expired. Please register again.",
-            "verificationFailed": "Your email could not be confirmed. Please try again."
+            "verificationFailed": "Your email could not be confirmed. Please try again.",
+            "retryRegistration": "Start registration again"
         },
         "passwordReset": {
             "validating": "Checking reset link …",
