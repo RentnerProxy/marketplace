@@ -84,6 +84,7 @@
         },
         "failure": {
             "dispatchFailed": "GitHub hat den Build-Auftrag abgelehnt.",
+            "dispatchRateLimited": "GitHub hat das Anfragelimit erreicht. Der Worker versucht es nach Ablauf des Limits erneut.",
             "dispatchUnconfirmed": "GitHub hat den Build-Auftrag nicht bestätigt. Reiche die Version erneut ein.",
             "buildFailed": "Der Build oder eine Validierungsprüfung ist fehlgeschlagen.",
             "buildTimedOut": "Die Build-Validierung hat das Zeitlimit erreicht.",

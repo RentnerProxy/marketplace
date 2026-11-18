@@ -1,5 +1,7 @@
 import type { z } from 'zod'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
+import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import type {
     decisionInput,
     stopInput,
@@ -53,15 +55,24 @@ export const expiresOrRecheck = (row: Submission) =>
         ),
     )
 
-export async function invalidateSubmission(row: Submission, error: unknown) {
+export async function invalidateSubmission(
+    row: Submission,
+    error: unknown,
+    lease?: Date | null,
+) {
     const failure = failureOf(error)
     if (!failure) return
     await auditedSubmissionWrite(null, async (tx) => {
         const current = await readSubmission(row.id, undefined, tx)
-        if (current.revision !== row.revision) return { result: current }
+        if (
+            current.revision !== row.revision ||
+            (lease !== undefined &&
+                current.nextCheckAt?.getTime() !== lease?.getTime())
+        )
+            return { result: current }
         const event = submissionEvent(
             row.revision + 1,
-            row.approval ? 'revoked' : 'failed',
+            row.publicationRun ? 'revoked' : 'failed',
             null,
             undefined,
             failure,
@@ -114,6 +125,11 @@ export async function decideCandidateService(
 
     try {
         await auditedSubmissionWrite(actor, async (tx) => {
+            await requireMutationPermissionService(
+                tx,
+                actor,
+                PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+            )
             const current = await readSubmission(row.id, undefined, tx)
             if (repeatedAction(current, input, status, actor))
                 return { result: current }
@@ -175,6 +191,13 @@ export async function stopSubmissionService(
     action: 'withdrawn' | 'revoked',
 ) {
     return auditedSubmissionWrite(actor, async (tx) => {
+        if (action === 'revoked') {
+            await requireMutationPermissionService(
+                tx,
+                actor,
+                PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+            )
+        }
         const row = await readSubmission(
             input.id,
             action === 'withdrawn' ? actor : undefined,

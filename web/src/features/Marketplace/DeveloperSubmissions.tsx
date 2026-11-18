@@ -8,6 +8,7 @@ import { useDeveloperSubmissionsLogic } from './Hooks/useDeveloperSubmissionsLog
 export default function DeveloperSubmissions({ userId }: { userId: string }) {
     const { t } = useTranslationStore()
     const { state, setter, handler } = useDeveloperSubmissionsLogic(userId)
+    const editingDisabled = state.claimPending || state.submitPending
     return (
         <div className="space-y-5">
             <section className="space-y-5 rounded-xl border border-border-dark bg-surface-dark p-5">
@@ -22,13 +23,14 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                             value={state.repository}
                             onValueChange={setter.setRepository}
                             maxLength={140}
+                            disabled={editingDisabled}
                             required
                         />
                     </div>
                     <button
                         type="submit"
                         className="rounded-lg border border-border-dark px-4 py-2 text-sm font-medium disabled:opacity-45"
-                        disabled={state.claimPending}
+                        disabled={editingDisabled}
                     >
                         {t('submissions.requestProof')}
                     </button>
@@ -47,6 +49,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                             <CustomSelect
                                 label={t('submissions.selectRepository')}
                                 value={state.claimId}
+                                disabled={editingDisabled}
                                 onValueChange={setter.setClaimId}
                                 options={state.claims.data.claims.map(
                                     (claim) => ({
@@ -96,6 +99,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                                             key={name}
                                             label={t('submissions.' + name)}
                                             value={value}
+                                            disabled={editingDisabled}
                                             required={required}
                                             maxLength={maxLength}
                                             onValueChange={(next) =>
@@ -112,7 +116,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                             <button
                                 type="submit"
                                 disabled={
-                                    state.submitPending ||
+                                    editingDisabled ||
                                     !state.claims.data?.buildsEnabled
                                 }
                                 className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-45"

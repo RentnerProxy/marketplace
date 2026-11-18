@@ -107,36 +107,58 @@ export async function findCandidateRun(
     }
 
     if (!submission.dispatchRequestedAt) return null
-    const from = new Date(submission.dispatchRequestedAt.getTime() - 60_000)
+    const requestedAt = submission.dispatchRequestedAt.getTime()
+    const from = new Date(requestedAt - 60_000).toISOString()
+    const until = new Date(
+        requestedAt + pipeline.dispatchTimeoutMs,
+    ).toISOString()
     const query = new URLSearchParams({
         branch: pipeline.branch,
         event: 'workflow_dispatch',
-        created: '>=' + from.toISOString().replace(/\.\d+Z$/, 'Z'),
+        created: (from + '..' + until).replace(/\.\d+Z/g, 'Z'),
         per_page: '100',
     })
-    const result = z
-        .object({ workflow_runs: z.array(z.unknown()).max(100) })
-        .parse(
-            await githubJson(
-                candidateApiPath(
-                    'workflows/' + pipeline.workflowId + '/runs?' + query,
-                ),
-                { token },
-            ),
-        )
-    const title = 'Marketplace submission ' + submission.buildKey
-    const matching = result.workflow_runs.filter(
-        (entry) =>
-            typeof entry === 'object' &&
-            entry !== null &&
-            'display_title' in entry &&
-            entry.display_title === title,
+    const first = await loadPage(1)
+    // The GitHub workflow-run search API caps filtered results at 1,000.
+    if (first.total_count > 1000)
+        throw new InvalidCandidateError('invalidEvidence')
+    const pages = await Promise.all(
+        Array.from(
+            { length: Math.max(0, Math.ceil(first.total_count / 100) - 1) },
+            (_, index) => loadPage(index + 2),
+        ),
     )
+    const title = 'Marketplace submission ' + submission.buildKey
+    const matching = [first, ...pages]
+        .flatMap(({ workflow_runs }) => workflow_runs)
+        .filter(
+            (entry) =>
+                typeof entry === 'object' &&
+                entry !== null &&
+                'display_title' in entry &&
+                entry.display_title === title,
+        )
     if (matching.length > 1) throw new InvalidCandidateError('invalidEvidence')
     if (!matching.length) return null
     const run = runSchema.parse(matching[0])
     assertSubmissionRun(run, submission)
     return run
+
+    async function loadPage(page: number) {
+        const path =
+            'workflows/' +
+            pipeline.workflowId +
+            '/runs?' +
+            query +
+            '&page=' +
+            page
+        return z
+            .object({
+                total_count: z.number().int().min(0),
+                workflow_runs: z.array(z.unknown()).max(100),
+            })
+            .parse(await githubJson(candidateApiPath(path), { token }))
+    }
 }
 
 const githubArtifact = z.object({

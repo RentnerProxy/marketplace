@@ -84,6 +84,7 @@
         },
         "failure": {
             "dispatchFailed": "GitHub rejected the build request.",
+            "dispatchRateLimited": "GitHub rate-limited the request. The worker will try again after the limit resets.",
             "dispatchUnconfirmed": "GitHub did not confirm the build request. Submit the version again.",
             "buildFailed": "The build or a validation check failed.",
             "buildTimedOut": "Candidate validation reached its time limit.",

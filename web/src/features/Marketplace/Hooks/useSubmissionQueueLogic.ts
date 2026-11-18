@@ -114,7 +114,10 @@ export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
     function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const value = event.nativeEvent.submitter?.getAttribute('value')
-        if (value && !action.isPending) action.mutate(value)
+        if (value && id && !action.isPending) {
+            setSelectedId(id)
+            action.mutate(value)
+        }
     }
 
     return {

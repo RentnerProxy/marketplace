@@ -8,7 +8,7 @@ import {
     startWorkerHeartbeatService,
 } from '@/server/Runtime/worker-health.service.ts'
 import { createWorkerStatusReporterService } from '@/server/Runtime/worker-status.service.ts'
-import { logError, logInfo } from '@/server/Logging/logger.ts'
+import { logError, logInfo, logWarn } from '@/server/Logging/logger.ts'
 import { closeCoreWorkerPoolsService } from '@/server/Core/worker-pool.service.ts'
 import { closePrivateStorageWritesService } from '@/server/Storage/private-write-queue.service.ts'
 import { setRuntimeLogProcessService } from '@/server/Logging/runtime-log-history.service.ts'
@@ -25,6 +25,7 @@ import {
 
 import { assertRuntimeDatabaseRolePolicyService } from '@/server/Runtime/database-role-policy.service.ts'
 import { createWorkerShutdownService } from '@/server/Runtime/worker-shutdown.service.ts'
+import { waitForWorkerCleanupService } from '@/server/Runtime/worker-cleanup.service.ts'
 import type { startMailWorker } from '@/server/Queues/mail.worker.ts'
 import { candidateGitHubToken } from '@/server/Marketplace/Submissions/github.service.ts'
 
@@ -59,7 +60,12 @@ const shutdown = createWorkerShutdownService({
     },
     closeWorkers: async function () {
         try {
-            await candidateWorker
+            if (
+                candidateWorker &&
+                !(await waitForWorkerCleanupService(candidateWorker))
+            ) {
+                logWarn('marketplace.submission.worker_shutdown_timeout')
+            }
             await backupWorkerStarter?.stop()
         } finally {
             try {

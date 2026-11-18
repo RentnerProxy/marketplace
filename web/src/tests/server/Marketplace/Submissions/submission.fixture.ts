@@ -54,7 +54,9 @@ export function fixtureClaim(
     }
 }
 
-export function fixtureSubmission(claim = fixtureClaim()): Submission {
+export function fixtureSubmission(
+    claim: typeof marketplaceRepositoryClaims.$inferSelect = fixtureClaim(),
+): Submission {
     const request = fixtureRequest(claim.id)
     return {
         id: request.requestId,

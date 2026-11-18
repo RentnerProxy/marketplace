@@ -38,7 +38,9 @@ async function mutationAccess(
     assertSameOriginRequest(getRequest())
     const actor = await requireMarketplaceAccountAccessService(action)
     await enforceRateLimit({
-        ...RATE_LIMITS.marketplaceMutation,
+        ...(scope === 'submit'
+            ? RATE_LIMITS.marketplaceSubmission
+            : RATE_LIMITS.marketplaceMutation),
         scope: 'marketplace-' + scope,
         identifiers: [actor.userId],
         includeClientIp: false,
@@ -64,12 +66,6 @@ export const createSubmissionHandler = createServerFn({ method: 'POST' })
     .validator((value: unknown) => submitInput.parse(value))
     .handler(async ({ data }) => {
         const actor = await mutationAccess('submit', 'submit')
-        await enforceRateLimit({
-            ...RATE_LIMITS.marketplaceBuildBudget,
-            scope: 'marketplace-candidate-build-budget',
-            includeClientIp: false,
-            identifiers: ['global'],
-        })
         return submitCandidateService(data, actor)
     })
 

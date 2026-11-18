@@ -23,6 +23,7 @@ export type SubmissionStatus =
 
 export type SubmissionFailure =
     | 'dispatchFailed'
+    | 'dispatchRateLimited'
     | 'dispatchUnconfirmed'
     | 'buildFailed'
     | 'buildTimedOut'

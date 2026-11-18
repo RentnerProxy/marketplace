@@ -122,8 +122,9 @@ test('scopes contributor reads and edits to the authenticated actor', async () =
     )
     expect(rateLimit.mock.calls.map(([options]) => options)).toContainEqual(
         expect.objectContaining({
-            scope: 'marketplace-candidate-build-budget',
-            identifiers: ['global'],
+            scope: 'marketplace-submit',
+            identifiers: [actor],
+            limit: 5,
         }),
     )
 })

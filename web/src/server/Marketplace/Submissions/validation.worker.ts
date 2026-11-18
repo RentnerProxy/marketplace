@@ -1,13 +1,19 @@
 import { setTimeout as delay } from 'node:timers/promises'
-import { eq } from 'drizzle-orm'
+import { count, gte, min, sql } from 'drizzle-orm'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
+import { RATE_LIMITS } from '@/config/security.config.ts'
 import { db } from '@/db'
 import { marketplaceSubmissions as submissions } from '@/db/schema.ts'
+import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 import type {
     SubmissionFailure,
     ValidatedSubmission,
 } from '@/lib/Marketplace/Types/submission.types.ts'
 import { logWarn } from '@/server/Logging/logger.ts'
+import {
+    RestoreInProgressError,
+    withSharedStorageMutationBarrier,
+} from '@/server/Storage/storage-mutation-barrier.service.ts'
 import { readCandidateReview } from './candidate-review.service.ts'
 import { dispatchCandidate, findCandidateRun } from './candidate-run.service.ts'
 import {
@@ -29,6 +35,33 @@ import {
     type Submission,
 } from './submission-store.service.ts'
 
+async function nextAvailableDispatch(
+    tx: DatabaseTransaction,
+    requestedAt: Date,
+) {
+    const { limit, windowMs } = RATE_LIMITS.marketplaceBuildBudget
+    // Serialize the capacity check and durable intent across worker replicas.
+    const [gate] = await tx
+        .select({ acquired: sql<boolean>`dispatch_budget.acquired` })
+        .from(
+            sql`(select pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtext('marketplace:candidate-dispatch-budget')) as acquired) dispatch_budget`,
+        )
+    if (!gate?.acquired)
+        return new Date(requestedAt.getTime() + pipeline.pollMs)
+    const [budget] = await tx
+        .select({ used: count(), oldest: min(submissions.dispatchRequestedAt) })
+        .from(submissions)
+        .where(
+            gte(
+                submissions.dispatchRequestedAt,
+                new Date(requestedAt.getTime() - windowMs),
+            ),
+        )
+    return budget.used >= limit && budget.oldest
+        ? new Date(budget.oldest.getTime() + windowMs + 1)
+        : null
+}
+
 async function changeLeased(
     row: Submission,
     result:
@@ -38,7 +71,8 @@ async function changeLeased(
               validation: ValidatedSubmission
               buildRunId: string
           }
-        | { status: 'validating'; requestedAt: Date },
+        | { status: 'validating'; requestedAt: Date }
+        | { status: 'validating'; retryAt: Date },
 ) {
     return auditedSubmissionWrite(null, async (tx) => {
         const [current] = await tx
@@ -52,14 +86,38 @@ async function changeLeased(
             result.status,
             null,
             undefined,
-            result.status === 'failed' ? result.failure : undefined,
+            result.status === 'failed'
+                ? result.failure
+                : 'retryAt' in result
+                  ? 'dispatchRateLimited'
+                  : undefined,
         )
-        if (result.status === 'validating') {
-            await tx
-                .update(submissions)
-                .set({ dispatchRequestedAt: result.requestedAt })
-                .where(eq(submissions.id, row.id))
-            return changeSubmission(tx, current, event, {})
+        if ('requestedAt' in result) {
+            const next = await nextAvailableDispatch(tx, result.requestedAt)
+            if (next) {
+                await tx
+                    .update(submissions)
+                    .set({
+                        nextCheckAt: new Date(
+                            Math.min(
+                                next.getTime(),
+                                row.createdAt.getTime() +
+                                    pipeline.buildTimeoutMs,
+                            ),
+                        ),
+                    })
+                    .where(leaseCondition(row))
+                return { result: null }
+            }
+            return changeSubmission(tx, current, event, {
+                dispatchRequestedAt: result.requestedAt,
+            })
+        }
+        if ('retryAt' in result) {
+            return changeSubmission(tx, current, event, {
+                dispatchRequestedAt: null,
+                nextCheckAt: result.retryAt,
+            })
         }
         if (result.status === 'awaitingReview') {
             return changeSubmission(tx, current, event, {
@@ -86,13 +144,17 @@ async function checkAgain(
         .where(leaseCondition(row))
 }
 
-async function processSubmission(row: Submission, token: string) {
+async function processSubmission(
+    row: Submission,
+    token: string,
+    signal?: AbortSignal,
+) {
     if (['awaitingReview', 'approved', 'publishing'].includes(row.status)) {
         try {
             await checkCurrentCandidate(row, token)
         } catch (error) {
             if (!failureOf(error)) throw error
-            await invalidateSubmission(row, error)
+            await invalidateSubmission(row, error, row.nextCheckAt)
             return
         }
         await checkAgain(row, expiresOrRecheck(row))
@@ -106,13 +168,14 @@ async function processSubmission(row: Submission, token: string) {
 
     try {
         const claim = await readClaim(row.claimId)
-        if (row.status === 'submitted') {
+        if (!row.dispatchRequestedAt) {
             await verifyRepositoryClaim(claim, row.request.commit)
             await assertCurrentNamespace(
                 row.appId,
                 claim,
                 row.namespaceRevision,
             )
+            if (signal?.aborted) return
             const requestedAt = new Date()
             // Record the intent before contacting GitHub. A crashed process may
             // have sent the request, so a successor only discovers the same run.
@@ -121,6 +184,13 @@ async function processSubmission(row: Submission, token: string) {
                 requestedAt,
             })
             if (!started) return
+            if (signal?.aborted) {
+                await db
+                    .update(submissions)
+                    .set({ dispatchRequestedAt: null, nextCheckAt: new Date() })
+                    .where(leaseCondition(started))
+                return
+            }
             try {
                 const runId = await dispatchCandidate(started, claim, token)
                 await checkAgain(
@@ -129,9 +199,14 @@ async function processSubmission(row: Submission, token: string) {
                     runId,
                 )
             } catch (error) {
-                if (
+                if (error instanceof GitHubRequestError && error.retryAt) {
+                    await changeLeased(started, {
+                        status: 'validating',
+                        retryAt: boundedRetryAt(row, error.retryAt),
+                    })
+                } else if (
                     error instanceof GitHubRequestError &&
-                    [400, 401, 404, 422].includes(error.status)
+                    [400, 401, 403, 404, 422].includes(error.status)
                 ) {
                     await changeLeased(started, {
                         status: 'failed',
@@ -187,9 +262,32 @@ async function processSubmission(row: Submission, token: string) {
     }
 }
 
-export async function reconcileNextSubmissionService(token: string) {
+function boundedRetryAt(row: Submission, retryAt: Date) {
+    return new Date(
+        Math.min(
+            retryAt.getTime(),
+            row.createdAt.getTime() + pipeline.buildTimeoutMs,
+        ),
+    )
+}
+
+export async function reconcileNextSubmissionService(
+    token: string,
+    signal?: AbortSignal,
+) {
+    if (signal?.aborted) return
     const row = await leaseDueSubmission()
-    if (row) await processSubmission(row, token)
+    if (!row || signal?.aborted) return
+    try {
+        await processSubmission(row, token, signal)
+    } catch (error) {
+        if (!(error instanceof GitHubRequestError) || !error.retryAt)
+            throw error
+        await checkAgain(
+            row,
+            row.validation ? error.retryAt : boundedRetryAt(row, error.retryAt),
+        )
+    }
 }
 
 export async function runCandidateValidationWorker(
@@ -212,11 +310,16 @@ export async function runCandidateValidationWorker(
 
     async function reconcileUnlessRestoring(currentToken: string) {
         try {
-            if (!(await isRestoreQuiescenceActive())) {
-                await reconcileNextSubmissionService(currentToken)
+            if (signal.aborted || (await isRestoreQuiescenceActive())) return
+            await withSharedStorageMutationBarrier(async () => {
+                if (signal.aborted || (await isRestoreQuiescenceActive()))
+                    return
+                await reconcileNextSubmissionService(currentToken, signal)
+            })
+        } catch (error) {
+            if (!(error instanceof RestoreInProgressError)) {
+                logWarn('marketplace.submission.reconcile_unavailable')
             }
-        } catch {
-            logWarn('marketplace.submission.reconcile_unavailable')
         }
     }
 }

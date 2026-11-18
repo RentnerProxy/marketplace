@@ -15,6 +15,7 @@ export default function OfficialApps({ userId }: { userId: string }) {
                         value={state.appId}
                         onValueChange={setter.setAppId}
                         maxLength={97}
+                        disabled={state.pending}
                         required
                     />
                     <TextInput
@@ -22,6 +23,7 @@ export default function OfficialApps({ userId }: { userId: string }) {
                         value={state.claimId}
                         onValueChange={setter.setClaimId}
                         maxLength={36}
+                        disabled={state.pending}
                     />
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -55,6 +57,8 @@ export default function OfficialApps({ userId }: { userId: string }) {
                 {state.apps.data?.map((entry) => (
                     <li key={entry.appId}>
                         <button
+                            type="button"
+                            disabled={state.pending}
                             className="flex w-full flex-wrap gap-x-5 gap-y-1 rounded-lg border border-border-dark bg-background-dark/35 p-3 text-start text-sm hover:border-primary"
                             onClick={() => handler.select(entry)}
                         >

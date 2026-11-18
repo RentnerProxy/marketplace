@@ -1,21 +1,28 @@
 import { expect, vi } from 'bun:test'
-import { eq, inArray, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, or, sql } from 'drizzle-orm'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
+import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { RATE_LIMITS } from '@/config/security.config.ts'
 import { db } from '@/db'
 import {
     auditLogs,
     marketplaceOfficialApps,
     marketplaceRepositoryClaims,
     marketplaceSubmissions,
+    permissions,
     publicAccounts,
     staffAccounts,
+    staffUserPermissions,
     users,
 } from '@/db/schema.ts'
 import type { SubmissionArtifact } from '@/lib/Marketplace/Types/submission.types.ts'
 import {
     decideCandidateService,
+    invalidateSubmission,
     stopSubmissionService,
 } from '@/server/Marketplace/Submissions/decision.service.ts'
+import { InvalidCandidateError } from '@/server/Marketplace/Submissions/candidate-run.service.ts'
+import { PermissionDeniedError } from '@/server/Auth/authorization.errors.ts'
 import {
     changeOfficialAppService,
     listOfficialAppsService,
@@ -41,6 +48,7 @@ import { reconcileNextSubmissionService } from '@/server/Marketplace/Submissions
 import {
     fixtureCandidate,
     fixtureRequest,
+    fixtureSubmission,
     repository,
 } from './submission.fixture.ts'
 
@@ -67,6 +75,13 @@ async function user(accountType: 'public' | 'staff') {
     return row.id
 }
 
+async function makeDue(id: string) {
+    await db
+        .update(marketplaceSubmissions)
+        .set({ nextCheckAt: new Date(0) })
+        .where(eq(marketplaceSubmissions.id, id))
+}
+
 export async function exerciseSubmissionLifecycle() {
     const owner = await user('public')
     const staff = await user('staff')
@@ -74,7 +89,9 @@ export async function exerciseSubmissionLifecycle() {
     const token = 'fixture-actions-token'
     process.env.MARKETPLACE_CANDIDATE_GITHUB_TOKEN = token
     let challenge: string | undefined
-    let dispatches = 0
+    const dispatches: Array<{ method: string | undefined; body: unknown }> = []
+    const discoveryPages: number[] = []
+    const fixturePermissionIds: string[] = []
     let proofRemoved = false
     let fixture: ReturnType<typeof fixtureCandidate> | undefined
     let repositoryIdentity = repository
@@ -124,8 +141,14 @@ export async function exerciseSubmissionLifecycle() {
             url.pathname ===
             actions + 'workflows/' + pipeline.workflowId + '/dispatches'
         ) {
-            dispatches++
-            expect(init?.method).toBe('POST')
+            const body: unknown = JSON.parse(String(init?.body))
+            dispatches.push({ method: init?.method, body })
+            if (dispatches.length === 1) {
+                return new Response(null, {
+                    status: 429,
+                    headers: { 'retry-after': '120' },
+                })
+            }
             throw new Error('Synthetic lost dispatch response')
         }
         if (!fixture) throw new Error('Candidate fixture has not been set')
@@ -148,7 +171,17 @@ export async function exerciseSubmissionLifecycle() {
             url.pathname ===
             actions + 'workflows/' + pipeline.workflowId + '/runs'
         ) {
-            return Response.json({ workflow_runs: [githubRun] })
+            const page = Number(url.searchParams.get('page'))
+            discoveryPages.push(page)
+            return Response.json({
+                total_count: 101,
+                workflow_runs:
+                    page === 1
+                        ? Array.from({ length: 100 }, () => ({
+                              display_title: 'Unrelated workflow',
+                          }))
+                        : [githubRun],
+            })
         }
         if (url.pathname === runPath) return Response.json(githubRun)
         if (url.pathname === runPath + '/artifacts') {
@@ -192,6 +225,10 @@ export async function exerciseSubmissionLifecycle() {
             Object.assign(mockGitHub, { preconnect: fetch.preconnect }),
         )
     try {
+        const reviewerPermission = await grant(
+            PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+        )
+        await grant(PERMISSIONS.ADMIN_MARKETPLACE_NAMESPACE)
         const created = await createRepositoryClaimService(
             repository.full_name,
             owner,
@@ -243,17 +280,43 @@ export async function exerciseSubmissionLifecycle() {
             reconcileNextSubmissionService(token),
             reconcileNextSubmissionService(token),
         ])
+        const rateLimited = await readSubmission(first.id)
+        expect(rateLimited).toMatchObject({
+            status: 'validating',
+            dispatchRequestedAt: null,
+            buildRunId: null,
+        })
+        expect(rateLimited.history.at(-1)).toMatchObject({
+            failure: 'dispatchRateLimited',
+        })
+        expect(rateLimited.nextCheckAt!.getTime()).toBeGreaterThan(
+            Date.now() + 100_000,
+        )
+        await makeDue(first.id)
+        await reconcileNextSubmissionService(token)
         const lost = await readSubmission(first.id)
         expect(lost).toMatchObject({ status: 'validating', buildRunId: null })
         fixture = fixtureCandidate(lost, claim)
-
-        await db
-            .update(marketplaceSubmissions)
-            .set({ nextCheckAt: new Date(0) })
-            .where(eq(marketplaceSubmissions.id, first.id))
+        expect(dispatches).toEqual(
+            Array.from({ length: 2 }, () => ({
+                method: 'POST',
+                body: {
+                    ref: 'main',
+                    inputs: {
+                        source_repository: claim.repository,
+                        source_commit: request.commit,
+                        source_path: request.path,
+                        publisher_name: request.publisherName,
+                        submission_id: lost.buildKey,
+                    },
+                },
+            })),
+        )
+        await makeDue(first.id)
         await reconcileNextSubmissionService(token)
         const validated = await readSubmission(first.id)
-        expect(dispatches).toBe(1)
+        expect(discoveryPages).toEqual([1, 2])
+        expect(dispatches).toHaveLength(2)
         expect(validated.status).toBe('awaitingReview')
         const candidate = fixture.receipt.candidate
         expect(validated.validation?.candidate).toEqual(candidate)
@@ -271,6 +334,24 @@ export async function exerciseSubmissionLifecycle() {
                 async () => {},
             ),
         ).rejects.toThrow('submissionConflict')
+        await expect(
+            decideCandidateService(input, staff, async () => {
+                await db
+                    .delete(staffUserPermissions)
+                    .where(
+                        and(
+                            eq(staffUserPermissions.userId, staff),
+                            eq(
+                                staffUserPermissions.permissionId,
+                                reviewerPermission,
+                            ),
+                        ),
+                    )
+            }),
+        ).rejects.toBeInstanceOf(PermissionDeniedError)
+        await db
+            .insert(staffUserPermissions)
+            .values({ userId: staff, permissionId: reviewerPermission })
         const decisions = await Promise.allSettled([
             decideCandidateService(input, staff, async () => {}),
             decideCandidateService(
@@ -304,9 +385,23 @@ export async function exerciseSubmissionLifecycle() {
         expect(approved.history.map(({ status }) => status)).toEqual([
             'submitted',
             'validating',
+            'validating',
+            'validating',
             'awaitingReview',
             'approved',
         ])
+        await db
+            .update(marketplaceSubmissions)
+            .set({
+                nextCheckAt: new Date(Date.now() + 500_000),
+            })
+            .where(eq(marketplaceSubmissions.id, first.id))
+        await invalidateSubmission(
+            approved,
+            new InvalidCandidateError('expiredEvidence'),
+            approved.nextCheckAt,
+        )
+        expect((await readSubmission(first.id)).status).toBe('approved')
 
         const publication = {
             submissionId: approved.id,
@@ -471,7 +566,27 @@ export async function exerciseSubmissionLifecycle() {
             status: 'failed',
             failure: 'ownershipChanged',
         })
-        expect(dispatches).toBe(1)
+        repositoryIdentity = repository
+        challenge = created.challenge
+        const waitingRequest = fixtureRequest(claim.id, '1.3.0')
+        submissionsCreated.push(waitingRequest.requestId)
+        const waiting = await submitCandidateService(waitingRequest, owner)
+        const otherIntents = Array.from(
+            { length: RATE_LIMITS.marketplaceBuildBudget.limit },
+            () => ({
+                ...fixtureSubmission(claim),
+                status: 'failed' as const,
+                nextCheckAt: null,
+            }),
+        )
+        await db.insert(marketplaceSubmissions).values(otherIntents)
+        await reconcileNextSubmissionService(token)
+        expect(await readSubmission(waiting.id)).toMatchObject({
+            status: 'submitted',
+            dispatchRequestedAt: null,
+            buildRunId: null,
+        })
+        expect(dispatches).toHaveLength(2)
     } finally {
         fetchMock.mockRestore()
         if (oldToken === undefined)
@@ -498,5 +613,25 @@ export async function exerciseSubmissionLifecycle() {
                 ),
             )
         await db.delete(users).where(inArray(users.id, [owner, staff]))
+        await db
+            .delete(permissions)
+            .where(inArray(permissions.id, fixturePermissionIds))
+    }
+
+    async function grant(key: string) {
+        const [created] = await db
+            .insert(permissions)
+            .values({ key, name: key, description: 'Submission test fixture.' })
+            .onConflictDoNothing()
+            .returning({ id: permissions.id })
+        if (created) fixturePermissionIds.push(created.id)
+        const [permission] = await db
+            .select({ id: permissions.id })
+            .from(permissions)
+            .where(eq(permissions.key, key))
+        await db
+            .insert(staffUserPermissions)
+            .values({ userId: staff, permissionId: permission.id })
+        return permission.id
     }
 }

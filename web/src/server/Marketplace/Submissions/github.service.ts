@@ -2,8 +2,33 @@ import { z } from 'zod'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
 
 export class GitHubRequestError extends Error {
-    constructor(readonly status: number) {
+    readonly retryAt: Date | undefined
+
+    constructor(
+        readonly status: number,
+        headers = new Headers(),
+    ) {
         super('GitHub request failed')
+        const retryAfter = headers.get('retry-after')
+        const quotaExhausted = headers.get('x-ratelimit-remaining') === '0'
+        if (
+            status !== 429 &&
+            !(status === 403 && (retryAfter || quotaExhausted))
+        )
+            return
+        const now = Date.now()
+        const reset = Number(headers.get('x-ratelimit-reset')) * 1000
+        const retry =
+            retryAfter && /^\d+$/.test(retryAfter)
+                ? now + Number(retryAfter) * 1000
+                : Date.parse(retryAfter ?? '')
+        const deadline = Math.max(
+            Number.isFinite(retry) ? retry : now + 60_000,
+            quotaExhausted && Number.isFinite(reset) ? reset : 0,
+        )
+        this.retryAt = new Date(
+            Math.min(now + 86_400_000, Math.max(now + 1_000, deadline)),
+        )
     }
 }
 
@@ -39,7 +64,10 @@ export function githubRequest(
 }
 
 export async function readBoundedBytes(response: Response, limit: number) {
-    if (!response.ok) throw new GitHubRequestError(response.status)
+    if (!response.ok) {
+        await response.body?.cancel().catch(() => undefined)
+        throw new GitHubRequestError(response.status, response.headers)
+    }
     const reader = response.body?.getReader()
     if (!reader) throw new Error('GitHub returned an empty response')
     const chunks: Uint8Array[] = []

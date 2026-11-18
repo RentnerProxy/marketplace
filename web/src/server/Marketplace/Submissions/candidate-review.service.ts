@@ -59,7 +59,8 @@ async function downloadEvidence(artifact: SubmissionArtifact, token: string) {
             redirect: 'manual',
         },
     )
-    if (redirect.status !== 302) throw new GitHubRequestError(redirect.status)
+    if (redirect.status !== 302)
+        throw new GitHubRequestError(redirect.status, redirect.headers)
 
     const location = redirect.headers.get('location')
     if (!location) throw new InvalidCandidateError('invalidEvidence')

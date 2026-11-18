@@ -26,6 +26,7 @@ type SubmissionPatch = Partial<
     Pick<
         Submission,
         | 'nextCheckAt'
+        | 'dispatchRequestedAt'
         | 'buildRunId'
         | 'validation'
         | 'approval'

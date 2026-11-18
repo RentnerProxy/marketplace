@@ -159,6 +159,7 @@ export function SubmissionQueue({
                             <button
                                 type="button"
                                 aria-pressed={state.id === row.id}
+                                disabled={state.actionPending}
                                 className="flex w-full flex-col gap-1 rounded-lg border border-border-dark bg-background-dark/35 p-3 text-start hover:border-primary aria-pressed:border-primary"
                                 onClick={() => handler.select(row.id)}
                             >
@@ -175,7 +176,7 @@ export function SubmissionQueue({
                 <div className="flex gap-3 text-sm">
                     <button
                         className="text-primary disabled:opacity-45"
-                        disabled={state.page === 0}
+                        disabled={state.actionPending || state.page === 0}
                         onClick={() => handler.changePage(-1)}
                     >
                         {t('submissions.previous')}
@@ -183,7 +184,9 @@ export function SubmissionQueue({
                     <button
                         className="text-primary disabled:opacity-45"
                         disabled={
-                            !state.list.data?.hasMore || state.page >= 1000
+                            state.actionPending ||
+                            !state.list.data?.hasMore ||
+                            state.page >= 1000
                         }
                         onClick={() => handler.changePage(1)}
                     >
@@ -219,6 +222,7 @@ export function SubmissionQueue({
                                 <Textarea
                                     label={t('submissions.reason')}
                                     value={state.reason}
+                                    disabled={state.actionPending}
                                     onValueChange={setter.setReason}
                                     rows={2}
                                     required

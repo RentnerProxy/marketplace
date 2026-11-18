@@ -1,6 +1,8 @@
 import { eq } from 'drizzle-orm'
 import type { z } from 'zod'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
+import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import { db } from '@/db'
 import {
     marketplaceOfficialApps,
@@ -68,6 +70,11 @@ export async function changeOfficialAppService(
         await verifyRepositoryClaim(claim)
     }
     return auditedSubmissionWrite(actor, async (tx) => {
+        await requireMutationPermissionService(
+            tx,
+            actor,
+            PERMISSIONS.ADMIN_MARKETPLACE_NAMESPACE,
+        )
         const [current] = await tx
             .select()
             .from(marketplaceOfficialApps)
