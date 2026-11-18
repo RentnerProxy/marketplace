@@ -1,7 +1,8 @@
 import { DataTable } from '@rentnerkev/table'
 import { Link } from '@tanstack/react-router'
-import { Ban, Mail } from 'lucide-react'
+import { Ban } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import { authenticatedTableLayout } from '@/lib/Table/authenticatedTableStyles.ts'
 import { getMarketplaceTableLocale } from '@/lib/Table/tableMessages.ts'
 import SafeDeleteModal from '@/shared/SafeDeleteModal/index.tsx'
 import StaffInvitationPermissionFields from '../StaffInvitationPermissionFields.tsx'
@@ -22,6 +23,7 @@ export default function StaffInvitationManagement() {
     return (
         <>
             <DataTable
+                {...authenticatedTableLayout}
                 data={state.invitations}
                 columns={columns}
                 getRowId={(invitation) => invitation.id}
@@ -30,14 +32,12 @@ export default function StaffInvitationManagement() {
                     invitation.email,
                 ]}
                 title={t('admin.staff.invitations.tableTitle')}
-                icon={<Mail className="size-5" />}
                 locale={getMarketplaceTableLocale(
                     language,
                     t,
                     t('admin.staff.invitations.itemLabel'),
                 )}
                 searchPlaceholder={t('admin.staff.invitations.search')}
-                columnWidthMode="scroll"
                 isLoading={state.isLoading}
                 loadingState={t('admin.staff.invitations.loading')}
                 emptyState={
@@ -64,7 +64,7 @@ export default function StaffInvitationManagement() {
                 toolbarActions={
                     <Link
                         to="/admin/staff"
-                        className="rounded-md border border-border-dark px-3 py-2 text-sm font-semibold hover:bg-input-dark"
+                        className="marketplace-table-control inline-flex items-center justify-center"
                     >
                         {t('admin.staff.inviteTitle')}
                     </Link>

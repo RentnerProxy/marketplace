@@ -23,32 +23,30 @@ export default function useUserTableActionsLogic({
     const cannotDeactivateCurrentUser = user.isCurrentUser && user.isActive
     const cannotDeleteCurrentUser = user.isCurrentUser
 
-    function getToggleStatusTooltip() {
+    function getToggleStatusRestriction() {
         if (cannotDeactivateCurrentUser)
             return t('admin.users.deactivateSelfForbiddenShort')
         if (isProtectedSuperUser) return t('admin.users.statusForbiddenShort')
-        return t(user.isActive ? 'common.deactivate' : 'common.activate')
+        return undefined
     }
 
-    function getPasswordResetTooltip() {
+    function getPasswordResetRestriction() {
         if (!user.isActive) return t('admin.users.passwordResetInactiveShort')
         if (isProtectedSuperUser)
             return t('admin.users.passwordResetForbiddenShort')
-        return t('userSettings.security.passwordReset')
+        return undefined
     }
 
-    function getDeleteTooltip() {
+    function getDeleteRestriction() {
         if (cannotDeleteCurrentUser)
             return t('admin.users.deleteSelfForbiddenShort')
         if (isProtectedSuperUser) return t('admin.users.deleteForbiddenShort')
-        return t('common.delete')
+        return undefined
     }
 
     return {
         state: {
             isProtectedSuperUser,
-            cannotDeactivateCurrentUser,
-            cannotDeleteCurrentUser,
             isToggleStatusDisabled:
                 isTogglingUserActive ||
                 cannotDeactivateCurrentUser ||
@@ -70,12 +68,12 @@ export default function useUserTableActionsLogic({
                     ? 'admin.users.conversion.toStaff'
                     : 'admin.users.conversion.toPublic',
             ),
-            editTooltip: isProtectedSuperUser
+            editRestriction: isProtectedSuperUser
                 ? t('admin.users.editForbiddenShort')
-                : t('common.edit'),
-            toggleStatusTooltip: getToggleStatusTooltip(),
-            passwordResetTooltip: getPasswordResetTooltip(),
-            deleteTooltip: getDeleteTooltip(),
+                : undefined,
+            toggleStatusRestriction: getToggleStatusRestriction(),
+            passwordResetRestriction: getPasswordResetRestriction(),
+            deleteRestriction: getDeleteRestriction(),
         },
         handler: {
             handleEditUser: () => onEditUser(user),

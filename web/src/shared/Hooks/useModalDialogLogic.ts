@@ -1,17 +1,19 @@
-import type { SafeDeleteModalLogicReturn } from '../Types/types.ts'
 import { useEffect, useRef } from 'react'
-import type { UseSafeDeleteModalLogicProps } from '@/shared/SafeDeleteModal/Types/types.ts'
+import type {
+    ModalDialogLogicReturn,
+    UseModalDialogLogicProps,
+} from '@/shared/Types/modal-dialog.types.ts'
 import useHasMounted from '@/shared/Hooks/useHasMounted.ts'
 
-export default function useSafeDeleteModalLogic({
+export default function useModalDialogLogic({
     isOpen,
-    isConfirming,
+    closeDisabled,
     onClose,
-}: UseSafeDeleteModalLogicProps): SafeDeleteModalLogicReturn {
+}: UseModalDialogLogicProps): ModalDialogLogicReturn {
     const mounted = useHasMounted()
     const shouldRender = isOpen && mounted
     const dialogRef = useRef<HTMLDialogElement>(null)
-    const cancelButtonRef = useRef<HTMLButtonElement>(null)
+    const closeButtonRef = useRef<HTMLButtonElement>(null)
 
     useEffect(() => {
         const dialog = dialogRef.current
@@ -23,7 +25,7 @@ export default function useSafeDeleteModalLogic({
         const previousOverflow = style.overflow
         dialog.showModal()
         style.overflow = 'hidden'
-        cancelButtonRef.current?.focus()
+        closeButtonRef.current?.focus()
 
         return () => {
             dialog.close()
@@ -39,9 +41,9 @@ export default function useSafeDeleteModalLogic({
         handler: {
             handleCancel: (event) => {
                 event.preventDefault()
-                if (!isConfirming) onClose()
+                if (!closeDisabled) onClose()
             },
         },
-        refs: { dialogRef, cancelButtonRef },
+        refs: { dialogRef, closeButtonRef },
     }
 }

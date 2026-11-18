@@ -18,12 +18,12 @@ import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import { hasPermission } from '@/lib/Permissions/permissions.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import {
+    AUTHENTICATED_THEME_MODE_COLORS,
     DEFAULT_FONT_FAMILY,
     DEFAULT_FONT_SIZE,
     DEFAULT_PRIMARY_COLOR,
     DEFAULT_THEME_MODE,
     USER_FONT_FAMILY_STYLES,
-    USER_THEME_MODE_COLORS,
 } from '@/config/user-theme-colors.config.ts'
 import {
     getPrimaryColorForeground,
@@ -115,11 +115,11 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
         ? getProfileImageSrc(userId, profileImageVersion, 64)
         : DEFAULT_IMAGE_64_SRC
 
-    const systemLogoSrc64 = systemSettings?.logoSrc64 ?? DEFAULT_FAVICON_SRC
+    const systemLogoSrc = systemSettings?.logoSrc ?? DEFAULT_FAVICON_SRC
     const systemFaviconSrc = systemSettings?.faviconSrc ?? DEFAULT_FAVICON_SRC
     const companyName =
         systemSettings?.companyName ?? PROJECT_CONFIG.defaultName
-    const themeColors = USER_THEME_MODE_COLORS[themeMode]
+    const themeColors = AUTHENTICATED_THEME_MODE_COLORS[themeMode]
     const primaryForeground = getPrimaryColorForeground(primaryColor)
     const shellStyle = {
         '--color-primary': primaryColor,
@@ -251,7 +251,7 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
             userId: userId ?? null,
             username: sessionData?.user?.username ?? t('nav.user'),
             companyName,
-            systemLogoSrc64,
+            systemLogoSrc,
             systemFaviconSrc,
             profileImageSrc64,
             primaryColor,
@@ -287,6 +287,7 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
         handler: {
             expandMaintenanceBanner,
             minimizeMaintenanceBanner,
+            toggleCollapse: uiHandler.toggleCollapse,
         },
     }
 }

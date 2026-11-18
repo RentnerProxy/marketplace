@@ -17,31 +17,37 @@ export default function CompanyLogoSection({
     const { t } = useTranslationStore()
 
     return (
-        <div className="h-full">
-            <section className="h-full rounded-xl border border-border-dark bg-surface-dark p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="@container/logo min-w-0">
+            <section
+                aria-labelledby="system-company-logo-title"
+                className="marketplace-content-panel h-full rounded-2xl border border-border-dark bg-surface-dark p-5 sm:p-6"
+            >
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                        <HeadingIcon icon={ImageUp} />
+                        <HeadingIcon icon={ImageUp} size="sm" />
                         <div>
-                            <h2 className="text-lg font-bold text-white">
+                            <h2
+                                id="system-company-logo-title"
+                                className="text-base leading-tight font-semibold tracking-tight text-foreground"
+                            >
                                 {t('admin.systemSettings.companyLogo')}
                             </h2>
-                            <p className="mt-1 text-sm text-secondary-text">
+                            <p className="mt-1 text-sm leading-5 text-secondary-text">
                                 {t(
                                     'admin.systemSettings.companyLogoDescription',
                                 )}
                             </p>
                         </div>
                     </div>
-                    <label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-border-dark bg-input-dark px-4 text-sm font-semibold text-white transition-colors hover:border-primary/40">
-                        <Upload className="h-4 w-4" />
+                    <label className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border-dark bg-input-dark/60 px-3 text-sm font-semibold text-foreground transition-colors focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary hover:bg-input-dark">
+                        <Upload className="size-4" aria-hidden="true" />
                         {t('admin.systemSettings.logoChoose')}
                         <input
                             type="file"
                             accept={IMAGE_UPLOAD_CONFIG.allowedMimeTypes.join(
                                 ',',
                             )}
-                            className="hidden"
+                            className="sr-only"
                             onChange={(event) =>
                                 handler.handleSelectLogo(
                                     event.target.files?.[0] ?? null,
@@ -51,8 +57,8 @@ export default function CompanyLogoSection({
                     </label>
                 </div>
 
-                <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
-                    <div className="relative flex min-h-105 items-center justify-center overflow-hidden rounded-xl border border-border-dark bg-background-dark">
+                <div className="mt-5 grid gap-4 @lg/logo:grid-cols-[minmax(0,1fr)_11rem]">
+                    <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl border border-border-dark bg-background-dark @lg/logo:min-h-96">
                         {state.selectedLogoDataUrl ? (
                             <Cropper
                                 image={state.selectedLogoDataUrl}
@@ -83,12 +89,12 @@ export default function CompanyLogoSection({
                         )}
                     </div>
 
-                    <div className="space-y-4 rounded-xl border border-border-dark bg-input-dark/50 p-4">
+                    <div className="space-y-4 rounded-xl border border-border-dark bg-input-dark/35 p-4">
                         <div>
-                            <h3 className="text-sm font-semibold text-white">
+                            <h3 className="text-sm font-semibold text-foreground">
                                 {t('admin.systemSettings.preview')}
                             </h3>
-                            <div className="mt-3 flex h-44 items-center justify-center rounded-lg border border-border-dark bg-background-dark p-5">
+                            <div className="mt-3 flex h-36 items-center justify-center rounded-lg border border-border-dark bg-background-dark p-4">
                                 <img
                                     src={
                                         state.selectedLogoDataUrl ??

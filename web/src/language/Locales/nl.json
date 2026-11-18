@@ -2,6 +2,9 @@
     "common": {
         "active": "Actief",
         "actions": "Acties",
+        "openActions": "Acties openen",
+        "details": "Details",
+        "close": "Sluiten",
         "all": "Alle",
         "cancel": "Annuleren",
         "delete": "Verwijderen",
@@ -360,7 +363,7 @@
             "newValue": "+ Nieuw",
             "message": "Bericht",
             "route": "Route",
-            "showDetails": "Auditdetails tonen",
+            "entryId": "Item-ID",
             "searchPlaceholder": "Auditlogboeken doorzoeken...",
             "userFilterPlaceholder": "Gebruikers filteren...",
             "messageFilterPlaceholder": "Berichten filteren...",

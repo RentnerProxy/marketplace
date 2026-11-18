@@ -37,17 +37,15 @@ export type UserTableActionsProps = Omit<
 export type UserTableActionsLogicReturn = {
     state: {
         isProtectedSuperUser: boolean
-        cannotDeactivateCurrentUser: boolean
-        cannotDeleteCurrentUser: boolean
         isToggleStatusDisabled: boolean
         isPasswordResetDisabled: boolean
         isDeleteDisabled: boolean
         showConvertAccount: boolean
         convertAccountLabel: string
-        editTooltip: string
-        toggleStatusTooltip: string
-        passwordResetTooltip: string
-        deleteTooltip: string
+        editRestriction: string | undefined
+        toggleStatusRestriction: string | undefined
+        passwordResetRestriction: string | undefined
+        deleteRestriction: string | undefined
     }
     handler: {
         handleEditUser: () => void

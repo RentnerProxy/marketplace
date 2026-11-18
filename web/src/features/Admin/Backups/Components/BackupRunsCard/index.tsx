@@ -1,11 +1,15 @@
-import { Clock3, History } from 'lucide-react'
+import { Clock3 } from 'lucide-react'
 import { DataTable } from '@rentnerkev/table'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import { authenticatedTableLayout } from '@/lib/Table/authenticatedTableStyles.ts'
 import {
     getMarketplaceTableDateRangeOptions,
     getMarketplaceTableLocale,
 } from '@/lib/Table/tableMessages.ts'
-import BackupRestorePanel from '../BackupRestorePanel.tsx'
+import RowDetailsDialog from '@/shared/Table/RowDetailsDialog.tsx'
+import BackupRestorePanel, {
+    BackupRestoreActions,
+} from '../BackupRestorePanel.tsx'
 import BackupStatBadge from '../BackupStatBadge.tsx'
 import useBackupCountdown from './Hooks/useBackupCountdown.ts'
 import useBackupTableColumns from './Hooks/useBackupTableColumns.tsx'
@@ -28,93 +32,107 @@ export default function BackupRunsCard({
         onDeleteBackup: backupHandler.handleDeleteBackup,
     })
     return (
-        <DataTable<BackupRun>
-            locale={getMarketplaceTableLocale(
-                language,
-                t,
-                t('admin.backups.table.itemLabel'),
-            )}
-            title={t('admin.backups.historyTitle')}
-            showRowCount={false}
-            icon={<History size={20} />}
-            description={
-                backupState.isAutomaticBackupEnabled && (
-                    <span className="flex items-center gap-2">
-                        <Clock3
-                            size={14}
-                            className="text-primary"
-                            aria-hidden
+        <>
+            <DataTable<BackupRun>
+                {...authenticatedTableLayout}
+                locale={getMarketplaceTableLocale(
+                    language,
+                    t,
+                    t('admin.backups.table.itemLabel'),
+                )}
+                title={t('admin.backups.historyTitle')}
+                showRowCount={false}
+                description={
+                    backupState.isAutomaticBackupEnabled && (
+                        <span className="flex items-center gap-2">
+                            <Clock3
+                                size={14}
+                                className="text-primary"
+                                aria-hidden
+                            />
+                            {nextBackupIn
+                                ? t('admin.backups.nextBackupIn', {
+                                      time: nextBackupIn,
+                                  })
+                                : t('admin.backups.nextBackupCalculating')}
+                        </span>
+                    )
+                }
+                toolbarActions={
+                    <div className="-order-1 flex basis-full flex-wrap gap-2 lg:justify-end">
+                        <BackupStatBadge
+                            label={t('admin.backups.stats.total')}
+                            value={backupState.stats.total}
+                            className="border-border-dark bg-input-dark text-white"
                         />
-                        {nextBackupIn
-                            ? t('admin.backups.nextBackupIn', {
-                                  time: nextBackupIn,
-                              })
-                            : t('admin.backups.nextBackupCalculating')}
-                    </span>
-                )
-            }
-            classNames={{
-                toolbarControls:
-                    'flex flex-wrap items-center gap-2 lg:justify-end',
-            }}
-            toolbarActions={
-                <div className="-order-1 flex basis-full flex-wrap gap-2 lg:justify-end">
-                    <BackupStatBadge
-                        label={t('admin.backups.stats.total')}
-                        value={backupState.stats.total}
-                        className="border-border-dark bg-input-dark text-white"
+                        <BackupStatBadge
+                            label={t('admin.backups.stats.successful')}
+                            value={backupState.stats.successful}
+                            className="border-border-dark bg-input-dark text-secondary-text"
+                        />
+                        <BackupStatBadge
+                            label={t('admin.backups.stats.failed')}
+                            value={backupState.stats.failed}
+                            className="border-border-dark bg-input-dark text-secondary-text"
+                        />
+                        <BackupStatBadge
+                            label={t('admin.backups.stats.imported')}
+                            value={backupState.stats.imported}
+                            className="border-border-dark bg-input-dark text-secondary-text"
+                        />
+                        <BackupStatBadge
+                            label={t('admin.backups.stats.restored')}
+                            value={backupState.stats.restored}
+                            className="border-border-dark bg-input-dark text-secondary-text"
+                        />
+                    </div>
+                }
+                data={backupState.runs}
+                columns={columns}
+                getRowId={getBackupRunRowId}
+                getRowLabel={(run) => run.fileName ?? run.id}
+                tableOptions={{
+                    initialState: {
+                        sorting: [{ id: 'startedAt', desc: true }],
+                    },
+                }}
+                columnSettings
+                resizableColumns
+                dateRangeOptions={getMarketplaceTableDateRangeOptions(language)}
+                pageSizeOptions={pageSizeOptions.map((count) => ({
+                    value: count,
+                    label: t('admin.backups.table.entryCount', { count }),
+                }))}
+                searchPlaceholder={t('admin.backups.table.searchPlaceholder')}
+                isLoading={isLoading}
+                loadingState={t('admin.backups.loading')}
+                emptyState={t('admin.backups.empty')}
+            />
+            {restoreBackupId && (
+                <RowDetailsDialog
+                    title={t('admin.backups.restore')}
+                    closeDisabled={activeActionId === restoreBackupId}
+                    onClose={backupHandler.handleCancelRestore}
+                    footer={
+                        <BackupRestoreActions
+                            backupId={restoreBackupId}
+                            state={backupState}
+                            handler={backupHandler}
+                        />
+                    }
+                >
+                    <p className="mb-3 wrap-break-word text-sm text-secondary-text">
+                        {backupState.runs.find(
+                            (run) => run.id === restoreBackupId,
+                        )?.fileName ?? restoreBackupId}
+                    </p>
+                    <BackupRestorePanel
+                        backupId={restoreBackupId}
+                        state={backupState}
+                        handler={backupHandler}
                     />
-                    <BackupStatBadge
-                        label={t('admin.backups.stats.successful')}
-                        value={backupState.stats.successful}
-                        className="border-border-dark bg-input-dark text-secondary-text"
-                    />
-                    <BackupStatBadge
-                        label={t('admin.backups.stats.failed')}
-                        value={backupState.stats.failed}
-                        className="border-border-dark bg-input-dark text-secondary-text"
-                    />
-                    <BackupStatBadge
-                        label={t('admin.backups.stats.imported')}
-                        value={backupState.stats.imported}
-                        className="border-border-dark bg-input-dark text-secondary-text"
-                    />
-                    <BackupStatBadge
-                        label={t('admin.backups.stats.restored')}
-                        value={backupState.stats.restored}
-                        className="border-border-dark bg-input-dark text-secondary-text"
-                    />
-                </div>
-            }
-            data={backupState.runs}
-            columns={columns}
-            getRowId={getBackupRunRowId}
-            getRowLabel={(run) => run.fileName ?? run.id}
-            tableOptions={{
-                initialState: { sorting: [{ id: 'startedAt', desc: true }] },
-            }}
-            columnSettings
-            resizableColumns
-            columnWidthMode="scroll"
-            dateRangeOptions={getMarketplaceTableDateRangeOptions(language)}
-            expansionMode="single"
-            expandedRowId={restoreBackupId}
-            showExpandColumn={false}
-            pageSizeOptions={pageSizeOptions.map((count) => ({
-                value: count,
-                label: t('admin.backups.table.entryCount', { count }),
-            }))}
-            searchPlaceholder={t('admin.backups.table.searchPlaceholder')}
-            isLoading={isLoading}
-            loadingState={t('admin.backups.loading')}
-            emptyState={t('admin.backups.empty')}
-            renderExpandedRow={(row) => (
-                <BackupRestorePanel
-                    backupId={row.original.id}
-                    state={backupState}
-                    handler={backupHandler}
-                />
+                </RowDetailsDialog>
             )}
-        />
+        </>
     )
 }

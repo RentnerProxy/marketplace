@@ -1,6 +1,6 @@
 import { DataTable } from '@rentnerkev/table'
-import { UsersRound } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import { authenticatedTableLayout } from '@/lib/Table/authenticatedTableStyles.ts'
 import {
     getMarketplaceTableDateRangeOptions,
     getMarketplaceTableLocale,
@@ -26,6 +26,7 @@ export default function UsersTable(props: UsersTableProps) {
 
     return (
         <DataTable
+            {...authenticatedTableLayout}
             data={state.users}
             columns={columns}
             getRowId={(user) => user.id}
@@ -39,7 +40,6 @@ export default function UsersTable(props: UsersTableProps) {
                     ? 'admin.staff.tableDescription'
                     : 'admin.users.tableDescription',
             )}
-            icon={<UsersRound className="size-5" />}
             locale={getMarketplaceTableLocale(
                 language,
                 t,
@@ -59,7 +59,6 @@ export default function UsersTable(props: UsersTableProps) {
             tableOptions={{
                 initialState: { sorting: [{ id: 'createdAt', desc: true }] },
             }}
-            columnWidthMode="scroll"
             dateRangeOptions={getMarketplaceTableDateRangeOptions(language)}
             resizableColumns
             columnSettings

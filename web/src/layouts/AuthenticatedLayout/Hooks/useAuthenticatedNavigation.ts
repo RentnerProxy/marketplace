@@ -17,7 +17,7 @@ function getNavigationSubtitle(
     t: (key: string) => string,
 ) {
     if (permissions.some((permission) => permission.startsWith('admin.'))) {
-        return t('nav.admin')
+        return t('nav.navigation')
     }
 
     if (hasPermission(permissions, PERMISSIONS.USER_DASHBOARD)) {

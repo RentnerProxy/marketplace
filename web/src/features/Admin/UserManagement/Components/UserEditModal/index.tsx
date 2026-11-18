@@ -23,15 +23,15 @@ export default function EditUserModal({
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-            <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border-dark bg-surface-dark">
+        <div className="marketplace-signed-in fixed inset-0 z-50 flex items-center justify-center bg-marketplace-void/70 p-2 backdrop-blur-[2px] sm:p-6">
+            <div className="marketplace-dialog-panel flex max-h-[calc(100dvh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border-dark bg-surface-dark text-foreground sm:max-h-[min(44rem,calc(100dvh-3rem))]">
                 <Header onClose={onClose} />
 
                 <form
-                    className="flex min-h-0 flex-col p-5"
+                    className="flex min-h-0 flex-1 flex-col"
                     onSubmit={handler.handleSubmit}
                 >
-                    <div className="min-h-0 overflow-y-auto pr-1">
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
                         <GeneralUserInfo
                             draftForm={state.draftForm}
                             onFieldChange={handler.handleFieldChange}

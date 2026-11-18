@@ -39,14 +39,12 @@ export default function useAuthenticatedSidebarLogic(): AuthenticatedSidebarLogi
 
     return {
         state: {
-            isCollapsed: state.isCollapsed,
             isLoggingOut: logoutMutation.isPending,
             openGroups: state.openGroups,
         },
         handler: {
             handleLogout,
             handleOpenUserSettings: handler.openUserSettings,
-            handleToggleCollapse: handler.toggleCollapse,
             handleToggleGroup: handler.toggleGroup,
         },
     }

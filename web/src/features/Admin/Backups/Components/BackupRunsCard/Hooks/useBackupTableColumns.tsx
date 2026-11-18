@@ -6,6 +6,8 @@ import useTranslationStore from '@/language/useTranslationStore.ts'
 import { BACKUP_ARCHIVE_EXTENSION } from '@/config/backup.config.ts'
 import { formatDate } from '@/lib/Date/date.ts'
 import { formatFileSize } from '@/lib/Format/format.ts'
+import { authenticatedTableActionColumn } from '@/lib/Table/authenticatedTableStyles.ts'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
 import StatusIndicator from '@/shared/StatusIndicator.tsx'
 import type { StatusIndicatorTone } from '@/shared/Types/status-indicator.types.ts'
 import type { BackupRunStatus } from '@/lib/Backups/Types/backup.types.ts'
@@ -181,99 +183,52 @@ export default function useBackupTableColumns({
                 ),
             },
             {
-                id: 'actions',
+                ...authenticatedTableActionColumn,
                 header: t('common.actions'),
-                size: 180,
-                minSize: 180,
-                enableSorting: false,
-                enableColumnFilter: false,
-                enableHiding: false,
-                enableResizing: false,
                 cell: ({ row }) => {
                     const backup = row.original
-                    const canUseBackup =
-                        backup.status === 'completed' &&
-                        Boolean(backup.fileName)
+                    if (backup.status !== 'completed' || !backup.fileName)
+                        return null
 
-                    if (!canUseBackup) return null
-                    const supportsEncryptedArchive =
-                        backup.fileName?.endsWith(BACKUP_ARCHIVE_EXTENSION) ===
-                        true
-                    const unsupportedFormatMessage = t(
-                        'admin.backups.encryptedFormatRequired',
+                    const supportsEncryptedArchive = backup.fileName.endsWith(
+                        BACKUP_ARCHIVE_EXTENSION,
                     )
-
-                    const actionClassName =
-                        'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border-dark bg-input-dark text-secondary-text transition-colors hover:border-primary/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-50'
+                    const unsupportedFormatMessage = supportsEncryptedArchive
+                        ? undefined
+                        : t('admin.backups.encryptedFormatRequired')
+                    const isBusy = activeActionId === backup.id
 
                     return (
-                        <div className="flex justify-end gap-2">
-                            <CustomTooltip
-                                disabledTrigger={!supportsEncryptedArchive}
-                                content={
-                                    supportsEncryptedArchive
-                                        ? t('admin.backups.download')
-                                        : unsupportedFormatMessage
-                                }
-                            >
-                                {supportsEncryptedArchive ? (
-                                    <a
-                                        href={`/api/admin/backups/${backup.id}`}
-                                        aria-label={t('admin.backups.download')}
-                                        className={actionClassName}
-                                    >
-                                        <Download className="h-4 w-4" />
-                                    </a>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        disabled
-                                        aria-label={unsupportedFormatMessage}
-                                        className={actionClassName}
-                                    >
-                                        <Download className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </CustomTooltip>
-                            <CustomTooltip
-                                disabledTrigger={
-                                    !supportsEncryptedArchive ||
-                                    activeActionId === backup.id
-                                }
-                                content={
-                                    supportsEncryptedArchive
-                                        ? t('admin.backups.restore')
-                                        : unsupportedFormatMessage
-                                }
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => onOpenRestore(backup.id)}
-                                    disabled={
-                                        !supportsEncryptedArchive ||
-                                        activeActionId === backup.id
-                                    }
-                                    aria-label={t('admin.backups.restore')}
-                                    className={actionClassName}
-                                >
-                                    <RotateCcw className="h-4 w-4" />
-                                </button>
-                            </CustomTooltip>
-                            <CustomTooltip
-                                content={t('admin.backups.delete')}
-                                disabledTrigger={activeActionId === backup.id}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => onDeleteBackup(backup.id)}
-                                    disabled={activeActionId === backup.id}
-                                    aria-label={t('admin.backups.delete')}
-                                    className={actionClassName}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </CustomTooltip>
-                        </div>
+                        <ActionMenu
+                            ariaLabel={`${t('common.openActions')} (${backup.fileName})`}
+                            items={[
+                                {
+                                    id: 'download',
+                                    label: t('admin.backups.download'),
+                                    href: `/api/admin/backups/${encodeURIComponent(backup.id)}`,
+                                    icon: <Download className="size-4" />,
+                                    disabled: !supportsEncryptedArchive,
+                                    description: unsupportedFormatMessage,
+                                },
+                                {
+                                    id: 'restore',
+                                    label: t('admin.backups.restore'),
+                                    onSelect: () => onOpenRestore(backup.id),
+                                    icon: <RotateCcw className="size-4" />,
+                                    disabled:
+                                        !supportsEncryptedArchive || isBusy,
+                                    description: unsupportedFormatMessage,
+                                },
+                                {
+                                    id: 'delete',
+                                    label: t('admin.backups.delete'),
+                                    onSelect: () => onDeleteBackup(backup.id),
+                                    icon: <Trash2 className="size-4" />,
+                                    disabled: isBusy,
+                                    destructive: true,
+                                },
+                            ]}
+                        />
                     )
                 },
             },

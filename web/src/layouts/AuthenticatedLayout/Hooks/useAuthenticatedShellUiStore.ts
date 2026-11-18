@@ -57,11 +57,14 @@ function minimizeMaintenanceBanner() {
     setState({ isMaintenanceBannerMinimized: true })
 }
 
-function toggleGroup(labelKey: string) {
+function toggleGroup(labelKey: string, expandCollapsedSidebar = true) {
     setState((current) => ({
+        isCollapsed: current.isCollapsed && !expandCollapsedSidebar,
         openGroups: {
             ...current.openGroups,
-            [labelKey]: !current.openGroups[labelKey],
+            [labelKey]:
+                (current.isCollapsed && expandCollapsedSidebar) ||
+                !(current.openGroups[labelKey] ?? true),
         },
     }))
 }

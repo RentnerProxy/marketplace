@@ -1,18 +1,16 @@
 import { describe, expect, it, mock } from 'bun:test'
-import { createElement } from 'react'
-import type { ReactNode } from 'react'
-import { useDataTableLogic } from '@rentnerkev/table'
+import { createElement, Fragment, isValidElement } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
+import { DataTable, useDataTableLogic } from '@rentnerkev/table'
 import type { DataTableLogicResult, DataTableProps } from '@rentnerkev/table'
 import { renderToStaticMarkup } from 'react-dom/server'
 import BackupRunsCard from '@/features/Admin/Backups/Components/BackupRunsCard/index.tsx'
 import type { BackupRun } from '@/features/Admin/Backups/Types/backup-domain.types.ts'
 import type { BackupRunsCardProps } from '@/features/Admin/Backups/Components/BackupRunsCard/Types/backup-table.types.ts'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
+import RowDetailsDialog from '@/shared/Table/RowDetailsDialog.tsx'
 import { completedRun } from '../backupFixtures.ts'
-import {
-    elements,
-    findElement,
-    invoke,
-} from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
+import { findElement } from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
 
 mock.module('@/language/useTranslationStore.ts', () => ({
     default: () => ({
@@ -51,16 +49,19 @@ function props(): BackupRunsCardProps {
 }
 
 function capture(fixture: BackupRunsCardProps) {
-    let options: DataTableProps<BackupRun> | undefined
     let logic: DataTableLogicResult<BackupRun> | undefined
     function Capture() {
-        options = BackupRunsCard(fixture).props
-        if (!options) throw new Error('Missing backup table options')
-        logic = useDataTableLogic(options)
+        const table = findElement(
+            BackupRunsCard(fixture),
+            (element) => element.type === DataTable,
+        )
+        if (!isValidElement<DataTableProps<BackupRun>>(table))
+            throw new Error('Missing backup table options')
+        logic = useDataTableLogic(table.props)
         return null
     }
     renderToStaticMarkup(createElement(Capture))
-    if (!options || !logic) throw new Error('Missing backup table logic')
+    if (!logic) throw new Error('Missing backup table logic')
     return logic
 }
 
@@ -73,6 +74,16 @@ function actionCell(logic: DataTableLogicResult<BackupRun>): ReactNode {
     if (typeof renderer !== 'function')
         throw new Error('Missing backup action renderer')
     return renderer(cell.getContext())
+}
+
+function actionItems(logic: DataTableLogicResult<BackupRun>) {
+    const tree = actionCell(logic)
+    if (
+        !isValidElement<ComponentProps<typeof ActionMenu>>(tree) ||
+        tree.type !== ActionMenu
+    )
+        throw new Error('Missing backup action menu')
+    return tree.props.items
 }
 
 describe('Backup runs card', () => {
@@ -96,7 +107,7 @@ describe('Backup runs card', () => {
         ).not.toContain('admin.backups.nextBackupIn')
     })
 
-    it('renders run status, archive size, trigger, storage and failure details with expanded restore', () => {
+    it('renders run status, archive size, trigger, storage and failure details', () => {
         const fixture = props()
         fixture.state.runs = [
             completedRun,
@@ -111,7 +122,6 @@ describe('Backup runs card', () => {
                 errorMessage: 'Archive verification failed',
             },
         ]
-        fixture.state.restoreBackupId = completedRun.id
         const html = renderToStaticMarkup(
             createElement(BackupRunsCard, fixture),
         )
@@ -126,7 +136,6 @@ describe('Backup runs card', () => {
             'admin.backups.status.failed',
             'Archive verification failed',
             'admin.backups.preparing',
-            'admin.backups.restoreWarning',
             'admin.backups.stats.imported',
             'admin.backups.stats.restored',
         ])
@@ -161,25 +170,12 @@ describe('Backup runs card', () => {
             type: 'dateRange',
         })
         expect(logic.table.getColumn('actions')?.getCanHide()).toBe(false)
-        const tree = actionCell(logic)
-        const html = renderToStaticMarkup(tree)
-        expect(html).toContain('href="/api/admin/backups/backup-1"')
-        invoke(
-            findElement(
-                tree,
-                (element) =>
-                    element.props['aria-label'] === 'admin.backups.restore',
-            ),
-            'onClick',
-        )
-        invoke(
-            findElement(
-                tree,
-                (element) =>
-                    element.props['aria-label'] === 'admin.backups.delete',
-            ),
-            'onClick',
-        )
+        const [download, restore, remove] = actionItems(logic)
+        expect(download).toMatchObject({ href: '/api/admin/backups/backup-1' })
+        expect(restore).toMatchObject({ disabled: false })
+        expect(remove).toMatchObject({ destructive: true, disabled: false })
+        restore?.onSelect?.()
+        remove?.onSelect?.()
         expect(fixture.handler.handleOpenRestore).toHaveBeenCalledWith(
             completedRun.id,
         )
@@ -188,20 +184,10 @@ describe('Backup runs card', () => {
         )
         fixture.state.activeActionId = completedRun.id
         expect(
-            elements(actionCell(capture(fixture)))
-                .filter((element) => element.type === 'button')
-                .every((element) => element.props.disabled),
-        ).toBe(true)
+            actionItems(capture(fixture)).map(({ disabled }) => disabled),
+        ).toEqual([false, true, true])
         fixture.state.runs = [{ ...completedRun, fileName: 'legacy.tar' }]
-        const legacy = actionCell(capture(fixture))
-        expect(renderToStaticMarkup(legacy)).not.toContain('href=')
-        expect(
-            findElement(
-                legacy,
-                (element) =>
-                    element.props['aria-label'] === 'admin.backups.restore',
-            ).props.disabled,
-        ).toBe(true)
+        expect(actionItems(capture(fixture))[0]?.disabled).toBe(true)
         fixture.state.runs = [{ ...completedRun, status: 'queued' }]
         expect(actionCell(capture(fixture))).toBeNull()
         fixture.state.runs = [{ ...completedRun, includesStorage: false }]
@@ -212,37 +198,52 @@ describe('Backup runs card', () => {
         ).toBe('excluded')
     })
 
-    it('renders only the selected inline restore confirmation without an expand column', () => {
+    it('opens restore confirmation outside the table, where it remains available across pages', () => {
         const fixture = props()
         const secondRun = { ...completedRun, id: 'backup-2' }
         fixture.state.runs = [completedRun, secondRun]
-        const closed = capture(fixture).table
-        expect(closed.getRow(completedRun.id).getIsExpanded()).toBe(false)
-        expect(closed.getRow(secondRun.id).getIsExpanded()).toBe(false)
-
-        fixture.state.restoreBackupId = completedRun.id
-        const open = capture(fixture).table
-        expect(open.getRow(completedRun.id).getIsExpanded()).toBe(true)
-        expect(open.getRow(secondRun.id).getIsExpanded()).toBe(false)
-
         const idleHtml = renderToStaticMarkup(
             createElement(BackupRunsCard, fixture),
         )
-        expect(idleHtml).toContain('common.cancel')
-        expect(idleHtml).toContain('admin.backups.restoreConfirm')
+        expect(idleHtml).not.toContain('admin.backups.restoreConfirm')
+
+        fixture.state.restoreBackupId = completedRun.id
+        fixture.state.runs = [secondRun]
+        function Capture() {
+            const body = BackupRunsCard(fixture)
+            const dialog = findElement(
+                body,
+                (element) => element.type === RowDetailsDialog,
+            )
+            expect(dialog.props.closeDisabled).toBe(
+                fixture.state.activeActionId === completedRun.id,
+            )
+            expect(dialog.props.onClose).toBe(
+                fixture.handler.handleCancelRestore,
+            )
+            expect(dialog.props.footer).toBeDefined()
+            return createElement(
+                Fragment,
+                null,
+                dialog.props.children,
+                dialog.props.footer as ReactNode,
+            )
+        }
+        const dialogHtml = renderToStaticMarkup(createElement(Capture))
+        expect(dialogHtml).toContain('common.cancel')
+        expect(dialogHtml).toContain('admin.backups.restoreConfirm')
+        expect(dialogHtml).toContain('admin.backups.restoreWarning')
+        expect(dialogHtml).toContain(`restore-warning-${completedRun.id}`)
+        expect(dialogHtml).not.toContain(`restore-warning-${secondRun.id}`)
 
         fixture.state.activeActionId = completedRun.id
-        const busy = capture(fixture).table.getRow(completedRun.id)
-        expect(busy.getIsExpanded()).toBe(true)
-
+        const busyHtml = renderToStaticMarkup(createElement(Capture))
+        expect(busyHtml.match(/disabled=""/g)).toHaveLength(3)
         const html = renderToStaticMarkup(
             createElement(BackupRunsCard, fixture),
         )
-        expect(html).toContain('data-row-details-for="backup-1"')
-        expect(html).not.toContain('data-row-details-for="backup-2"')
+        expect(html).not.toContain('data-row-details-for=')
         expect(html).not.toContain('data-table-slot="expandButton"')
-        expect(html.match(/<td[^>]*colSpan="7"[^>]*>/g)).toHaveLength(1)
-        expect(html.match(/<tr\b/g)).toHaveLength(4)
     })
 
     it('applies text, select and local calendar date filters to backup runs', () => {

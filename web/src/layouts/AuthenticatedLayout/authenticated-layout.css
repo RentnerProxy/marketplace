@@ -1,0 +1,26 @@
+.marketplace-sidebar-mask {
+    mask-image:
+        linear-gradient(#fff, #fff),
+        url('/brand/application-sidebar-surface-desktop.svg');
+    mask-position: left, right;
+    mask-repeat: no-repeat;
+    mask-size:
+        calc(100% - var(--marketplace-sidebar-tail) + 1px) 100%,
+        var(--marketplace-sidebar-tail) 100%;
+}
+
+.marketplace-sidebar-trim {
+    background: color-mix(in srgb, var(--color-primary) 73%, #020a0b);
+}
+
+.marketplace-sidebar-texture {
+    background:
+        linear-gradient(180deg, rgb(2 10 11 / 78%), rgb(2 10 11 / 93%)),
+        url('/brand/authenticated-sidebar-texture.webp') 72% center / cover
+            no-repeat #020a0b;
+}
+
+.marketplace-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(193 210 201 / 34%) transparent;
+}

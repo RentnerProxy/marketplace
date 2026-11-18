@@ -17,8 +17,8 @@ export default function UserSettingsModal({
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-background-dark/80 p-4 backdrop-blur-sm sm:p-6">
-            <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border-dark bg-surface-dark">
+        <div className="marketplace-signed-in fixed inset-0 z-100 flex items-center justify-center bg-marketplace-void/70 p-2 backdrop-blur-[2px] sm:p-6">
+            <div className="marketplace-dialog-panel flex h-[min(44rem,calc(100dvh-1rem))] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border-dark bg-surface-dark text-foreground sm:h-[min(44rem,calc(100dvh-3rem))]">
                 <Header
                     username={username}
                     onClose={handler.closeUserSettings}
@@ -28,7 +28,7 @@ export default function UserSettingsModal({
                     onTabChange={setter.setActiveTab}
                 />
 
-                <div className="min-h-0 space-y-5 overflow-y-auto p-6">
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
                     {state.activeTab === 'account' && <AccountSection />}
 
                     {state.activeTab === 'appearance' && <AppearanceSection />}

@@ -26,7 +26,7 @@ type AuthenticatedShellState = {
     userId: string | null
     username: string
     companyName: string
-    systemLogoSrc64: string
+    systemLogoSrc: string
     systemFaviconSrc: string
     profileImageSrc64: string
     primaryColor: string
@@ -57,25 +57,32 @@ export type AuthenticatedShellLogicReturn = {
     handler: {
         expandMaintenanceBanner: () => void
         minimizeMaintenanceBanner: () => void
+        toggleCollapse: () => void
     }
 }
 
 export type AuthenticatedSidebarLogicReturn = {
     state: {
-        isCollapsed: boolean
         isLoggingOut: boolean
         openGroups: Record<string, boolean>
     }
     handler: {
         handleLogout: () => void
         handleOpenUserSettings: () => void
-        handleToggleCollapse: () => void
-        handleToggleGroup: (group: string) => void
+        handleToggleGroup: (
+            group: string,
+            expandCollapsedSidebar?: boolean,
+        ) => void
     }
 }
 
-export type AuthenticatedTopbarLogicReturn = {
-    state: { title: string; description: string }
+export type AuthenticatedPageHeaderLogicReturn = {
+    state: {
+        groupKey: string | null
+        eyebrow: string | null
+        title: string
+        description: string
+    }
 }
 
 export type MaintenanceBannerLogicReturn = {

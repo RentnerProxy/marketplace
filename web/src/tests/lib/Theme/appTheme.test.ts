@@ -60,11 +60,11 @@ describe('applyAppThemeSettings', function () {
             themeMode: 'light',
         })
 
-        expect(rootStyle.getPropertyValue('--color-foreground')).toBe('#0f172a')
+        expect(rootStyle.getPropertyValue('--color-foreground')).toBe('#06120f')
         expect(rootStyle.getPropertyValue('--color-secondary-text')).toBe(
-            '#475569',
+            '#52665c',
         )
-        expect(rootStyle.getPropertyValue('--color-focus-ring')).toBe('#1d4ed8')
+        expect(rootStyle.getPropertyValue('--color-focus-ring')).toBe('#0c7f2d')
         expect(rootStyle.getPropertyValue('--color-primary-foreground')).toBe(
             '#000000',
         )
@@ -76,11 +76,11 @@ describe('applyAppThemeSettings', function () {
         expect(rootStyle.getPropertyValue('--color-primary-text')).not.toBe(
             '#d97706',
         )
-        expect(rootStyle.getPropertyValue('--color-success')).toBe('#047857')
-        expect(rootStyle.getPropertyValue('--color-warning')).toBe('#854d0e')
-        expect(rootStyle.getPropertyValue('--color-danger')).toBe('#b91c1c')
+        expect(rootStyle.getPropertyValue('--color-success')).toBe('#086c27')
+        expect(rootStyle.getPropertyValue('--color-warning')).toBe('#9a5d12')
+        expect(rootStyle.getPropertyValue('--color-danger')).toBe('#8d1818')
         expect(rootStyle.getPropertyValue('--rentner-foreground')).toBe(
-            '#0f172a',
+            '#06120f',
         )
         expect(rootStyle.getPropertyValue('--rentner-accent-foreground')).toBe(
             '#000000',
@@ -88,10 +88,10 @@ describe('applyAppThemeSettings', function () {
         expect(rootStyle.getPropertyValue('--rentner-surface')).toBe(
             rootStyle.getPropertyValue('--color-surface-dark'),
         )
-        expect(rootStyle.getPropertyValue('--rentner-danger')).toBe('#b91c1c')
-        expect(rootStyle.getPropertyValue('--rentner-info')).toBe('#1d4ed8')
+        expect(rootStyle.getPropertyValue('--rentner-danger')).toBe('#8d1818')
+        expect(rootStyle.getPropertyValue('--rentner-info')).toBe('#0c7f2d')
         expect(rootStyle.getPropertyValue('--rentner-control-hover')).toBe(
-            '#f1f5f9',
+            '#eef4f0',
         )
         expect(rootStyle.getPropertyValue('--color-white')).toBe('')
         expect(rootStyle.colorScheme).toBe('light')

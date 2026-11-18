@@ -6,6 +6,8 @@
 @import '@rentnerkev/select/tailwind.css';
 @import '@rentnerkev/picker/tailwind.css';
 @import '@rentnerkev/table/tailwind.css';
+@import './styles/signed-in.css';
+@import './styles/signed-in-tables.css';
 
 @font-face {
     font-family: 'Lilita One';

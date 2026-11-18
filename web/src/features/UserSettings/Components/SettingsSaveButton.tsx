@@ -3,9 +3,9 @@ import type { SettingsSaveButtonProps } from '../Types/user-settings-component-p
 
 const buttonClasses = {
     primary:
-        'bg-primary text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60',
+        'border-transparent bg-primary text-primary-foreground enabled:hover:bg-primary-hover enabled:hover:text-primary-hover-foreground',
     secondary:
-        'border border-border-dark bg-background-dark text-secondary-text hover:text-white disabled:cursor-not-allowed disabled:opacity-60',
+        'border-rentner-border bg-rentner-control text-(color:--marketplace-ink-soft) enabled:hover:border-focus-ring/40 enabled:hover:text-focus-ring',
 } as const
 
 export default function SettingsSaveButton({
@@ -20,12 +20,15 @@ export default function SettingsSaveButton({
             type="button"
             disabled={disabled}
             onClick={onClick}
-            className={`flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors ${buttonClasses[variant]}`}
+            className={`inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-extrabold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none ${buttonClasses[variant]}`}
         >
             {isSaving ? (
-                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <LoaderCircle
+                    aria-hidden="true"
+                    className="size-4 shrink-0 animate-spin motion-reduce:animate-none"
+                />
             ) : (
-                <Save className="h-4 w-4" />
+                <Save aria-hidden="true" className="size-4 shrink-0" />
             )}
 
             {children}

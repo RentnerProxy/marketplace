@@ -1,15 +1,21 @@
 import type { TableColumn } from '@rentnerkev/table'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { Info } from 'lucide-react'
 import type { AuditLogEntry } from '@/lib/AuditLogs/Types/auditLog.types.ts'
 import { formatDate } from '@/lib/Date/date.ts'
+import { authenticatedTableActionColumn } from '@/lib/Table/authenticatedTableStyles.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
 
 const SYSTEM_ACTOR_FILTER_VALUE = 'system'
 
-export default function useAuditTableColumns() {
+export default function useAuditTableLogic() {
     const { language, t } = useTranslationStore()
+    const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(
+        null,
+    )
 
-    return useMemo<Array<TableColumn<AuditLogEntry>>>(
+    const columns = useMemo<Array<TableColumn<AuditLogEntry>>>(
         () => [
             {
                 accessorKey: 'action',
@@ -136,7 +142,29 @@ export default function useAuditTableColumns() {
                     </span>
                 ),
             },
+            {
+                ...authenticatedTableActionColumn,
+                header: t('common.actions'),
+                cell: ({ row }) => (
+                    <ActionMenu
+                        ariaLabel={`${t('common.openActions')} (${row.original.action}, ${row.original.id})`}
+                        items={[
+                            {
+                                id: 'details',
+                                label: t('common.details'),
+                                icon: <Info className="size-4" />,
+                                onSelect: () => setSelectedEntry(row.original),
+                            },
+                        ]}
+                    />
+                ),
+            },
         ],
         [language, t],
     )
+
+    return {
+        state: { columns, selectedEntry },
+        handler: { handleCloseDetails: () => setSelectedEntry(null) },
+    }
 }

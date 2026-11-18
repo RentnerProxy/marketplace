@@ -1,4 +1,4 @@
-import { HardDriveDownload, Plus, Upload } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import useBackupsLogic from './Hooks/useBackupsLogic.ts'
 import BackupSettingsCard from './Components/BackupSettingsCard.tsx'
@@ -8,7 +8,6 @@ import {
     BACKUP_ARCHIVE_EXTENSION,
     BACKUP_UPLOAD_CONTENT_TYPE,
 } from '@/config/backup.config.ts'
-import HeadingIcon from '@/shared/HeadingIcon.tsx'
 
 export default function Backups() {
     const { t } = useTranslationStore()
@@ -32,50 +31,40 @@ export default function Backups() {
                 onClose={logic.handler.handleCancelDeleteBackup}
                 onConfirm={logic.handler.handleConfirmDeleteBackup}
             />
-            <section className="flex flex-col gap-4 rounded-lg border border-border-dark bg-surface-dark p-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-start gap-3">
-                    <HeadingIcon icon={HardDriveDownload} />
-                    <div>
-                        <h1 className="text-xl font-bold text-white">
-                            {t('admin.backups.title')}
-                        </h1>
-                        <p className="mt-1 text-sm text-secondary-text">
-                            {t('admin.backups.description')}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        onClick={logic.handler.handleCreateBackup}
-                        disabled={logic.state.isCreating}
-                        className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-md bg-primary px-4 font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        <Plus size={17} />
-                        {t('admin.backups.createNow')}
-                    </button>
-                    <label className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-md border border-border-dark px-4 font-semibold text-white hover:border-primary/50 has-disabled:cursor-not-allowed has-disabled:opacity-60">
-                        <Upload size={17} />
-                        {logic.state.isImporting
-                            ? t('admin.backups.importing')
-                            : t('admin.backups.import')}
-                        <input
-                            type="file"
-                            aria-label={t('admin.backups.import')}
-                            accept={`${BACKUP_ARCHIVE_EXTENSION},${BACKUP_UPLOAD_CONTENT_TYPE}`}
-                            disabled={logic.state.isImporting}
-                            onChange={(event) => {
-                                logic.handler.handleImportBackup(
-                                    event.target.files?.[0] ?? null,
-                                )
-                                event.target.value = ''
-                            }}
-                            className="hidden"
-                        />
-                    </label>
-                </div>
-            </section>
+            <div
+                role="group"
+                aria-label={t('admin.backups.title')}
+                className="flex flex-wrap justify-end gap-2"
+            >
+                <button
+                    type="button"
+                    onClick={logic.handler.handleCreateBackup}
+                    disabled={logic.state.isCreating}
+                    className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl bg-primary px-4 text-sm font-extrabold text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none"
+                >
+                    <Plus className="size-4" aria-hidden="true" />
+                    {t('admin.backups.createNow')}
+                </button>
+                <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-(--marketplace-border-strong) bg-input-dark px-4 text-sm font-extrabold text-(color:--marketplace-ink-soft) transition-colors hover:border-primary/45 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring has-disabled:cursor-not-allowed has-disabled:opacity-55 motion-reduce:transition-none">
+                    <Upload className="size-4" aria-hidden="true" />
+                    {logic.state.isImporting
+                        ? t('admin.backups.importing')
+                        : t('admin.backups.import')}
+                    <input
+                        type="file"
+                        aria-label={t('admin.backups.import')}
+                        accept={`${BACKUP_ARCHIVE_EXTENSION},${BACKUP_UPLOAD_CONTENT_TYPE}`}
+                        disabled={logic.state.isImporting}
+                        onChange={(event) => {
+                            logic.handler.handleImportBackup(
+                                event.target.files?.[0] ?? null,
+                            )
+                            event.target.value = ''
+                        }}
+                        className="sr-only"
+                    />
+                </label>
+            </div>
 
             <div className="flex w-full flex-col gap-6">
                 <BackupSettingsCard

@@ -7,6 +7,7 @@
       "dependencies": {
         "@rentnerkev/calendar": "^2.10.0",
         "@rentnerkev/inputs": "^2.8.2",
+        "@rentnerkev/menu": "1.2.0",
         "@rentnerkev/picker": "^2.4.1",
         "@rentnerkev/select": "^6.2.0",
         "@rentnerkev/table": "^1.4.0",

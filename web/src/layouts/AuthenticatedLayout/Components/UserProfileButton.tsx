@@ -9,6 +9,7 @@ export default function UserProfileButton({
     isCollapsed,
     username,
     profileImageSrc,
+    onNavigate,
 }: UserProfileButtonProps) {
     const { handler } = useAuthenticatedSidebarLogic()
     const { t } = useTranslationStore()
@@ -21,8 +22,11 @@ export default function UserProfileButton({
     const profileButton = (
         <button
             type="button"
-            onClick={handler.handleOpenUserSettings}
-            className={`mb-2 flex h-13 w-full cursor-pointer items-center rounded-md border border-border-dark bg-input-dark/60 transition-colors hover:border-primary/40 hover:bg-input-dark ${
+            onClick={() => {
+                onNavigate?.()
+                handler.handleOpenUserSettings()
+            }}
+            className={`mb-2 flex min-h-12 w-full cursor-pointer items-center rounded-xl border border-white/10 bg-white/[0.04] transition-colors hover:border-primary/35 hover:bg-primary/12 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary motion-reduce:transition-none ${
                 isCollapsed ? 'justify-center' : 'gap-3 px-3 text-left'
             }`}
         >
@@ -33,14 +37,14 @@ export default function UserProfileButton({
                 decoding="sync"
                 fetchPriority="high"
                 onError={profileImage.handler.handleImageError}
-                className="h-9 w-9 shrink-0 rounded-md border border-border-dark bg-background-dark object-contain"
+                className="size-8 shrink-0 rounded-lg bg-[#020a0b] object-cover"
             />
             {!isCollapsed && (
                 <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-white">
+                    <p className="truncate text-[0.82rem] font-extrabold text-[#f4f5f7]">
                         {username}
                     </p>
-                    <p className="truncate text-xs text-secondary-text">
+                    <p className="truncate text-[0.68rem] text-[#9fb5a9]">
                         {t('userSettings.settingsLabel')}
                     </p>
                 </div>

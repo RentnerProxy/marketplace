@@ -7,7 +7,7 @@ export default function OfficialApps({ userId }: { userId: string }) {
     const { state, setter, handler } = useOfficialAppsLogic(userId)
 
     return (
-        <div className="space-y-5 rounded-xl border border-border-dark bg-surface-dark p-5">
+        <div className="marketplace-content-panel space-y-5 rounded-2xl border border-border-dark bg-surface-dark p-5 sm:p-6">
             <form onSubmit={handler.submit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                     <TextInput
@@ -31,7 +31,7 @@ export default function OfficialApps({ userId }: { userId: string }) {
                         type="submit"
                         value="assign"
                         disabled={state.pending || !state.claimId.trim()}
-                        className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-45"
+                        className="min-h-12 rounded-xl bg-primary px-4 py-2 text-sm font-extrabold text-primary-foreground enabled:hover:bg-primary-hover disabled:opacity-55"
                     >
                         {t('submissions.assign')}
                     </button>
@@ -39,7 +39,7 @@ export default function OfficialApps({ userId }: { userId: string }) {
                         type="submit"
                         value="remove"
                         disabled={state.pending || !state.revision}
-                        className="rounded-lg border border-border-dark px-4 py-2 text-sm font-medium disabled:opacity-45"
+                        className="min-h-12 rounded-xl border border-border-dark bg-input-dark px-4 py-2 text-sm font-extrabold text-(color:--marketplace-ink-soft) disabled:opacity-55"
                     >
                         {t('submissions.removeAssignment')}
                     </button>

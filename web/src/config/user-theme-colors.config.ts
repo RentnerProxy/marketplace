@@ -46,6 +46,36 @@ export const USER_THEME_MODE_COLORS: Record<UserThemeMode, UserThemeColors> = {
     },
 }
 
+export const AUTHENTICATED_THEME_MODE_COLORS: Record<
+    UserThemeMode,
+    UserThemeColors
+> = {
+    dark: {
+        background: '#07080a',
+        border: '#282c33',
+        danger: '#ffb0b0',
+        focusRing: '#65f586',
+        foreground: '#f4f5f7',
+        input: '#121419',
+        secondaryText: '#a0a5ae',
+        success: '#76f895',
+        surface: '#0d0f12',
+        warning: '#ffbd66',
+    },
+    light: {
+        background: '#eef4f0',
+        border: '#d6e0da',
+        danger: '#8d1818',
+        focusRing: '#0c7f2d',
+        foreground: '#06120f',
+        input: '#ffffff',
+        secondaryText: '#52665c',
+        success: '#086c27',
+        surface: '#fbfdfc',
+        warning: '#9a5d12',
+    },
+}
+
 export const USER_FONT_FAMILY_STYLES: Record<UserFontFamily, string> = {
     inter: "'Inter', ui-sans-serif, system-ui",
     system: 'ui-sans-serif, system-ui, Arial, sans-serif',

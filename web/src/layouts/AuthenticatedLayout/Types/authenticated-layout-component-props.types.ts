@@ -2,6 +2,7 @@ import type {
     AuthenticatedNavItem,
     AuthenticatedRoute,
 } from '@/shared/Types/navigation.types.ts'
+import type { ReactNode } from 'react'
 
 export type LogoutButtonProps = {
     isCollapsed: boolean
@@ -15,26 +16,40 @@ export type AuthenticatedSidebarProps = {
     navItems: Array<AuthenticatedNavItem>
     username: string
     userIconSrc: string
+    isCollapsed: boolean
+    activeGroupKey: string | null
+}
+
+export type SidebarContentProps = AuthenticatedSidebarProps & {
+    isDesktop?: boolean
+    onNavigate?: () => void
 }
 
 export type AuthenticatedMainProps = {
-    isCollapsed: boolean
-    showMaintenanceBanner: boolean
+    eyebrow: string | null
+    title: string
+    description: string
+    children?: ReactNode
 }
 
 export type AuthenticatedTopbarProps = {
     isCollapsed: boolean
+    isMobileNavigationOpen: boolean
     showMaintenanceCountdown: boolean
     millisecondsUntilMaintenance: number
+    onToggleCollapse: () => void
+    onOpenMobileNavigation: () => void
     onExpandMaintenanceBanner: () => void
 }
 
 export type NavigationItemProps = {
     item: AuthenticatedNavItem
-    depth?: number
     navigationKey?: string
     isCollapsed: boolean
+    activeGroupKey: string | null
     openGroups: Record<string, boolean>
+    onToggleGroup: (group: string) => void
+    onNavigate?: () => void
 }
 
 export type SidebarHeaderProps = {
@@ -43,12 +58,20 @@ export type SidebarHeaderProps = {
     logoSrc: string
     homeTo: AuthenticatedRoute
     isCollapsed: boolean
+    onNavigate?: () => void
 }
 
 export type UserProfileButtonProps = {
     isCollapsed: boolean
     username: string
     profileImageSrc: string
+    onNavigate?: () => void
+}
+
+export type MobileNavigationProps = {
+    isOpen: boolean
+    onClose: () => void
+    sidebar: Omit<AuthenticatedSidebarProps, 'isCollapsed'>
 }
 
 export type MaintenanceBannerProps = {

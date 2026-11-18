@@ -58,7 +58,9 @@ describe('Historical background restore notice', () => {
                     ? 'auch wenn er leer war'
                     : 'including an empty snapshot',
             )
-            expect(html).toContain('disabled=""')
+            expect(html).toContain(
+                'aria-describedby="restore-warning-synthetic-backup"',
+            )
         },
     )
     it('does not add a separate wizard or render a notice for a closed restore row', () => {

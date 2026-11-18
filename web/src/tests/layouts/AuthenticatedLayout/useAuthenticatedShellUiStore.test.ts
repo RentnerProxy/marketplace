@@ -25,17 +25,16 @@ describe('useAuthenticatedShellUiStore', function () {
         })
 
         initialStore.handler.openUserSettings()
-        initialStore.handler.toggleCollapse()
         initialStore.handler.minimizeMaintenanceBanner()
         initialStore.handler.toggleGroup('navigation.admin')
 
         const updatedStore = useAuthenticatedShellUiStore()
 
         expect(updatedStore.state).toEqual({
-            isCollapsed: true,
+            isCollapsed: false,
             isMaintenanceBannerMinimized: true,
             isUserSettingsOpen: true,
-            openGroups: { 'navigation.admin': true },
+            openGroups: { 'navigation.admin': false },
         })
 
         updatedStore.handler.closeUserSettings()
@@ -47,6 +46,13 @@ describe('useAuthenticatedShellUiStore', function () {
             isCollapsed: false,
             isMaintenanceBannerMinimized: false,
             isUserSettingsOpen: false,
+            openGroups: { 'navigation.admin': true },
+        })
+
+        updatedStore.handler.toggleCollapse()
+        updatedStore.handler.toggleGroup('navigation.admin', false)
+        expect(useAuthenticatedShellUiStore().state).toMatchObject({
+            isCollapsed: true,
             openGroups: { 'navigation.admin': false },
         })
     })

@@ -4,7 +4,10 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactNode } from 'react'
 import DeveloperSubmissions from '@/features/Marketplace/DeveloperSubmissions.tsx'
 import OfficialApps from '@/features/Marketplace/OfficialApps.tsx'
-import { SubmissionQueue } from '@/features/Marketplace/Components/SubmissionQueue.tsx'
+import { SubmissionQueue } from '@/features/Marketplace/Components/SubmissionQueue/index.tsx'
+import { SubmissionDetails } from '@/features/Marketplace/Components/SubmissionQueue/Components/SubmissionDetails.tsx'
+import type { SubmissionMode } from '@/features/Marketplace/Types/components.types.ts'
+import type { RowDetailsDialogProps } from '@/shared/Table/Types/row-details-dialog.types.ts'
 import type { SubmissionStatus } from '@/lib/Marketplace/Types/submission.types.ts'
 import {
     candidateNamespace,
@@ -20,6 +23,15 @@ vi.mock('@/language/useTranslationStore.ts', () => ({
     default: () => ({ language: 'en', t: (key: string) => key }),
 }))
 
+vi.mock('@/shared/Table/RowDetailsDialog.tsx', () => ({
+    default: ({ title, children, footer }: RowDetailsDialogProps) => (
+        <dialog aria-label={title}>
+            {children}
+            {footer && <footer>{footer}</footer>}
+        </dialog>
+    ),
+}))
+
 const claim = fixtureClaim()
 const row = fixtureSubmission(claim)
 const { receipt, evidence, bundle } = fixtureCandidate(row, claim)
@@ -31,17 +43,22 @@ function render(client: QueryClient, component: ReactNode) {
     )
 }
 
-function queueFixture(mode: 'review' | 'developer', status: SubmissionStatus) {
+function queueFixture(mode: SubmissionMode, status: SubmissionStatus) {
     const client = new QueryClient()
     const userId = mode === 'review' ? 'reviewer' : claim.submitterId
     const root = ['marketplace-submissions', userId, mode]
+    const submission = {
+        id: row.id,
+        appId: row.appId,
+        version: row.version,
+        status,
+        createdAt: new Date('2026-01-01T12:00:00.000Z'),
+    }
     client.setQueryData([...root, 'list', 0], {
-        submissions: [
-            { id: row.id, appId: row.appId, version: row.version, status },
-        ],
+        submissions: [submission],
         hasMore: true,
     })
-    client.setQueryData([...root, 'detail', row.id], {
+    const detail = {
         id: row.id,
         repository: claim.repository,
         request: row.request,
@@ -61,16 +78,53 @@ function queueFixture(mode: 'review' | 'developer', status: SubmissionStatus) {
         ],
         publication: null,
         revocationPending: status === 'revoked',
-    })
-    return { client, userId }
+    }
+    return { client, userId, mode, submission, root, detail }
 }
 
-test('lets a reviewer identify and decide on the exact candidate', () => {
-    const { client, userId } = queueFixture('review', 'awaitingReview')
-    const html = render(
+function renderDetails(fixture: ReturnType<typeof queueFixture>) {
+    const { client, userId, mode, submission, root, detail } = fixture
+    client.setQueryData([...root, 'detail', row.id], detail)
+    return render(
         client,
-        <SubmissionQueue mode="review" userId={userId} />,
+        <SubmissionDetails
+            mode={mode}
+            userId={userId}
+            submission={submission}
+            onClose={() => {}}
+        />,
     )
+}
+
+test('shows the row actions and server page controls without starting a detail query', () => {
+    for (const mode of ['review', 'developer'] as const) {
+        const { client, root, userId } = queueFixture(mode, 'awaitingReview')
+        const html = render(
+            client,
+            <SubmissionQueue mode={mode} userId={userId} />,
+        )
+
+        expect(html).toContain('<table')
+        expect(html).toContain('submissions.status.awaitingReview')
+        expect(html).toContain('2026-01-01')
+        expect(html).toContain('common.actions')
+        expect(html).toContain(
+            `common.openActions (${row.appId} ${row.version})`,
+        )
+        expect(html).toContain('disabled="">submissions.previous')
+        expect(html).toContain('>submissions.next')
+        expect(html).not.toContain('disabled="">submissions.next')
+        expect(html).not.toContain('<dialog')
+        expect(
+            client.getQueryState([...root, 'detail', row.id]),
+        ).toBeUndefined()
+    }
+})
+
+test('lets a reviewer identify and decide on the exact candidate in the dialog', () => {
+    const html = renderDetails(queueFixture('review', 'awaitingReview'))
+    expect(html).toContain('<dialog')
+    expect(html).toContain(`${row.appId} ${row.version}`)
     expect(html).toContain(row.request.commit)
     expect(html).toContain(candidate.id)
     expect(html).toContain(candidate.evidence.report.sha256)
@@ -80,11 +134,17 @@ test('lets a reviewer identify and decide on the exact candidate', () => {
     expect(html).toContain(candidate.release.packages[0].archive.sha256)
     expect(html).toContain('value="approve"')
     expect(html).toContain('value="reject"')
+    const formId = /<form id="([^"]+)"/.exec(html)?.[1]
+    if (!formId) throw new Error('Missing reason form')
+    const footer = html.match(/<footer>.*?<\/footer>/s)?.[0]
+    expect(footer).toContain(`form="${formId}" value="approve"`)
+    expect(footer).toContain(`form="${formId}" value="reject"`)
     expect(html).toContain('Reviewed the exact commit')
 })
 
 test('shows the ownership challenge, version fields and withdrawal for a developer', () => {
-    const { client, userId } = queueFixture('developer', 'awaitingReview')
+    const fixture = queueFixture('developer', 'awaitingReview')
+    const { client, userId } = fixture
     client.setQueryData(['marketplace-claims', userId], {
         buildsEnabled: true,
         claims: [
@@ -106,23 +166,17 @@ test('shows the ownership challenge, version fields and withdrawal for a develop
     expect(html).toContain('submissions.commit')
     expect(html).toContain('submissions.configSchema')
     expect(html).toContain('submissions.submit')
-    expect(html).toContain('value="withdraw"')
-    expect(html).not.toContain('value="approve"')
+    expect(html).not.toContain('value="withdraw"')
+    const details = renderDetails(fixture)
+    expect(details).toContain('value="withdraw"')
+    expect(details).not.toContain('value="approve"')
 })
 
 test('distinguishes approvals and signed revocations in the history', () => {
-    const approved = queueFixture('review', 'approved')
-    const approval = render(
-        approved.client,
-        <SubmissionQueue mode="review" userId={approved.userId} />,
-    )
+    const approval = renderDetails(queueFixture('review', 'approved'))
     expect(approval).toContain('submissions.approvedPending')
     expect(approval).toContain('value="revoke"')
-    const revoked = queueFixture('review', 'revoked')
-    const revocation = render(
-        revoked.client,
-        <SubmissionQueue mode="review" userId={revoked.userId} />,
-    )
+    const revocation = renderDetails(queueFixture('review', 'revoked'))
     expect(revocation).toContain('submissions.revocationPending')
     expect(revocation).toContain('submissions.failure.ownershipChanged')
     expect(revocation).not.toContain('value="approve"')

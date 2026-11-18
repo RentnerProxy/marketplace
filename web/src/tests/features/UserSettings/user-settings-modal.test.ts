@@ -80,7 +80,14 @@ describe('User settings modal composition', () => {
             try {
                 const tree = UserSettingsModal({ username: 'Kevin' })
                 expect(portal).toHaveBeenLastCalledWith(tree, body)
-                const sections = elements(tree).filter((element) =>
+                const [overlay, panel, ...contents] = elements(tree)
+                expect(overlay?.props.className).toContain(
+                    'marketplace-signed-in',
+                )
+                expect(panel?.props.className).toContain(
+                    'marketplace-dialog-panel',
+                )
+                const sections = contents.filter((element) =>
                     [
                         AccountSection,
                         AppearanceSection,
@@ -134,10 +141,20 @@ describe('User settings modal composition', () => {
             'userSettings.security.label',
         ])
             expect(rendered).toContain(label)
+        const active = findElement(
+            nav,
+            (element) => element.props['aria-pressed'] === true,
+        )
+        expect(active.props.children).toContain('userSettings.account')
         invoke(
-            findElement(nav, (element) => element.props.onTabChange === change),
-            'onTabChange',
-            'appearance',
+            findElement(
+                nav,
+                (element) =>
+                    element.type === 'button' &&
+                    Array.isArray(element.props.children) &&
+                    element.props.children.includes('userSettings.appearance'),
+            ),
+            'onClick',
         )
         expect(change).toHaveBeenCalledWith('appearance')
     })

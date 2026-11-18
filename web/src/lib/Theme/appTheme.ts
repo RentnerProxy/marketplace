@@ -1,4 +1,5 @@
 import {
+    AUTHENTICATED_THEME_MODE_COLORS,
     DEFAULT_FONT_FAMILY,
     DEFAULT_FONT_SIZE,
     DEFAULT_PRIMARY_COLOR,
@@ -7,7 +8,10 @@ import {
     USER_FONT_FAMILY_STYLES,
     USER_THEME_MODE_COLORS,
 } from '@/config/user-theme-colors.config.ts'
-import type { AppThemeSettings } from './Types/userTheme.types.ts'
+import type {
+    AppThemeSettings,
+    UserThemeColors,
+} from './Types/userTheme.types.ts'
 
 import {
     getPrimaryColorForeground,
@@ -22,8 +26,10 @@ const DEFAULT_APP_THEME_SETTINGS: AppThemeSettings = {
     themeMode: DEFAULT_THEME_MODE,
 }
 
-export function applyAppThemeSettings(settings: AppThemeSettings) {
-    const themeColors = USER_THEME_MODE_COLORS[settings.themeMode]
+function applyDocumentTheme(
+    settings: AppThemeSettings,
+    themeColors: UserThemeColors,
+) {
     const rootElement = document.documentElement
     const rootStyle = rootElement.style
     const primaryForeground = getPrimaryColorForeground(settings.primaryColor)
@@ -82,6 +88,16 @@ export function applyAppThemeSettings(settings: AppThemeSettings) {
     rootStyle.fontSize = `${settings.fontSize}px`
 }
 
+export function applyAppThemeSettings(settings: AppThemeSettings) {
+    applyDocumentTheme(
+        settings,
+        AUTHENTICATED_THEME_MODE_COLORS[settings.themeMode],
+    )
+}
+
 export function resetAppThemeSettings() {
-    applyAppThemeSettings(DEFAULT_APP_THEME_SETTINGS)
+    applyDocumentTheme(
+        DEFAULT_APP_THEME_SETTINGS,
+        USER_THEME_MODE_COLORS[DEFAULT_THEME_MODE],
+    )
 }

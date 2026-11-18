@@ -36,7 +36,7 @@ export default function ServiceConsole({
             ref={consoleRef}
             tabIndex={-1}
             aria-labelledby="dashboard-console-title"
-            className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border-dark bg-surface-dark focus:outline-none"
+            className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border-dark bg-surface-dark focus:outline-none"
         >
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-dark px-5 py-4">
                 <div className="flex min-w-0 items-center gap-3">
@@ -44,7 +44,7 @@ export default function ServiceConsole({
                     <div className="min-w-0">
                         <h2
                             id="dashboard-console-title"
-                            className="text-sm font-semibold text-foreground"
+                            className="text-base leading-tight font-semibold tracking-tight text-foreground"
                         >
                             {t('admin.dashboard.console.title', {
                                 service: t(
@@ -76,7 +76,7 @@ export default function ServiceConsole({
                         type="button"
                         onClick={onClose}
                         aria-label={t('admin.dashboard.console.close')}
-                        className="inline-flex cursor-pointer items-center justify-center rounded-md p-2 text-secondary-text transition-colors hover:bg-background-dark hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-secondary-text transition-colors hover:bg-input-dark hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                     >
                         <X className="h-4 w-4" aria-hidden="true" />
                     </button>
