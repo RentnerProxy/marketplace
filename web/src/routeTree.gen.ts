@@ -49,6 +49,7 @@ import { Route as ApiAdminBackupsDownloadRouteImport } from './routes/api/admin/
 import { Route as ApiAdminBackupsImportRouteImport } from './routes/api/admin/backups/import'
 import { Route as ApiAuthProviderCallbackRouteImport } from './routes/api/auth/$provider/callback'
 import { Route as ApiAuthProviderCompleteRouteImport } from './routes/api/auth/$provider/complete'
+import { Route as ApiMarketplaceV1CatalogPublicationRouteImport } from './routes/api/marketplace/v1/catalog-publication'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -258,6 +259,12 @@ const ApiAuthProviderCompleteRoute = ApiAuthProviderCompleteRouteImport.update({
   path: '/api/auth/$provider/complete',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketplaceV1CatalogPublicationRoute =
+  ApiMarketplaceV1CatalogPublicationRouteImport.update({
+    id: '/api/marketplace/v1/catalog-publication',
+    path: '/api/marketplace/v1/catalog-publication',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
   '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
   '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
+  '/api/marketplace/v1/catalog-publication': typeof ApiMarketplaceV1CatalogPublicationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -338,6 +346,7 @@ export interface FileRoutesByTo {
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
   '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
   '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
+  '/api/marketplace/v1/catalog-publication': typeof ApiMarketplaceV1CatalogPublicationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -381,6 +390,7 @@ export interface FileRoutesById {
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
   '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
   '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
+  '/api/marketplace/v1/catalog-publication': typeof ApiMarketplaceV1CatalogPublicationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -423,6 +433,7 @@ export interface FileRouteTypes {
     | '/api/admin/backups/import'
     | '/api/auth/$provider/callback'
     | '/api/auth/$provider/complete'
+    | '/api/marketplace/v1/catalog-publication'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/api/admin/backups/import'
     | '/api/auth/$provider/callback'
     | '/api/auth/$provider/complete'
+    | '/api/marketplace/v1/catalog-publication'
   id:
     | '__root__'
     | '/'
@@ -505,6 +517,7 @@ export interface FileRouteTypes {
     | '/api/admin/backups/import'
     | '/api/auth/$provider/callback'
     | '/api/auth/$provider/complete'
+    | '/api/marketplace/v1/catalog-publication'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -529,6 +542,7 @@ export interface RootRouteChildren {
   ApiAdminBackupsImportRoute: typeof ApiAdminBackupsImportRoute
   ApiAuthProviderCallbackRoute: typeof ApiAuthProviderCallbackRoute
   ApiAuthProviderCompleteRoute: typeof ApiAuthProviderCompleteRoute
+  ApiMarketplaceV1CatalogPublicationRoute: typeof ApiMarketplaceV1CatalogPublicationRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -813,6 +827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthProviderCompleteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/marketplace/v1/catalog-publication': {
+      id: '/api/marketplace/v1/catalog-publication'
+      path: '/api/marketplace/v1/catalog-publication'
+      fullPath: '/api/marketplace/v1/catalog-publication'
+      preLoaderRoute: typeof ApiMarketplaceV1CatalogPublicationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -921,6 +942,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminBackupsImportRoute: ApiAdminBackupsImportRoute,
   ApiAuthProviderCallbackRoute: ApiAuthProviderCallbackRoute,
   ApiAuthProviderCompleteRoute: ApiAuthProviderCompleteRoute,
+  ApiMarketplaceV1CatalogPublicationRoute:
+    ApiMarketplaceV1CatalogPublicationRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

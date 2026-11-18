@@ -97,7 +97,9 @@ export function submissionAudit(row: Submission, event: SubmissionEvent) {
             buildRunId: row.buildRunId,
             approvalRevision: row.approval?.revision,
             publicationRun: event.publicationRun,
+            previousPublicationRun: event.previousPublicationRun,
             catalogRevision: row.publication?.catalogRevision,
+            revocation: event.revocation,
             reason: event.reason,
             failure: event.failure,
         },
@@ -151,6 +153,7 @@ export async function changeSubmission(
         .update(marketplaceSubmissions)
         .set({
             ...patch,
+            publicationRetryAt: null,
             status: event.status,
             revision: event.revision,
             history: [...row.history, event],
@@ -236,12 +239,25 @@ export async function submissionDetailService(
         revision: row.revision,
         validation: row.validation,
         buildRunId: row.buildRunId,
-        history: row.history.map(({ actorId, publicationRun, ...event }) => ({
-            ...event,
-            actorId: submitterId ? undefined : actorId,
-            publicationRun: submitterId ? undefined : publicationRun,
-        })),
+        history: row.history.map(
+            ({
+                actorId,
+                publicationRun,
+                previousPublicationRun,
+                ...event
+            }) => ({
+                ...event,
+                actorId: submitterId ? undefined : actorId,
+                publicationRun: submitterId ? undefined : publicationRun,
+                previousPublicationRun: submitterId
+                    ? undefined
+                    : previousPublicationRun,
+            }),
+        ),
         publication: row.publication,
-        revocationPending: row.status === 'revoked' && row.publication !== null,
+        revocationPending:
+            (row.status === 'withdrawn' || row.status === 'revoked') &&
+            Boolean(row.publicationRun || row.publication) &&
+            !row.history.some(({ revocation }) => revocation),
     }
 }

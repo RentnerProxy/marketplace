@@ -1,7 +1,12 @@
 import { isDeepStrictEqual } from 'node:util'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm'
+import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { db } from '@/db'
-import { marketplaceSubmissions } from '@/db/schema.ts'
+import { marketplaceSubmissions, users } from '@/db/schema.ts'
+import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
+import type { CatalogRevocation } from '@/lib/Marketplace/catalogPublication.ts'
+import { PermissionDeniedError } from '@/server/Auth/authorization.errors.ts'
+import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import {
     checkApprovalBinding,
     checkPublicationBinding,
@@ -10,6 +15,10 @@ import {
 } from '../../../../../contracts/v1/index.ts'
 import { candidate } from '../../../../../contracts/v1/publication.ts'
 import { candidateGitHubToken } from './github.service.ts'
+import {
+    assertCatalogPublisherRun,
+    assertTerminalCatalogPublisherRunService,
+} from './publisher-auth.service.ts'
 import {
     checkCurrentCandidate,
     expiresOrRecheck,
@@ -31,6 +40,40 @@ type PublicationIdentity = {
     approvalRevision: number
 }
 type PublicationAttempt = PublicationIdentity & { run: Publication['run'] }
+type PriorRun = Pick<Publication['run'], 'runId' | 'attempt'>
+
+function matchesRun(
+    run: Publication['run'] | undefined | null,
+    expected: PriorRun,
+) {
+    return run?.runId === expected.runId && run.attempt === expected.attempt
+}
+
+function authorizeClaim(
+    row: Submission,
+    run: Publication['run'],
+    previousRun?: PriorRun,
+) {
+    if (row.status === 'approved' && !previousRun) return null
+    if (row.status !== 'publishing' || !row.publicationRun)
+        throw new SubmissionConflictError()
+    if (isDeepStrictEqual(row.publicationRun, run)) {
+        const claim = row.history.findLast(
+            (event) =>
+                event.status === 'publishing' &&
+                isDeepStrictEqual(event.publicationRun, run),
+        )
+        if (
+            previousRun &&
+            !matchesRun(claim?.previousPublicationRun, previousRun)
+        )
+            throw new SubmissionConflictError()
+        return null
+    }
+    if (!previousRun || !matchesRun(row.publicationRun, previousRun))
+        throw new SubmissionConflictError()
+    return row.publicationRun
+}
 
 function requireApproval(row: Submission, approvalRevision: number) {
     if (
@@ -59,8 +102,24 @@ async function validateHandoff(row: Submission) {
     }
 }
 
-// Server-only handoff for #5. The protected publisher owns dispatch,
-// authenticating its run, verifying the full bundle, and signing the catalog.
+async function isCurrentReviewer(tx: DatabaseTransaction, actorId: string) {
+    try {
+        await requireMutationPermissionService(
+            tx,
+            actorId,
+            PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+        )
+    } catch (error) {
+        if (error instanceof PermissionDeniedError) return false
+        throw error
+    }
+    const [actor] = await tx
+        .select({ accountType: users.accountType })
+        .from(users)
+        .where(eq(users.id, actorId))
+    return actor?.accountType === 'staff'
+}
+
 export async function listPendingPublicationsService() {
     const rows = await db
         .select({
@@ -76,6 +135,163 @@ export async function listPendingPublicationsService() {
     )
 }
 
+export async function listCatalogPublicationWorkService() {
+    const {
+        status,
+        publicationRun,
+        publication,
+        approval,
+        createdAt,
+        id,
+        revision,
+    } = marketplaceSubmissions
+    const rows = await db
+        .select({
+            submissionId: id,
+            revision,
+            approvalRevision: sql<number>`(${approval}->>'revision')::integer`,
+            kind: sql<'publish' | 'recover' | 'revoke'>`case
+                when ${status} = 'approved' then 'publish'
+                when ${publication} is null then 'recover'
+                else 'revoke'
+            end`,
+            run: publicationRun,
+        })
+        .from(marketplaceSubmissions)
+        .where(and(pendingPublicationWork(), publicationWorkIsDue(new Date())))
+        .orderBy(
+            sql`case when ${status} in ('revoked', 'withdrawn') then 0 when ${status} = 'publishing' then 1 else 2 end`,
+            createdAt,
+            id,
+        )
+        .limit(20)
+    return rows
+}
+
+function pendingPublicationWork() {
+    const { approval, history, status, publicationRun, publication } =
+        marketplaceSubmissions
+    return and(
+        isNotNull(approval),
+        sql`not (${history} @> '[{"revocation":{}}]'::jsonb)`,
+        or(
+            eq(status, 'approved'),
+            and(
+                inArray(status, ['publishing', 'withdrawn', 'revoked']),
+                isNotNull(publicationRun),
+                isNull(publication),
+            ),
+            and(eq(status, 'revoked'), isNotNull(publication)),
+        ),
+    )
+}
+
+function publicationWorkIsDue(now: Date) {
+    const { publicationRetryAt } = marketplaceSubmissions
+    return or(isNull(publicationRetryAt), lte(publicationRetryAt, now))
+}
+
+export async function deferCatalogPublicationWorkService(
+    input: PublicationIdentity & { revision: number },
+    caller: Publication['run'],
+) {
+    assertCatalogPublisherRun(caller)
+    const { id, revision, approval, status, publicationRun } =
+        marketplaceSubmissions
+    const now = new Date()
+    const [deferred] = await db
+        .update(marketplaceSubmissions)
+        .set({ publicationRetryAt: new Date(now.getTime() + 90 * 60_000) })
+        .where(
+            and(
+                eq(id, input.submissionId),
+                or(
+                    eq(revision, input.revision),
+                    // The authorize response may be lost after committing this caller's claim.
+                    and(
+                        eq(status, 'publishing'),
+                        eq(revision, input.revision + 1),
+                        eq(publicationRun, caller),
+                    ),
+                ),
+                sql`(${approval}->>'revision')::integer = ${input.approvalRevision}`,
+                pendingPublicationWork(),
+                publicationWorkIsDue(now),
+            ),
+        )
+        .returning({ status })
+    if (!deferred) throw new SubmissionConflictError()
+    return deferred.status
+}
+
+function stoppedUnpublishedClaim(row: Submission, expected: PriorRun) {
+    if (
+        (row.status !== 'withdrawn' && row.status !== 'revoked') ||
+        row.publication ||
+        !row.publicationRun ||
+        !matchesRun(row.publicationRun, expected) ||
+        row.history.some(({ revocation }) => revocation)
+    )
+        throw new SubmissionConflictError()
+    return { run: row.publicationRun, status: row.status }
+}
+
+export async function authorizeDraftCleanupService(
+    input: PublicationIdentity & { previousRun: PriorRun },
+) {
+    const row = await readSubmission(input.submissionId)
+    requireApproval(row, input.approvalRevision)
+    const { run } = stoppedUnpublishedClaim(row, input.previousRun)
+    await assertTerminalCatalogPublisherRunService(run)
+    const current = await readSubmission(row.id)
+    if (current.revision !== row.revision) throw new SubmissionConflictError()
+    return stoppedUnpublishedClaim(current, input.previousRun).status
+}
+
+function revocationIntent(row: Submission): CatalogRevocation | null {
+    if (row.status !== 'revoked' && row.status !== 'withdrawn') return null
+    const stop = row.history.find(
+        ({ actorId, failure, status }) =>
+            (actorId || failure) &&
+            (status === 'revoked' || status === 'withdrawn'),
+    )
+    if (!stop) throw new SubmissionConflictError()
+    return {
+        appId: row.appId,
+        version: row.version,
+        revokedAt: stop.at,
+        reason:
+            stop.status === 'withdrawn'
+                ? 'withdrawn'
+                : stop.failure
+                  ? 'invalidPublication'
+                  : 'security',
+    }
+}
+
+export async function getCatalogPublicationWorkService(
+    input: PublicationIdentity,
+) {
+    const row = await readSubmission(input.submissionId)
+    const handoff = requireApproval(row, input.approvalRevision)
+    if (row.status === 'approved') {
+        await validateHandoff(row)
+        const current = await readSubmission(row.id)
+        if (current.revision !== row.revision)
+            throw new SubmissionConflictError()
+    } else if (!row.publicationRun && !row.publication) {
+        throw new SubmissionConflictError()
+    }
+    return {
+        ...handoff,
+        revision: row.revision,
+        status: row.status,
+        run: row.publicationRun,
+        publication: row.publication,
+        revocation: revocationIntent(row),
+    }
+}
+
 export async function getApprovedPublicationService(
     input: PublicationIdentity,
 ) {
@@ -89,24 +305,39 @@ export async function getApprovedPublicationService(
 }
 
 export async function authorizePublicationAttemptService(
-    input: PublicationAttempt,
+    input: PublicationAttempt & { previousRun?: PriorRun },
 ) {
     const run = candidate.shape.build.parse(input.run)
+    assertCatalogPublisherRun(run)
     const row = await readSubmission(input.submissionId)
-    if (row.status !== 'approved' && row.status !== 'publishing')
-        throw new SubmissionConflictError()
     const handoff = requireApproval(row, input.approvalRevision)
+    const prior = authorizeClaim(row, run, input.previousRun)
+    if (prior) await assertTerminalCatalogPublisherRunService(prior)
     const claim = await validateHandoff(row)
     try {
-        await auditedSubmissionWrite(null, async (tx) => {
-            const current = await readSubmission(row.id, undefined, tx)
-            if (
-                current.status !== 'approved' &&
-                (current.status !== 'publishing' ||
-                    !isDeepStrictEqual(current.publicationRun, run))
+        const revision = await auditedSubmissionWrite(null, async (tx) => {
+            const allowed = await isCurrentReviewer(
+                tx,
+                handoff.approval.actorId,
             )
+            const current = await readSubmission(row.id, undefined, tx)
+            const currentPrior = authorizeClaim(current, run, input.previousRun)
+            if (currentPrior && !isDeepStrictEqual(currentPrior, prior))
                 throw new SubmissionConflictError()
             requireApproval(current, input.approvalRevision)
+            if (!allowed) {
+                const event = submissionEvent(
+                    current.revision + 1,
+                    current.publicationRun ? 'revoked' : 'failed',
+                    null,
+                    undefined,
+                    'approvalRevoked',
+                )
+                const changed = await changeSubmission(tx, current, event, {
+                    nextCheckAt: null,
+                })
+                return { result: null, audit: changed.audit }
+            }
             await assertCurrentNamespace(
                 row.appId,
                 claim,
@@ -120,7 +351,8 @@ export async function authorizePublicationAttemptService(
             ) {
                 throw new InvalidCandidateError('expiredEvidence')
             }
-            if (current.status === 'publishing') return { result: current }
+            if (isDeepStrictEqual(current.publicationRun, run))
+                return { result: current.revision }
             if (
                 current.history.some((event) =>
                     isDeepStrictEqual(event.publicationRun, run),
@@ -131,17 +363,139 @@ export async function authorizePublicationAttemptService(
             const event = {
                 ...submissionEvent(current.revision + 1, 'publishing', null),
                 publicationRun: run,
+                previousPublicationRun: currentPrior ?? undefined,
             }
-            return changeSubmission(tx, current, event, {
+            const changed = await changeSubmission(tx, current, event, {
                 publicationRun: run,
                 nextCheckAt: expiresOrRecheck(current),
             })
+            return { result: changed.result.revision, audit: changed.audit }
         })
+        if (revision === null) throw new SubmissionConflictError()
+        return { ...handoff, revision }
     } catch (error) {
         await invalidateSubmission(row, error)
         throw error
     }
-    return handoff
+}
+
+export async function reconcileCatalogPublisherService(
+    input: PublicationIdentity,
+    caller: Publication['run'],
+    outcome:
+        | (Pick<Publication, 'catalogRevision' | 'publishedAt' | 'release'> & {
+              previousRun?: PriorRun
+          })
+        | { neverPromoted: true; previousRun: PriorRun },
+) {
+    const row = await readSubmission(input.submissionId)
+    const { approval } = requireApproval(row, input.approvalRevision)
+    const expected = outcome.previousRun ?? caller
+    const settled =
+        'neverPromoted' in outcome && !row.publicationRun
+            ? row.history.find(
+                  ({ status, publicationRun }) =>
+                      status !== 'publishing' &&
+                      matchesRun(publicationRun, expected),
+              )?.publicationRun
+            : undefined
+    const run = row.publicationRun ?? settled
+    if (!run) throw new SubmissionConflictError()
+
+    const previousRun = !isDeepStrictEqual(run, caller)
+    if (outcome.previousRun ? !matchesRun(run, expected) : previousRun)
+        throw new SubmissionConflictError()
+    if (previousRun && !settled)
+        await assertTerminalCatalogPublisherRunService(run)
+    if ('neverPromoted' in outcome) {
+        if (!previousRun) throw new SubmissionConflictError()
+        return reconcilePublicationService({ ...input, run }, outcome)
+    }
+
+    const receipt = {
+        formatVersion: 1 as const,
+        id: approval.id,
+        approvalId: approval.id,
+        approvalRevision: approval.revision,
+        run,
+        catalogRevision: outcome.catalogRevision,
+        publishedAt: outcome.publishedAt,
+        release: outcome.release,
+    }
+    // The authenticated publisher sends the verified member and catalog
+    // revision, so the website never needs the full public catalog in POSTs.
+    return reconcilePublicationService(
+        { ...input, run },
+        {
+            receipt,
+            signedCatalog: {
+                formatVersion: 1,
+                revision: outcome.catalogRevision,
+                releases: [outcome.release],
+                revocations: [],
+            },
+        },
+    )
+}
+
+export async function confirmCatalogRevocationService(
+    input: PublicationIdentity,
+    catalogRevision: number,
+    entry: CatalogRevocation,
+    previousRun?: PriorRun,
+) {
+    let terminalRun: Publication['run'] | null = null
+    if (previousRun) {
+        const row = await readSubmission(input.submissionId)
+        requireApproval(row, input.approvalRevision)
+        if (
+            !row.publicationRun ||
+            !matchesRun(row.publicationRun, previousRun) ||
+            !isDeepStrictEqual(entry, revocationIntent(row))
+        )
+            throw new SubmissionConflictError()
+        terminalRun = row.publicationRun
+        if (
+            !row.publication &&
+            !row.history.some(({ revocation }) => revocation)
+        )
+            await assertTerminalCatalogPublisherRunService(terminalRun)
+    }
+    return auditedSubmissionWrite(null, async (tx) => {
+        const row = await readSubmission(input.submissionId, undefined, tx)
+        requireApproval(row, input.approvalRevision)
+        if (
+            (terminalRun &&
+                !isDeepStrictEqual(row.publicationRun, terminalRun)) ||
+            (row.publication
+                ? catalogRevision <= row.publication.catalogRevision
+                : !terminalRun) ||
+            !isDeepStrictEqual(entry, revocationIntent(row))
+        )
+            throw new SubmissionConflictError()
+
+        const previous = row.history.find(
+            ({ revocation }) => revocation,
+        )?.revocation
+        if (previous) {
+            if (
+                catalogRevision < previous.catalogRevision ||
+                !isDeepStrictEqual(entry, previous.entry)
+            )
+                throw new SubmissionConflictError()
+            return { result: row.status }
+        }
+        const changed = await changeSubmission(
+            tx,
+            row,
+            {
+                ...submissionEvent(row.revision + 1, 'revoked', null),
+                revocation: { catalogRevision, entry },
+            },
+            {},
+        )
+        return { result: changed.result.status, audit: changed.audit }
+    })
 }
 
 // Call only from #5's authenticated adapter, after verifying signed catalog
@@ -156,6 +510,11 @@ export async function reconcilePublicationService(
     return auditedSubmissionWrite(null, async (tx) => {
         const row = await readSubmission(input.submissionId, undefined, tx)
         const { approval } = requireApproval(row, input.approvalRevision)
+        if (
+            !row.publication &&
+            row.history.some(({ revocation }) => revocation)
+        )
+            throw new SubmissionConflictError()
         if ('neverPromoted' in outcome) {
             if (
                 !row.publicationRun &&

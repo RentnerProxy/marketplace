@@ -1,5 +1,4 @@
 import { afterEach, expect, test } from 'bun:test'
-import { createHash } from 'node:crypto'
 import {
     mkdtemp,
     readFile,
@@ -14,24 +13,19 @@ import {
     sealCandidate,
     sealTarget,
     verifyCandidateHandoff,
-    type BuildIdentity,
     type CandidateHandoffExpectation,
     type Purpose,
 } from '../../../../../.github/scripts/ci/app-candidates/evidence.ts'
 import { candidateSbom } from '../../../../../.github/scripts/ci/app-candidates/scan.ts'
 import fixtures from '../../../../../contracts/v1/fixtures.json'
 import { parseAppManifest } from '../../../../../contracts/v1/index.ts'
+import {
+    candidateBuild as build,
+    candidateEvidenceFixture,
+    candidateTargets as targets,
+} from './app-candidate-evidence.fixture.ts'
 
 const source = fixtures.manifest.source
-const build: BuildIdentity = {
-    repositoryId: '1234',
-    workflowCommit: '4'.repeat(40),
-    workflowPath: '.github/workflows/app-candidate.yml',
-    runId: '5678',
-    attempt: 1,
-}
-const targets = ['linux-amd64', 'linux-arm64'] as const
-const applianceImage = `ghcr.io/rentnerproxy/marketplace@sha256:${'5'.repeat(64)}`
 const checks = {
     package: 'passed',
     securityScan: 'passed',
@@ -89,9 +83,6 @@ afterEach(async () => {
     )
 })
 
-const hash = (bytes: string | Buffer) =>
-    createHash('sha256').update(bytes).digest('hex')
-
 function handoffExpectation(): CandidateHandoffExpectation {
     const identity = { id: '89765', sha256: 'a'.repeat(64) }
     return {
@@ -110,59 +101,8 @@ function handoffExpectation(): CandidateHandoffExpectation {
 async function scenario(purpose: Purpose = 'candidate') {
     const directory = await mkdtemp(join(tmpdir(), 'app-candidate-evidence-'))
     directories.push(directory)
-    const sbomPath = join(directory, 'original-sbom.json')
-    const sbom = JSON.stringify({
-        bomFormat: 'CycloneDX',
-        specVersion: '1.6',
-        version: 1,
-        components: [{ type: 'application', name: 'monitoring' }],
-    })
-    await writeFile(sbomPath, sbom)
-    const targetDirectories = {
-        'linux-amd64': join(directory, 'amd64'),
-        'linux-arm64': join(directory, 'arm64'),
-    }
-    const outputDirectory = join(directory, 'candidate')
-    const archives = new Map<string, string>()
-    const targetOptions = targets.map((target) => ({
-        archivePath: join(directory, `${target}-original.tar.zst`),
-        sbomPath,
-        manifest: parseAppManifest({ ...fixtures.manifest, target }),
-        manifestSha256: hash(`manifest-${target}`),
-        outputDirectory: targetDirectories[target],
-        build,
-        purpose,
-        applianceImage,
-    }))
-    await Promise.all(
-        targetOptions.map(async (options) => {
-            const { id, version, target } = options.manifest
-            const name = `${id}-${version}-${target}.tar.zst`
-            // The verifier must treat even non-decodable archive bytes as opaque.
-            const bytes = `tested archive bytes for ${target}`
-            archives.set(name, bytes)
-            await writeFile(options.archivePath, bytes)
-            await sealTarget(options)
-        }),
-    )
-    const options = {
-        outputDirectory,
-        targetDirectories,
-        source,
-        build,
-        purpose,
-        publisherName: 'RentnerProxy',
-    }
-    return {
-        options,
-        outputDirectory,
-        targetDirectories,
-        archives,
-        sbom,
-        targetOptions,
-    }
+    return candidateEvidenceFixture(directory, purpose)
 }
-
 test('seals a deterministic dual-target handoff and preserves all original byte identities', async () => {
     const fixture = await scenario()
     const { options, outputDirectory, archives, sbom } = fixture

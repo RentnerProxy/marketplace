@@ -11,7 +11,7 @@ import {
     githubNumericId,
 } from './github.service.ts'
 
-const runSchema = z.object({
+export const candidateRunSchema = z.object({
     id: githubNumericId,
     workflow_id: githubNumericId,
     run_attempt: z.number().int().positive(),
@@ -27,7 +27,7 @@ const runSchema = z.object({
     repository: z.object({ id: githubNumericId }),
     head_repository: z.object({ id: githubNumericId }),
 })
-export type CandidateRun = z.output<typeof runSchema>
+export type CandidateRun = z.output<typeof candidateRunSchema>
 type SubmissionRunRequest = Pick<
     typeof marketplaceSubmissions.$inferSelect,
     'buildKey' | 'dispatchRequestedAt' | 'buildRunId' | 'request'
@@ -136,7 +136,7 @@ export async function findCandidateRun(
     return runId ? loadRun(runId) : null
 
     async function loadRun(id: string) {
-        const run = runSchema.parse(
+        const run = candidateRunSchema.parse(
             await githubJson(candidateApiPath('runs/' + id), { token }),
         )
         assertSubmissionRun(run, submission)

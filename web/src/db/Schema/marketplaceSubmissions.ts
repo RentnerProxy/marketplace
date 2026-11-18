@@ -83,6 +83,9 @@ export const marketplaceSubmissions = appSchema.table(
         approval: jsonb('approval').$type<SubmissionApproval>(),
         publicationRun: jsonb('publication_run').$type<PublicationRun>(),
         publication: jsonb('publication').$type<Publication>(),
+        publicationRetryAt: timestamp('publication_retry_at', {
+            withTimezone: true,
+        }),
     },
     (table) => [
         check(
