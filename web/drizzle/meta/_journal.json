@@ -71,6 +71,13 @@
       "when": 1794955937510,
       "tag": "0009_constrain_account_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794985027402,
+      "tag": "0010_marketplace_email_verification",
+      "breakpoints": true
     }
   ]
 }

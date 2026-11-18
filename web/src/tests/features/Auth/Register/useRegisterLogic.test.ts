@@ -4,6 +4,7 @@ import type { SubmitEvent } from 'react'
 import { defaultToastStore } from '@rentnerkev/toasts/toast'
 import type { RegisterLogicReturn } from '@/features/Auth/Register/Types/register-logic.types.ts'
 import type { RegistrationResult } from '@/features/Auth/Register/Types/registration.types.ts'
+import { registrationTokenHandoff } from '@/lib/Auth/registrationToken.ts'
 
 const reactExports = { ...React }
 const cells: unknown[] = []
@@ -29,6 +30,7 @@ const social: {
 } = { data: { registration: null }, isPending: false, refetch: async () => {} }
 const refetchSocial = vi.fn(async () => {})
 let hash = ''
+const listeners = new Map<string, () => void>()
 const replaceState = vi.fn(() => {
     hash = ''
 })
@@ -116,6 +118,7 @@ beforeEach(() => {
     requests.length = 0
     metadata.length = 0
     sends.length = 0
+    listeners.clear()
     vi.clearAllMocks()
     defaultToastStore.clearAllToasts()
     social.data.registration = null
@@ -126,6 +129,9 @@ beforeEach(() => {
     Object.defineProperty(globalThis, 'window', {
         configurable: true,
         value: {
+            addEventListener(type: string, listener: () => void) {
+                listeners.set(type, listener)
+            },
             location: {
                 get hash() {
                     return hash
@@ -243,6 +249,7 @@ describe('registration form workflow', () => {
     })
     it('scrubs a verification token immediately and requires one explicit confirmation request', async () => {
         hash = '#verify=' + 'A'.repeat(43)
+        registrationTokenHandoff.capture(window)
         render()
         effects[0]?.()
         await Promise.resolve()
@@ -261,6 +268,62 @@ describe('registration form workflow', () => {
         await requests[0]?.()
         expect(sends).toEqual([{ data: { token: 'A'.repeat(43) } }])
         expect(JSON.stringify(metadata)).not.toContain('A'.repeat(43))
+    })
+    it('captures a later link in the same tab and keeps a stale response from replacing it', async () => {
+        registrationTokenHandoff.capture(window)
+        render()
+        effects[0]?.()
+        await Promise.resolve()
+
+        const first = 'A'.repeat(43)
+        hash = '#verify=' + first
+        listeners.get('hashchange')?.()
+        const pending = Promise.withResolvers<{ success: boolean }>()
+        verify.mockReturnValueOnce(pending.promise)
+        render().handler.handleVerify()
+        const firstRequest = requests[0]?.()
+        expect(verify).toHaveBeenCalledWith({ data: { token: first } })
+
+        const latest = 'B'.repeat(43)
+        hash = '#verify=' + latest
+        listeners.get('hashchange')?.()
+        expect(hash).toBe('')
+        pending.resolve({ success: true })
+        await firstRequest
+        expect(render().state).toMatchObject({
+            phase: 'verify',
+            canVerify: true,
+        })
+        render().handler.handleVerify()
+        await requests[1]?.()
+        expect(verify).toHaveBeenLastCalledWith({ data: { token: latest } })
+        expect(render().state.phase).toBe('complete')
+    })
+    it('offers a fresh registration after an invalid link without reusing it', async () => {
+        hash = '#verify=short'
+        registrationTokenHandoff.capture(window)
+        render()
+        effects[0]?.()
+        await Promise.resolve()
+        expect(hash).toBe('')
+        expect(render().state).toMatchObject({
+            phase: 'verify',
+            canVerify: false,
+        })
+        render().handler.handleVerify()
+        expect(requests).toHaveLength(0)
+
+        render().handler.handleRetry()
+        expect(render().state).toMatchObject({
+            phase: 'form',
+            canVerify: false,
+        })
+        expect(refetchSocial).toHaveBeenCalledTimes(1)
+        fill(render())
+        render().handler.handleSubmit(event)
+        await requests[0]?.()
+        expect(render().state.phase).toBe('inbox')
+        expect(verify).not.toHaveBeenCalled()
     })
     it('shows registration failures as safe deduplicated toasts', async () => {
         fill(render())
@@ -287,9 +350,17 @@ describe('registration form workflow', () => {
         expect(
             defaultToastStore.getToastSnapshot().map((item) => item.content),
         ).toEqual(['auth.register.checkInbox'])
+        render().handler.handleRetry()
+        expect(render().state).toMatchObject({
+            phase: 'form',
+            email: 'alice@example.test',
+            password: '',
+            confirmPassword: '',
+        })
     })
     it('reports failed verification safely and confirms a successful retry', async () => {
         hash = '#verify=' + 'B'.repeat(43)
+        registrationTokenHandoff.capture(window)
         render()
         effects[0]?.()
         await Promise.resolve()
@@ -307,17 +378,5 @@ describe('registration form workflow', () => {
         expect(defaultToastStore.getToastSnapshot().at(-1)?.content).toBe(
             'auth.register.complete',
         )
-    })
-    it('never submits a malformed verification token', async () => {
-        hash = '#verify=invalid'
-        render()
-        effects[0]?.()
-        await Promise.resolve()
-        render().handler.handleVerify()
-        expect(requests).toHaveLength(0)
-        expect(
-            defaultToastStore.getToastSnapshot().map((item) => item.content),
-        ).toEqual(['auth.register.invalidVerification'])
-        expect(render().state.error).toBe('')
     })
 })

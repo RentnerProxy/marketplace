@@ -52,6 +52,8 @@ const allowedAccess = {
         id: userId,
         username: 'synthetic-user',
         email: 'synthetic@example.test',
+        accountType: 'public' as const,
+        emailVerifiedAt: null,
         sessionHash: 'a'.repeat(64),
         isActive: true,
         isDeleted: false,

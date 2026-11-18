@@ -85,6 +85,7 @@ export async function createPublicAccountInTransactionService(
             username: input.username,
             email: input.email,
             passwordHash: input.passwordHash,
+            emailVerifiedAt: new Date(),
             accountType: 'public',
         })
         .returning({ id: users.id })

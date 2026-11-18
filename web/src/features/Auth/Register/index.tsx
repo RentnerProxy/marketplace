@@ -265,7 +265,11 @@ export default function RegisterPage() {
                             className="h-9 w-9 text-[#176b34]"
                         />
                         <p className="text-sm leading-7 text-[#53675a]">
-                            {t('auth.register.verifyDescription')}
+                            {t(
+                                state.canVerify
+                                    ? 'auth.register.verifyDescription'
+                                    : 'auth.register.invalidVerification',
+                            )}
                         </p>
                         <button
                             type="button"
@@ -302,6 +306,16 @@ export default function RegisterPage() {
                                 : 'auth.register.complete',
                         )}
                     </p>
+                )}
+                {(state.phase === 'inbox' || state.phase === 'verify') && (
+                    <button
+                        type="button"
+                        onClick={handler.handleRetry}
+                        disabled={state.isPending}
+                        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg text-sm text-[#176b34] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {t('auth.register.retryRegistration')}
+                    </button>
                 )}
                 <p className="mt-5 border-t border-[#d7e2d9] pt-4 text-center text-sm text-[#65786c]">
                     {t('auth.register.alreadyRegistered')}{' '}

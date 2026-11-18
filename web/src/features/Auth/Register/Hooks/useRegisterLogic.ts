@@ -3,6 +3,7 @@ import type { SubmitEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from '@rentnerkev/toasts'
 import { REGISTRATION_POLICY } from '@/config/security.config.ts'
+import { registrationTokenHandoff } from '@/lib/Auth/registrationToken.ts'
 import { registerHandler, verifyRegistrationHandler } from '../middleware.ts'
 import { cancelSocialAuthHandler } from '@/features/Auth/Social/middleware.ts'
 import useSocialAuthState from '@/shared/Auth/Hooks/useSocialAuthState.ts'
@@ -24,7 +25,7 @@ export default function useRegisterLogic(): RegisterLogicReturn {
     const [phase, setPhase] =
         useState<RegisterLogicReturn['state']['phase']>('form')
     const token = useRef<string | null>(null)
-    const verificationInFlight = useRef(false)
+    const submittedToken = useRef<string | null>(null)
     const isSocial = Boolean(social.data?.registration)
     const email = emailDraft ?? social.data?.registration?.email ?? ''
     function reportError(key: string) {
@@ -37,26 +38,30 @@ export default function useRegisterLogic(): RegisterLogicReturn {
         )
     }
     useEffect(() => {
-        const hash = window.location.hash
-        if (!hash.startsWith('#verify=')) return
-        window.history.replaceState(
-            window.history.state,
-            '',
-            window.location.pathname + window.location.search,
-        )
-        const candidate = hash.slice('#verify='.length)
-        const valid = /^[A-Za-z0-9_-]{43}$/.test(candidate)
-        if (valid) token.current = candidate
-        queueMicrotask(() => {
+        const handoff = registrationTokenHandoff.get(window)
+        let disposed = false
+        function receiveToken() {
+            const next = handoff?.take()
+            if (!next || next.status === 'missing') return
+            token.current = next.status === 'captured' ? next.token : null
+            if (next.status === 'inactive') return
+            setPassword('')
+            setConfirmPassword('')
+            setError('')
+            setErrorField(null)
+            setCanVerify(token.current !== null)
             setPhase('verify')
-            setCanVerify(valid)
+        }
+        const unsubscribe = handoff?.subscribe(receiveToken)
+        queueMicrotask(() => {
+            if (!disposed) receiveToken()
         })
-        if (!valid)
-            toast.error(t('auth.register.invalidVerification'), {
-                title: t('common.error'),
-                dedupeKey: 'registration:auth.register.invalidVerification',
-            })
-    }, [t])
+        return () => {
+            disposed = true
+            token.current = null
+            unsubscribe?.()
+        }
+    }, [])
     const registration = useMutation({
         meta: { discardAuthSecretsAfterSettled: true },
         mutationFn: (data: {
@@ -86,6 +91,7 @@ export default function useRegisterLogic(): RegisterLogicReturn {
                 window.location.assign(result.redirectTo)
                 return
             }
+            if (result.requiresEmailVerification && token.current) return
             setPhase(result.requiresEmailVerification ? 'inbox' : 'complete')
             toast.success(
                 t(
@@ -102,14 +108,17 @@ export default function useRegisterLogic(): RegisterLogicReturn {
     const verification = useMutation({
         meta: { discardAuthSecretsAfterSettled: true },
         mutationFn: async () => {
-            if (!token.current) throw new Error('missing')
-            return verifyRegistrationHandler({ data: { token: token.current } })
+            if (!submittedToken.current) throw new Error('missing')
+            return verifyRegistrationHandler({
+                data: { token: submittedToken.current },
+            })
         },
         onMutate: () => {
             setError('')
             setErrorField(null)
         },
         onSuccess: (result) => {
+            if (token.current !== submittedToken.current) return
             if (!result.success) {
                 reportError('auth.register.invalidVerification')
                 return
@@ -121,9 +130,12 @@ export default function useRegisterLogic(): RegisterLogicReturn {
                 title: t('auth.register.title'),
             })
         },
-        onError: () => reportError('auth.register.verificationFailed'),
+        onError: () => {
+            if (token.current === submittedToken.current)
+                reportError('auth.register.verificationFailed')
+        },
         onSettled: (): void => {
-            verificationInFlight.current = false
+            submittedToken.current = null
             verification.reset()
         },
     })
@@ -196,10 +208,18 @@ export default function useRegisterLogic(): RegisterLogicReturn {
         handler: {
             handleSubmit,
             handleVerify: () => {
-                if (token.current && !verificationInFlight.current) {
-                    verificationInFlight.current = true
+                if (token.current && !submittedToken.current) {
+                    submittedToken.current = token.current
                     verification.mutate()
                 }
+            },
+            handleRetry: () => {
+                token.current = null
+                setCanVerify(false)
+                setError('')
+                setErrorField(null)
+                setPhase('form')
+                void social.refetch()
             },
             handleCancelSocial: () => cancellation.mutate(),
         },

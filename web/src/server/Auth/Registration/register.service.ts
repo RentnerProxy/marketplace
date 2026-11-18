@@ -144,10 +144,13 @@ export async function registerService(
             })
         } catch (error) {
             logError('auth.registration.enqueue_failed', error)
-            await db
-                .delete(pendingRegistrations)
-                .where(eq(pendingRegistrations.tokenHash, tokenHash))
-            return { success: false, error: 'registration.failed' }
+            try {
+                await db
+                    .delete(pendingRegistrations)
+                    .where(eq(pendingRegistrations.tokenHash, tokenHash))
+            } catch (cleanupError) {
+                logError('auth.registration.cleanup_failed', cleanupError)
+            }
         }
     }
     return { success: true, requiresEmailVerification: true }
