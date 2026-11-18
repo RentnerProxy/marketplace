@@ -1,5 +1,5 @@
 .marketplace-signed-in {
-    --marketplace-banner: url('/brand/marketplace-modules-640.webp');
+    --marketplace-banner: url('/brand/marketplace-sidebar-texture.webp');
 }
 
 .marketplace-sidebar-mask {
@@ -23,14 +23,9 @@
 
 .marketplace-sidebar-texture {
     background:
-        linear-gradient(
-            180deg,
-            rgb(2 10 11 / 88%),
-            rgb(2 10 11 / 74%) 45%,
-            rgb(2 10 11 / 88%)
-        ),
-        var(--marketplace-banner) left 62% / auto clamp(22rem, 72dvh, 46rem)
-            no-repeat var(--color-marketplace-void);
+        linear-gradient(180deg, rgb(2 10 11 / 52%), rgb(2 10 11 / 24%)),
+        var(--marketplace-banner) right center / cover no-repeat
+            var(--color-marketplace-void);
 }
 
 @media (min-width: 90rem) {
@@ -45,11 +40,20 @@
         inset-block: -1.25rem;
         inset-inline-end: 0;
         width: min(38%, 24rem);
-        background: var(--marketplace-banner) right 44% / auto 160% no-repeat;
+        background: var(--marketplace-banner) right 72% / cover no-repeat;
         content: '';
-        mask-image: linear-gradient(90deg, transparent, #000 50%);
-        opacity: 0.18;
+        mask-image: radial-gradient(
+            ellipse closest-side,
+            #000 22%,
+            transparent
+        );
+        opacity: 0.55;
         pointer-events: none;
+    }
+
+    .marketplace-signed-in.app-theme-light .marketplace-content-header::before {
+        filter: invert(1) hue-rotate(180deg);
+        opacity: 0.4;
     }
 }
 

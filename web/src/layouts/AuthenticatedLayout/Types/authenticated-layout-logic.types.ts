@@ -1,4 +1,9 @@
-import type { CSSProperties } from 'react'
+import type {
+    CSSProperties,
+    KeyboardEvent,
+    PointerEvent,
+    RefObject,
+} from 'react'
 import type {
     UserFontFamily,
     UserFontSize,
@@ -71,6 +76,24 @@ export type AuthenticatedSidebarLogicReturn = {
         handleOpenUserSettings: () => void
         handleToggleGroup: (group: string) => void
     }
+}
+
+export type SidebarScrollGripPosition = {
+    style: Pick<CSSProperties, 'height' | 'left' | 'top'>
+    scrollTop: number
+    maxScroll: number
+    travel: number
+}
+
+export type SidebarScrollGripLogicReturn = {
+    state: { position: SidebarScrollGripPosition | null }
+    handler: {
+        handlePointerDown: (event: PointerEvent<HTMLDivElement>) => void
+        handlePointerMove: (event: PointerEvent<HTMLDivElement>) => void
+        handlePointerEnd: (event: PointerEvent<HTMLDivElement>) => void
+        handleKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
+    }
+    refs: { navigation: RefObject<HTMLElement | null> }
 }
 
 export type AuthenticatedPageHeaderLogicReturn = {

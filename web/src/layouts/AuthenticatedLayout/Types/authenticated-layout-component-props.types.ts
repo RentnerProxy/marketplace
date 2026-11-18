@@ -3,7 +3,7 @@ import type {
     AuthenticatedRoute,
 } from '@/shared/Types/navigation.types.ts'
 import type { UserThemeMode } from '@/lib/Theme/Types/userTheme.types.ts'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 
 export type SidebarContentProps = {
     title: string
@@ -15,13 +15,16 @@ export type SidebarContentProps = {
     userIconSrc: string
     activeGroupKey: string | null
     isDesktop?: boolean
+    navigationRef?: RefObject<HTMLElement | null>
     onNavigate?: () => void
 }
 
-export type AuthenticatedSidebarProps = Omit<
+export type AuthenticatedSidebarContentProps = Omit<
     SidebarContentProps,
-    'isDesktop' | 'onNavigate'
-> & {
+    'isDesktop' | 'navigationRef' | 'onNavigate'
+>
+
+export type AuthenticatedSidebarProps = AuthenticatedSidebarContentProps & {
     isCollapsed: boolean
 }
 
@@ -69,7 +72,7 @@ export type UserProfileButtonProps = {
 export type MobileNavigationProps = {
     isOpen: boolean
     onClose: () => void
-    sidebar: Omit<SidebarContentProps, 'isDesktop' | 'onNavigate'>
+    sidebar: AuthenticatedSidebarContentProps
 }
 
 export type MaintenanceBannerProps = {
