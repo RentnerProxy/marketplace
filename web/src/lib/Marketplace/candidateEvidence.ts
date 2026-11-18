@@ -15,7 +15,7 @@ import {
     timestamp,
 } from '../../../../contracts/v1/primitives.ts'
 import { candidate } from '../../../../contracts/v1/publication.ts'
-import { byteIdentity, jsonBytes } from './evidence-files.ts'
+import { byteIdentity, jsonBytes } from './evidenceIdentity.ts'
 
 export type BuildIdentity = Candidate['build']
 export type AppSource = AppManifest['source']

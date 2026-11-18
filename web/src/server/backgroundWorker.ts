@@ -8,7 +8,7 @@ import {
     startWorkerHeartbeatService,
 } from '@/server/Runtime/worker-health.service.ts'
 import { createWorkerStatusReporterService } from '@/server/Runtime/worker-status.service.ts'
-import { logError, logInfo } from '@/server/Logging/logger.ts'
+import { logError, logInfo, logWarn } from '@/server/Logging/logger.ts'
 import { closeCoreWorkerPoolsService } from '@/server/Core/worker-pool.service.ts'
 import { closePrivateStorageWritesService } from '@/server/Storage/private-write-queue.service.ts'
 import { setRuntimeLogProcessService } from '@/server/Logging/runtime-log-history.service.ts'
@@ -25,7 +25,9 @@ import {
 
 import { assertRuntimeDatabaseRolePolicyService } from '@/server/Runtime/database-role-policy.service.ts'
 import { createWorkerShutdownService } from '@/server/Runtime/worker-shutdown.service.ts'
+import { waitForWorkerCleanupService } from '@/server/Runtime/worker-cleanup.service.ts'
 import type { startMailWorker } from '@/server/Queues/mail.worker.ts'
+import { candidateGitHubToken } from '@/server/Marketplace/Submissions/github.service.ts'
 
 setRuntimeLogProcessService('worker')
 installStorageMutationBarrierFatalExitHandlerService()
@@ -46,6 +48,7 @@ await workerStatusReporter.reportStatus('starting')
 
 const startupReady = Promise.withResolvers<void>()
 let mailWorker: Awaited<ReturnType<typeof startMailWorker>> | undefined
+let candidateWorker: Promise<void> | undefined
 let backupWorkerStarter:
     ReturnType<typeof createBackupWorkerStartCoordinatorService> | undefined
 let workerHeartbeat:
@@ -57,6 +60,12 @@ const shutdown = createWorkerShutdownService({
     },
     closeWorkers: async function () {
         try {
+            if (
+                candidateWorker &&
+                !(await waitForWorkerCleanupService(candidateWorker))
+            ) {
+                logWarn('marketplace.submission.worker_shutdown_timeout')
+            }
             await backupWorkerStarter?.stop()
         } finally {
             try {
@@ -124,6 +133,16 @@ async function startWorkers() {
         if (process.env.NODE_ENV === 'production') throw error
     }
     if (shutdown.signal.aborted) return
+
+    if (candidateGitHubToken()) {
+        const { runCandidateValidationWorker } =
+            await import('@/server/Marketplace/Submissions/validation.worker.ts')
+        if (shutdown.signal.aborted) return
+        candidateWorker = runCandidateValidationWorker(
+            shutdown.signal,
+            currentMailWorker.isRestoreQuiescenceActive,
+        )
+    }
 
     logInfo('background_worker.started', {
         backupConcurrency: backupStarter.getWorker() ? 1 : 0,

@@ -131,6 +131,7 @@ COPY --from=builder /app/web/drizzle ./web/drizzle
 COPY --from=builder /app/package.json ./package.json
 COPY LICENSE /app/LICENSE
 COPY --from=builder /app/web ./web
+COPY --from=builder /app/contracts/v1 ./contracts/v1
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=core-builder /native/ /usr/local/bin/
 

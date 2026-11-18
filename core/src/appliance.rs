@@ -89,10 +89,15 @@ pub fn run(mode: &str) -> Result<i32> {
         environment::load_environment(maintenance)?
     };
     let logs = Arc::new(LogStore::new(
-        ["POSTGRES_PASSWORD", "AUTH_ENCRYPTION_KEY", "SMTP_PASSWORD"]
-            .into_iter()
-            .filter_map(|key| environment.get(key).cloned())
-            .collect(),
+        [
+            "POSTGRES_PASSWORD",
+            "AUTH_ENCRYPTION_KEY",
+            "SMTP_PASSWORD",
+            "MARKETPLACE_CANDIDATE_GITHUB_TOKEN",
+        ]
+        .into_iter()
+        .filter_map(|key| environment.get(key).cloned())
+        .collect(),
     ));
     let stopping = Arc::new(AtomicBool::new(false));
     let signal = stopping.clone();

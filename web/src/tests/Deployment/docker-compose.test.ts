@@ -46,6 +46,7 @@ describe('self-contained appliance deployment', function () {
             'AUTH_ENCRYPTION_KEY',
             'BACKUP_PATH',
             'MAIL_FROM',
+            'MARKETPLACE_CANDIDATE_GITHUB_TOKEN',
             'OAUTH_DISCORD_CLIENT_ID',
             'OAUTH_DISCORD_CLIENT_SECRET',
             'OAUTH_GITHUB_CLIENT_ID',

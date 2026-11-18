@@ -45,7 +45,10 @@ function getFirstNavRoute(
     return null
 }
 
-export default function useAuthenticatedNavigation(permissions: Array<string>) {
+export default function useAuthenticatedNavigation(
+    permissions: Array<string>,
+    canSubmitMarketplaceApps = false,
+) {
     const { t } = useTranslationStore()
     const subtitle = getNavigationSubtitle(permissions, t)
 
@@ -53,6 +56,7 @@ export default function useAuthenticatedNavigation(permissions: Array<string>) {
         const visibleNavItems = getVisibleNavigationItems(
             NAVBAR_ITEMS,
             permissions,
+            canSubmitMarketplaceApps,
         )
 
         return {
@@ -62,7 +66,7 @@ export default function useAuthenticatedNavigation(permissions: Array<string>) {
             subtitle,
             visibleNavItems,
         }
-    }, [permissions, subtitle])
+    }, [permissions, subtitle, canSubmitMarketplaceApps])
 
     return { state: navigation }
 }

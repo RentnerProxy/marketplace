@@ -18,6 +18,9 @@ on:
             publisher_name:
                 type: string
                 default: ''
+            submission_id:
+                type: string
+                default: ''
         outputs:
             candidate_id:
                 description: ID of the exact sealed candidate
@@ -205,3 +208,21 @@ jobs:
                   if-no-files-found: error
                   retention-days: 14
                   compression-level: 0
+            - name: Bind the Marketplace review receipt to the retained bundle
+              if: inputs.submission_id != ''
+              env:
+                  DRIVER_REPOSITORY: ${{ fromJSON(toJSON(job)).workflow_repository }}
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_PATH: ${{ fromJSON(toJSON(job)).workflow_file_path }}
+                  SUBMISSION_ID: ${{ inputs.submission_id }}
+                  BUNDLE_ID: ${{ steps.upload.outputs.artifact-id }}
+                  BUNDLE_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+              run: bun --no-env-file .github/scripts/ci/app-candidates/submission-receipt.ts "$RUNNER_TEMP/candidate" "$RUNNER_TEMP/submission"
+            - name: Retain the small review receipt
+              if: inputs.submission_id != ''
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  path: ${{ runner.temp }}/submission/submission-${{ github.run_attempt }}.json
+                  archive: false
+                  if-no-files-found: error
+                  retention-days: 14

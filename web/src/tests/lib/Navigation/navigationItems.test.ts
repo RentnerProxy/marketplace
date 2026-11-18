@@ -42,6 +42,19 @@ const nestedNavigation: Array<AuthenticatedNavItem> = [
 ]
 
 describe('Sidebar-Navigation', function () {
+    it('shows submission and staff review routes to their respective accounts', () => {
+        expect(
+            getVisibleNavigationItems(NAVBAR_ITEMS, [], true).map(
+                ({ to }) => to,
+            ),
+        ).toEqual(['/user/app-submissions'])
+        expect(
+            getVisibleNavigationItems(NAVBAR_ITEMS, [
+                PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+            ]).map(({ to }) => to),
+        ).toEqual(['/admin/app-reviews'])
+    })
+
     it('shows separate navigation groups and limits team management to superusers', () => {
         const delegated = getVisibleNavigationItems(NAVBAR_ITEMS, [
             PERMISSIONS.ADMIN_USER_MANAGEMENT,

@@ -2,37 +2,17 @@ import { mkdir, realpath, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
 import type { AppManifest } from '../../../../contracts/v1/index.ts'
-import { sourceIdentity } from '../../../../contracts/v1/primitives.ts'
+import {
+    commit as commitSha,
+    sourceIdentity,
+} from '../../../../contracts/v1/primitives.ts'
+import {
+    repositoryName,
+    sourceRequest,
+} from '../../../../web/src/lib/Marketplace/sourceRequest.ts'
 
-const repositoryName = z
-    .string()
-    .max(140)
-    .regex(
-        /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$/,
-    )
-const commitSha = z.string().regex(/^[a-f0-9]{40}$/)
-const sourcePath = z
-    .string()
-    .max(200)
-    .regex(/^(?:\.|(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+)$/)
-    .refine(
-        (value) =>
-            value === '.' ||
-            value
-                .split('/')
-                .every(
-                    (part) =>
-                        part !== '.' &&
-                        part !== '..' &&
-                        part.toLowerCase() !== '.git',
-                ),
-    )
+export { sourceRequest }
 
-export const sourceRequest = z.strictObject({
-    repository: repositoryName,
-    commit: commitSha,
-    path: sourcePath,
-})
 export const resolvedSource = sourceRequest.extend({ source: sourceIdentity })
 
 type SourceRequest = z.output<typeof sourceRequest>
