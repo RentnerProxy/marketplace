@@ -59,8 +59,22 @@ jobs:
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   repository: RentnerProxy/marketplace
-                  ref: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  fetch-depth: ${{ github.repository == 'RentnerProxy/marketplace' && 1 || 0 }}
                   persist-credentials: false
+            - name: Verify and select the workflow revision
+              shell: bash
+              env:
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_REF: ${{ fromJSON(toJSON(job)).workflow_ref }}
+              run: |
+                  [[ "$DRIVER_SHA" =~ ^[a-f0-9]{40}$ ]]
+                  if [[ "${GITHUB_REPOSITORY,,}" == rentnerproxy/marketplace ]]; then
+                      test "$(git rev-parse HEAD)" = "$DRIVER_SHA"
+                  else
+                      test "${DRIVER_REF,,}" = "rentnerproxy/marketplace/.github/workflows/app-candidate.yml@$DRIVER_SHA"
+                      git merge-base --is-ancestor "$DRIVER_SHA" refs/remotes/origin/main
+                      git -c core.hooksPath=/dev/null checkout --quiet --detach "$DRIVER_SHA"
+                  fi
             - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
               with:
                   bun-version: ${{ env.BUN_VERSION }}
@@ -92,8 +106,22 @@ jobs:
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   repository: RentnerProxy/marketplace
-                  ref: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  fetch-depth: ${{ github.repository == 'RentnerProxy/marketplace' && 1 || 0 }}
                   persist-credentials: false
+            - name: Verify and select the workflow revision
+              shell: bash
+              env:
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_REF: ${{ fromJSON(toJSON(job)).workflow_ref }}
+              run: |
+                  [[ "$DRIVER_SHA" =~ ^[a-f0-9]{40}$ ]]
+                  if [[ "${GITHUB_REPOSITORY,,}" == rentnerproxy/marketplace ]]; then
+                      test "$(git rev-parse HEAD)" = "$DRIVER_SHA"
+                  else
+                      test "${DRIVER_REF,,}" = "rentnerproxy/marketplace/.github/workflows/app-candidate.yml@$DRIVER_SHA"
+                      git merge-base --is-ancestor "$DRIVER_SHA" refs/remotes/origin/main
+                      git -c core.hooksPath=/dev/null checkout --quiet --detach "$DRIVER_SHA"
+                  fi
             - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
               with:
                   bun-version: ${{ env.BUN_VERSION }}
@@ -132,8 +160,22 @@ jobs:
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   repository: RentnerProxy/marketplace
-                  ref: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  fetch-depth: ${{ github.repository == 'RentnerProxy/marketplace' && 1 || 0 }}
                   persist-credentials: false
+            - name: Verify and select the workflow revision
+              shell: bash
+              env:
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_REF: ${{ fromJSON(toJSON(job)).workflow_ref }}
+              run: |
+                  [[ "$DRIVER_SHA" =~ ^[a-f0-9]{40}$ ]]
+                  if [[ "${GITHUB_REPOSITORY,,}" == rentnerproxy/marketplace ]]; then
+                      test "$(git rev-parse HEAD)" = "$DRIVER_SHA"
+                  else
+                      test "${DRIVER_REF,,}" = "rentnerproxy/marketplace/.github/workflows/app-candidate.yml@$DRIVER_SHA"
+                      git merge-base --is-ancestor "$DRIVER_SHA" refs/remotes/origin/main
+                      git -c core.hooksPath=/dev/null checkout --quiet --detach "$DRIVER_SHA"
+                  fi
             - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
               with:
                   bun-version: ${{ env.BUN_VERSION }}
