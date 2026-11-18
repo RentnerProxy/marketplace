@@ -23,6 +23,7 @@ import {
     requireBytes,
     requireLink,
     targetPath,
+    verifyReplacementRoot,
     versionPath,
     type CatalogRead,
     type KeyHistory,
@@ -59,6 +60,7 @@ export async function readTrustedCatalog(
     options: {
         now?: Date
         allowExpiredRoles?: boolean
+        nextRoot?: Buffer
         previous?: TrustedCatalog
     } = {},
 ): Promise<TrustedCatalog> {
@@ -97,7 +99,13 @@ export async function readTrustedCatalog(
         root = parseRoot(rootBytes, now, root)
         checkKeyHistory(root, keyHistory)
     }
-    if (root.signed.isExpired(now)) throw new Error('Expired root')
+    if (root.signed.isExpired(now)) {
+        if (!options.allowExpiredRoles || !options.nextRoot)
+            throw new Error('Expired root')
+        // Only the protected publisher may recover the installed state to re-sign it.
+        // Its signatures below must still match the installed root's role keys.
+        verifyReplacementRoot(options.nextRoot, root, keyHistory, now)
+    }
 
     const timestampBytes = await requireBytes(
         read,

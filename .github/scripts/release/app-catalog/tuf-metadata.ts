@@ -217,6 +217,21 @@ export function checkKeyHistory(root: RootMetadata, history: KeyHistory) {
     }
 }
 
+export function verifyReplacementRoot(
+    bytes: Buffer,
+    installed: RootMetadata,
+    history: KeyHistory,
+    now: Date,
+) {
+    const next = parseRoot(bytes, now, installed)
+    if (next.signed.isExpired(now)) throw new Error('Expired replacement root')
+    checkKeyHistory(next, {
+        rolesByPublicKey: new Map(history.rolesByPublicKey),
+        publicKeysById: new Map(history.publicKeysById),
+    })
+    return next
+}
+
 export function signedBytes(
     role: Targets | Timestamp | Snapshot,
     root: RootMetadata,

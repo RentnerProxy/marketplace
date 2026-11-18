@@ -78,6 +78,7 @@ export function fixtureSubmission(
         approval: null,
         publication: null,
         publicationRun: null,
+        publicationRetryAt: null,
     }
 }
 

@@ -25,6 +25,8 @@ type Keys = Parameters<typeof catalogUpdate>[2]
 type Marketplace = ReturnType<typeof marketplacePublisher>
 type Identity = Pick<QueueItem, 'submissionId' | 'approvalRevision'>
 type PriorRun = Pick<NonNullable<Work['run']>, 'runId' | 'attempt'>
+type ObserveRevision = (revision: number) => void
+type CatalogReadOptions = Parameters<typeof readTrustedCatalog>[2]
 
 interface PublisherOptions {
     distribution: Distribution
@@ -49,17 +51,20 @@ function catalogEntry(
     }
 }
 
+function isConflict(error: unknown) {
+    return error instanceof PublicationResponseError && error.status === 409
+}
+
 export async function loadDistributionCatalog(
     distribution: Distribution,
     root: Buffer,
     head: string,
-    allowExpiredRoles = false,
-    previous?: TrustedCatalog,
+    options?: CatalogReadOptions,
 ) {
     return readTrustedCatalog(
         (path, maxBytes) => distribution.readAt(head, path, maxBytes),
         root,
-        { allowExpiredRoles, previous },
+        options,
     )
 }
 
@@ -70,24 +75,18 @@ export async function refreshDistributionCatalog(
     nextRoot?: Buffer,
 ) {
     const head = await distribution.head()
-    const trusted = await loadDistributionCatalog(
-        distribution,
-        root,
-        head,
-        true,
-    )
+    const trusted = await loadDistributionCatalog(distribution, root, head, {
+        allowExpiredRoles: true,
+        nextRoot,
+    })
     const files = await catalogUpdate(trusted, trusted.catalog, keys, {
         nextRoot,
     })
     if (!files.size) return
     const updatedHead = await distribution.promote(head, files)
-    await loadDistributionCatalog(
-        distribution,
-        root,
-        updatedHead,
-        false,
-        trusted,
-    )
+    await loadDistributionCatalog(distribution, root, updatedHead, {
+        previous: trusted,
+    })
 }
 
 export async function publishCatalogQueue(options: PublisherOptions) {
@@ -98,16 +97,24 @@ export async function publishCatalogQueue(options: PublisherOptions) {
     for (const item of items) {
         // Process from the newest persisted catalog in serial order.
         if (Date.now() >= deadline) break
+        const { submissionId, approvalRevision } = item
+        const identity = { submissionId, approvalRevision }
+        let revision = item.revision
         try {
             // oxlint-disable-next-line no-await-in-loop
-            await processItem(item)
+            await processItem(identity, (observed) => {
+                revision = observed
+            })
         } catch (error) {
             // A stop or another state transition can win before authorization.
-            if (!(
-                error instanceof PublicationResponseError &&
-                error.status === 409
-            ))
-                failures.push(error)
+            if (isConflict(error)) continue
+            failures.push(error)
+            try {
+                // oxlint-disable-next-line no-await-in-loop
+                await marketplace({ operation: 'defer', ...identity, revision })
+            } catch (deferError) {
+                if (!isConflict(deferError)) failures.push(deferError)
+            }
         }
     }
     if (failures.length === 1) throw failures[0]
@@ -117,15 +124,19 @@ export async function publishCatalogQueue(options: PublisherOptions) {
             `${failures.length} catalog queue items failed`,
         )
 
-    async function processItem(item: QueueItem) {
-        const { submissionId, approvalRevision } = item
-        const identity = { submissionId, approvalRevision }
+    async function getWork(identity: Identity, observe: ObserveRevision) {
         const work = await marketplace({ operation: 'get', ...identity })
         if (
-            work.approval.id !== submissionId ||
-            work.approval.revision !== approvalRevision
+            work.approval.id !== identity.submissionId ||
+            work.approval.revision !== identity.approvalRevision
         )
             throw new Error('Marketplace returned a different approval')
+        observe(work.revision)
+        return work
+    }
+
+    async function processItem(identity: Identity, observe: ObserveRevision) {
+        const work = await getWork(identity, observe)
         const head = await distribution.head()
         const trusted = await loadDistributionCatalog(distribution, root, head)
         const release = work.approval.candidate.release
@@ -143,6 +154,14 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         const previousRun = work.run
             ? { runId: work.run.runId, attempt: work.run.attempt }
             : undefined
+        if (
+            previousRun &&
+            work.revocation &&
+            (existing.release || existing.revocation)
+        ) {
+            await revoke(identity, work, trusted, head, previousRun)
+            return
+        }
         if (previousRun && existing.release) {
             await distribution.verifyRelease(release)
             await recordPublication(
@@ -150,16 +169,32 @@ export async function publishCatalogQueue(options: PublisherOptions) {
                 existing.release,
                 trusted,
                 head,
+                observe,
                 previousRun,
             )
             return
         }
+        if (existing.release || existing.revocation)
+            throw new Error('App version already used in the signed catalog')
         if (previousRun) {
-            if (!(await distribution.hasPublishedRelease(release))) {
-                if (existing.revocation)
-                    throw new Error(
-                        'Signed revocation has no matching immutable release',
+            const releaseState = await distribution.inspectRelease(release)
+            if (work.revocation && releaseState === 'published') {
+                await revoke(identity, work, trusted, head, previousRun)
+                return
+            }
+            if (releaseState === 'absent' || work.revocation) {
+                if (releaseState === 'draft') {
+                    await distribution.discardUnpublishedDraft(
+                        release,
+                        async () => {
+                            await marketplace({
+                                operation: 'authorizeDraftCleanup',
+                                ...identity,
+                                previousRun,
+                            })
+                        },
                     )
+                }
                 await marketplace({
                     operation: 'neverPromoted',
                     ...identity,
@@ -167,16 +202,14 @@ export async function publishCatalogQueue(options: PublisherOptions) {
                 })
                 return
             }
-            if (work.revocation) {
-                await revoke(identity, work, trusted, head, previousRun)
-                return
-            }
-        } else if (work.status !== 'approved') {
+            await publish(identity, work, trusted, head, observe, {
+                previousRun,
+                releaseState,
+            })
             return
         }
-        if (existing.release || existing.revocation)
-            throw new Error('App version already used in the signed catalog')
-        await publish(identity, work, trusted, head, previousRun)
+        if (work.status === 'approved')
+            await publish(identity, work, trusted, head, observe)
     }
 
     async function publish(
@@ -184,7 +217,11 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         work: Work,
         trusted: TrustedCatalog,
         head: string,
-        previousRun?: PriorRun,
+        observe: ObserveRevision,
+        recovery?: {
+            previousRun: PriorRun
+            releaseState: 'draft' | 'published'
+        },
     ) {
         const { approval, bundle, evidence } = work
         const { release } = approval.candidate
@@ -198,17 +235,18 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         const files = await catalogUpdate(trusted, next, keys)
 
         async function authorize() {
-            const current = await marketplace({
+            const { revision, ...current } = await marketplace({
                 operation: 'authorize',
                 ...identity,
-                previousRun,
+                previousRun: recovery?.previousRun,
             })
             if (!isDeepStrictEqual(current, handoff))
                 throw new Error(
                     'Publication authorization no longer matches the candidate',
                 )
+            observe(revision)
         }
-        if (!previousRun) {
+        if (recovery?.releaseState !== 'published') {
             await options.withBundle(handoff, async (assets) => {
                 await authorize()
                 await distribution.ensureRelease(release, assets, authorize)
@@ -220,6 +258,7 @@ export async function publishCatalogQueue(options: PublisherOptions) {
             release,
             promoted.verified,
             promoted.head,
+            observe,
         )
     }
 
@@ -228,6 +267,7 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         release: Catalog['releases'][number],
         verified: TrustedCatalog,
         head: string,
+        observe: ObserveRevision,
         previousRun?: PriorRun,
     ) {
         const outcome = await marketplace({
@@ -239,7 +279,7 @@ export async function publishCatalogQueue(options: PublisherOptions) {
             release,
         })
         if (outcome.status === 'revoked') {
-            const stopped = await marketplace({ operation: 'get', ...identity })
+            const stopped = await getWork(identity, observe)
             await revoke(identity, stopped, verified, head)
         }
     }
@@ -258,8 +298,7 @@ export async function publishCatalogQueue(options: PublisherOptions) {
             distribution,
             root,
             newHead,
-            false,
-            trusted,
+            { previous: trusted },
         )
         if (!isDeepStrictEqual(verified.catalog, next))
             throw new Error('Public catalog differs from the signed update')

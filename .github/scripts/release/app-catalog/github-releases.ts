@@ -183,7 +183,7 @@ export function githubReleases(
         return release
     }
 
-    async function findDraft(expected: ReleaseIdentity) {
+    async function findListedRelease(expected: ReleaseIdentity) {
         let match: RemoteRelease | undefined
         for (let page = 1; page <= 100; page += 1) {
             // eslint-disable-next-line no-await-in-loop -- stop at the first short page
@@ -260,28 +260,15 @@ export function githubReleases(
         }
     }
 
-    async function assertReleasePreflight() {
-        await assertDistributionRepository()
-        await assertImmutableSettings()
-    }
-
-    async function hasPublishedRelease(input: CatalogRelease) {
-        const expected = releaseIdentity(input)
-        await assertReleasePreflight()
-        const published = await findPublished(expected)
-        if (published) {
-            await verifyPublished(expected, published)
-            return true
+    async function locateRelease(expected: ReleaseIdentity) {
+        const release =
+            (await findPublished(expected)) ??
+            (await findListedRelease(expected))
+        if (release) {
+            assertReleaseMode(expected, release)
+            if (!release.draft) return { status: 'published', release } as const
         }
-        const candidate = await findDraft(expected)
-        if (candidate) {
-            assertReleaseMode(expected, candidate)
-            if (!candidate.draft) {
-                await verifyPublished(expected, candidate)
-                return true
-            }
-            await listAssets(expected, candidate)
-        }
+        const assets = release ? await listAssets(expected, release) : undefined
         const tag = await http.request({
             path: `${repositoryPath}/git/ref/tags/${expected.tag}`,
             allowMissing: true,
@@ -290,16 +277,49 @@ export function githubReleases(
             throw new Error(
                 'GitHub has a catalog tag without a verified immutable release',
             )
-        return false
+        if (!release || !assets) return { status: 'absent' } as const
+        return { status: 'draft', release, assets } as const
+    }
+
+    async function inspectRelease(input: CatalogRelease) {
+        const expected = releaseIdentity(input)
+        await assertDistributionRepository()
+        const state = await locateRelease(expected)
+        if (state.status === 'published')
+            await verifyPublished(expected, state.release)
+        return state.status
     }
 
     async function verifyRelease(input: CatalogRelease) {
         const expected = releaseIdentity(input)
-        await assertReleasePreflight()
+        await assertDistributionRepository()
         const published = await findPublished(expected)
         if (!published)
             throw new Error('Immutable catalog release is not public')
         await verifyPublished(expected, published)
+    }
+
+    async function discardUnpublishedDraft(
+        input: CatalogRelease,
+        authorize: () => Promise<void>,
+    ) {
+        const expected = releaseIdentity(input)
+        await assertDistributionRepository()
+        const state = await locateRelease(expected)
+        if (state.status === 'absent') return
+        if (state.status === 'published')
+            throw new Error(
+                'Cannot discard an already published catalog release',
+            )
+
+        await authorize()
+        await http.request({
+            method: 'DELETE',
+            path: `${releasePath}/${state.release.id}`,
+            allowMissing: true,
+        })
+        if ((await locateRelease(expected)).status !== 'absent')
+            throw new Error('Cannot confirm catalog release draft was removed')
     }
 
     async function ensureRelease(
@@ -315,44 +335,37 @@ export function githubReleases(
             throw new Error(
                 'Local release files differ from expected catalog assets',
             )
-        await assertReleasePreflight()
-        const existing =
-            (await findPublished(expected)) ?? (await findDraft(expected))
-        if (existing) assertReleaseMode(expected, existing)
-        if (existing && !existing.draft)
-            return verifyPublished(expected, existing)
+        await assertDistributionRepository()
+        const state = await locateRelease(expected)
+        if (state.status === 'published')
+            return verifyPublished(expected, state.release)
+        await assertImmutableSettings()
 
-        if (!existing) {
-            const tag = await http.request({
-                path: `${repositoryPath}/git/ref/tags/${expected.tag}`,
-                allowMissing: true,
-            })
-            if (tag !== null)
-                throw new Error(
-                    'A GitHub tag already exists for this new catalog release',
-                )
-        }
         const draft =
-            existing ??
-            releaseRecord.parse(
-                await http.request({
-                    method: 'POST',
-                    path: releasePath,
-                    body: {
-                        tag_name: expected.tag,
-                        target_commitish: catalogBranch,
-                        name: expected.tag,
-                        body: draftBody,
-                        draft: true,
-                        prerelease: expected.prerelease,
-                        make_latest: 'false',
-                    },
-                }),
-            )
+            state.status === 'draft'
+                ? state.release
+                : releaseRecord.parse(
+                      await http.request({
+                          method: 'POST',
+                          path: releasePath,
+                          body: {
+                              tag_name: expected.tag,
+                              target_commitish: catalogBranch,
+                              name: expected.tag,
+                              body: draftBody,
+                              draft: true,
+                              prerelease: expected.prerelease,
+                              make_latest: 'false',
+                          },
+                      }),
+                  )
         assertReleaseMode(expected, draft)
         if (!draft.draft)
             throw new Error('GitHub did not create a release draft')
-        const assets = await listAssets(expected, draft)
+        const assets =
+            state.status === 'draft'
+                ? state.assets
+                : await listAssets(expected, draft)
         for (const [name, identity] of expected.assets) {
             const asset = assets.get(name)
             if (asset?.state === 'uploaded') continue
@@ -399,5 +412,10 @@ export function githubReleases(
         await verifyRelease(input)
     }
 
-    return { ensureRelease, hasPublishedRelease, verifyRelease }
+    return {
+        discardUnpublishedDraft,
+        ensureRelease,
+        inspectRelease,
+        verifyRelease,
+    }
 }

@@ -153,6 +153,7 @@ export async function changeSubmission(
         .update(marketplaceSubmissions)
         .set({
             ...patch,
+            publicationRetryAt: null,
             status: event.status,
             revision: event.revision,
             history: [...row.history, event],
@@ -255,8 +256,8 @@ export async function submissionDetailService(
         ),
         publication: row.publication,
         revocationPending:
-            row.status === 'revoked' &&
-            row.publication !== null &&
+            (row.status === 'withdrawn' || row.status === 'revoked') &&
+            Boolean(row.publicationRun || row.publication) &&
             !row.history.some(({ revocation }) => revocation),
     }
 }

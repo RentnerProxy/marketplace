@@ -1,12 +1,12 @@
 import type { z } from 'zod'
 import {
+    catalogPublicationAuthorization,
     catalogPublicationPath,
     catalogPublicationQueue,
     catalogPublicationRequest,
     catalogPublicationStatus,
     catalogPublicationWork,
     catalogPublisherAudience,
-    publicationHandoff,
 } from '../../../../web/src/lib/Marketplace/catalogPublication.ts'
 import { readBoundedBytes } from '../../../../web/src/server/Marketplace/Submissions/github.service.ts'
 
@@ -17,7 +17,9 @@ const productionEndpoint = 'https://market.rentner.dev' + catalogPublicationPath
 const responses = {
     queue: catalogPublicationQueue,
     get: catalogPublicationWork,
-    authorize: publicationHandoff,
+    authorize: catalogPublicationAuthorization,
+    authorizeDraftCleanup: catalogPublicationStatus,
+    defer: catalogPublicationStatus,
     neverPromoted: catalogPublicationStatus,
     published: catalogPublicationStatus,
     confirmRevocation: catalogPublicationStatus,

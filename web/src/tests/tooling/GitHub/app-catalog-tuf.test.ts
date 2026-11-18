@@ -23,8 +23,8 @@ import {
     readTrustedCatalog,
 } from '../../../../../.github/scripts/release/app-catalog/tuf.ts'
 import {
-    loadDistributionCatalog,
     publishCatalogQueue,
+    refreshDistributionCatalog,
 } from '../../../../../.github/scripts/release/app-catalog/publisher.ts'
 
 const day = 86_400_000
@@ -308,6 +308,71 @@ test('refreshes only due roles, repairs expired online metadata and requires a f
     )
 })
 
+test('recovers expired installed metadata only with a fresh dual-signed sequential root', async () => {
+    const { c, root, files, now } = await repository()
+    const later = new Date(now.getTime() + 366 * day)
+    const rotated = credentials()
+    const signers = [...c.root, ...rotated.root]
+    const nextRoot = rootBytes(rotated, later, 2, signers)
+    const read = reader(files)
+    const recovery = { now: later, allowExpiredRoles: true, nextRoot }
+    await expect(
+        readTrustedCatalog(read, root, { now: later, nextRoot }),
+    ).rejects.toThrow('Expired root')
+    const invalid = [
+        rootBytes(rotated, now, 2, signers),
+        rootBytes(rotated, later, 3, signers),
+        rootBytes(rotated, later, 2, rotated.root),
+        rootBytes(rotated, later, 2, c.root),
+        rootBytes({ ...rotated, targets: c.timestamp }, later, 2, signers),
+    ]
+    const saved = await readTrustedCatalog(read, root, recovery)
+    expect(saved.metadata.root.signed.version).toBe(1)
+    await Promise.all(
+        invalid.map(async (badRoot) => {
+            const options = { ...recovery, nextRoot: badRoot }
+            await expect(
+                readTrustedCatalog(read, root, options),
+            ).rejects.toThrow()
+            await expect(
+                catalogUpdate(saved, saved.catalog, online(rotated), options),
+            ).rejects.toThrow()
+        }),
+    )
+    await expect(
+        catalogUpdate(saved, saved.catalog, online(c), { now: later }),
+    ).rejects.toThrow('Expired root')
+
+    const changes = await catalogUpdate(
+        saved,
+        saved.catalog,
+        online(rotated),
+        recovery,
+    )
+    expect([...changes.keys()].toSorted()).toEqual([
+        'metadata/2.root.json',
+        'metadata/2.snapshot.json',
+        'metadata/2.targets.json',
+        'metadata/timestamp.json',
+    ])
+    const updated = await readTrustedCatalog(
+        reader(new Map([...files, ...changes])),
+        root,
+        { now: later, previous: saved },
+    )
+    expect(updated.rootBytes).toEqual(nextRoot)
+    expect(updated.catalogBytes).toEqual(saved.catalogBytes)
+    // Pending credentials must never authenticate files in the installed state.
+    const mixed = new Map(files)
+    mixed.set(
+        'metadata/timestamp.json',
+        changes.get('metadata/timestamp.json')!,
+    )
+    await expect(
+        readTrustedCatalog(reader(mixed), root, recovery),
+    ).rejects.toThrow('timestamp was signed by 0')
+})
+
 test('tuf-js verifies both target paths and rejects cached rollback and frozen metadata', async () => {
     const { c, root, files, state } = await repository()
     const { next, path, bytes } = withIcon()
@@ -382,8 +447,8 @@ type Work = z.output<typeof catalogPublicationWork>
 type Request = z.output<typeof catalogPublicationRequest>
 type PublisherOptions = Parameters<typeof publishCatalogQueue>[0]
 
-async function publicationFixture(versions: string[]) {
-    const { root, files, c } = await repository()
+async function publicationFixture(versions: string[], createdAt = new Date()) {
+    const { root, files, c } = await repository(createdAt)
     const keys = online(c)
     const approvals = versions.map((version, index): Work => {
         const artifacts = {
@@ -416,6 +481,7 @@ async function publicationFixture(versions: string[]) {
             bundle: artifacts,
             evidence: artifacts,
             status: 'approved',
+            revision: fixtures.records.approval.revision,
             run: null,
             publication: null,
             revocation: null,
@@ -423,10 +489,16 @@ async function publicationFixture(versions: string[]) {
     })
     const events: string[] = []
     const publicReleases = new Set<string>()
+    const drafts = new Set<string>()
+    const deferrals: number[] = []
+    const publisherReads = new Map<string, Set<string>>()
     const faults = {
         promotion: false,
         receipt: false,
         bundleVersion: '',
+        verification: false,
+        corruptReadback: false,
+        upload: false,
     }
     let currentRun = {
         ...fixtures.records.receipt.run,
@@ -439,7 +511,19 @@ async function publicationFixture(versions: string[]) {
     const distribution: PublisherOptions['distribution'] = {
         head: async () => currentHead,
         async readAt(head, path) {
+            const observed = publisherReads.get(head) ?? new Set<string>()
+            observed.add(path)
+            publisherReads.set(head, observed)
             const bytes = commits.get(head)?.get(path)
+            if (
+                faults.corruptReadback &&
+                commits.size > 1 &&
+                head === currentHead &&
+                path.endsWith('.catalog.json') &&
+                bytes
+            ) {
+                return Buffer.from(bytes).fill(0)
+            }
             return bytes ? Buffer.from(bytes) : null
         },
         async promote(head, additions, authorize) {
@@ -455,15 +539,29 @@ async function publicationFixture(versions: string[]) {
         async ensureRelease(release, bytes, authorize) {
             await authorize()
             expect(bytes.size).toBe(6)
+            drafts.add(release.version)
+            if (faults.upload) throw new Error('Interrupted draft upload')
+            drafts.delete(release.version)
             publicReleases.add(release.version)
             events.push('release:' + release.version)
         },
         async verifyRelease(release) {
+            if (faults.verification)
+                throw new Error('Public release asset unavailable')
             expect(publicReleases.has(release.version)).toBe(true)
             events.push('verified:' + release.version)
         },
-        async hasPublishedRelease(release) {
-            return publicReleases.has(release.version)
+        async inspectRelease(release) {
+            if (!publicReleases.has(release.version))
+                return drafts.has(release.version) ? 'draft' : 'absent'
+            if (faults.verification)
+                throw new Error('Public release asset unavailable')
+            return 'published'
+        },
+        async discardUnpublishedDraft(release, authorize) {
+            await authorize()
+            expect(drafts.delete(release.version)).toBe(true)
+            events.push('discarded:' + release.version)
         },
     }
 
@@ -484,6 +582,7 @@ async function publicationFixture(versions: string[]) {
                     .map((work) => ({
                         submissionId: work.approval.id,
                         approvalRevision: work.approval.revision,
+                        revision: work.revision,
                         run: work.run,
                         kind:
                             work.status === 'approved'
@@ -502,17 +601,42 @@ async function publicationFixture(versions: string[]) {
         switch (input.operation) {
             case 'get':
                 return work
+            case 'defer':
+                expect(input.revision).toBe(work.revision)
+                deferrals.push(input.revision)
+                return { status: work.status }
+            case 'authorizeDraftCleanup':
+                expect(work.run?.runId).toBe(input.previousRun.runId)
+                expect(work.revocation).not.toBeNull()
+                events.push('cleanup:' + release.version)
+                return { status: work.status }
             case 'authorize':
                 events.push('authorized:' + release.version)
-                if (input.previousRun)
+                if (input.previousRun && work.run?.runId !== currentRun.runId)
                     expect(work.run?.runId).toBe(input.previousRun.runId)
+                if (work.run?.runId !== currentRun.runId) work.revision++
                 work.status = 'publishing'
                 work.run = currentRun
-                return { approval, bundle, evidence }
-            case 'published':
+                return { approval, bundle, evidence, revision: work.revision }
+            case 'published': {
+                // Inspect fixture storage independently of calls made by the publisher.
+                const state = await storedState()
+                const observed = publisherReads.get(currentHead)
+                for (const path of [
+                    'metadata/timestamp.json',
+                    'metadata/' +
+                        state.metadata.snapshot.signed.version +
+                        '.snapshot.json',
+                    'metadata/' +
+                        state.metadata.targets.signed.version +
+                        '.targets.json',
+                    'targets/' + sha(state.catalogBytes) + '.catalog.json',
+                ])
+                    expect(observed?.has(path)).toBe(true)
+                expect(input.catalogRevision).toBe(state.catalog.revision)
                 if (faults.receipt) throw new Error('simulated lost receipt')
                 expect(publicReleases.has(release.version)).toBe(true)
-                expect((await catalog()).releases).toContainEqual(release)
+                expect(state.catalog.releases).toContainEqual(release)
                 expect(work.run?.runId).toBe(
                     input.previousRun?.runId ?? currentRun.runId,
                 )
@@ -529,6 +653,7 @@ async function publicationFixture(versions: string[]) {
                 work.status = 'published'
                 events.push('recorded:' + release.version)
                 return { status: work.status }
+            }
             case 'confirmRevocation':
                 expect((await catalog()).revocations).toContainEqual(
                     work.revocation!,
@@ -539,14 +664,18 @@ async function publicationFixture(versions: string[]) {
                 events.push('confirmed:' + release.version)
                 return { status: work.status }
             case 'neverPromoted':
-                throw new Error('test unexpectedly reset the claimed version')
+                expect(drafts.has(release.version)).toBe(false)
+                expect(publicReleases.has(release.version)).toBe(false)
+                expect(work.run?.runId).toBe(input.previousRun.runId)
+                work.run = null
+                events.push('reset:' + release.version)
+                return { status: work.status }
         }
         throw new Error('Unexpected test Marketplace operation')
     }
-    async function catalog() {
-        return (await loadDistributionCatalog(distribution, root, currentHead))
-            .catalog
-    }
+    const storedState = () =>
+        readTrustedCatalog(reader(commits.get(currentHead)!), root)
+    const catalog = async () => (await storedState()).catalog
     const options: PublisherOptions = {
         root,
         keys,
@@ -566,8 +695,10 @@ async function publicationFixture(versions: string[]) {
         options,
         events,
         faults,
+        deferrals,
         approvals,
         catalog,
+        rootSigners: c.root,
         nextRun: () => {
             currentRun = { ...currentRun, runId: '5552' }
         },
@@ -614,6 +745,39 @@ test('reconciles a lost receipt for the old run without replacing bytes or catal
     ).toEqual(['release:1.0.0', 'promoted', 'verified:1.0.0', 'recorded:1.0.0'])
 })
 
+test('withholds the receipt when readback of the promoted catalog is corrupt', async () => {
+    const fixture = await publicationFixture(['1.0.0'])
+    fixture.faults.corruptReadback = true
+    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+        'Target bytes differ',
+    )
+    expect(fixture.events).toContain('promoted')
+    expect(fixture.events).not.toContain('recorded:1.0.0')
+    expect(fixture.approvals[0]!.publication).toBeNull()
+})
+
+test('publisher refresh atomically rotates an expired installed root before ordinary reads resume', async () => {
+    const fixture = await publicationFixture(
+        [],
+        new Date(Date.now() - 366 * day),
+    )
+    const { root, distribution } = fixture.options
+    const replacement = credentials()
+    const nextRoot = rootBytes(replacement, new Date(), 2, [
+        ...fixture.rootSigners,
+        ...replacement.root,
+    ])
+    await expect(fixture.catalog()).rejects.toThrow('Expired root')
+    await refreshDistributionCatalog(
+        distribution,
+        root,
+        online(replacement),
+        nextRoot,
+    )
+    expect(fixture.events).toEqual(['promoted'])
+    expect((await fixture.catalog()).revision).toBe(1)
+})
+
 test('signs a withdrawal of already immutable unstaged bytes despite another failing queue item', async () => {
     const fixture = await publicationFixture(['2.0.0', '1.0.0'])
     fixture.faults.bundleVersion = '2.0.0'
@@ -640,6 +804,35 @@ test('signs a withdrawal of already immutable unstaged bytes despite another fai
     expect(fixture.events).toContain('confirmed:1.0.0')
 })
 
+test('revokes a signed release after a lost receipt when its public package cannot be verified', async () => {
+    const fixture = await publicationFixture(['1.0.0'])
+    fixture.faults.receipt = true
+    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+        'lost receipt',
+    )
+    const stopped = fixture.approvals[0]!
+    const { appId, version } = stopped.approval.candidate.release
+    expect((await fixture.catalog()).releases).toContainEqual(
+        stopped.approval.candidate.release,
+    )
+    expect(stopped.publication).toBeNull()
+    stopped.status = 'revoked'
+    stopped.revocation = {
+        appId,
+        version,
+        revokedAt: new Date().toISOString(),
+        reason: 'security',
+    }
+    fixture.faults.receipt = false
+    fixture.faults.verification = true
+    fixture.nextRun()
+    await publishCatalogQueue(fixture.options)
+    const current = await fixture.catalog()
+    expect(current.releases).toEqual([])
+    expect(current.revocations).toEqual([stopped.revocation])
+    expect(fixture.events).toContain('confirmed:1.0.0')
+})
+
 test('rejects a wrong catalog signing key before uploading any immutable release', async () => {
     const fixture = await publicationFixture(['1.0.0'])
     fixture.options.keys.targets = fixture.options.keys.snapshot
@@ -647,5 +840,32 @@ test('rejects a wrong catalog signing key before uploading any immutable release
         'authorized',
     )
     expect(fixture.events).toEqual([])
+    expect((await fixture.catalog()).revision).toBe(1)
+})
+
+test('cleans a stopped draft before releasing the unpublished version reservation', async () => {
+    const fixture = await publicationFixture(['1.0.0'])
+    fixture.faults.upload = true
+    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+        'Interrupted draft upload',
+    )
+    const stopped = fixture.approvals[0]!
+    expect(fixture.deferrals).toEqual([stopped.revision])
+    fixture.nextRun()
+    stopped.status = 'withdrawn'
+    stopped.revision++
+    const { appId, version } = stopped.approval.candidate.release
+    stopped.revocation = {
+        appId,
+        version,
+        revokedAt: new Date().toISOString(),
+        reason: 'withdrawn',
+    }
+    await publishCatalogQueue(fixture.options)
+    expect(fixture.events.slice(-3)).toEqual([
+        'cleanup:1.0.0',
+        'discarded:1.0.0',
+        'reset:1.0.0',
+    ])
     expect((await fixture.catalog()).revision).toBe(1)
 })

@@ -25,7 +25,10 @@ import {
     parseAppManifest,
 } from '../../../../../contracts/v1/index.ts'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
-import { withCandidateBundle } from '../../../../../.github/scripts/release/app-catalog/artifact.ts'
+import {
+    findCandidatePython,
+    withCandidateBundle,
+} from '../../../../../.github/scripts/release/app-catalog/artifact.ts'
 
 const source = fixtures.manifest.source
 const build: BuildIdentity = {
@@ -168,131 +171,148 @@ async function scenario(purpose: Purpose = 'candidate', buildIdentity = build) {
     }
 }
 
-test('publisher verifies the admitted GitHub ZIP and exact unpacked approved bytes', async () => {
-    const trustedBuild = {
-        ...build,
-        repositoryId: pipeline.repositoryId,
-        workflowPath: pipeline.builder,
-    }
-    const fixture = await scenario('candidate', trustedBuild)
-    const candidate = await sealCandidate(fixture.options)
-    const approval = parseApproval({ ...fixtures.records.approval, candidate })
-    const directory = dirname(fixture.outputDirectory)
-    const zip = join(directory, 'workflow-artifact.zip')
-    const python = process.platform === 'win32' ? 'python' : '/usr/bin/python3'
-    const script = [
-        'import sys, zipfile',
-        'from pathlib import Path',
-        'with zipfile.ZipFile(sys.argv[1], "w") as artifact:',
-        '    for entry in Path(sys.argv[2]).iterdir():',
-        '        artifact.write(entry, entry.name)',
-    ].join('\n')
-    const child = Bun.spawn([
-        python,
-        '-I',
-        '-B',
-        '-c',
-        script,
-        zip,
-        fixture.outputDirectory,
-    ])
-    expect(await child.exited).toBe(0)
-    const bytes = await readFile(zip)
-    const bundle = {
-        id: '8700',
-        sha256: hash(bytes),
-        sizeBytes: bytes.length,
-        expiresAt: new Date(Date.now() + 60_000).toISOString(),
-    }
-    const artifactUrl = 'https://fixture.blob.core.windows.net/data'
-    const repo = { id: Number(pipeline.repositoryId) }
-    const runId = Number(trustedBuild.runId)
-    const token = 'catalog-fixture-credential'
-    const now = new Date().toISOString()
-    let corrupt = false
-    const simulateFetch: typeof fetch = Object.assign(
-        async (...[input, init]: Parameters<typeof fetch>) => {
-            const url = new URL(String(input))
-            const headers = new Headers(init?.headers)
-            if (url.href === artifactUrl) {
-                expect(headers.get('authorization')).toBeNull()
-                const data = Buffer.from(bytes)
-                if (corrupt) data[0] ^= 0xff
-                return new Response(Uint8Array.from(data))
-            }
-            expect(url.origin).toBe('https://api.github.com')
-            expect(headers.get('authorization')).toBe('Bearer ' + token)
-            if (url.pathname.endsWith(`/runs/${runId}/attempts/1`))
-                return Response.json({
-                    id: runId,
-                    workflow_id: Number(pipeline.workflowId),
-                    run_attempt: 1,
-                    path: pipeline.workflow,
-                    head_branch: pipeline.branch,
-                    head_sha: trustedBuild.workflowCommit,
-                    event: 'workflow_dispatch',
-                    display_title: 'Marketplace submission fixture',
-                    status: 'completed',
-                    conclusion: 'success',
-                    created_at: now,
-                    updated_at: now,
-                    repository: repo,
-                    head_repository: repo,
-                })
-            if (url.pathname.endsWith('/artifacts/' + bundle.id))
-                return Response.json({
-                    id: Number(bundle.id),
-                    name: `fixture-${runId}-1-bundle`,
-                    size_in_bytes: bundle.sizeBytes,
-                    digest: 'sha256:' + bundle.sha256,
-                    expired: false,
-                    expires_at: bundle.expiresAt,
-                    workflow_run: {
+const zipPython = findCandidatePython()
+
+test.skipIf(!zipPython && process.env.GITHUB_ACTIONS !== 'true')(
+    'publisher verifies the admitted GitHub ZIP and exact unpacked approved bytes',
+    async () => {
+        if (!zipPython)
+            throw new Error(
+                'The GitHub runner requires Python 3 for the candidate ZIP integration test',
+            )
+        const trustedBuild = {
+            ...build,
+            repositoryId: pipeline.repositoryId,
+            workflowPath: pipeline.builder,
+        }
+        const fixture = await scenario('candidate', trustedBuild)
+        const candidate = await sealCandidate(fixture.options)
+        const approval = parseApproval({
+            ...fixtures.records.approval,
+            candidate,
+        })
+        const directory = dirname(fixture.outputDirectory)
+        const zip = join(directory, 'workflow-artifact.zip')
+        const script = [
+            'import sys, zipfile',
+            'from pathlib import Path',
+            'with zipfile.ZipFile(sys.argv[1], "w") as artifact:',
+            '    for entry in Path(sys.argv[2]).iterdir():',
+            '        artifact.write(entry, entry.name)',
+        ].join('\n')
+        const child = Bun.spawn([
+            zipPython,
+            '-I',
+            '-B',
+            '-c',
+            script,
+            zip,
+            fixture.outputDirectory,
+        ])
+        expect(await child.exited).toBe(0)
+        const bytes = await readFile(zip)
+        const bundle = {
+            id: '8700',
+            sha256: hash(bytes),
+            sizeBytes: bytes.length,
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        }
+        const artifactUrl = 'https://fixture.blob.core.windows.net/data'
+        const repo = { id: Number(pipeline.repositoryId) }
+        const runId = Number(trustedBuild.runId)
+        const token = 'catalog-fixture-credential'
+        const now = new Date().toISOString()
+        let corrupt = false
+        const simulateFetch: typeof fetch = Object.assign(
+            async (...[input, init]: Parameters<typeof fetch>) => {
+                const url = new URL(String(input))
+                const headers = new Headers(init?.headers)
+                if (url.href === artifactUrl) {
+                    expect(headers.get('authorization')).toBeNull()
+                    const data = Buffer.from(bytes)
+                    if (corrupt) data[0] ^= 0xff
+                    return new Response(Uint8Array.from(data))
+                }
+                expect(url.origin).toBe('https://api.github.com')
+                expect(headers.get('authorization')).toBe('Bearer ' + token)
+                if (url.pathname.endsWith(`/runs/${runId}/attempts/1`))
+                    return Response.json({
                         id: runId,
-                        repository_id: repo.id,
-                        head_repository_id: repo.id,
+                        workflow_id: Number(pipeline.workflowId),
+                        run_attempt: 1,
+                        path: pipeline.workflow,
                         head_branch: pipeline.branch,
                         head_sha: trustedBuild.workflowCommit,
-                    },
-                })
-            if (url.pathname.endsWith(`/artifacts/${bundle.id}/zip`))
-                return new Response(null, {
-                    status: 302,
-                    headers: { location: artifactUrl },
-                })
-            throw new Error('Unexpected candidate network request')
-        },
-        { preconnect: fetch.preconnect },
-    )
-    const fetcher = spyOn(globalThis, 'fetch').mockImplementation(simulateFetch)
-    try {
-        const handoff = { approval, bundle, evidence: bundle }
-        const count = await withCandidateBundle(
-            handoff,
-            token,
-            directory,
-            async (files) => {
-                await Promise.all(
-                    [...files].map(async ([name, local]) => {
-                        expect(await readFile(local)).toEqual(
-                            await readFile(join(fixture.outputDirectory, name)),
-                        )
-                    }),
-                )
-                return files.size
+                        event: 'workflow_dispatch',
+                        display_title: 'Marketplace submission fixture',
+                        status: 'completed',
+                        conclusion: 'success',
+                        created_at: now,
+                        updated_at: now,
+                        repository: repo,
+                        head_repository: repo,
+                    })
+                if (url.pathname.endsWith('/artifacts/' + bundle.id))
+                    return Response.json({
+                        id: Number(bundle.id),
+                        name: `fixture-${runId}-1-bundle`,
+                        size_in_bytes: bundle.sizeBytes,
+                        digest: 'sha256:' + bundle.sha256,
+                        expired: false,
+                        expires_at: bundle.expiresAt,
+                        workflow_run: {
+                            id: runId,
+                            repository_id: repo.id,
+                            head_repository_id: repo.id,
+                            head_branch: pipeline.branch,
+                            head_sha: trustedBuild.workflowCommit,
+                        },
+                    })
+                if (url.pathname.endsWith(`/artifacts/${bundle.id}/zip`))
+                    return new Response(null, {
+                        status: 302,
+                        headers: { location: artifactUrl },
+                    })
+                throw new Error('Unexpected candidate network request')
             },
+            { preconnect: fetch.preconnect },
         )
-        expect(count).toBe(6)
-        corrupt = true
-        await expect(
-            withCandidateBundle(handoff, token, directory, async () => {
-                throw new Error('A changed ZIP must not reach the publisher')
-            }),
-        ).rejects.toThrow('differs from the approved artifact')
-    } finally {
-        fetcher.mockRestore()
-    }
-})
+        const fetcher = spyOn(globalThis, 'fetch').mockImplementation(
+            simulateFetch,
+        )
+        try {
+            const handoff = { approval, bundle, evidence: bundle }
+            const count = await withCandidateBundle(
+                handoff,
+                token,
+                directory,
+                async (files) => {
+                    await Promise.all(
+                        [...files].map(async ([name, local]) => {
+                            expect(await readFile(local)).toEqual(
+                                await readFile(
+                                    join(fixture.outputDirectory, name),
+                                ),
+                            )
+                        }),
+                    )
+                    return files.size
+                },
+            )
+            expect(count).toBe(6)
+            corrupt = true
+            await expect(
+                withCandidateBundle(handoff, token, directory, async () => {
+                    throw new Error(
+                        'A changed ZIP must not reach the publisher',
+                    )
+                }),
+            ).rejects.toThrow('differs from the approved artifact')
+        } finally {
+            fetcher.mockRestore()
+        }
+    },
+)
 
 test('seals a deterministic dual-target handoff and preserves all original byte identities', async () => {
     const fixture = await scenario()

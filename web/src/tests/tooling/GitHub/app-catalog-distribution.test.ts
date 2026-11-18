@@ -341,6 +341,7 @@ const assets = [
 
 test('resumes an exact draft, authorizes publication after upload and verifies anonymous byte downloads', async () => {
     let published = false
+    let settingsAvailable = false
     let authorized = false
     let uploadCount = 0
     let activeAssets = [
@@ -385,7 +386,9 @@ test('resumes an exact draft, authorizes publication after upload and verifies a
             return Response.json(repo)
         }
         if (url.pathname === `${repository}/immutable-releases`)
-            return Response.json({ enabled: true })
+            return settingsAvailable && !published
+                ? Response.json({ enabled: true })
+                : new Response(null, { status: 503 })
         if (url.pathname === `${releases}/tags/${tag}`) {
             return published
                 ? Response.json({ ...entry, draft: false, immutable: true })
@@ -403,6 +406,7 @@ test('resumes an exact draft, authorizes publication after upload and verifies a
         if (url.pathname === `${releases}/${entry.id}/assets`)
             return Response.json(activeAssets)
         if (url.pathname === `${repository}/git/ref/tags/${tag}`) {
+            if (!published) return missing()
             return Response.json({
                 ref: `refs/tags/${tag}`,
                 object: { type: 'commit', sha: parent },
@@ -428,6 +432,13 @@ test('resumes an exact draft, authorizes publication after upload and verifies a
         const distribution = createDistribution(token, fetcher)
         await expect(
             distribution.ensureRelease(release, files, async () => {
+                throw new Error('Settings must first be verified')
+            }),
+        ).rejects.toThrow('HTTP 503')
+        expect(uploadCount).toBe(0)
+        settingsAvailable = true
+        await expect(
+            distribution.ensureRelease(release, files, async () => {
                 throw new Error('Approval changed')
             }),
         ).rejects.toThrow('Approval changed')
@@ -440,6 +451,11 @@ test('resumes an exact draft, authorizes publication after upload and verifies a
         await distribution.ensureRelease(release, files, async () => {
             throw new Error('An existing release does not need publication')
         })
+        await expect(
+            distribution.discardUnpublishedDraft(release, async () => {
+                throw new Error('A published release cannot be discarded')
+            }),
+        ).rejects.toThrow('Cannot discard an already published catalog release')
         expect(uploadCount).toBe(2)
     } finally {
         await rm(directory, { recursive: true, force: true })
@@ -482,16 +498,19 @@ test('rejects mutable releases, mismatched anonymous bytes and redirects outside
     )
 })
 
-test('detects an interrupted immutable release with one authenticated lookup and anonymous exact bytes', async () => {
+test('detects and verifies an immutable release during a repository settings outage', async () => {
     let releaseReads = 0
+    let settingsReads = 0
     const downloads: string[] = []
     const fetcher = fixtureFetch((url, options) => {
         expect(options.method ?? 'GET').toBe('GET')
         if (url.pathname === repository) return Response.json(repo)
         if (url.pathname === branchRulesPath)
             return branchRulesResponse(options)
-        if (url.pathname === `${repository}/immutable-releases`)
-            return Response.json({ enabled: true })
+        if (url.pathname === `${repository}/immutable-releases`) {
+            settingsReads += 1
+            return new Response(null, { status: 503 })
+        }
         if (url.pathname === `${releases}/tags/${tag}`) {
             releaseReads += 1
             return Response.json({ ...entry, draft: false, immutable: true })
@@ -510,24 +529,23 @@ test('detects an interrupted immutable release with one authenticated lookup and
         downloads.push(url.href)
         return rawResponse(asset.bytes)
     })
-    expect(
-        await createDistribution(token, fetcher).hasPublishedRelease(release),
-    ).toBe(true)
+    const distribution = createDistribution(token, fetcher)
+    expect(await distribution.inspectRelease(release)).toBe('published')
     expect(releaseReads).toBe(1)
     expect(downloads).toEqual(
         assets.map(({ browser_download_url }) => browser_download_url),
     )
+    await distribution.verifyRelease(release)
+    expect(settingsReads).toBe(0)
 })
 
-test('returns false only for a missing publication or a retryable draft without a tag', async () => {
+test('distinguishes a missing publication from an exact draft and rejects conflicting identities', async () => {
     let mode: 'absent' | 'tag' | 'draft' | 'foreign-draft' = 'absent'
     const fetcher = fixtureFetch((url, options) => {
         expect(options.method ?? 'GET').toBe('GET')
         if (url.pathname === repository) return Response.json(repo)
         if (url.pathname === branchRulesPath)
             return branchRulesResponse(options)
-        if (url.pathname === `${repository}/immutable-releases`)
-            return Response.json({ enabled: true })
         if (url.pathname === `${releases}/tags/${tag}`) return missing()
         if (url.pathname === releases) {
             if (mode === 'draft' || mode === 'foreign-draft') {
@@ -550,15 +568,79 @@ test('returns false only for a missing publication or a retryable draft without 
             : missing()
     })
     const distribution = createDistribution(token, fetcher)
-    expect(await distribution.hasPublishedRelease(release)).toBe(false)
+    expect(await distribution.inspectRelease(release)).toBe('absent')
     mode = 'tag'
-    await expect(distribution.hasPublishedRelease(release)).rejects.toThrow(
+    await expect(distribution.inspectRelease(release)).rejects.toThrow(
         'without a verified immutable release',
     )
     mode = 'draft'
-    expect(await distribution.hasPublishedRelease(release)).toBe(false)
+    expect(await distribution.inspectRelease(release)).toBe('draft')
     mode = 'foreign-draft'
-    await expect(distribution.hasPublishedRelease(release)).rejects.toThrow(
+    await expect(distribution.inspectRelease(release)).rejects.toThrow(
         'different publisher',
     )
+})
+
+test('discards only an exact authorized draft and confirms absence before returning', async () => {
+    let draftExists = true
+    let badAsset = true
+    let observableRemoval = false
+    const operations: string[] = []
+    const fetcher = fixtureFetch((url, options) => {
+        if (url.pathname === repository) return Response.json(repo)
+        if (url.pathname === branchRulesPath)
+            return branchRulesResponse(options)
+        if (url.pathname === `${releases}/tags/${tag}`) return missing()
+        if (url.pathname === `${repository}/git/ref/tags/${tag}`)
+            return missing()
+        if (url.pathname === releases) {
+            operations.push('list releases')
+            return Response.json(
+                draftExists
+                    ? [{ ...entry, draft: true, immutable: false }]
+                    : [],
+            )
+        }
+        if (url.pathname === `${releases}/${entry.id}/assets`)
+            return Response.json([
+                { ...assets[0], size: badAsset ? 99 : assets[0]?.size },
+            ])
+        expect(url.pathname).toBe(`${releases}/${entry.id}`)
+        expect(options.method).toBe('DELETE')
+        operations.push('delete')
+        if (observableRemoval) draftExists = false
+        return new Response(null, { status: 204 })
+    })
+    const distribution = createDistribution(token, fetcher)
+    const authorize = async () => {
+        operations.push('authorize')
+    }
+    await expect(
+        distribution.discardUnpublishedDraft(release, authorize),
+    ).rejects.toThrow('asset differs')
+    expect(operations).toEqual(['list releases'])
+    badAsset = false
+    await expect(
+        distribution.discardUnpublishedDraft(release, async () => {
+            throw new Error('Cleanup authorization changed')
+        }),
+    ).rejects.toThrow('authorization changed')
+    expect(operations).not.toContain('delete')
+    await expect(
+        distribution.discardUnpublishedDraft(release, authorize),
+    ).rejects.toThrow('Cannot confirm')
+    expect(operations.slice(-3)).toEqual([
+        'authorize',
+        'delete',
+        'list releases',
+    ])
+    observableRemoval = true
+    await distribution.discardUnpublishedDraft(release, authorize)
+    expect(operations.slice(-3)).toEqual([
+        'authorize',
+        'delete',
+        'list releases',
+    ])
+    await distribution.discardUnpublishedDraft(release, authorize)
+    expect(operations.slice(-2)).toEqual(['list releases', 'list releases'])
 })

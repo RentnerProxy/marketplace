@@ -29,8 +29,10 @@ import {
     listOfficialAppsService,
 } from '@/server/Marketplace/Submissions/namespace.service.ts'
 import {
+    authorizeDraftCleanupService,
     authorizePublicationAttemptService,
     confirmCatalogRevocationService,
+    deferCatalogPublicationWorkService,
     getApprovedPublicationService,
     getCatalogPublicationWorkService,
     listCatalogPublicationWorkService,
@@ -406,9 +408,47 @@ export async function exerciseSubmissionLifecycle() {
         expect(await listCatalogPublicationWorkService()).toContainEqual({
             submissionId: first.id,
             approvalRevision: approval.revision,
+            revision: approved.revision,
             kind: 'publish',
             run: null,
         })
+        const failedPrefix = Array.from({ length: 20 }, (_, index) => {
+            const queuedRequest = fixtureRequest(claim.id, `1.4.${index}`)
+            return {
+                ...fixtureSubmission(claim),
+                id: queuedRequest.requestId,
+                version: queuedRequest.version,
+                request: queuedRequest,
+                status: 'approved' as const,
+                revision: approval.revision,
+                approval: { ...approval, id: queuedRequest.requestId },
+                createdAt: new Date(
+                    approved.createdAt.getTime() - 20_000 + index,
+                ),
+                nextCheckAt: null,
+            }
+        })
+        const prefixIds = failedPrefix.map(({ id }) => id)
+        await db.insert(marketplaceSubmissions).values(failedPrefix)
+        const blockedQueue = await listCatalogPublicationWorkService()
+        expect(blockedQueue.map(({ submissionId }) => submissionId)).toEqual(
+            prefixIds,
+        )
+        await Promise.all(blockedQueue.map(deferCatalogPublicationWorkService))
+        expect(
+            (await listCatalogPublicationWorkService()).map(
+                ({ submissionId }) => submissionId,
+            ),
+        ).toContain(first.id)
+        const firstBlocked = blockedQueue[0]
+        if (!firstBlocked) throw new Error('Expected a deferred queue item')
+        const deferredRow = await readSubmission(firstBlocked.submissionId)
+        expect(deferredRow.publicationRetryAt?.getTime() ?? 0).toBeGreaterThan(
+            Date.now(),
+        )
+        await db
+            .delete(marketplaceSubmissions)
+            .where(inArray(marketplaceSubmissions.id, prefixIds))
         expect(approved.history.map(({ status }) => status)).toEqual([
             'submitted',
             'validating',
@@ -459,10 +499,14 @@ export async function exerciseSubmissionLifecycle() {
                 run: candidate.build,
             }),
         ).rejects.toThrow('submissionConflict')
-        await authorizePublicationAttemptService(firstAttempt)
-        await authorizePublicationAttemptService(firstAttempt)
+        const authorized =
+            await authorizePublicationAttemptService(firstAttempt)
+        expect(await authorizePublicationAttemptService(firstAttempt)).toEqual(
+            authorized,
+        )
         expect(await listCatalogPublicationWorkService()).toContainEqual({
             ...publication,
+            revision: authorized.revision,
             kind: 'recover',
             run: firstAttempt.run,
         })
@@ -598,6 +642,7 @@ export async function exerciseSubmissionLifecycle() {
         })
         expect(await listCatalogPublicationWorkService()).toContainEqual({
             ...publication,
+            revision: published.revision + 1,
             kind: 'revoke',
             run: promoted.run,
         })
@@ -638,6 +683,7 @@ export async function exerciseSubmissionLifecycle() {
         ).toBe(true)
 
         const stagedRequest = fixtureRequest(claim.id, '1.2.6')
+        submissionsCreated.push(stagedRequest.requestId)
         const staged = {
             ...fixtureSubmission(claim),
             id: stagedRequest.requestId,
@@ -669,6 +715,15 @@ export async function exerciseSubmissionLifecycle() {
             publicationRun: firstAttempt.run,
             nextCheckAt: null,
         })
+        const deferred = { ...stagedIdentity, revision: stagedRevision }
+        await expect(
+            deferCatalogPublicationWorkService(deferred),
+        ).resolves.toBe('publishing')
+        expect(
+            (await listCatalogPublicationWorkService()).some(
+                ({ submissionId }) => submissionId === staged.id,
+            ),
+        ).toBe(false)
         await stopSubmissionService(
             { id: staged.id, revision: stagedRevision, reason: 'Cancelled' },
             owner,
@@ -679,8 +734,15 @@ export async function exerciseSubmissionLifecycle() {
             throw new Error('Expected a staged-release revocation')
         const stagedRevocation = stopped.revocation
         expect(stagedRevocation.reason).toBe('withdrawn')
+        await expect(
+            deferCatalogPublicationWorkService(deferred),
+        ).rejects.toThrow('submissionConflict')
+        expect(
+            (await submissionDetailService(staged.id, owner)).revocationPending,
+        ).toBe(true)
         expect(await listCatalogPublicationWorkService()).toContainEqual({
             ...stagedIdentity,
+            revision: stagedRevision + 1,
             kind: 'recover',
             run: firstAttempt.run,
         })
@@ -692,6 +754,13 @@ export async function exerciseSubmissionLifecycle() {
             ),
         ).rejects.toThrow('submissionConflict')
         publisherRunStatus = 'in_progress'
+        const cleanup = {
+            ...stagedIdentity,
+            previousRun: abortAttempt.previousRun,
+        }
+        await expect(authorizeDraftCleanupService(cleanup)).rejects.toThrow(
+            'submissionConflict',
+        )
         await expect(
             confirmCatalogRevocationService(
                 stagedIdentity,
@@ -701,6 +770,18 @@ export async function exerciseSubmissionLifecycle() {
             ),
         ).rejects.toThrow('submissionConflict')
         publisherRunStatus = 'completed'
+        await expect(
+            authorizeDraftCleanupService({
+                ...cleanup,
+                previousRun: takeover.previousRun,
+            }),
+        ).rejects.toThrow('submissionConflict')
+        await expect(authorizeDraftCleanupService(cleanup)).resolves.toBe(
+            'withdrawn',
+        )
+        expect((await readSubmission(staged.id)).revision).toBe(
+            stagedRevision + 1,
+        )
         await expect(
             confirmCatalogRevocationService(
                 stagedIdentity,
@@ -729,6 +810,12 @@ export async function exerciseSubmissionLifecycle() {
             publication: null,
             publicationRun: firstAttempt.run,
         })
+        await expect(authorizeDraftCleanupService(cleanup)).rejects.toThrow(
+            'submissionConflict',
+        )
+        expect(
+            (await submissionDetailService(staged.id, owner)).revocationPending,
+        ).toBe(false)
         expect(
             (await listCatalogPublicationWorkService()).some(
                 ({ submissionId }) => submissionId === staged.id,

@@ -141,14 +141,23 @@ async function downloadVerifiedZip(
     return { id: artifact.id, sha256: digest }
 }
 
-export async function extractCandidateZip(
+export function findCandidatePython() {
+    return Bun.which(
+        process.env.APP_CATALOG_PYTHON?.trim() ||
+            (process.platform === 'win32' ? 'python' : 'python3'),
+    )
+}
+
+async function extractCandidateZip(
     zip: string,
     directory: string,
     limits: Readonly<Record<string, number>>,
 ) {
     // The runner supplies Python's standard-library ZIP reader. The child gets
     // no Actions, GitHub App or signing credentials.
-    const python = process.platform === 'win32' ? 'python' : '/usr/bin/python3'
+    const python = findCandidatePython()
+    if (!python)
+        throw new Error('Python 3 is required to verify the candidate ZIP')
     const child = Bun.spawn(
         [
             python,

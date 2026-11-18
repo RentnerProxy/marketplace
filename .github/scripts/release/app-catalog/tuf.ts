@@ -8,7 +8,6 @@ import {
 } from '@tufjs/models'
 import { parseCatalog, type Catalog } from '../../../../contracts/v1/index.ts'
 import {
-    checkKeyHistory,
     decode,
     digest,
     limits,
@@ -18,6 +17,7 @@ import {
     signedBytes,
     targetFor,
     targetPath,
+    verifyReplacementRoot,
     versionPath,
     type RootMetadata,
     type SigningKeys,
@@ -210,11 +210,12 @@ export async function catalogUpdate(
     const files: Changes = new Map()
     let root = state.metadata.root
     if (options.nextRoot && !state.rootBytes.equals(options.nextRoot)) {
-        root = parseRoot(options.nextRoot, now, root)
-        checkKeyHistory(root, {
-            rolesByPublicKey: new Map(state.keyHistory.rolesByPublicKey),
-            publicKeysById: new Map(state.keyHistory.publicKeysById),
-        })
+        root = verifyReplacementRoot(
+            options.nextRoot,
+            root,
+            state.keyHistory,
+            now,
+        )
         files.set(versionPath('root', root.signed.version), options.nextRoot)
     }
     return buildUpdate(root, next, keys, now, files, state, options.icons)

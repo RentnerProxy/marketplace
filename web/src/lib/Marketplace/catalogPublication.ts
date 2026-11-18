@@ -31,6 +31,16 @@ export const catalogPublicationRequest = z.discriminatedUnion('operation', [
     z.strictObject({ operation: z.literal('queue') }),
     z.strictObject({ operation: z.literal('get'), ...publicationIdentity }),
     z.strictObject({
+        operation: z.literal('defer'),
+        ...publicationIdentity,
+        revision: positiveInteger,
+    }),
+    z.strictObject({
+        operation: z.literal('authorizeDraftCleanup'),
+        ...publicationIdentity,
+        previousRun: priorRun,
+    }),
+    z.strictObject({
         operation: z.literal('authorize'),
         ...publicationIdentity,
         previousRun: priorRun.optional(),
@@ -77,6 +87,7 @@ export const catalogPublicationQueue = z.strictObject({
         .array(
             z.strictObject({
                 ...publicationIdentity,
+                revision: positiveInteger,
                 kind: z.enum(['publish', 'recover', 'revoke']),
                 run: publicationRun.nullable(),
             }),
@@ -90,7 +101,12 @@ export const publicationHandoff = z.strictObject({
     evidence: submissionArtifact,
 })
 
+export const catalogPublicationAuthorization = publicationHandoff.extend({
+    revision: positiveInteger,
+})
+
 export const catalogPublicationWork = publicationHandoff.extend({
+    revision: positiveInteger,
     status: workStatus,
     run: publicationRun.nullable(),
     publication: publication.nullable(),

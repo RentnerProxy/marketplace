@@ -12,8 +12,10 @@ import {
     PublisherAuthenticationError,
 } from './publisher-auth.service.ts'
 import {
+    authorizeDraftCleanupService,
     authorizePublicationAttemptService,
     confirmCatalogRevocationService,
+    deferCatalogPublicationWorkService,
     getCatalogPublicationWorkService,
     listCatalogPublicationWorkService,
     reconcileCatalogPublisherService,
@@ -102,6 +104,14 @@ export async function handleCatalogPublicationRequest({
             approvalRevision: input.approvalRevision,
         }
         switch (input.operation) {
+            case 'defer':
+                return privateResponse({
+                    status: await deferCatalogPublicationWorkService(input),
+                })
+            case 'authorizeDraftCleanup':
+                return privateResponse({
+                    status: await authorizeDraftCleanupService(input),
+                })
             case 'get':
                 return privateResponse(
                     await getCatalogPublicationWorkService(identity),
