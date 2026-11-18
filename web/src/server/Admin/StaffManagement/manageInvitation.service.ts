@@ -105,6 +105,13 @@ export async function manageStaffInvitationService(
                 return { success: false as const, error: 'expired' as const }
             }
             if (input.isActive === invitation.isActive) {
+                if (!input.isActive) {
+                    // Invalidate resends staged before this explicit deactivation.
+                    await transaction
+                        .update(staffInvitations)
+                        .set({ statusRevision: Bun.randomUUIDv7() })
+                        .where(eq(staffInvitations.id, input.id))
+                }
                 return { success: true as const, audit: null }
             }
             if (input.isActive) {

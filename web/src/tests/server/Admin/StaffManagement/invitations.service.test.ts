@@ -375,4 +375,41 @@ describe('staff invitation lifecycle', () => {
         ).resolves.toBeNull()
         expect(adminAuditDb.state.rows.staffInvitations[0].isActive).toBe(false)
     })
+
+    it('cancels a queued resend when an already disabled invitation is explicitly disabled again', async () => {
+        await sendInvitation()
+        const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const disable = {
+            id: invitation.id,
+            action: 'setActive',
+            isActive: false,
+        } as const
+        const resend = { id: invitation.id, action: 'resend' } as const
+        await manageStaffInvitationService(disable, ADMIN_ACTOR_ID)
+        await manageStaffInvitationService(resend, ADMIN_ACTOR_ID)
+        const canceledJob =
+            adminAuditExternal.enqueueInvitationResend.mock.lastCall?.[0]
+        if (!canceledJob) throw new Error('Expected a queued resend')
+
+        await expect(
+            manageStaffInvitationService(disable, ADMIN_ACTOR_ID),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            prepareStaffInvitationResendMailService(canceledJob),
+        ).resolves.toBeNull()
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'disabled' }])
+
+        await manageStaffInvitationService(resend, ADMIN_ACTOR_ID)
+        const newJob =
+            adminAuditExternal.enqueueInvitationResend.mock.lastCall?.[0]
+        if (!newJob) throw new Error('Expected a new queued resend')
+        await expect(
+            prepareStaffInvitationResendMailService(newJob),
+        ).resolves.toMatchObject({ to: input.email })
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'active' }])
+    })
 })
