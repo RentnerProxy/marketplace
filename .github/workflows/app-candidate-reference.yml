@@ -1,0 +1,74 @@
+name: App Candidate Reference
+
+on:
+    pull_request:
+        paths:
+            - '.github/workflows/app-candidate*.yml'
+            - '.github/scripts/ci/app-candidates/**'
+            - '.github/scripts/ci/fixtures/app-candidate/**'
+            - .github/scripts/security/install-trivy.sh
+            - 'contracts/v1/**'
+            - 'web/src/tests/tooling/GitHub/app-candidate-*.test.ts'
+            - package.json
+            - bun.lock
+            - bunfig.toml
+    push:
+        branches: [main]
+        paths:
+            - '.github/workflows/app-candidate*.yml'
+            - '.github/scripts/ci/app-candidates/**'
+            - '.github/scripts/ci/fixtures/app-candidate/**'
+            - .github/scripts/security/install-trivy.sh
+            - 'contracts/v1/**'
+            - 'web/src/tests/tooling/GitHub/app-candidate-*.test.ts'
+            - package.json
+            - bun.lock
+            - bunfig.toml
+
+permissions:
+    contents: read
+
+env:
+    BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER: '1'
+
+concurrency:
+    group: app-candidate-reference-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    build:
+        name: Reference app ${{ matrix.version }}
+        strategy:
+            fail-fast: false
+            matrix:
+                version: [v1, v2]
+        uses: ./.github/workflows/app-candidate.yml
+        with:
+            source_repository: ${{ github.repository }}
+            source_commit: ${{ github.sha }}
+            source_path: .github/scripts/ci/fixtures/app-candidate/${{ matrix.version }}
+            artifact_prefix: reference-${{ matrix.version }}
+
+    compatibility:
+        name: Reference upgrade compatibility
+        needs: build
+        runs-on: ubuntu-24.04
+        timeout-minutes: 8
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.sha }}
+                  persist-credentials: false
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: 1.4.4
+            - run: bun --no-env-file ci --linker=isolated --ignore-scripts
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  name: reference-v1-${{ github.run_id }}-${{ github.run_attempt }}-bundle
+                  path: ${{ runner.temp }}/reference-v1/
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  name: reference-v2-${{ github.run_id }}-${{ github.run_attempt }}-bundle
+                  path: ${{ runner.temp }}/reference-v2/
+            - run: bun --no-env-file .github/scripts/ci/app-candidates/run.ts verify-reference "$RUNNER_TEMP/reference-v1" "$RUNNER_TEMP/reference-v2"
