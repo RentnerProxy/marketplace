@@ -4,10 +4,12 @@ import { buildRustOperations } from './rust-operations.ts'
 
 const check = process.argv[2] === '--check'
 const root = new URL('../../../../', import.meta.url)
-const files = Object.entries(buildContractDocuments()).map(([name, document]) => [
-    'contracts/v1/' + name,
-    JSON.stringify(document, null, 4) + '\n',
-])
+const files = Object.entries(buildContractDocuments()).map(
+    ([name, document]) => [
+        'contracts/v1/' + name,
+        JSON.stringify(document, null, 4) + '\n',
+    ],
+)
 files.push(['core/app-contracts/src/http/operations.rs', buildRustOperations()])
 await Promise.all(
     files.map(async ([name, expected]) => {

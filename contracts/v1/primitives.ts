@@ -67,7 +67,9 @@ export const v1ProtocolVersion = z
     .regex(new RegExp('^' + v1Protocol + '$'))
 export const protocolRange = z
     .string()
-    .regex(new RegExp('^>=' + v1Protocol + ' <(?:' + v1Protocol + '|2\\.0\\.0)$'))
+    .regex(
+        new RegExp('^>=' + v1Protocol + ' <(?:' + v1Protocol + '|2\\.0\\.0)$'),
+    )
     .describe(
         'Inclusive minimum and exclusive maximum within protocol major 1. The minimum must be less than the maximum.',
     )

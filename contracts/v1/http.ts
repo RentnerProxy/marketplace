@@ -1,4 +1,7 @@
-import { httpOperations, type HttpOperationDefinition } from './http-operations.ts'
+import {
+    httpOperations,
+    type HttpOperationDefinition,
+} from './http-operations.ts'
 
 function schema(name: string) {
     return { $ref: '#/components/schemas/' + name }
@@ -8,7 +11,11 @@ function parameter(name: string) {
     return { $ref: '#/components/parameters/' + name }
 }
 
-function json(description: string, name: string, contentType = 'application/json') {
+function json(
+    description: string,
+    name: string,
+    contentType = 'application/json',
+) {
     return { description, content: { [contentType]: { schema: schema(name) } } }
 }
 
@@ -20,19 +27,26 @@ function describeOperation(name: string, operation: HttpOperationDefinition) {
     const core = operation.socket === 'core.sock'
     const parameters = [parameter('Installation'), parameter('Generation')]
     if (core) parameters.push(parameter('Delegation'))
-    if (operation.pathParameter) parameters.push(parameter(operation.pathParameter))
+    if (operation.pathParameter)
+        parameters.push(parameter(operation.pathParameter))
     if (operation.idempotencyKey) parameters.push(parameter('IdempotencyKey'))
     if (operation.resumeCursor) parameters.push(parameter('ResumeCursor'))
 
     const responses: Record<string, object> = {
         401: problem('The request credential is absent or invalid.'),
-        403: problem('The installation, generation, actor, or resource is unauthorized.'),
+        403: problem(
+            'The installation, generation, actor, or resource is unauthorized.',
+        ),
         default: problem('The request failed with a stable problem code.'),
     }
     if (operation.idempotencyKey) {
-        responses[409] = problem('The resource, generation, or idempotency key conflicts.')
+        responses[409] = problem(
+            'The resource, generation, or idempotency key conflicts.',
+        )
     }
-    for (const [status, description] of Object.entries(operation.failures ?? {})) {
+    for (const [status, description] of Object.entries(
+        operation.failures ?? {},
+    )) {
         responses[status] = problem(description)
     }
     if (operation.event) {
@@ -47,11 +61,15 @@ function describeOperation(name: string, operation: HttpOperationDefinition) {
         }
     } else if (operation.response) {
         responses[operation.status] = json(
-            operation.status === 202 ? 'The operation was accepted.' : 'The operation result.',
+            operation.status === 202
+                ? 'The operation was accepted.'
+                : 'The operation result.',
             operation.response,
         )
     } else {
-        responses[operation.status] = { description: 'The operation completed.' }
+        responses[operation.status] = {
+            description: 'The operation completed.',
+        }
     }
 
     return {
@@ -64,14 +82,19 @@ function describeOperation(name: string, operation: HttpOperationDefinition) {
         ...(operation.request && {
             requestBody: {
                 required: true,
-                content: { 'application/json': { schema: schema(operation.request) } },
+                content: {
+                    'application/json': { schema: schema(operation.request) },
+                },
             },
         }),
         responses,
     }
 }
 
-export const httpPaths: Record<string, Partial<Record<'get' | 'post', ReturnType<typeof describeOperation>>>> = {}
+export const httpPaths: Record<
+    string,
+    Partial<Record<'get' | 'post', ReturnType<typeof describeOperation>>>
+> = {}
 for (const [name, operation] of Object.entries(httpOperations)) {
     const { path, method } = operation
     const item = (httpPaths[path] ??= {})
@@ -108,7 +131,8 @@ export const httpComponents = {
             name: 'X-App-Generation',
             in: 'header',
             required: true,
-            description: 'Positive installation generation in canonical decimal form.',
+            description:
+                'Positive installation generation in canonical decimal form.',
             schema: schema('Generation'),
         },
         Delegation: {

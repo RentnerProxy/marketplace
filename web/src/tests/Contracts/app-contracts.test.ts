@@ -61,7 +61,12 @@ function member(document: object, path: string) {
 
 function applyMutation(
     docs: object,
-    fixture: { path: string; remove?: boolean; copyFrom?: string; value?: unknown },
+    fixture: {
+        path: string
+        remove?: boolean
+        copyFrom?: string
+        value?: unknown
+    },
 ) {
     const { holder, key } = member(docs, fixture.path)
     if (fixture.remove) {
@@ -81,29 +86,40 @@ describe('stable v1 app contract', () => {
     })
 
     for (const profile of fixtures.profiles) {
-        test('publishes ' + profile.profile + ' packages on both architectures', () => {
-            const docs = documents(profile)
-            const approved = checkApprovalBinding(docs.candidate, docs.approval)
-            const { release } = checkPublicationBinding(
-                docs.approval,
-                docs.receipt,
-                docs.catalog,
-            )
-            expect(release).toEqual(approved)
-            for (const { target } of fixtures.targets) {
-                const artifact = release.packages.find(
-                    ({ manifest }) => manifest.target === target,
-                )!
-                const manifest = checkManifestCompatibility(artifact.manifest, {
-                    ...docs.environment,
-                    target,
-                    engineCapabilities: profile.engineCapabilities,
-                })
-                expect(manifest.id).toBe(release.appId)
-                expect<string[]>(manifest.providers).toEqual([profile.profile])
-                expect<string>(manifest.target).toBe(target)
-            }
-        })
+        test(
+            'publishes ' + profile.profile + ' packages on both architectures',
+            () => {
+                const docs = documents(profile)
+                const approved = checkApprovalBinding(
+                    docs.candidate,
+                    docs.approval,
+                )
+                const { release } = checkPublicationBinding(
+                    docs.approval,
+                    docs.receipt,
+                    docs.catalog,
+                )
+                expect(release).toEqual(approved)
+                for (const { target } of fixtures.targets) {
+                    const artifact = release.packages.find(
+                        ({ manifest }) => manifest.target === target,
+                    )!
+                    const manifest = checkManifestCompatibility(
+                        artifact.manifest,
+                        {
+                            ...docs.environment,
+                            target,
+                            engineCapabilities: profile.engineCapabilities,
+                        },
+                    )
+                    expect(manifest.id).toBe(release.appId)
+                    expect<string[]>(manifest.providers).toEqual([
+                        profile.profile,
+                    ])
+                    expect<string>(manifest.target).toBe(target)
+                }
+            },
+        )
     }
 
     test('resolves a validated catalog without a Marketplace session', () => {
@@ -142,9 +158,9 @@ describe('stable v1 app contract', () => {
             sha256: fixtures.published.iconSha256,
             sizeBytes: fixtures.published.iconSizeBytes,
         })
-        expect(catalog.releases.some(({ version }) => version === '0.0.9')).toBe(
-            false,
-        )
+        expect(
+            catalog.releases.some(({ version }) => version === '0.0.9'),
+        ).toBe(false)
     })
 
     test('reordering object keys preserves an approval', () => {
@@ -161,7 +177,8 @@ describe('stable v1 app contract', () => {
         test(fixture.name, () => {
             const docs = documents()
             applyMutation(docs, fixture)
-            for (const mutation of fixture.also ?? []) applyMutation(docs, mutation)
+            for (const mutation of fixture.also ?? [])
+                applyMutation(docs, mutation)
             const checks: Record<string, () => unknown> = {
                 manifest: () => parseAppManifest(docs.manifest),
                 compatibility: () =>

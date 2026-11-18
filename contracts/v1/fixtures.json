@@ -355,9 +355,7 @@
             "name": "required engine capabilities must be available",
             "check": "compatibility",
             "path": "/manifest/requires/engineCapabilities",
-            "value": [
-                "caddy.load-balancing.v1"
-            ],
+            "value": ["caddy.load-balancing.v1"],
             "error": "incompatibleManifest"
         },
         {

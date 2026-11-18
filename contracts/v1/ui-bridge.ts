@@ -66,7 +66,9 @@ const dialog = z.strictObject({
     type: z.literal('dialog'),
     ...binding,
     requestId: recordId,
-    dialogId: recordId.describe('A dialog declared by the installed app. The host controls rendering and focus.'),
+    dialogId: recordId.describe(
+        'A dialog declared by the installed app. The host controls rendering and focus.',
+    ),
 })
 
 const dialogResult = z.strictObject({
@@ -76,14 +78,18 @@ const dialogResult = z.strictObject({
     outcome: z.enum(['confirmed', 'cancelled']),
 })
 
-const apiRequest = z.strictObject({
-    type: z.literal('apiRequest'),
-    ...binding,
-    requestId: recordId,
-    operationId: recordId,
-    idempotencyKey: recordId,
-    payload: appApiPayload,
-}).describe('Only call a declared operation through the authenticated app gateway with current permissions.')
+const apiRequest = z
+    .strictObject({
+        type: z.literal('apiRequest'),
+        ...binding,
+        requestId: recordId,
+        operationId: recordId,
+        idempotencyKey: recordId,
+        payload: appApiPayload,
+    })
+    .describe(
+        'Only call a declared operation through the authenticated app gateway with current permissions.',
+    )
 
 const apiResult = z.strictObject({
     type: z.literal('apiResult'),

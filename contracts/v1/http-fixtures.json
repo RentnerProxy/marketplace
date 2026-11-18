@@ -4,18 +4,29 @@
             "title": "readiness uses the app socket",
             "operation": "getAppReadiness",
             "options": {},
-            "expected": { "method": "GET", "socket": "app.sock", "path": "/app/v1/ready" }
+            "expected": {
+                "method": "GET",
+                "socket": "app.sock",
+                "path": "/app/v1/ready"
+            }
         },
         {
             "title": "authorization uses the core socket and a JSON body",
             "operation": "checkAuthorization",
             "options": {
                 "body": {
-                    "capability": { "id": "proxy.hosts.read.v1", "scope": "proxyHosts" },
+                    "capability": {
+                        "id": "proxy.hosts.read.v1",
+                        "scope": "proxyHosts"
+                    },
                     "resourceId": "host-1"
                 }
             },
-            "expected": { "method": "POST", "socket": "core.sock", "path": "/platform/v1/authorization" }
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/authorization"
+            }
         },
         {
             "title": "authorization requires a body",
@@ -35,8 +46,15 @@
         {
             "title": "cancellation uses a validated path parameter and idempotency key",
             "operation": "cancelOperation",
-            "options": { "pathParameter": "operation-1", "idempotencyKey": "cancel_1" },
-            "expected": { "method": "POST", "socket": "core.sock", "path": "/platform/v1/operations/operation-1/cancel" }
+            "options": {
+                "pathParameter": "operation-1",
+                "idempotencyKey": "cancel_1"
+            },
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/operations/operation-1/cancel"
+            }
         },
         {
             "title": "cancellation requires a path parameter",
@@ -46,7 +64,10 @@
         {
             "title": "a path parameter cannot add URL syntax",
             "operation": "cancelOperation",
-            "options": { "pathParameter": "%2Fother?x=1", "idempotencyKey": "cancel_1" }
+            "options": {
+                "pathParameter": "%2Fother?x=1",
+                "idempotencyKey": "cancel_1"
+            }
         },
         {
             "title": "a path parameter cannot be supplied to readiness",
@@ -61,7 +82,10 @@
         {
             "title": "a line break is invalid in an idempotency key",
             "operation": "cancelOperation",
-            "options": { "pathParameter": "operation-1", "idempotencyKey": "cancel_1\n" }
+            "options": {
+                "pathParameter": "operation-1",
+                "idempotencyKey": "cancel_1\n"
+            }
         },
         {
             "title": "an idempotency key cannot be supplied to readiness",
@@ -72,13 +96,21 @@
             "title": "an event subscription can start without a cursor",
             "operation": "subscribeToEvents",
             "options": {},
-            "expected": { "method": "GET", "socket": "core.sock", "path": "/platform/v1/events" }
+            "expected": {
+                "method": "GET",
+                "socket": "core.sock",
+                "path": "/platform/v1/events"
+            }
         },
         {
             "title": "an event subscription can resume with a cursor",
             "operation": "subscribeToEvents",
             "options": { "resumeCursor": "Cursor_01" },
-            "expected": { "method": "GET", "socket": "core.sock", "path": "/platform/v1/events" }
+            "expected": {
+                "method": "GET",
+                "socket": "core.sock",
+                "path": "/platform/v1/events"
+            }
         },
         {
             "title": "a supplied cursor must be nonempty",
@@ -100,17 +132,29 @@
                     "hostId": "host-1",
                     "expectedRevision": null,
                     "hostname": "app.example.net",
-                    "upstream": { "scheme": "https", "address": "192.0.2.1", "port": 8443 }
+                    "upstream": {
+                        "scheme": "https",
+                        "address": "192.0.2.1",
+                        "port": 8443
+                    }
                 }
             },
-            "expected": { "method": "POST", "socket": "core.sock", "path": "/platform/v1/proxy-hosts/owned" }
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/proxy-hosts/owned"
+            }
         },
         {
             "title": "owned host removal requires a revision",
             "operation": "updateOwnedProxyHost",
             "options": {
                 "idempotencyKey": "host-change-1",
-                "body": { "action": "remove", "hostId": "host-1", "expectedRevision": null }
+                "body": {
+                    "action": "remove",
+                    "hostId": "host-1",
+                    "expectedRevision": null
+                }
             }
         },
         {
@@ -121,7 +165,11 @@
                 "idempotencyKey": "settings-1",
                 "body": { "items": [null, { "enabled": true, "count": 3 }] }
             },
-            "expected": { "method": "POST", "socket": "app.sock", "path": "/app/v1/api/update-settings" }
+            "expected": {
+                "method": "POST",
+                "socket": "app.sock",
+                "path": "/app/v1/api/update-settings"
+            }
         },
         {
             "title": "an app-owned operation requires a JSON object at the top level",
@@ -138,7 +186,12 @@
             "title": "readiness accepts compatible metadata",
             "operation": "getAppReadiness",
             "status": 200,
-            "body": { "ready": true, "protocolVersion": "1.0.0", "providers": [], "metadata": { "label": "fixture" } },
+            "body": {
+                "ready": true,
+                "protocolVersion": "1.0.0",
+                "providers": [],
+                "metadata": { "label": "fixture" }
+            },
             "valid": true
         },
         {

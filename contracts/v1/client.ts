@@ -16,8 +16,10 @@ type OperationDocument<Operation, Field extends string> =
         ? ProtocolDocument<Name>
         : undefined
 
-type HttpDocument<Name extends HttpOperationName, Field extends string> =
-    OperationDocument<(typeof httpOperations)[Name], Field>
+type HttpDocument<
+    Name extends HttpOperationName,
+    Field extends string,
+> = OperationDocument<(typeof httpOperations)[Name], Field>
 
 export interface HttpRequestOptions {
     pathParameter?: string
@@ -52,27 +54,40 @@ export function prepareHttpRequest(
 ): HttpRequest<HttpOperationName> {
     const operation = requireHttpOperation(name)
     if (
-        Boolean(operation.pathParameter) !== (options.pathParameter !== undefined) ||
-        Boolean(operation.idempotencyKey) !== (options.idempotencyKey !== undefined) ||
+        Boolean(operation.pathParameter) !==
+            (options.pathParameter !== undefined) ||
+        Boolean(operation.idempotencyKey) !==
+            (options.idempotencyKey !== undefined) ||
         (!operation.resumeCursor && options.resumeCursor !== undefined) ||
         Boolean(operation.request) !== (options.body !== undefined)
     ) {
-        throw new ContractError('invalidShape', 'Invalid controls or payload for the HTTP operation.')
+        throw new ContractError(
+            'invalidShape',
+            'Invalid controls or payload for the HTTP operation.',
+        )
     }
     const path = operation.pathParameter
         ? operation.path.replace(
-            '{' + operation.pathParameter + '}',
-            parseProtocolDocument('RecordId', options.pathParameter),
-        )
+              '{' + operation.pathParameter + '}',
+              parseProtocolDocument('RecordId', options.pathParameter),
+          )
         : operation.path
     const headers: Record<string, string> = {}
     if (options.idempotencyKey !== undefined) {
-        headers['Idempotency-Key'] = parseProtocolDocument('RecordId', options.idempotencyKey)
+        headers['Idempotency-Key'] = parseProtocolDocument(
+            'RecordId',
+            options.idempotencyKey,
+        )
     }
     if (options.resumeCursor !== undefined) {
-        headers['Last-Event-ID'] = parseProtocolDocument('EventCursor', options.resumeCursor)
+        headers['Last-Event-ID'] = parseProtocolDocument(
+            'EventCursor',
+            options.resumeCursor,
+        )
     }
-    const body = operation.request ? parseProtocolDocument(operation.request, options.body) : undefined
+    const body = operation.request
+        ? parseProtocolDocument(operation.request, options.body)
+        : undefined
     return {
         method: operation.method,
         socket: operation.socket,
@@ -100,7 +115,10 @@ export function parseHttpResponse(
     const operation = requireHttpOperation(name)
     if (status === operation.status) {
         if (!operation.response && body !== undefined) {
-            throw new ContractError('invalidShape', 'The HTTP success response has no JSON body.')
+            throw new ContractError(
+                'invalidShape',
+                'The HTTP success response has no JSON body.',
+            )
         }
         const data = operation.response
             ? parseProtocolDocument(operation.response, body)
@@ -108,11 +126,17 @@ export function parseHttpResponse(
         return { ok: true, data }
     }
     if (!Number.isInteger(status) || status < 400 || status > 599) {
-        throw new ContractError('invalidShape', 'Unexpected HTTP status for the operation.')
+        throw new ContractError(
+            'invalidShape',
+            'Unexpected HTTP status for the operation.',
+        )
     }
     const problem = parseProtocolDocument('Problem', body)
     if (problem.status !== status) {
-        throw new ContractError('invalidShape', 'The HTTP status does not match the problem.')
+        throw new ContractError(
+            'invalidShape',
+            'The HTTP status does not match the problem.',
+        )
     }
     return { ok: false, problem }
 }
@@ -128,7 +152,10 @@ export function parseHttpEvent(
 ): HttpDocument<HttpOperationName, 'event'> {
     const operation = requireHttpOperation(name)
     if (!operation.event) {
-        throw new ContractError('invalidShape', 'The HTTP operation has no event stream.')
+        throw new ContractError(
+            'invalidShape',
+            'The HTTP operation has no event stream.',
+        )
     }
     return parseProtocolDocument(operation.event, body)
 }

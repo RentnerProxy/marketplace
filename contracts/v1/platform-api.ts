@@ -4,8 +4,12 @@ import { displayName, recordId, summary } from './primitives.ts'
 const hostname = z
     .string()
     .max(253)
-    .regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/)
-    .describe('Lowercase ASCII hostname. Encode international names as A-labels.')
+    .regex(
+        /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
+    )
+    .describe(
+        'Lowercase ASCII hostname. Encode international names as A-labels.',
+    )
 
 const listCursor = z.string().regex(/^[A-Za-z0-9_-]{1,256}$/)
 const proxyHost = z.looseObject({
@@ -43,7 +47,9 @@ export const platformApiSchemas = {
         z.strictObject({
             action: z.literal('upsert'),
             hostId: recordId,
-            expectedRevision: recordId.nullable().describe('Null requires that the host does not yet exist.'),
+            expectedRevision: recordId
+                .nullable()
+                .describe('Null requires that the host does not yet exist.'),
             hostname,
             upstream: z.strictObject({
                 scheme: z.enum(['http', 'https']),
@@ -74,7 +80,11 @@ export const platformApiSchemas = {
         outcome: z.enum(['succeeded', 'rejected', 'failed']),
         resourceId: recordId.optional(),
     }),
-    AppSecret: z.strictObject({
-        value: z.string().min(1).max(16_384),
-    }).describe('Return only to the authorized backend. Keep secret values out of logs and browser messages.'),
+    AppSecret: z
+        .strictObject({
+            value: z.string().min(1).max(16_384),
+        })
+        .describe(
+            'Return only to the authorized backend. Keep secret values out of logs and browser messages.',
+        ),
 }

@@ -51,7 +51,8 @@ describe('app protocol v1', () => {
         const { paths, components } = buildContractDocuments()['openapi.json']
         const app = paths['/app/v1/ready'].get
         const platform = paths['/platform/v1/context'].get
-        if (!app || !platform) throw new Error('Required app operations are missing.')
+        if (!app || !platform)
+            throw new Error('Required app operations are missing.')
         expect(app['x-rentnerproxy-socket']).toBe('app.sock')
         expect(app.security).toEqual([{ AppCredential: [] }])
         expect(platform['x-rentnerproxy-socket']).toBe('core.sock')
@@ -94,15 +95,23 @@ describe('app HTTP SDK v1', () => {
         test(fixture.title, () => {
             const operation = fixture.operation as HttpOperationName
             if (!fixture.expected) {
-                expect(() => prepareHttpRequest(operation, fixture.options)).toThrow(ContractError)
+                expect(() =>
+                    prepareHttpRequest(operation, fixture.options),
+                ).toThrow(ContractError)
                 return
             }
-            const { method, socket, path, headers, body } = prepareHttpRequest(operation, fixture.options)
+            const { method, socket, path, headers, body } = prepareHttpRequest(
+                operation,
+                fixture.options,
+            )
             const route: unknown = { method, socket, path }
             expect(route).toEqual(fixture.expected)
             const expectedHeaders: Record<string, string> = {}
-            if (fixture.options.idempotencyKey) expectedHeaders['Idempotency-Key'] = fixture.options.idempotencyKey
-            if (fixture.options.resumeCursor) expectedHeaders['Last-Event-ID'] = fixture.options.resumeCursor
+            if (fixture.options.idempotencyKey)
+                expectedHeaders['Idempotency-Key'] =
+                    fixture.options.idempotencyKey
+            if (fixture.options.resumeCursor)
+                expectedHeaders['Last-Event-ID'] = fixture.options.resumeCursor
             expect(headers).toEqual(expectedHeaders)
             const payload: unknown = body
             expect(payload).toEqual(fixture.options.body)
@@ -111,13 +120,16 @@ describe('app HTTP SDK v1', () => {
     for (const fixture of httpFixtures.responses) {
         test(fixture.title, () => {
             const operation = fixture.operation as HttpOperationName
-            const check = () => parseHttpResponse(operation, fixture.status, fixture.body)
+            const check = () =>
+                parseHttpResponse(operation, fixture.status, fixture.body)
             if (!fixture.valid) {
                 expect(check).toThrow(ContractError)
                 return
             }
             const response = check()
-            const payload: unknown = response.ok ? response.data : response.problem
+            const payload: unknown = response.ok
+                ? response.data
+                : response.problem
             expect(payload).toEqual(fixture.body)
         })
     }

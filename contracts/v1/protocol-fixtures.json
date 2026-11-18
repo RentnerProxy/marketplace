@@ -843,14 +843,22 @@
                 "hostId": "host-1",
                 "expectedRevision": null,
                 "hostname": "fixture.internal",
-                "upstream": { "scheme": "https", "address": "2001:db8::1", "port": 443 }
+                "upstream": {
+                    "scheme": "https",
+                    "address": "2001:db8::1",
+                    "port": 443
+                }
             },
             "valid": true
         },
         {
             "title": "host removal requires an existing revision",
             "schema": "OwnedProxyHostChange",
-            "document": { "action": "remove", "hostId": "host-1", "expectedRevision": null },
+            "document": {
+                "action": "remove",
+                "hostId": "host-1",
+                "expectedRevision": null
+            },
             "valid": false
         },
         {
@@ -869,7 +877,9 @@
             "title": "app-owned JSON preserves arbitrary decoded application keys",
             "schema": "AppApiPayload",
             "document": {
-                "__proto__": { "settings": [true, null, { "greeting": "Gude" }] },
+                "__proto__": {
+                    "settings": [true, null, { "greeting": "Gude" }]
+                },
                 "constructor": 17
             },
             "valid": true
