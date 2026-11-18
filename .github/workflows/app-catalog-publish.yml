@@ -1,0 +1,55 @@
+name: App Catalog Publication
+on:
+    schedule:
+        - cron: '13,43 * * * *'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: app-catalog-production
+    cancel-in-progress: false
+
+jobs:
+    publish:
+        name: Reconcile approved apps and signed metadata
+        if: github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main' && vars.APP_CATALOG_ENABLED == 'true'
+        runs-on: ubuntu-24.04
+        timeout-minutes: 22
+        environment: app-catalog-publishing
+        permissions:
+            contents: read
+            actions: read
+            id-token: write
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.sha }}
+                  persist-credentials: false
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: 1.4.4
+            - run: bun --no-env-file ci --linker=isolated --ignore-scripts
+              env:
+                  BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER: '1'
+            - name: Issue a short-lived distribution-only token
+              id: distribution
+              uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+              with:
+                  client-id: ${{ vars.APP_CATALOG_GITHUB_APP_CLIENT_ID }}
+                  private-key: ${{ secrets.APP_CATALOG_GITHUB_APP_PRIVATE_KEY }}
+                  owner: RentnerProxy
+                  repositories: app-catalog
+                  permission-administration: read
+                  permission-contents: write
+            - name: Verify, publish and reconcile
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  APP_CATALOG_DISTRIBUTION_TOKEN: ${{ steps.distribution.outputs.token }}
+                  APP_CATALOG_TRUSTED_ROOT: ${{ vars.APP_CATALOG_TRUSTED_ROOT }}
+                  APP_CATALOG_NEXT_ROOT: ${{ vars.APP_CATALOG_NEXT_ROOT }}
+                  APP_CATALOG_TARGETS_KEY: ${{ secrets.APP_CATALOG_TARGETS_KEY }}
+                  APP_CATALOG_SNAPSHOT_KEY: ${{ secrets.APP_CATALOG_SNAPSHOT_KEY }}
+                  APP_CATALOG_TIMESTAMP_KEY: ${{ secrets.APP_CATALOG_TIMESTAMP_KEY }}
+              run: bun --no-env-file .github/scripts/release/app-catalog/run.ts sync

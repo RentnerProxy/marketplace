@@ -16,6 +16,7 @@ import {
     users,
 } from '@/db/schema.ts'
 import type { SubmissionArtifact } from '@/lib/Marketplace/Types/submission.types.ts'
+import { catalogPublisherWorkflow } from '@/lib/Marketplace/catalogPublication.ts'
 import {
     decideCandidateService,
     invalidateSubmission,
@@ -29,8 +30,12 @@ import {
 } from '@/server/Marketplace/Submissions/namespace.service.ts'
 import {
     authorizePublicationAttemptService,
+    confirmCatalogRevocationService,
     getApprovedPublicationService,
+    getCatalogPublicationWorkService,
+    listCatalogPublicationWorkService,
     listPendingPublicationsService,
+    reconcileCatalogPublisherService,
     reconcilePublicationService,
 } from '@/server/Marketplace/Submissions/publication.service.ts'
 import {
@@ -93,6 +98,7 @@ export async function exerciseSubmissionLifecycle() {
     const discoveryPages: number[] = []
     const fixturePermissionIds: string[] = []
     let proofRemoved = false
+    let publisherRunStatus = 'in_progress'
     let fixture: ReturnType<typeof fixtureCandidate> | undefined
     let repositoryIdentity = repository
     const officialAppId = 'rentnerproxy.fixture-' + crypto.randomUUID()
@@ -161,6 +167,18 @@ export async function exerciseSubmissionLifecycle() {
             head_repository: { id: Number(run.head_repository.id) },
         }
         const runPath = actions + 'runs/' + run.id
+        const publisherAttempt = /^runs\/(7777|8888)\/attempts\/1$/.exec(
+            url.pathname.slice(actions.length),
+        )
+        if (publisherAttempt) {
+            return Response.json({
+                ...githubRun,
+                id: Number(publisherAttempt[1]),
+                path: catalogPublisherWorkflow,
+                event: 'schedule',
+                status: publisherRunStatus,
+            })
+        }
         const bundleArtifact = artifact(
             bundle,
             receipt.submissionId + '-' + run.id + '-1-bundle',
@@ -385,6 +403,12 @@ export async function exerciseSubmissionLifecycle() {
             submissionId: first.id,
             approvalRevision: approval.revision,
         })
+        expect(await listCatalogPublicationWorkService()).toContainEqual({
+            submissionId: first.id,
+            approvalRevision: approval.revision,
+            kind: 'publish',
+            run: null,
+        })
         expect(approved.history.map(({ status }) => status)).toEqual([
             'submitted',
             'validating',
@@ -415,24 +439,110 @@ export async function exerciseSubmissionLifecycle() {
         ).toEqual(fixture.bundle)
         const firstAttempt = {
             ...publication,
-            run: { ...candidate.build, runId: '7777' },
+            run: {
+                ...candidate.build,
+                workflowPath: catalogPublisherWorkflow,
+                runId: '7777',
+            },
         }
-        await authorizePublicationAttemptService(firstAttempt)
+        const interrupted = {
+            ...publication,
+            run: { ...firstAttempt.run, runId: '8888' },
+        }
+        const promoted = {
+            ...publication,
+            run: { ...firstAttempt.run, runId: '9999' },
+        }
         await expect(
-            reconcilePublicationService(firstAttempt, { neverPromoted: true }),
+            authorizePublicationAttemptService({
+                ...publication,
+                run: candidate.build,
+            }),
+        ).rejects.toThrow('submissionConflict')
+        await authorizePublicationAttemptService(firstAttempt)
+        await authorizePublicationAttemptService(firstAttempt)
+        expect(await listCatalogPublicationWorkService()).toContainEqual({
+            ...publication,
+            kind: 'recover',
+            run: firstAttempt.run,
+        })
+        const abortAttempt = {
+            neverPromoted: true as const,
+            previousRun: { runId: '7777', attempt: 1 },
+        }
+        await expect(
+            reconcileCatalogPublisherService(
+                publication,
+                firstAttempt.run,
+                abortAttempt,
+            ),
+        ).rejects.toThrow('submissionConflict')
+        await expect(
+            reconcileCatalogPublisherService(
+                publication,
+                promoted.run,
+                abortAttempt,
+            ),
+        ).rejects.toThrow('submissionConflict')
+        publisherRunStatus = 'completed'
+        await expect(
+            reconcileCatalogPublisherService(
+                publication,
+                promoted.run,
+                abortAttempt,
+            ),
         ).resolves.toBe('approved')
         await expect(
-            reconcilePublicationService(firstAttempt, { neverPromoted: true }),
+            reconcileCatalogPublisherService(
+                publication,
+                promoted.run,
+                abortAttempt,
+            ),
         ).resolves.toBe('approved')
         await expect(
             authorizePublicationAttemptService(firstAttempt),
         ).rejects.toThrow('submissionConflict')
 
-        const promoted = {
-            ...publication,
-            run: { ...firstAttempt.run, runId: '8888' },
+        await authorizePublicationAttemptService(interrupted)
+        const takeover = {
+            ...promoted,
+            previousRun: {
+                runId: interrupted.run.runId,
+                attempt: interrupted.run.attempt,
+            },
         }
-        await authorizePublicationAttemptService(promoted)
+        publisherRunStatus = 'in_progress'
+        await expect(
+            authorizePublicationAttemptService(takeover),
+        ).rejects.toThrow('submissionConflict')
+        expect((await readSubmission(first.id)).publicationRun).toEqual(
+            interrupted.run,
+        )
+        publisherRunStatus = 'completed'
+        await expect(
+            authorizePublicationAttemptService({
+                ...takeover,
+                previousRun: abortAttempt.previousRun,
+            }),
+        ).rejects.toThrow('submissionConflict')
+        await authorizePublicationAttemptService(takeover)
+        await authorizePublicationAttemptService(takeover)
+        expect(await readSubmission(first.id)).toMatchObject({
+            status: 'publishing',
+            publicationRun: promoted.run,
+        })
+        await expect(
+            authorizePublicationAttemptService({
+                ...takeover,
+                previousRun: abortAttempt.previousRun,
+            }),
+        ).rejects.toThrow('submissionConflict')
+        await expect(
+            reconcileCatalogPublisherService(publication, promoted.run, {
+                neverPromoted: true,
+                previousRun: takeover.previousRun,
+            }),
+        ).rejects.toThrow('submissionConflict')
         const receipt = {
             formatVersion: 1 as const,
             id: approved.id,
@@ -462,7 +572,11 @@ export async function exerciseSubmissionLifecycle() {
             }),
         ).rejects.toThrow()
         await expect(
-            reconcilePublicationService(promoted, { receipt, signedCatalog }),
+            reconcileCatalogPublisherService(
+                publication,
+                promoted.run,
+                receipt,
+            ),
         ).resolves.toBe('published')
         await expect(
             reconcilePublicationService(promoted, { receipt, signedCatalog }),
@@ -482,10 +596,144 @@ export async function exerciseSubmissionLifecycle() {
             revocationPending: true,
             publication: receipt,
         })
+        expect(await listCatalogPublicationWorkService()).toContainEqual({
+            ...publication,
+            kind: 'revoke',
+            run: promoted.run,
+        })
+        const { revocation } =
+            await getCatalogPublicationWorkService(publication)
+        const stopEvent = (await readSubmission(first.id)).history.at(-1)
+        if (!stopEvent || !revocation)
+            throw new Error('Expected a revocation intent')
+        expect(revocation).toEqual({
+            appId: candidate.release.appId,
+            version: candidate.release.version,
+            reason: 'security',
+            revokedAt: stopEvent.at,
+        })
+        await expect(
+            confirmCatalogRevocationService(publication, 19, revocation),
+        ).rejects.toThrow('submissionConflict')
+        await expect(
+            confirmCatalogRevocationService(publication, 20, revocation),
+        ).resolves.toBe('revoked')
+        await expect(
+            confirmCatalogRevocationService(publication, 20, revocation),
+        ).resolves.toBe('revoked')
+        expect(
+            (await getCatalogPublicationWorkService(publication)).revocation,
+        ).toEqual(revocation)
+        expect(
+            (await listCatalogPublicationWorkService()).some(
+                ({ submissionId }) => submissionId === first.id,
+            ),
+        ).toBe(false)
+        expect(
+            (await submissionDetailService(first.id, owner)).revocationPending,
+        ).toBe(false)
         const audience = await submissionDetailService(first.id, owner)
         expect(
             audience.history.every(({ actorId }) => actorId === undefined),
         ).toBe(true)
+
+        const stagedRequest = fixtureRequest(claim.id, '1.2.6')
+        const staged = {
+            ...fixtureSubmission(claim),
+            id: stagedRequest.requestId,
+            version: stagedRequest.version,
+            request: stagedRequest,
+        }
+        const stagedBundle = fixtureCandidate(staged, claim)
+        const stagedApproval = {
+            ...approval,
+            id: staged.id,
+            candidate: stagedBundle.receipt.candidate,
+        }
+        const stagedIdentity = {
+            submissionId: staged.id,
+            approvalRevision: stagedApproval.revision,
+        }
+        const stagedRevision = stagedApproval.revision + 1
+        await db.insert(marketplaceSubmissions).values({
+            ...staged,
+            status: 'publishing',
+            revision: stagedRevision,
+            validation: {
+                candidate: stagedBundle.receipt.candidate,
+                report: stagedBundle.receipt.report,
+                bundle: stagedBundle.bundle,
+                evidence: stagedBundle.evidence,
+            },
+            approval: stagedApproval,
+            publicationRun: firstAttempt.run,
+            nextCheckAt: null,
+        })
+        await stopSubmissionService(
+            { id: staged.id, revision: stagedRevision, reason: 'Cancelled' },
+            owner,
+            'withdrawn',
+        )
+        const stopped = await getCatalogPublicationWorkService(stagedIdentity)
+        if (!stopped.revocation)
+            throw new Error('Expected a staged-release revocation')
+        const stagedRevocation = stopped.revocation
+        expect(stagedRevocation.reason).toBe('withdrawn')
+        expect(await listCatalogPublicationWorkService()).toContainEqual({
+            ...stagedIdentity,
+            kind: 'recover',
+            run: firstAttempt.run,
+        })
+        await expect(
+            confirmCatalogRevocationService(
+                stagedIdentity,
+                21,
+                stagedRevocation,
+            ),
+        ).rejects.toThrow('submissionConflict')
+        publisherRunStatus = 'in_progress'
+        await expect(
+            confirmCatalogRevocationService(
+                stagedIdentity,
+                21,
+                stagedRevocation,
+                abortAttempt.previousRun,
+            ),
+        ).rejects.toThrow('submissionConflict')
+        publisherRunStatus = 'completed'
+        await expect(
+            confirmCatalogRevocationService(
+                stagedIdentity,
+                21,
+                stagedRevocation,
+                abortAttempt.previousRun,
+            ),
+        ).resolves.toBe('revoked')
+        await expect(
+            confirmCatalogRevocationService(
+                stagedIdentity,
+                21,
+                stagedRevocation,
+                abortAttempt.previousRun,
+            ),
+        ).resolves.toBe('revoked')
+        await expect(
+            reconcileCatalogPublisherService(
+                stagedIdentity,
+                promoted.run,
+                abortAttempt,
+            ),
+        ).rejects.toThrow('submissionConflict')
+        expect(await readSubmission(staged.id)).toMatchObject({
+            status: 'revoked',
+            publication: null,
+            publicationRun: firstAttempt.run,
+        })
+        expect(
+            (await listCatalogPublicationWorkService()).some(
+                ({ submissionId }) => submissionId === staged.id,
+            ),
+        ).toBe(false)
 
         const laterRequest = fixtureRequest(claim.id, '1.2.4')
         submissionsCreated.push(laterRequest.requestId)
