@@ -104,7 +104,8 @@
         "vite": "^8.3.8"
     },
     "overrides": {
-        "@esbuild-kit/core-utils>esbuild": "0.28.2"
+        "@esbuild-kit/core-utils>esbuild": "0.28.2",
+        "@tufjs/models>minimatch": "11.0.1"
     },
     "patchedDependencies": {
         "picomatch@4.0.7": "patches/picomatch@4.0.7.patch"
