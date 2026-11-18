@@ -1,9 +1,9 @@
 {
     "openapi": "3.1.2",
     "info": {
-        "title": "RentnerProxy App Protocol Preview",
-        "version": "1.0.0-alpha.2",
-        "description": "Preview contract for native apps. HTTP uses the declared private Unix socket for each operation. Platform authorization is required at the runtime boundary. Package and publication records use the matching SDK for cross-record checks."
+        "title": "RentnerProxy App Protocol",
+        "version": "1.0.0",
+        "description": "Stable version 1 contract for native apps. HTTP uses the declared private Unix socket for each operation. The matching SDK verifies cross-record invariants. Platform authorization is required at the runtime boundary."
     },
     "paths": {
         "/app/v1/health": {
@@ -26,7 +26,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The app process is healthy.",
+                        "description": "The operation result.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -65,8 +65,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -98,7 +108,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "The app is ready and advertises its provider registrations.",
+                        "description": "The operation result.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -137,8 +147,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -153,7 +173,7 @@
         "/app/v1/lifecycle/activate": {
             "post": {
                 "operationId": "activateApp",
-                "summary": "Apply a manager-directed lifecycle transition",
+                "summary": "Activate the prepared app generation",
                 "x-rentnerproxy-socket": "app.sock",
                 "security": [
                     {
@@ -173,7 +193,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "The generation completed the requested transition."
+                        "description": "The operation completed."
                     },
                     "401": {
                         "description": "The request credential is absent or invalid.",
@@ -196,7 +216,7 @@
                         }
                     },
                     "409": {
-                        "description": "The generation state or idempotency key conflicts.",
+                        "description": "The resource, generation, or idempotency key conflicts.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -205,8 +225,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -221,7 +251,7 @@
         "/app/v1/lifecycle/drain": {
             "post": {
                 "operationId": "drainApp",
-                "summary": "Apply a manager-directed lifecycle transition",
+                "summary": "Drain the active app generation",
                 "x-rentnerproxy-socket": "app.sock",
                 "security": [
                     {
@@ -241,7 +271,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "The generation completed the requested transition."
+                        "description": "The operation completed."
                     },
                     "401": {
                         "description": "The request credential is absent or invalid.",
@@ -264,7 +294,7 @@
                         }
                     },
                     "409": {
-                        "description": "The generation state or idempotency key conflicts.",
+                        "description": "The resource, generation, or idempotency key conflicts.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -273,8 +303,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -289,7 +329,7 @@
         "/app/v1/lifecycle/deactivate": {
             "post": {
                 "operationId": "deactivateApp",
-                "summary": "Apply a manager-directed lifecycle transition",
+                "summary": "Deactivate the drained app generation",
                 "x-rentnerproxy-socket": "app.sock",
                 "security": [
                     {
@@ -309,7 +349,7 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "The generation completed the requested transition."
+                        "description": "The operation completed."
                     },
                     "401": {
                         "description": "The request credential is absent or invalid.",
@@ -332,7 +372,7 @@
                         }
                     },
                     "409": {
-                        "description": "The generation state or idempotency key conflicts.",
+                        "description": "The resource, generation, or idempotency key conflicts.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -341,8 +381,216 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/app/v1/api/{operationId}": {
+            "post": {
+                "operationId": "callAppApi",
+                "summary": "Invoke an app-owned operation declared by the package",
+                "description": "The authenticated gateway verifies current user and resource access, then validates the request and result against the installed package API for this operation ID.",
+                "x-rentnerproxy-socket": "app.sock",
+                "security": [
+                    {
+                        "AppCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/operationId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppApiPayload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AppApiPayload"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The resource, generation, or idempotency key conflicts.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/app/v1/providers/{providerId}": {
+            "post": {
+                "operationId": "invokeAppProvider",
+                "summary": "Invoke a negotiated provider operation",
+                "description": "The broker derives the provider from the active registration. Its profile, operation discriminants and resource identities must match the invocation and result. Accepted long-running provider work may carry a durable Operation.",
+                "x-rentnerproxy-socket": "app.sock",
+                "security": [
+                    {
+                        "AppCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/providerId"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProviderRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProviderResult"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The resource, generation, or idempotency key conflicts.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -358,6 +606,7 @@
             "get": {
                 "operationId": "getPlatformContext",
                 "summary": "Read the verified installation context",
+                "description": "An authenticated candidate generation may read its own context while preparing for readiness. Other operations require an active generation and current authorization.",
                 "x-rentnerproxy-socket": "core.sock",
                 "security": [
                     {
@@ -377,7 +626,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Negotiated versions and installation capabilities.",
+                        "description": "The operation result.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -406,8 +655,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -416,8 +675,7 @@
                             }
                         }
                     }
-                },
-                "description": "An authenticated candidate generation may read its own context while preparing for readiness. Platform operations outside this context read require an active generation and current authorization."
+                }
             }
         },
         "/platform/v1/authorization": {
@@ -441,9 +699,19 @@
                         "$ref": "#/components/parameters/Delegation"
                     }
                 ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AuthorizationRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "The current authorization decision.",
+                        "description": "The operation result.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -472,8 +740,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -482,13 +760,631 @@
                             }
                         }
                     }
-                },
+                }
+            }
+        },
+        "/platform/v1/proxy-hosts/query": {
+            "post": {
+                "operationId": "listProxyHosts",
+                "summary": "List proxy hosts within current grants",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/AuthorizationRequest"
+                                "$ref": "#/components/schemas/ProxyHostQuery"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProxyHostPage"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/proxy-hosts/owned": {
+            "post": {
+                "operationId": "updateOwnedProxyHost",
+                "summary": "Apply a revision-checked change to an app-owned host",
+                "description": "The platform controls ownership and configuration. Recheck current ownership, grants and revision before applying; conflicts preserve the currently applied proxy configuration.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OwnedProxyHostChange"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "The operation was accepted.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Operation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The resource, generation, or idempotency key conflicts.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/diagnostics/upstream": {
+            "post": {
+                "operationId": "probeUpstream",
+                "summary": "Run a bounded probe of an authorized proxy host upstream",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpstreamProbe"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UpstreamProbeResult"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/notifications": {
+            "post": {
+                "operationId": "publishNotification",
+                "summary": "Publish an app-owned notification",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppNotification"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "The operation completed."
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The resource, generation, or idempotency key conflicts.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/audit-events": {
+            "post": {
+                "operationId": "recordAuditEvent",
+                "summary": "Record an app-owned audit event",
+                "description": "The platform supplies app, installation, actor and timestamp provenance from authenticated context.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppAuditEvent"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "The operation completed."
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The resource, generation, or idempotency key conflicts.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/secrets/{secretId}": {
+            "get": {
+                "operationId": "readSecret",
+                "summary": "Read a secret assigned to this app installation",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/secretId"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AppSecret"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The secret is unavailable to this installation.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/providers/{providerId}": {
+            "get": {
+                "operationId": "getProvider",
+                "summary": "Read an authorized provider registration",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/providerId"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProviderRegistration"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The provider is unavailable to this installation.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
                             }
                         }
                     }
@@ -516,12 +1412,12 @@
                         "$ref": "#/components/parameters/Delegation"
                     },
                     {
-                        "$ref": "#/components/parameters/OperationId"
+                        "$ref": "#/components/parameters/operationId"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Current operation status.",
+                        "description": "The operation result.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -560,8 +1456,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -594,7 +1500,7 @@
                         "$ref": "#/components/parameters/Delegation"
                     },
                     {
-                        "$ref": "#/components/parameters/OperationId"
+                        "$ref": "#/components/parameters/operationId"
                     },
                     {
                         "$ref": "#/components/parameters/IdempotencyKey"
@@ -602,7 +1508,7 @@
                 ],
                 "responses": {
                     "202": {
-                        "description": "The cancellation request was accepted.",
+                        "description": "The operation was accepted.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -642,7 +1548,7 @@
                         }
                     },
                     "409": {
-                        "description": "The operation or idempotency key conflicts.",
+                        "description": "The resource, generation, or idempotency key conflicts.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -651,8 +1557,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -668,6 +1584,7 @@
             "get": {
                 "operationId": "subscribeToEvents",
                 "summary": "Resume the permission-filtered durable stream",
+                "description": "The SSE id is the resume cursor. Events are at least once. Deduplicate by the data event ID. Recheck active generation, grants, resource visibility, and delegation at delivery. Close the stream when subscription authority expires or is revoked.",
                 "x-rentnerproxy-socket": "core.sock",
                 "security": [
                     {
@@ -690,7 +1607,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Server-Sent Events with at-least-once delivery. The SSE id is the resume cursor. Deduplicate JSON payloads by their event id. Recheck the active generation, current grants, resource visibility, and delegation at delivery. Close the stream when subscription authority expires or is revoked.",
+                        "description": "Server-Sent Events.",
                         "content": {
                             "text/event-stream": {
                                 "schema": {
@@ -732,8 +1649,18 @@
                             }
                         }
                     },
-                    "default": {
-                        "description": "The request failed with a stable problem code.",
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -748,9 +1675,42 @@
     },
     "x-rentnerproxy-rpc-limits": {
         "maxJsonBytes": 1048576,
+        "maxJsonDepth": 64,
         "maxListEntries": 100,
         "defaultDeadlineMs": 10000,
         "maxDeadlineMs": 30000
+    },
+    "x-rentnerproxy-compatibility": {
+        "requests": "Versioned requests and closed package, approval, credential and bridge records reject unknown fields. Omitted optional fields are absent. Null is valid only where explicitly declared.",
+        "responses": "Readers tolerate additional fields only in open response schemas. Unknown discriminants, required capabilities and security-relevant values are rejected.",
+        "encoding": "Protocol member names use camelCase. IDs, revisions and cursors are strings. Timestamps use UTC with milliseconds. Numbers stay within the safe JSON integer magnitude, including in app payloads and open fields. Decoders must reject duplicate members and invalid Unicode. The JSON depth limit counts nested arrays and objects.",
+        "evolution": "Within v1 preserve required fields, units, defaults and semantics. Add new optional response fields only to open shapes. Breaking wire changes require a new major version and negotiation before use.",
+        "admission": "Check payload bounds and authenticated identity before dispatch. Recheck current installation generation, user delegation, capability and resource scope at the platform boundary. Bound concurrent requests per installation.",
+        "optionalMarketplace": "Use separate bounded background requests and keep enrichment outside trusted catalog and installation decisions. Cache or omit enrichment if unavailable. Respect the advertised request size, page and deadline limits."
+    },
+    "x-rentnerproxy-runtime-evidence": {
+        "profile": "rentnerproxy-linux-v1",
+        "platformCommit": "195bd9b66dec662c9bb81ca2b1a3a4f889f15f3f",
+        "workflowRun": "https://github.com/RentnerProxy/platform/actions/runs/44192659551",
+        "bunVersion": "1.4.4",
+        "highestReferencedGlibc": "2.17",
+        "testedTargets": [
+            {
+                "target": "linux-amd64",
+                "machine": "x86_64",
+                "kernel": "7.0.0-1014-aws",
+                "libc": "glibc 2.41",
+                "elfAbi": "Linux 3.2.0"
+            },
+            {
+                "target": "linux-arm64",
+                "machine": "aarch64",
+                "kernel": "7.0.0-1017-azure",
+                "libc": "glibc 2.41",
+                "elfAbi": "Linux 3.7.0"
+            }
+        ],
+        "description": "Observed appliances verified both private sockets, generation revocation, frame-bound UI and signed local installation followed by offline startup. These measurements describe the exercised environments. Package admission checks the target and runtime profile on the actual appliance."
     },
     "components": {
         "securitySchemes": {
@@ -801,8 +1761,24 @@
                     "$ref": "#/components/schemas/RecordId"
                 }
             },
-            "OperationId": {
+            "operationId": {
                 "name": "operationId",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/RecordId"
+                }
+            },
+            "providerId": {
+                "name": "providerId",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/RecordId"
+                }
+            },
+            "secretId": {
+                "name": "secretId",
                 "in": "path",
                 "required": true,
                 "schema": {
@@ -819,6 +1795,9 @@
             }
         },
         "schemas": {
+            "JsonValue": {
+                "$ref": "./contracts.schema.json#/$defs/JsonValue"
+            },
             "SourceIdentity": {
                 "$ref": "./contracts.schema.json#/$defs/SourceIdentity"
             },
@@ -884,6 +1863,33 @@
             },
             "ProviderResult": {
                 "$ref": "./contracts.schema.json#/$defs/ProviderResult"
+            },
+            "AppApiPayload": {
+                "$ref": "./contracts.schema.json#/$defs/AppApiPayload"
+            },
+            "ProxyHostQuery": {
+                "$ref": "./contracts.schema.json#/$defs/ProxyHostQuery"
+            },
+            "ProxyHostPage": {
+                "$ref": "./contracts.schema.json#/$defs/ProxyHostPage"
+            },
+            "OwnedProxyHostChange": {
+                "$ref": "./contracts.schema.json#/$defs/OwnedProxyHostChange"
+            },
+            "UpstreamProbe": {
+                "$ref": "./contracts.schema.json#/$defs/UpstreamProbe"
+            },
+            "UpstreamProbeResult": {
+                "$ref": "./contracts.schema.json#/$defs/UpstreamProbeResult"
+            },
+            "AppNotification": {
+                "$ref": "./contracts.schema.json#/$defs/AppNotification"
+            },
+            "AppAuditEvent": {
+                "$ref": "./contracts.schema.json#/$defs/AppAuditEvent"
+            },
+            "AppSecret": {
+                "$ref": "./contracts.schema.json#/$defs/AppSecret"
             },
             "UiBridgeMessage": {
                 "$ref": "./contracts.schema.json#/$defs/UiBridgeMessage"

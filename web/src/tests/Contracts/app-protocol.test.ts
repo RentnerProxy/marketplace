@@ -1,13 +1,20 @@
 import { describe, expect, test } from 'bun:test'
+import httpFixtures from '../../../../contracts/v1/http-fixtures.json'
 import fixtures from '../../../../contracts/v1/protocol-fixtures.json'
 import { buildContractDocuments } from '../../../../contracts/v1/schemas.ts'
-import type { ProtocolDocumentName } from '../../../../contracts/v1/Types/contract.types.ts'
 import {
     ContractError,
+    httpOperations,
+    parseHttpEvent,
+    parseHttpResponse,
     parseProtocolDocument,
-} from '../../../../contracts/v1/validation.ts'
+    prepareHttpRequest,
+    rpcLimits,
+    type HttpOperationName,
+    type ProtocolDocumentName,
+} from '../../../../contracts/v1/index.ts'
 
-describe('preview app protocol', () => {
+describe('app protocol v1', () => {
     for (const fixture of fixtures.cases) {
         test(fixture.schema + ' ' + fixture.title, () => {
             const name = fixture.schema as ProtocolDocumentName
@@ -41,10 +48,23 @@ describe('preview app protocol', () => {
         expect(readiness.providers).toEqual([])
     })
 
+    test('bounds the depth of decoded wire JSON', () => {
+        let document: Record<string, unknown> = {}
+        for (let depth = 1; depth < rpcLimits.maxJsonDepth; depth++) {
+            document = { nested: document }
+        }
+        expect(parseProtocolDocument('AppApiPayload', document)).toBeDefined()
+        expect(() =>
+            parseProtocolDocument('AppApiPayload', { nested: document }),
+        ).toThrow(ContractError)
+    })
+
     test('advertises the private direction, authentication, and request controls', () => {
         const { paths, components } = buildContractDocuments()['openapi.json']
         const app = paths['/app/v1/ready'].get
         const platform = paths['/platform/v1/context'].get
+        if (!app || !platform)
+            throw new Error('Required app operations are missing.')
         expect(app['x-rentnerproxy-socket']).toBe('app.sock')
         expect(app.security).toEqual([{ AppCredential: [] }])
         expect(platform['x-rentnerproxy-socket']).toBe('core.sock')
@@ -59,11 +79,89 @@ describe('preview app protocol', () => {
         }
         expect(
             paths['/platform/v1/operations/{operationId}/cancel'].post
-                .parameters,
+                ?.parameters,
         ).toContainEqual({ $ref: '#/components/parameters/IdempotencyKey' })
-        expect(paths['/platform/v1/events'].get.parameters).toContainEqual({
+        expect(paths['/platform/v1/events'].get?.parameters).toContainEqual({
             $ref: '#/components/parameters/ResumeCursor',
         })
         expect(components.parameters.ResumeCursor.name).toBe('Last-Event-ID')
+    })
+
+    test('advertises one OpenAPI route per SDK operation', () => {
+        const { paths } = buildContractDocuments()['openapi.json']
+        const operations = Object.entries(httpOperations)
+        expect(
+            Object.values(paths).flatMap((item) => Object.keys(item)),
+        ).toHaveLength(operations.length)
+        for (const [name, { method, path, socket, status }] of operations) {
+            const metadata = paths[path]?.[method === 'GET' ? 'get' : 'post']
+            expect(metadata?.operationId).toBe(name)
+            expect(metadata?.['x-rentnerproxy-socket']).toBe(socket)
+            expect(metadata?.responses[status]).toBeDefined()
+        }
+    })
+})
+
+describe('app HTTP SDK v1', () => {
+    for (const fixture of httpFixtures.requests) {
+        test(fixture.title, () => {
+            const operation = fixture.operation as HttpOperationName
+            if (!fixture.expected) {
+                expect(() =>
+                    prepareHttpRequest(operation, fixture.options),
+                ).toThrow(ContractError)
+                return
+            }
+            const { method, socket, path, headers, body } = prepareHttpRequest(
+                operation,
+                fixture.options,
+            )
+            const route: unknown = { method, socket, path }
+            expect(route).toEqual(fixture.expected)
+            const expectedHeaders: Record<string, string> = {}
+            if (fixture.options.idempotencyKey)
+                expectedHeaders['Idempotency-Key'] =
+                    fixture.options.idempotencyKey
+            if (fixture.options.resumeCursor)
+                expectedHeaders['Last-Event-ID'] = fixture.options.resumeCursor
+            expect(headers).toEqual(expectedHeaders)
+            const payload: unknown = body
+            expect(payload).toEqual(fixture.options.body)
+        })
+    }
+    for (const fixture of httpFixtures.responses) {
+        test(fixture.title, () => {
+            const operation = fixture.operation as HttpOperationName
+            const check = () =>
+                parseHttpResponse(operation, fixture.status, fixture.body)
+            if (!fixture.valid) {
+                expect(check).toThrow(ContractError)
+                return
+            }
+            const response = check()
+            const payload: unknown = response.ok
+                ? response.data
+                : response.problem
+            expect(payload).toEqual(fixture.body)
+        })
+    }
+    for (const fixture of httpFixtures.events) {
+        test(fixture.title, () => {
+            const operation = fixture.operation as HttpOperationName
+            const check = (): unknown => parseHttpEvent(operation, fixture.body)
+            if (fixture.valid) expect(check()).toEqual(fixture.body)
+            else expect(check).toThrow(ContractError)
+        })
+    }
+
+    test('preserves the type of the selected HTTP response', () => {
+        const result = parseHttpResponse('getAppReadiness', 200, {
+            ready: true,
+            protocolVersion: '1.0.0',
+            providers: [],
+        })
+        if (!result.ok) throw new Error('Expected readiness.')
+        expect(result.data.ready).toBe(true)
+        expect(result.data.providers).toEqual([])
     })
 })

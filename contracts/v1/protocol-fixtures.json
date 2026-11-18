@@ -789,6 +789,158 @@
                 }
             },
             "valid": true
+        },
+        {
+            "title": "problem URN and code must describe the same error",
+            "schema": "Problem",
+            "document": {
+                "type": "urn:rentnerproxy:problem:scopeDenied",
+                "title": "The request failed",
+                "status": 403,
+                "code": "differentError",
+                "requestId": "request-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "a successful operation cannot carry a failure problem",
+            "schema": "Operation",
+            "document": {
+                "id": "operation-1",
+                "status": "succeeded",
+                "problem": null
+            },
+            "valid": false
+        },
+        {
+            "title": "a nested DNS operation rejects inconsistent problem identity",
+            "schema": "ProviderResult",
+            "document": {
+                "profile": "dns",
+                "payload": {
+                    "action": "present",
+                    "challengeId": "challenge-1",
+                    "operation": {
+                        "id": "operation-1",
+                        "status": "failed",
+                        "problem": {
+                            "type": "urn:rentnerproxy:problem:dnsUnavailable",
+                            "title": "The DNS provider is unavailable",
+                            "status": 503,
+                            "code": "wrongError",
+                            "requestId": "request-1"
+                        }
+                    }
+                }
+            },
+            "valid": false
+        },
+        {
+            "title": "new owned proxy host requires absent existing revision",
+            "schema": "OwnedProxyHostChange",
+            "document": {
+                "action": "upsert",
+                "hostId": "host-1",
+                "expectedRevision": null,
+                "hostname": "fixture.internal",
+                "upstream": {
+                    "scheme": "https",
+                    "address": "2001:db8::1",
+                    "port": 443
+                }
+            },
+            "valid": true
+        },
+        {
+            "title": "host removal requires an existing revision",
+            "schema": "OwnedProxyHostChange",
+            "document": {
+                "action": "remove",
+                "hostId": "host-1",
+                "expectedRevision": null
+            },
+            "valid": false
+        },
+        {
+            "title": "proxy inventory cannot request an unbounded page",
+            "schema": "ProxyHostQuery",
+            "document": { "limit": 101 },
+            "valid": false
+        },
+        {
+            "title": "upstream probe is restricted to an existing host and deadline",
+            "schema": "UpstreamProbe",
+            "document": { "hostId": "host-1", "timeoutMs": 10001 },
+            "valid": false
+        },
+        {
+            "title": "app-owned JSON preserves arbitrary decoded application keys",
+            "schema": "AppApiPayload",
+            "document": {
+                "__proto__": {
+                    "settings": [true, null, { "greeting": "Gude" }]
+                },
+                "constructor": 17
+            },
+            "valid": true
+        },
+        {
+            "title": "app-owned JSON validates every member value including special keys",
+            "schema": "AppApiPayload",
+            "document": {
+                "__proto__": { "count": 9007199254740992 }
+            },
+            "valid": false
+        },
+        {
+            "title": "dialog result on the bound channel",
+            "schema": "UiBridgeMessage",
+            "document": {
+                "type": "dialogResult",
+                "installId": "install-1",
+                "installationGeneration": 3,
+                "generation": 1,
+                "requestId": "request-1",
+                "outcome": "cancelled"
+            },
+            "valid": true
+        },
+        {
+            "title": "API gateway request retains session binding and idempotency",
+            "schema": "UiBridgeMessage",
+            "document": {
+                "type": "apiRequest",
+                "installId": "install-1",
+                "installationGeneration": 3,
+                "generation": 1,
+                "requestId": "request-1",
+                "operationId": "save-greeting",
+                "idempotencyKey": "save-1",
+                "payload": { "greeting": "Gude" }
+            },
+            "valid": true
+        },
+        {
+            "title": "gateway cannot report inconsistent problem identity",
+            "schema": "UiBridgeMessage",
+            "document": {
+                "type": "apiResult",
+                "installId": "install-1",
+                "installationGeneration": 3,
+                "generation": 1,
+                "requestId": "request-1",
+                "result": {
+                    "ok": false,
+                    "problem": {
+                        "type": "urn:rentnerproxy:problem:scopeDenied",
+                        "title": "Permission denied",
+                        "status": 403,
+                        "code": "differentError",
+                        "requestId": "request-1"
+                    }
+                }
+            },
+            "valid": false
         }
     ]
 }

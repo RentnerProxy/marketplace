@@ -6,6 +6,7 @@ import {
     releaseDistribution,
 } from './catalog.ts'
 import { appManifest } from './manifest.ts'
+import { v1ProtocolVersion } from './primitives.ts'
 import { approval, candidate, publication } from './publication.ts'
 import { protocolSchemas } from './schemas.ts'
 import type {
@@ -16,6 +17,7 @@ import type {
     ProtocolDocument,
     ProtocolDocumentName,
 } from './Types/contract.types.ts'
+import { isWireJson } from './wire.ts'
 
 export class ContractError extends Error {
     constructor(
@@ -45,6 +47,14 @@ const protocolValidators: {
     [Name in ProtocolDocumentName]: z.core.$ZodType<ProtocolDocument<Name>>
 } = protocolSchemas
 
+function matchesProtocolSchema<Output>(
+    schema: z.core.$ZodType<Output>,
+    input: unknown,
+): input is Output {
+    return isWireJson(input) && z.safeParse(schema, input).success
+}
+
+/** Validate already-decoded wire JSON and retain its application payload and open response fields. */
 export function parseProtocolDocument<Name extends ProtocolDocumentName>(
     name: Name,
     input: unknown,
@@ -52,7 +62,10 @@ export function parseProtocolDocument<Name extends ProtocolDocumentName>(
     if (!Object.hasOwn(protocolValidators, name)) {
         throw new ContractError('invalidShape', 'Unknown v1 protocol document.')
     }
-    return parseStructure(protocolValidators[name], input)
+    if (!matchesProtocolSchema(protocolValidators[name], input)) {
+        throw new ContractError('invalidShape', 'Invalid v1 protocol document.')
+    }
+    return input
 }
 
 function unique(values: readonly (string | number)[]) {
@@ -65,12 +78,25 @@ function versionNumber(version: string) {
         .reduce((value, part) => value * 1_000_000 + Number(part), 0)
 }
 
-function orderedRange(range: string) {
+function rangeBounds(range: string) {
     const separator = range.indexOf(' <')
-    return (
-        versionNumber(range.slice(2, separator)) <
-        versionNumber(range.slice(separator + 2))
-    )
+    return [
+        versionNumber(range.slice(2, separator)),
+        versionNumber(range.slice(separator + 2)),
+    ] as const
+}
+
+function orderedRange(range: string) {
+    const [minimum, maximum] = rangeBounds(range)
+    return minimum < maximum
+}
+
+function supportsProtocol(range: string, available: string | undefined) {
+    const parsed = v1ProtocolVersion.safeParse(available)
+    if (!parsed.success) return false
+    const version = versionNumber(parsed.data)
+    const [minimum, maximum] = rangeBounds(range)
+    return minimum <= version && version < maximum
 }
 
 function validMigrations(data: NonNullable<AppManifest['data']>) {
@@ -195,6 +221,41 @@ export function parseAppManifest(input: unknown) {
     return manifest
 }
 
+export interface ManifestEnvironment {
+    readonly target: string
+    readonly runtimeProfile: string
+    readonly platformApi: string
+    readonly appProtocol: string
+    readonly uiBridge?: string
+    readonly engineCapabilities: readonly string[]
+}
+
+/** Compare requirements with the capabilities of the trusted local runtime. */
+export function checkManifestCompatibility(
+    input: unknown,
+    environment: ManifestEnvironment,
+) {
+    const manifest = parseAppManifest(input)
+    const { requires } = manifest
+    if (
+        manifest.target !== environment.target ||
+        requires.runtimeProfile !== environment.runtimeProfile ||
+        !supportsProtocol(requires.platformApi, environment.platformApi) ||
+        !supportsProtocol(requires.appProtocol, environment.appProtocol) ||
+        (requires.uiBridge !== undefined &&
+            !supportsProtocol(requires.uiBridge, environment.uiBridge)) ||
+        !requires.engineCapabilities.every((capability) =>
+            environment.engineCapabilities.includes(capability),
+        )
+    ) {
+        throw new ContractError(
+            'incompatibleManifest',
+            'The local runtime does not satisfy the manifest requirements.',
+        )
+    }
+    return manifest
+}
+
 export function parseCatalog(input: unknown) {
     const snapshot = parseStructure(catalog, input)
     const identities = new Set<string>()
@@ -224,6 +285,12 @@ export function parseApproval(input: unknown) {
     return record
 }
 
+export function parsePublication(input: unknown) {
+    const receipt = parseStructure(publication, input)
+    validateRelease(receipt.release)
+    return receipt
+}
+
 // Pass the current candidate and approval from the trusted store. Shape and
 // equality checks do not establish authorization, freshness or provenance.
 export function checkApprovalBinding(
@@ -247,8 +314,7 @@ export function checkPublicationBinding(
     catalogInput: unknown,
 ) {
     const approved = parseApproval(approvalInput)
-    const receipt = parseStructure(publication, publicationInput)
-    validateRelease(receipt.release)
+    const receipt = parsePublication(publicationInput)
     const snapshot = parseCatalog(catalogInput)
     const published = snapshot.releases.find(
         ({ appId, version }) =>
@@ -271,17 +337,33 @@ export function checkPublicationBinding(
     return receipt
 }
 
-// Verify catalog trust before using a resolved download URL.
-export function packageDownloadUrl(input: unknown) {
-    const {
-        manifest: { id, version, target },
-    } = parseStructure(packageArtifact, input)
+/** Resolve download locations and byte identities from a trusted catalog. */
+export function packageReleaseAssets(input: unknown) {
+    const { manifest, archive, manifestSha256, sbom, provenance } =
+        parseStructure(packageArtifact, input)
+    validateManifest(manifest)
+    const { id, version, target } = manifest
     const tag = id + '-v' + version
     const filename = id + '-' + version + '-' + target + '.tar.zst'
-    return releaseDistribution + tag + '/' + filename
+    const url = releaseDistribution + tag + '/' + filename
+    return {
+        archive: { ...archive, url },
+        manifestSha256,
+        sbom: { ...sbom, url: url + '.sbom.json' },
+        provenance: { ...provenance, url: url + '.provenance.json' },
+    }
+}
+
+export function packageDownloadUrl(input: unknown) {
+    return packageReleaseAssets(input).archive.url
+}
+
+/** Resolve the icon target and byte identity from a trusted catalog. */
+export function catalogIconTarget(input: unknown) {
+    const { sha256, sizeBytes, format } = parseStructure(catalogIcon, input)
+    return { path: 'assets/' + sha256 + '.' + format, sha256, sizeBytes }
 }
 
 export function catalogIconPath(input: unknown) {
-    const { sha256, format } = parseStructure(catalogIcon, input)
-    return 'assets/' + sha256 + '.' + format
+    return catalogIconTarget(input).path
 }

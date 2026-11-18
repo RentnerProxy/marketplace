@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const contractVersion = '1.0.0-alpha.2'
+export const contractVersion = '1.0.0'
 export const protocolVersion = z.literal('1.0.0')
 export const runtimeProfile = z
     .literal('rentnerproxy-linux-v1')
@@ -61,20 +61,14 @@ export const appVersion = z
                 ')*)?$',
         ),
     )
+const v1Protocol = '1\\.' + part + '\\.' + part
+export const v1ProtocolVersion = z
+    .string()
+    .regex(new RegExp('^' + v1Protocol + '$'))
 export const protocolRange = z
     .string()
     .regex(
-        new RegExp(
-            '^>=1\\.' +
-                part +
-                '\\.' +
-                part +
-                ' <(?:1\\.' +
-                part +
-                '\\.' +
-                part +
-                '|2\\.0\\.0)$',
-        ),
+        new RegExp('^>=' + v1Protocol + ' <(?:' + v1Protocol + '|2\\.0\\.0)$'),
     )
     .describe(
         'Inclusive minimum and exclusive maximum within protocol major 1. The minimum must be less than the maximum.',

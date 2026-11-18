@@ -4,9 +4,25 @@ use jsonschema::Validator;
 use serde_json::Value;
 
 use crate::validation::{array, string, unique_strings};
-use crate::{ContractError, compile_schema, embedded_schema, validate_shape};
+use crate::{ContractError, MAX_JSON_DEPTH, compile_schema, embedded_schema, validate_shape};
 
 const DOCUMENTS: &str = "x-rentnerproxy-protocol-documents";
+const MAX_JSON_NUMBER: f64 = 9_007_199_254_740_991.0;
+
+fn is_wire_json(value: &Value, depth: usize) -> bool {
+    match value {
+        Value::Number(number) => number
+            .as_f64()
+            .is_some_and(|value| value.abs() <= MAX_JSON_NUMBER),
+        Value::Array(items) => {
+            depth < MAX_JSON_DEPTH && items.iter().all(|item| is_wire_json(item, depth + 1))
+        }
+        Value::Object(fields) => {
+            depth < MAX_JSON_DEPTH && fields.values().all(|value| is_wire_json(value, depth + 1))
+        }
+        _ => true,
+    }
+}
 
 /// Offline validators for the app protocol document registry. Callers enforce
 /// input byte limits, reject duplicate JSON members during decoding, and verify
@@ -53,6 +69,9 @@ impl ProtocolContracts {
             .documents
             .get(name)
             .ok_or(ContractError::InvalidShape)?;
+        if !is_wire_json(document, 0) {
+            return Err(ContractError::InvalidShape);
+        }
         validate_shape(validator, document)?;
         if name == "BootstrapDescriptor" && document["appCredential"] == document["coreCredential"]
         {
@@ -64,6 +83,33 @@ impl ProtocolContracts {
                     .iter()
                     .map(|provider| string(&provider["id"])),
             )
+        {
+            return Err(ContractError::InvalidShape);
+        }
+        let problem = match name {
+            "Problem" => Some(document),
+            "Operation" if document["status"] == "failed" => Some(&document["problem"]),
+            "ProviderResult"
+                if document["profile"] == "dns"
+                    && matches!(
+                        document["payload"]["action"].as_str(),
+                        Some("present" | "cleanup")
+                    )
+                    && document["payload"]["operation"]["status"] == "failed" =>
+            {
+                Some(&document["payload"]["operation"]["problem"])
+            }
+            "UiBridgeMessage"
+                if document["type"] == "apiResult"
+                    && document["result"]["ok"].as_bool() == Some(false) =>
+            {
+                Some(&document["result"]["problem"])
+            }
+            _ => None,
+        };
+        if let Some(problem) = problem
+            && string(&problem["type"]).strip_prefix("urn:rentnerproxy:problem:")
+                != Some(string(&problem["code"]))
         {
             return Err(ContractError::InvalidShape);
         }

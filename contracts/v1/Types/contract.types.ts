@@ -19,6 +19,7 @@ export type ProtocolDocument<Name extends ProtocolDocumentName> = z.output<
 export type ContractErrorCode =
     | 'invalidShape'
     | 'invalidManifest'
+    | 'incompatibleManifest'
     | 'invalidRelease'
     | 'invalidCandidate'
     | 'invalidCatalog'
