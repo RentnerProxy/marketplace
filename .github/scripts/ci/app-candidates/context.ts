@@ -7,6 +7,7 @@ import { sourceRequest } from './source.ts'
 
 const marketplace = 'rentnerproxy/marketplace'
 const workflowPath = '.github/workflows/app-candidate.yml'
+const reviewWorkflow = '.github/workflows/app-candidate-review.yml'
 const referenceWorkflow = '.github/workflows/app-candidate-reference.yml'
 const referencePath = '.github/scripts/ci/fixtures/app-candidate/'
 
@@ -42,7 +43,8 @@ export function classifyRun(context: {
         if (
             context.event === 'workflow_dispatch' &&
             context.callerRef === 'refs/heads/main' &&
-            caller === marketplace + '/' + workflowPath + '@refs/heads/main' &&
+            caller ===
+                marketplace + '/' + reviewWorkflow + '@refs/heads/main' &&
             context.callerSha === context.workflowSha
         )
             return 'candidate'

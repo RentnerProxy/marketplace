@@ -19,6 +19,22 @@ const dependencies = z.object({
     peerDependencies: z.record(z.string(), z.string()).optional(),
 })
 
+const vulnerabilityPolicy = [
+    '--scanners',
+    'vuln',
+    '--severity',
+    'HIGH,CRITICAL',
+    '--exit-code',
+    '1',
+    '--include-dev-deps',
+    '--db-repository',
+    'public.ecr.aws/aquasecurity/trivy-db:2',
+    '--db-repository',
+    'mirror.gcr.io/aquasec/trivy-db:2',
+    '--db-repository',
+    'ghcr.io/aquasecurity/trivy-db:2',
+]
+
 export async function scanCandidate(options: {
     trivyBinary: string
     directory: string
@@ -74,19 +90,7 @@ export async function scanCandidate(options: {
         'cyclonedx',
         '--output',
         sbomPath,
-        '--scanners',
-        'vuln',
-        '--severity',
-        'HIGH,CRITICAL',
-        '--exit-code',
-        '1',
-        '--include-dev-deps',
-        '--db-repository',
-        'public.ecr.aws/aquasecurity/trivy-db:2',
-        '--db-repository',
-        'mirror.gcr.io/aquasec/trivy-db:2',
-        '--db-repository',
-        'ghcr.io/aquasecurity/trivy-db:2',
+        ...vulnerabilityPolicy,
         options.dependenciesDirectory,
     ])
     const info = await lstat(sbomPath)
@@ -117,6 +121,11 @@ export async function scanCandidate(options: {
             },
         }) + '\n',
     )
+    await scan('packaged dependency vulnerability scan', [
+        ...vulnerabilityPolicy,
+        '--skip-db-update',
+        options.packageDirectory,
+    ])
     await scan('package secret scan', [
         '--format',
         'json',

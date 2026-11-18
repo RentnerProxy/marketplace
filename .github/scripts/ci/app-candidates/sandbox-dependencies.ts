@@ -55,7 +55,7 @@ const lockEntry = z.tuple([
     z.string().regex(/^sha(?:1|256|384|512)-[a-zA-Z0-9+/]+=*$/u),
 ])
 const textLock = z.object({
-    lockfileVersion: z.literal(3),
+    lockfileVersion: z.union([z.literal(2), z.literal(3)]),
     configVersion: z.literal(1).optional(),
     workspaces: z
         .object({

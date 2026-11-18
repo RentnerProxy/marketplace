@@ -120,7 +120,7 @@ export async function smokeInSandbox(options: {
                         'HOME=/tmp',
                         '/bin/sh',
                         '-ceu',
-                        'mkdir -m 0770 /run-fixture/app; exec 3<&0 </dev/null; exec /package/bin/app',
+                        'mkdir -m 0770 /run-fixture/app; exec 3<&0 </dev/null; exec /package/bin/app serve',
                     ],
                     {
                         operation: 'Candidate app process',

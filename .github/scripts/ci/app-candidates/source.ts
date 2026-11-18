@@ -48,6 +48,36 @@ const githubCommit = z.object({ sha: commitSha })
 const manifestBytesLimit = 1024 * 1024
 const lockBytesLimit = 8 * 1024 * 1024
 const sourceArchiveBytesLimit = 64 * 1024 * 1024
+const sourceTree = z.object({
+    sha: commitSha,
+    truncated: z.literal(false),
+    tree: z
+        .array(
+            z.object({
+                type: z.enum(['tree', 'blob']),
+                size: z
+                    .number()
+                    .int()
+                    .min(0)
+                    .max(sourceArchiveBytesLimit)
+                    .optional(),
+            }),
+        )
+        .max(10_000),
+})
+
+export function checkSourceTree(value: unknown, expectedTree: string) {
+    const tree = sourceTree.parse(value)
+    if (tree.sha !== expectedTree)
+        throw new Error('Submitted source tree identity changed')
+    const bytes = tree.tree.reduce((size, entry) => {
+        if (entry.type === 'blob' && entry.size === undefined)
+            throw new Error('GitHub did not report the submitted blob size')
+        return size + 512 + Math.ceil((entry.size ?? 0) / 512) * 512
+    }, 1024)
+    if (bytes > sourceArchiveBytesLimit)
+        throw new Error('Submitted source tree exceeds its byte budget')
+}
 
 async function githubJson(path: string, token?: string): Promise<unknown> {
     const headers = new Headers({
@@ -178,10 +208,23 @@ export async function stageSource(
         )
     await captureGit(['init', '--bare', '--template=', '.'])
     await captureGit([
+        'remote',
+        'add',
+        'origin',
+        'https://github.com/' + request.repository + '.git',
+    ])
+    await captureGit(['config', 'remote.origin.promisor', 'true'])
+    await captureGit([
+        'config',
+        'remote.origin.partialclonefilter',
+        'blob:none',
+    ])
+    await captureGit([
         'fetch',
         '--no-tags',
         '--depth=1',
-        'https://github.com/' + request.repository + '.git',
+        '--filter=blob:none',
+        'origin',
         request.commit,
     ])
     const fetched = (
@@ -220,6 +263,19 @@ export async function stageSource(
     ) {
         throw new Error('Submitted source path must be a committed directory')
     }
+    // Admit the scoped tree's size before any blob reads hydrate the shallow
+    // partial fetch. GitHub reports truncation explicitly and we fail closed.
+    checkSourceTree(
+        await githubJson(
+            '/repos/' +
+                rechecked.repository +
+                '/git/trees/' +
+                tree +
+                '?recursive=1',
+            token,
+        ),
+        tree,
+    )
     const stagedFiles = [
         { name: 'package.json', limit: manifestBytesLimit, required: true },
         { name: 'bun.lock', limit: lockBytesLimit, required: false },

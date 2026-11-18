@@ -28,29 +28,6 @@ on:
             artifact_digest:
                 description: SHA-256 of the GitHub Actions artifact
                 value: ${{ jobs.seal.outputs.artifact_digest }}
-    workflow_dispatch:
-        inputs:
-            source_repository:
-                description: Public GitHub repository in owner/name form
-                type: string
-                required: true
-            source_commit:
-                description: Exact 40-character source commit SHA
-                type: string
-                required: true
-            source_path:
-                description: Relative app module directory
-                type: string
-                default: '.'
-            artifact_prefix:
-                description: Lowercase identifier for the artifact group
-                type: string
-                default: app-candidate
-            publisher_name:
-                description: Proposed publisher display name for review
-                type: string
-                default: ''
-
 permissions:
     contents: read
 

@@ -13,6 +13,19 @@ if (!directory || !target || !repositoryId || !commit) {
     throw new Error('Missing candidate build context')
 }
 
+const lockedDependency: unknown = await Bun.file(
+    'node_modules/picocolors/package.json',
+).json()
+if (
+    typeof lockedDependency !== 'object' ||
+    !lockedDependency ||
+    !('version' in lockedDependency) ||
+    lockedDependency.version !== '1.1.1'
+)
+    throw new Error(
+        'The isolated dependency step must prepare the exact locked npm version',
+    )
+
 await mkdir(join(directory, 'bin'), { recursive: true })
 const executable = join(directory, 'bin/app')
 await Bun.$`bun --no-env-file build --compile ./app.ts --outfile ${executable}`

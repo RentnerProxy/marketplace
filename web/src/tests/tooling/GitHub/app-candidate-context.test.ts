@@ -3,12 +3,15 @@ import {
     classifyRun,
     readCandidateContext,
 } from '../../../../../.github/scripts/ci/app-candidates/context.ts'
-import { sourceRequest } from '../../../../../.github/scripts/ci/app-candidates/source.ts'
+import {
+    checkSourceTree,
+    sourceRequest,
+} from '../../../../../.github/scripts/ci/app-candidates/source.ts'
 
 const commit = 'a'.repeat(40)
 const repository = 'RentnerProxy/marketplace'
 const candidateWorkflow =
-    repository + '/.github/workflows/app-candidate.yml@refs/heads/main'
+    repository + '/.github/workflows/app-candidate-review.yml@refs/heads/main'
 const directRun = {
     callerRepository: repository,
     callerWorkflow: candidateWorkflow,
@@ -125,5 +128,22 @@ describe('app candidate workflow identity', () => {
             expect(
                 sourceRequest.safeParse({ ...request, ...overrides }).success,
             ).toBe(false)
+    })
+
+    test('requires a complete, bounded list of blobs for the exact source tree', () => {
+        const tree = {
+            sha: commit,
+            truncated: false,
+            tree: [{ type: 'blob', size: 300 }],
+        }
+        expect(() => checkSourceTree(tree, commit)).not.toThrow()
+        for (const candidate of [
+            { ...tree, sha: 'b'.repeat(40) },
+            { ...tree, truncated: true },
+            { ...tree, tree: [{ type: 'blob' }] },
+            { ...tree, tree: [{ type: 'blob', size: 64 * 1024 * 1024 }] },
+            { ...tree, tree: [{ type: 'commit' }] },
+        ])
+            expect(() => checkSourceTree(candidate, commit)).toThrow()
     })
 })
