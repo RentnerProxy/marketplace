@@ -1,0 +1,9 @@
+{
+    "name": "candidate-reference",
+    "version": "2.0.0",
+    "private": true,
+    "packageManager": "bun@1.4.4",
+    "scripts": {
+        "build": "bun --no-env-file ./build.ts"
+    }
+}
