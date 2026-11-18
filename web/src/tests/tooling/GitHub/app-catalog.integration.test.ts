@@ -1,11 +1,5 @@
-import { expect, test } from 'bun:test'
-import { createHash, generateKeyPairSync, sign } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { Metadata, MetadataKind, Signature } from '@tufjs/models'
-import { BaseFetcher, Updater } from 'tuf-js'
-import { DownloadHTTPError } from 'tuf-js/dist/error.js'
+import { afterEach, expect, test } from 'bun:test'
+import { createHash, generateKeyPairSync, sign, verify } from 'node:crypto'
 import type { z } from 'zod'
 import fixtures from '../../../../../contracts/v1/fixtures.json'
 import {
@@ -18,11 +12,12 @@ import type {
     catalogPublicationWork,
 } from '@/lib/Marketplace/catalogPublication.ts'
 import {
-    catalogBootstrap,
-    catalogUpdate,
-    readTrustedCatalog,
-} from '../../../../../.github/scripts/release/app-catalog/tuf.ts'
+    type CatalogCore,
+    openCatalogCore,
+    type SigningKeys,
+} from '../../../../../.github/scripts/release/app-catalog/catalog-core.ts'
 import {
+    loadDistributionCatalog,
     publishCatalogQueue,
     refreshDistributionCatalog,
 } from '../../../../../.github/scripts/release/app-catalog/publisher.ts'
@@ -34,6 +29,23 @@ const expires = (now: Date, days: number) =>
     new Date(now.getTime() + days * day)
         .toISOString()
         .replace(/\.\d{3}Z$/u, 'Z')
+
+const processes: CatalogCore[] = []
+afterEach(async () => {
+    await Promise.all(processes.splice(0).map((core) => core.close()))
+})
+
+function nativeCore(keys: SigningKeys) {
+    const core = openCatalogCore(keys)
+    processes.push(core)
+    return core
+}
+
+async function expectFailure(operation: Promise<unknown>, message: string) {
+    const result = await operation.catch((error: unknown) => error)
+    expect(result).toBeInstanceOf(Error)
+    expect(result).toHaveProperty('message', expect.stringContaining(message))
+}
 
 function key() {
     const { privateKey, publicKey } = generateKeyPairSync('ed25519')
@@ -49,6 +61,7 @@ function key() {
     return {
         id: sha(JSON.stringify(object)),
         object,
+        publicKey,
         pem: privateKey.export({ type: 'pkcs8', format: 'pem' }),
     }
 }
@@ -61,6 +74,22 @@ function credentials() {
         timestamp: [key()],
     }
 }
+
+// These generated TUF fixtures use only ASCII object keys and strings.
+function canonicalBytes(signed: object) {
+    return Buffer.from(
+        JSON.stringify(signed, (_key, value: unknown) =>
+            value && typeof value === 'object' && !Array.isArray(value)
+                ? Object.fromEntries(
+                      Object.entries(value).toSorted(([left], [right]) =>
+                          left < right ? -1 : Number(left > right),
+                      ),
+                  )
+                : value,
+        ),
+    )
+}
+
 function rootBytes(
     c: ReturnType<typeof credentials>,
     now: Date,
@@ -78,27 +107,21 @@ function rootBytes(
             .flat()
             .map((k) => [k.id, k.object]),
     )
-    const md = Metadata.fromJSON(MetadataKind.Root, {
-        signed: {
-            _type: 'root',
-            version,
-            spec_version: '1.0.0',
-            expires: expires(now, 365),
-            consistent_snapshot: true,
-            roles,
-            keys,
-        },
-        signatures: [],
-    })
-    for (const k of signers)
-        md.sign(
-            (bytes) =>
-                new Signature({
-                    keyID: k.id,
-                    sig: sign(null, bytes, k.pem).toString('hex'),
-                }),
-        )
-    return Buffer.from(JSON.stringify(md.toJSON()))
+    const signed = {
+        _type: 'root',
+        version,
+        spec_version: '1.0.0',
+        expires: expires(now, 365),
+        consistent_snapshot: true,
+        roles,
+        keys,
+    }
+    const bytes = canonicalBytes(signed)
+    const signatures = signers.map(({ id, pem }) => ({
+        keyid: id,
+        sig: sign(null, bytes, pem).toString('hex'),
+    }))
+    return Buffer.from(JSON.stringify({ signed, signatures }))
 }
 function online(c: ReturnType<typeof credentials>) {
     return {
@@ -113,343 +136,118 @@ function reader(files: ReadonlyMap<string, Buffer>) {
 async function repository(now = new Date()) {
     const c = credentials()
     const root = rootBytes(c, now)
-    const files = new Map(await catalogBootstrap(root, online(c), now))
-    const state = await readTrustedCatalog(reader(files), root, { now })
-    return { c, root, files, state, now }
+    const core = nativeCore(online(c))
+    const files = new Map(await core.bootstrap(root, now))
+    return { c, root, files, core }
 }
-function withIcon() {
+
+type FileLink = { hashes: { sha256: string }; length: number }
+type RoleLink = FileLink & { version: number }
+
+function readRole(files: ReadonlyMap<string, Buffer>, path: string) {
+    return JSON.parse(files.get(path)!.toString()) as {
+        signed: {
+            meta?: Record<string, RoleLink>
+            targets?: Record<string, FileLink>
+        }
+        signatures: { keyid: string; sig: string }[]
+    }
+}
+
+function inspectCatalog(files: ReadonlyMap<string, Buffer>) {
+    const timestampPath = 'metadata/timestamp.json'
+    const timestamp = readRole(files, timestampPath)
+    const snapshotLink = timestamp.signed.meta!['snapshot.json']!
+    const snapshotPath = 'metadata/' + snapshotLink.version + '.snapshot.json'
+    const snapshot = readRole(files, snapshotPath)
+    const targetsLink = snapshot.signed.meta!['targets.json']!
+    const targetsPath = 'metadata/' + targetsLink.version + '.targets.json'
+    const targets = readRole(files, targetsPath)
+    const catalogLink = targets.signed.targets!['catalog.json']!
+    const catalogPath = 'targets/' + catalogLink.hashes.sha256 + '.catalog.json'
+    const catalog = parseCatalog(JSON.parse(files.get(catalogPath)!.toString()))
+    return {
+        catalog,
+        timestamp,
+        snapshot,
+        targets,
+        timestampPath,
+        links: [
+            [snapshotPath, snapshotLink],
+            [targetsPath, targetsLink],
+            [catalogPath, catalogLink],
+        ] as const,
+    }
+}
+
+test('Rust metadata verifies with independent Ed25519 checks and consistent target hashes', async () => {
+    const { c, root, files, core } = await repository()
+    const state = await core.read(reader(files), root)
     const bytes = Buffer.from('fixture icon bytes')
     const digest = sha(bytes)
-    const icon = { format: 'png', sha256: digest, sizeBytes: bytes.length }
-    const release = {
-        ...fixtures.records.release,
-        icon,
-        packages: fixtures.targets.map(({ target, ...artifact }) => ({
-            ...artifact,
-            manifest: { ...fixtures.manifest, target },
-        })),
-    }
-    return {
-        next: parseCatalog({
-            ...fixtures.records.catalog,
-            revision: 2,
-            releases: [release],
-        }),
-        path: 'assets/' + digest + '.png',
-        bytes,
-    }
-}
-
-test('preserves consistent snapshots and verifies the signed catalog and icon bytes', async () => {
-    const { c, root, files, state, now } = await repository()
-    const { next, path, bytes } = withIcon()
-    expect(
-        (await catalogUpdate(state, state.catalog, online(c), { now })).size,
-    ).toBe(0)
-    await expect(
-        catalogUpdate(state, next, online(c), { now }),
-    ).rejects.toThrow('Missing approved icon')
-    await expect(
-        catalogUpdate(state, next, online(c), {
-            icons: new Map([[path, Buffer.from('bad')]]),
-        }),
-    ).rejects.toThrow('icon bytes')
-    const changes = await catalogUpdate(state, next, online(c), {
-        icons: new Map([[path, bytes]]),
-        now,
-    })
-    const iconPath = 'targets/assets/' + sha(bytes) + '.' + sha(bytes) + '.png'
-    expect(changes.get(iconPath)).toEqual(bytes)
-    expect(changes.has('metadata/2.targets.json')).toBe(true)
-    expect(changes.has('metadata/2.snapshot.json')).toBe(true)
-    const latest = new Map([...files, ...changes])
-    const updated = await readTrustedCatalog(reader(latest), root, {
-        previous: state,
-        now,
-    })
-    expect(updated.catalog).toEqual(next)
-    await expect(
-        readTrustedCatalog(reader(files), root, { previous: updated }),
-    ).rejects.toThrow('rollback')
-    await expect(
-        catalogUpdate(updated, { ...next, revocations: [] }, online(c)),
-    ).rejects.toThrow('revision')
-    await expect(
-        catalogUpdate(
-            updated,
-            { ...next, revision: 3, releases: [] },
-            online(c),
-        ),
-    ).rejects.toThrow('revocation')
-    latest.set(iconPath, Buffer.from(bytes).fill(0))
-    await expect(readTrustedCatalog(reader(latest), root)).rejects.toThrow(
-        'Target bytes',
-    )
-    expect(
-        (await readTrustedCatalog(reader(files), root)).catalog.revision,
-    ).toBe(1)
-})
-
-test('accepts sequential offline rotations signed by both thresholds and separates online roles', async () => {
-    const { c, root, files, state, now } = await repository()
-    const next = credentials()
-    await Promise.all(
-        [c.root, next.root, [...c.root, next.root[0]]].map(async (signers) => {
-            const nextRoot = rootBytes(next, now, 2, signers)
-            await expect(
-                catalogUpdate(state, state.catalog, online(next), { nextRoot }),
-            ).rejects.toThrow()
-        }),
-    )
-    const signers = [...c.root, ...next.root]
-    await expect(
-        catalogUpdate(state, state.catalog, online(next), {
-            nextRoot: rootBytes(next, now, 3, signers),
-        }),
-    ).rejects.toThrow('Nonsequential')
-    const nextRoot = rootBytes(next, now, 2, signers)
-    await expect(
-        catalogUpdate(
-            state,
-            state.catalog,
-            { ...online(next), timestamp: next.snapshot[0].pem },
-            { nextRoot },
-        ),
-    ).rejects.toThrow('authorized')
-    const changes = await catalogUpdate(state, state.catalog, online(next), {
-        nextRoot,
-    })
-    const updated = await readTrustedCatalog(
-        reader(new Map([...files, ...changes])),
-        root,
-        { previous: state },
-    )
-    expect(updated.metadata.root.signed.version).toBe(2)
-    expect(updated.catalogBytes).toEqual(state.catalogBytes)
-    expect(
-        (
-            await catalogUpdate(updated, updated.catalog, online(next), {
-                nextRoot,
-            })
-        ).size,
-    ).toBe(0)
-    const reused = { ...next, targets: next.timestamp }
-    await expect(
-        catalogBootstrap(rootBytes(reused, now), online(reused)),
-    ).rejects.toThrow('reused')
-    const cross = { ...next, targets: c.timestamp }
-    await expect(
-        catalogUpdate(state, state.catalog, online(cross), {
-            nextRoot: rootBytes(cross, now, 2, signers),
-        }),
-    ).rejects.toThrow('reassigns')
-    const changedKey = { ...next.targets[0], id: c.targets[0].id }
-    const reusedId = { ...next, targets: [changedKey] }
-    await expect(
-        catalogUpdate(state, state.catalog, online(reusedId), {
-            nextRoot: rootBytes(reusedId, now, 2, signers),
-        }),
-    ).rejects.toThrow('reuses a key ID')
-})
-
-test('refreshes only due roles, repairs expired online metadata and requires a fresh trusted root', async () => {
-    const { c, root, files, state, now } = await repository()
-    const later = new Date(now.getTime() + day)
-    await expect(
-        readTrustedCatalog(reader(files), root, { now: later }),
-    ).rejects.toThrow('expired timestamp')
-    const expired = await readTrustedCatalog(reader(files), root, {
-        now: later,
-        allowExpiredRoles: true,
-    })
-    const renewal = await catalogUpdate(expired, state.catalog, online(c), {
-        now: later,
-    })
-    expect([...renewal.keys()]).toEqual(['metadata/timestamp.json'])
-    const renewed = await readTrustedCatalog(
-        reader(new Map([...files, ...renewal])),
-        root,
-        { now: later, previous: state },
-    )
-    expect(renewed.metadata.timestamp.signed.version).toBe(2)
-    const months = new Date(now.getTime() + day * 100)
-    const updates = await catalogUpdate(state, state.catalog, online(c), {
-        now: months,
-    })
-    const recovered = await readTrustedCatalog(
-        reader(new Map([...files, ...updates])),
-        root,
-        { now: months, previous: state },
-    )
-    expect(recovered.metadata.targets.signed.version).toBe(2)
-    expect(recovered.catalog.revision).toBe(1)
-    await expect(
-        readTrustedCatalog(reader(files), root, {
-            now: new Date(now.getTime() + day * 366),
-            allowExpiredRoles: true,
-        }),
-    ).rejects.toThrow('Expired root')
-    await Promise.all(
-        ['metadata/1.targets.json', 'metadata/1.snapshot.json'].map(
-            async (path) => {
-                const bad = new Map(files)
-                bad.set(
-                    path,
-                    Buffer.concat([files.get(path)!, Buffer.from(' ')]),
-                )
-                await expect(
-                    readTrustedCatalog(reader(bad), root, {
-                        now: months,
-                        allowExpiredRoles: true,
-                    }),
-                ).rejects.toThrow()
+    const iconPath = 'assets/' + digest + '.png'
+    const next = parseCatalog({
+        ...state.catalog,
+        revision: 2,
+        releases: [
+            {
+                ...fixtures.records.release,
+                icon: {
+                    format: 'png',
+                    sha256: digest,
+                    sizeBytes: bytes.length,
+                },
+                packages: fixtures.targets.map(({ target, ...artifact }) => ({
+                    ...artifact,
+                    manifest: { ...fixtures.manifest, target },
+                })),
             },
-        ),
-    )
-})
-
-test('recovers expired installed metadata only with a fresh dual-signed sequential root', async () => {
-    const { c, root, files, now } = await repository()
-    const later = new Date(now.getTime() + 366 * day)
-    const rotated = credentials()
-    const signers = [...c.root, ...rotated.root]
-    const nextRoot = rootBytes(rotated, later, 2, signers)
-    const read = reader(files)
-    const recovery = { now: later, allowExpiredRoles: true, nextRoot }
-    await expect(
-        readTrustedCatalog(read, root, { now: later, nextRoot }),
-    ).rejects.toThrow('Expired root')
-    const invalid = [
-        rootBytes(rotated, now, 2, signers),
-        rootBytes(rotated, later, 3, signers),
-        rootBytes(rotated, later, 2, rotated.root),
-        rootBytes(rotated, later, 2, c.root),
-        rootBytes({ ...rotated, targets: c.timestamp }, later, 2, signers),
-    ]
-    const saved = await readTrustedCatalog(read, root, recovery)
-    expect(saved.metadata.root.signed.version).toBe(1)
-    await Promise.all(
-        invalid.map(async (badRoot) => {
-            const options = { ...recovery, nextRoot: badRoot }
-            await expect(
-                readTrustedCatalog(read, root, options),
-            ).rejects.toThrow()
-            await expect(
-                catalogUpdate(saved, saved.catalog, online(rotated), options),
-            ).rejects.toThrow()
-        }),
-    )
-    await expect(
-        catalogUpdate(saved, saved.catalog, online(c), { now: later }),
-    ).rejects.toThrow('Expired root')
-
-    const changes = await catalogUpdate(
-        saved,
-        saved.catalog,
-        online(rotated),
-        recovery,
-    )
-    expect([...changes.keys()].toSorted()).toEqual([
-        'metadata/2.root.json',
-        'metadata/2.snapshot.json',
-        'metadata/2.targets.json',
-        'metadata/timestamp.json',
-    ])
-    const updated = await readTrustedCatalog(
-        reader(new Map([...files, ...changes])),
-        root,
-        { now: later, previous: saved },
-    )
-    expect(updated.rootBytes).toEqual(nextRoot)
-    expect(updated.catalogBytes).toEqual(saved.catalogBytes)
-    // Pending credentials must never authenticate files in the installed state.
-    const mixed = new Map(files)
-    mixed.set(
-        'metadata/timestamp.json',
-        changes.get('metadata/timestamp.json')!,
-    )
-    await expect(
-        readTrustedCatalog(reader(mixed), root, recovery),
-    ).rejects.toThrow('timestamp was signed by 0')
-})
-
-test('tuf-js verifies both target paths and rejects cached rollback and frozen metadata', async () => {
-    const { c, root, files, state } = await repository()
-    const { next, path, bytes } = withIcon()
-    const original = new Map(files)
-    const changes = await catalogUpdate(state, next, online(c), {
-        icons: new Map([[path, bytes]]),
+        ],
     })
-    const cache = await mkdtemp(join(tmpdir(), 'catalog-tuf-'))
-    class FixtureFetcher extends BaseFetcher {
-        async fetch(url: string) {
-            const data = files.get(new URL(url).pathname.slice(1))
-            if (!data) throw new DownloadHTTPError('Fixture file absent', 404)
-            return new Blob([Uint8Array.from(data)]).stream()
-        }
+    const updated = await core.update(state, next, {
+        icons: new Map([[iconPath, bytes]]),
+    })
+    for (const [path, contents] of updated) files.set(path, contents)
+    const { timestamp, snapshot, targets, links } = inspectCatalog(files)
+    const roles = [
+        [timestamp, c.timestamp[0]!],
+        [snapshot, c.snapshot[0]!],
+        [targets, c.targets[0]!],
+    ] as const
+    for (const [{ signed, signatures }, { id, publicKey }] of roles) {
+        expect(signatures).toHaveLength(1)
+        expect(signatures[0]!.keyid).toBe(id)
+        expect(
+            verify(
+                null,
+                canonicalBytes(signed),
+                publicKey,
+                Buffer.from(signatures[0]!.sig, 'hex'),
+            ),
+        ).toBe(true)
     }
-    const client = (metadataDir = cache) =>
-        new Updater({
-            metadataDir,
-            metadataBaseUrl: 'https://fixture.invalid/metadata/',
-            targetBaseUrl: 'https://fixture.invalid/targets/',
-            fetcher: new FixtureFetcher(),
-        })
-    try {
-        await writeFile(join(cache, 'root.json'), root)
-        await client().refresh()
-        for (const [name, value] of changes) files.set(name, value)
-        const current = client()
-        await current.refresh()
-        await Promise.all(
-            (
-                [
-                    ['catalog.json', Buffer.from(JSON.stringify(next))],
-                    [path, bytes],
-                ] as const
-            ).map(async ([target, expected], index) => {
-                const targetInfo = await current.getTargetInfo(target)
-                expect(
-                    await readFile(
-                        await current.downloadTarget(
-                            targetInfo!,
-                            join(cache, 'download-' + index),
-                        ),
-                    ),
-                ).toEqual(expected)
-            }),
-        )
-        files.set(
-            'metadata/timestamp.json',
-            original.get('metadata/timestamp.json')!,
-        )
-        await expect(client().refresh()).rejects.toThrow(
-            'less than current version',
-        )
-        const frozen = await catalogBootstrap(
-            root,
-            online(c),
-            new Date(Date.now() - day * 2),
-        )
-        const freshCache = join(cache, 'fresh')
-        await mkdir(freshCache)
-        await writeFile(join(freshCache, 'root.json'), root)
-        for (const [name, value] of frozen) files.set(name, value)
-        await expect(client(freshCache).refresh()).rejects.toThrow(
-            'timestamp.json is expired',
-        )
-    } finally {
-        await rm(cache, { recursive: true, force: true })
+    const icon = targets.signed.targets![iconPath]!
+    const consistentIconPath =
+        'targets/assets/' + digest + '.' + digest + '.png'
+    for (const [path, link] of [
+        ...links,
+        [consistentIconPath, icon] as const,
+    ]) {
+        expect(files.get(path)).toHaveLength(link.length)
+        expect(sha(files.get(path)!)).toBe(link.hashes.sha256)
     }
+    expect(files.get(consistentIconPath)).toEqual(bytes)
+    expect((await core.read(reader(files), root)).catalog).toEqual(next)
 })
-
 type Work = z.output<typeof catalogPublicationWork>
 type Request = z.output<typeof catalogPublicationRequest>
 type PublisherOptions = Parameters<typeof publishCatalogQueue>[0]
 
-async function publicationFixture(versions: string[], createdAt = new Date()) {
-    const { root, files, c } = await repository(createdAt)
-    const keys = online(c)
+async function publicationFixture(
+    versions: string[],
+    { createdAt = new Date(), wrongKey = false } = {},
+) {
+    const { root, files, c, core } = await repository(createdAt)
     const approvals = versions.map((version, index): Work => {
         const artifacts = {
             id: String(100 + index),
@@ -495,6 +293,7 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
     const faults = {
         promotion: false,
         receipt: false,
+        readOnce: false,
         bundleVersion: '',
         verification: false,
         corruptReadback: false,
@@ -511,6 +310,10 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
     const distribution: PublisherOptions['distribution'] = {
         head: async () => currentHead,
         async readAt(head, path) {
+            if (faults.readOnce) {
+                faults.readOnce = false
+                throw new Error('simulated distribution read failure')
+            }
             const observed = publisherReads.get(head) ?? new Set<string>()
             observed.add(path)
             publisherReads.set(head, observed)
@@ -618,17 +421,11 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
                 return { approval, bundle, evidence, revision: work.revision }
             case 'published': {
                 // Inspect fixture storage independently of calls made by the publisher.
-                const state = await storedState()
+                const state = storedState()
                 const observed = publisherReads.get(currentHead)
                 for (const path of [
-                    'metadata/timestamp.json',
-                    'metadata/' +
-                        state.metadata.snapshot.signed.version +
-                        '.snapshot.json',
-                    'metadata/' +
-                        state.metadata.targets.signed.version +
-                        '.targets.json',
-                    'targets/' + sha(state.catalogBytes) + '.catalog.json',
+                    state.timestampPath,
+                    ...state.links.map(([linkedPath]) => linkedPath),
                 ])
                     expect(observed?.has(path)).toBe(true)
                 expect(input.catalogRevision).toBe(state.catalog.revision)
@@ -654,9 +451,7 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
                 return { status: work.status }
             }
             case 'confirmRevocation':
-                expect((await catalog()).revocations).toContainEqual(
-                    work.revocation!,
-                )
+                expect(catalog().revocations).toContainEqual(work.revocation!)
                 if (!work.publication)
                     expect(input.previousRun?.runId).toEqual(work.run?.runId)
                 work.status = 'revoked'
@@ -672,12 +467,13 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
         }
         throw new Error('Unexpected test Marketplace operation')
     }
-    const storedState = () =>
-        readTrustedCatalog(reader(commits.get(currentHead)!), root)
-    const catalog = async () => (await storedState()).catalog
+    const storedState = () => inspectCatalog(commits.get(currentHead)!)
+    const catalog = () => storedState().catalog
     const options: PublisherOptions = {
         root,
-        keys,
+        core: wrongKey
+            ? nativeCore({ ...online(c), targets: c.snapshot[0]!.pem })
+            : core,
         distribution,
         marketplace: request as PublisherOptions['marketplace'],
         withBundle: async (handoff, use) => {
@@ -707,7 +503,7 @@ async function publicationFixture(versions: string[], createdAt = new Date()) {
 test('publishes two dual-target approved app versions with catalog readback before recording', async () => {
     const fixture = await publicationFixture(['1.0.0', '2.0.0'])
     await publishCatalogQueue(fixture.options)
-    const catalog = await fixture.catalog()
+    const catalog = fixture.catalog()
     expect(catalog.revision).toBe(3)
     expect(
         catalog.releases.map(({ packages }) =>
@@ -732,13 +528,11 @@ test('publishes two dual-target approved app versions with catalog readback befo
 test('reconciles a lost receipt for the old run without replacing bytes or catalog metadata', async () => {
     const fixture = await publicationFixture(['1.0.0'])
     fixture.faults.receipt = true
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
-        'lost receipt',
-    )
+    await expectFailure(publishCatalogQueue(fixture.options), 'lost receipt')
     fixture.faults.receipt = false
     fixture.nextRun()
     await publishCatalogQueue(fixture.options)
-    expect((await fixture.catalog()).revision).toBe(2)
+    expect(fixture.catalog().revision).toBe(2)
     expect(
         fixture.events.filter((entry) => !entry.startsWith('authorized:')),
     ).toEqual(['release:1.0.0', 'promoted', 'verified:1.0.0', 'recorded:1.0.0'])
@@ -747,7 +541,8 @@ test('reconciles a lost receipt for the old run without replacing bytes or catal
 test('withholds the receipt when readback of the promoted catalog is corrupt', async () => {
     const fixture = await publicationFixture(['1.0.0'])
     fixture.faults.corruptReadback = true
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
         'Target bytes differ',
     )
     expect(fixture.events).toContain('promoted')
@@ -755,36 +550,54 @@ test('withholds the receipt when readback of the promoted catalog is corrupt', a
     expect(fixture.approvals[0]!.publication).toBeNull()
 })
 
-test('publisher refresh atomically rotates an expired installed root before ordinary reads resume', async () => {
-    const fixture = await publicationFixture(
-        [],
-        new Date(Date.now() - 366 * day),
+test('continues with the next approval when a distribution read fails', async () => {
+    const fixture = await publicationFixture(['1.0.0', '2.0.0'])
+    fixture.faults.readOnce = true
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
+        'Catalog file source failed',
     )
+    expect(fixture.deferrals).toEqual([fixture.approvals[0]!.revision])
+    expect(fixture.catalog().releases.map(({ version }) => version)).toEqual([
+        '2.0.0',
+    ])
+    expect(fixture.events).toContain('recorded:2.0.0')
+})
+
+test('publisher refresh atomically rotates an expired installed root before ordinary reads resume', async () => {
+    const fixture = await publicationFixture([], {
+        createdAt: new Date(Date.now() - 366 * day),
+    })
     const { root, distribution } = fixture.options
     const replacement = credentials()
     const nextRoot = rootBytes(replacement, new Date(), 2, [
         ...fixture.rootSigners,
         ...replacement.root,
     ])
-    await expect(fixture.catalog()).rejects.toThrow('Expired root')
-    await refreshDistributionCatalog(
-        distribution,
-        root,
-        online(replacement),
-        nextRoot,
+    const core = nativeCore(online(replacement))
+    await expectFailure(
+        loadDistributionCatalog(
+            core,
+            distribution,
+            root,
+            await distribution.head(),
+        ),
+        'Expired root',
     )
+    await refreshDistributionCatalog(core, distribution, root, nextRoot)
     expect(fixture.events).toEqual(['promoted'])
-    expect((await fixture.catalog()).revision).toBe(1)
+    expect(fixture.catalog().revision).toBe(1)
 })
 
 test('signs a withdrawal of an unlisted immutable release even when its CDN and another queue item fail', async () => {
     const fixture = await publicationFixture(['2.0.0', '1.0.0'])
     fixture.faults.bundleVersion = '2.0.0'
     fixture.faults.promotion = true
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
         '2 catalog queue items failed',
     )
-    expect((await fixture.catalog()).releases).toEqual([])
+    expect(fixture.catalog().releases).toEqual([])
     fixture.faults.promotion = false
     fixture.faults.verification = true
     fixture.nextRun()
@@ -797,26 +610,29 @@ test('signs a withdrawal of an unlisted immutable release even when its CDN and 
         revokedAt: new Date().toISOString(),
         reason: 'withdrawn',
     }
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
         'retained bundle is invalid',
     )
-    expect((await fixture.catalog()).revocations).toEqual([stopped.revocation])
+    expect(fixture.catalog().revocations).toEqual([stopped.revocation])
     expect(fixture.events).toContain('confirmed:1.0.0')
 })
 
 test('verifies public bytes before recovering an approved release that is absent from the catalog', async () => {
     const fixture = await publicationFixture(['1.0.0'])
     fixture.faults.promotion = true
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
         'stale branch head',
     )
     fixture.faults.promotion = false
     fixture.faults.verification = true
     fixture.nextRun()
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
         'Public release asset unavailable',
     )
-    expect((await fixture.catalog()).releases).toEqual([])
+    expect(fixture.catalog().releases).toEqual([])
     fixture.faults.verification = false
     await publishCatalogQueue(fixture.options)
     expect(
@@ -827,12 +643,10 @@ test('verifies public bytes before recovering an approved release that is absent
 test('revokes a signed release after a lost receipt when its public package cannot be verified', async () => {
     const fixture = await publicationFixture(['1.0.0'])
     fixture.faults.receipt = true
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
-        'lost receipt',
-    )
+    await expectFailure(publishCatalogQueue(fixture.options), 'lost receipt')
     const stopped = fixture.approvals[0]!
     const { appId, version } = stopped.approval.candidate.release
-    expect((await fixture.catalog()).releases).toContainEqual(
+    expect(fixture.catalog().releases).toContainEqual(
         stopped.approval.candidate.release,
     )
     expect(stopped.publication).toBeNull()
@@ -847,26 +661,24 @@ test('revokes a signed release after a lost receipt when its public package cann
     fixture.faults.verification = true
     fixture.nextRun()
     await publishCatalogQueue(fixture.options)
-    const current = await fixture.catalog()
+    const current = fixture.catalog()
     expect(current.releases).toEqual([])
     expect(current.revocations).toEqual([stopped.revocation])
     expect(fixture.events).toContain('confirmed:1.0.0')
 })
 
 test('rejects a wrong catalog signing key before uploading any immutable release', async () => {
-    const fixture = await publicationFixture(['1.0.0'])
-    fixture.options.keys.targets = fixture.options.keys.snapshot
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
-        'authorized',
-    )
+    const fixture = await publicationFixture(['1.0.0'], { wrongKey: true })
+    await expectFailure(publishCatalogQueue(fixture.options), 'authorized')
     expect(fixture.events).toEqual([])
-    expect((await fixture.catalog()).revision).toBe(1)
+    expect(fixture.catalog().revision).toBe(1)
 })
 
 test('cleans a stopped draft before releasing the unpublished version reservation', async () => {
     const fixture = await publicationFixture(['1.0.0'])
     fixture.faults.upload = true
-    await expect(publishCatalogQueue(fixture.options)).rejects.toThrow(
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
         'Interrupted draft upload',
     )
     const stopped = fixture.approvals[0]!
@@ -887,5 +699,5 @@ test('cleans a stopped draft before releasing the unpublished version reservatio
         'discarded:1.0.0',
         'reset:1.0.0',
     ])
-    expect((await fixture.catalog()).revision).toBe(1)
+    expect(fixture.catalog().revision).toBe(1)
 })

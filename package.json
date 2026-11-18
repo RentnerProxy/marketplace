@@ -43,7 +43,8 @@
         "core:format": "bun run --no-env-file web/src/scripts/core-tooling.ts format",
         "core:format:check": "bun run --no-env-file web/src/scripts/core-tooling.ts format:check",
         "dev:core": "bun run --no-env-file web/src/scripts/core-tooling.ts serve",
-        "test:core-integration": "bun --no-env-file test --isolate --timeout 30000 --path-ignore-patterns __no_ignored_core_tests__ .core.test.ts"
+        "test:core-integration": "bun --no-env-file test --isolate --timeout 30000 --path-ignore-patterns __no_ignored_core_tests__ .core.test.ts",
+        "test:catalog-integration": "bun --no-env-file test --isolate --path-ignore-patterns __no_ignored_catalog_tests__ app-catalog.integration.test.ts"
     },
     "dependencies": {
         "@rentnerkev/calendar": "^2.10.0",
@@ -87,7 +88,6 @@
         "@tanstack/react-devtools": "^0.10.14",
         "@tanstack/react-query-devtools": "^5.107.1",
         "@tanstack/react-router-devtools": "^1.167.3",
-        "@tufjs/models": "5.0.2",
         "@types/bun": "^1.4.4",
         "@types/node": "^26.6.6",
         "@types/react": "^19.3.0",
@@ -99,13 +99,11 @@
         "oxlint-tsgolint": "^7.0.2007",
         "tailwindcss": "^4.3.5",
         "tar-stream": "^3.2.2",
-        "tuf-js": "6.0.2",
         "typescript": "7.0.2",
         "vite": "^8.3.8"
     },
     "overrides": {
-        "@esbuild-kit/core-utils>esbuild": "0.28.2",
-        "@tufjs/models>minimatch": "11.0.1"
+        "@esbuild-kit/core-utils>esbuild": "0.28.2"
     },
     "patchedDependencies": {
         "picomatch@4.0.7": "patches/picomatch@4.0.7.patch"

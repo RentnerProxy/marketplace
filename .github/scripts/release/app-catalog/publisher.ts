@@ -1,38 +1,33 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { z } from 'zod'
-import { parseCatalog, type Catalog } from '../../../../contracts/v1/index.ts'
+import type { Catalog } from '../../../../contracts/v1/index.ts'
 import type {
     catalogPublicationQueue,
     catalogPublicationWork,
     publicationHandoff,
 } from '../../../../web/src/lib/Marketplace/catalogPublication.ts'
+import type { CatalogCore, TrustedCatalog } from './catalog-core.ts'
 import type { createDistribution } from './distribution.ts'
 import {
     PublicationResponseError,
     type marketplacePublisher,
 } from './marketplace.ts'
-import {
-    catalogUpdate,
-    readTrustedCatalog,
-    type TrustedCatalog,
-} from './tuf.ts'
 
 type QueueItem = z.output<typeof catalogPublicationQueue>['items'][number]
 type Work = z.output<typeof catalogPublicationWork>
 type Handoff = z.output<typeof publicationHandoff>
 type Distribution = ReturnType<typeof createDistribution>
-type Keys = Parameters<typeof catalogUpdate>[2]
 type Marketplace = ReturnType<typeof marketplacePublisher>
 type Identity = Pick<QueueItem, 'submissionId' | 'approvalRevision'>
 type PriorRun = Pick<NonNullable<Work['run']>, 'runId' | 'attempt'>
 type ObserveRevision = (revision: number) => void
-type CatalogReadOptions = Parameters<typeof readTrustedCatalog>[2]
+type CatalogReadOptions = Parameters<CatalogCore['read']>[2]
 
 interface PublisherOptions {
     distribution: Distribution
     marketplace: Marketplace
     root: Buffer
-    keys: Keys
+    core: CatalogCore
     withBundle: <T>(
         handoff: Handoff,
         use: (files: ReadonlyMap<string, string>) => Promise<T>,
@@ -56,12 +51,13 @@ function isConflict(error: unknown) {
 }
 
 export async function loadDistributionCatalog(
+    core: CatalogCore,
     distribution: Distribution,
     root: Buffer,
     head: string,
     options?: CatalogReadOptions,
 ) {
-    return readTrustedCatalog(
+    return core.read(
         (path, maxBytes) => distribution.readAt(head, path, maxBytes),
         root,
         options,
@@ -69,28 +65,32 @@ export async function loadDistributionCatalog(
 }
 
 export async function refreshDistributionCatalog(
+    core: CatalogCore,
     distribution: Distribution,
     root: Buffer,
-    keys: Keys,
     nextRoot?: Buffer,
 ) {
     const head = await distribution.head()
-    const trusted = await loadDistributionCatalog(distribution, root, head, {
-        allowExpiredRoles: true,
-        nextRoot,
-    })
-    const files = await catalogUpdate(trusted, trusted.catalog, keys, {
+    const trusted = await loadDistributionCatalog(
+        core,
+        distribution,
+        root,
+        head,
+        {
+            allowExpiredRoles: true,
+            nextRoot,
+        },
+    )
+    const files = await core.update(trusted, undefined, {
         nextRoot,
     })
     if (!files.size) return
     const updatedHead = await distribution.promote(head, files)
-    await loadDistributionCatalog(distribution, root, updatedHead, {
-        previous: trusted,
-    })
+    await loadDistributionCatalog(core, distribution, root, updatedHead)
 }
 
 export async function publishCatalogQueue(options: PublisherOptions) {
-    const { distribution, marketplace, root, keys } = options
+    const { distribution, marketplace, root, core } = options
     const { items } = await marketplace({ operation: 'queue' })
     const deadline = Date.now() + 12 * 60_000
     const failures: unknown[] = []
@@ -138,7 +138,12 @@ export async function publishCatalogQueue(options: PublisherOptions) {
     async function processItem(identity: Identity, observe: ObserveRevision) {
         const work = await getWork(identity, observe)
         const head = await distribution.head()
-        const trusted = await loadDistributionCatalog(distribution, root, head)
+        const trusted = await loadDistributionCatalog(
+            core,
+            distribution,
+            root,
+            head,
+        )
         const release = work.approval.candidate.release
         const existing = catalogEntry(trusted.catalog, release)
 
@@ -226,13 +231,13 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         const { approval, bundle, evidence } = work
         const { release } = approval.candidate
         const handoff = { approval, bundle, evidence }
-        const next = parseCatalog({
+        const next: Catalog = {
             ...trusted.catalog,
             revision: trusted.catalog.revision + 1,
             releases: [...trusted.catalog.releases, release],
-        })
+        }
         // Check signability before committing to an immutable release.
-        const files = await catalogUpdate(trusted, next, keys)
+        const files = await core.update(trusted, next)
 
         async function authorize() {
             const { revision, ...current } = await marketplace({
@@ -254,7 +259,7 @@ export async function publishCatalogQueue(options: PublisherOptions) {
                 await distribution.ensureRelease(release, assets, authorize)
             })
         }
-        const promoted = await promote(trusted, next, head, files, authorize)
+        const promoted = await promote(next, head, files, authorize)
         await recordPublication(
             identity,
             release,
@@ -287,7 +292,6 @@ export async function publishCatalogQueue(options: PublisherOptions) {
     }
 
     async function promote(
-        trusted: TrustedCatalog,
         next: Catalog,
         head: string,
         files: ReadonlyMap<string, Buffer>,
@@ -297,10 +301,10 @@ export async function publishCatalogQueue(options: PublisherOptions) {
             throw new Error('Catalog change produced no signed metadata')
         const newHead = await distribution.promote(head, files, authorize)
         const verified = await loadDistributionCatalog(
+            core,
             distribution,
             root,
             newHead,
-            { previous: trusted },
         )
         if (!isDeepStrictEqual(verified.catalog, next))
             throw new Error('Public catalog differs from the signed update')
@@ -333,16 +337,16 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         } else {
             if (!previousRun && !isDeepStrictEqual(existing.release, release))
                 throw new Error('Revocation has no matching signed app version')
-            const next = parseCatalog({
+            const next: Catalog = {
                 ...trusted.catalog,
                 revision: trusted.catalog.revision + 1,
                 releases: trusted.catalog.releases.filter(
                     (listed) => listed !== existing.release,
                 ),
                 revocations: [...trusted.catalog.revocations, revocation],
-            })
-            const files = await catalogUpdate(trusted, next, keys)
-            verified = (await promote(trusted, next, head, files)).verified
+            }
+            const files = await core.update(trusted, next)
+            verified = (await promote(next, head, files)).verified
         }
         await marketplace({
             operation: 'confirmRevocation',

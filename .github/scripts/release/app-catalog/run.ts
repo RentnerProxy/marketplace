@@ -5,10 +5,14 @@ import { commit } from '../../../../contracts/v1/primitives.ts'
 import { CANDIDATE_PIPELINE as pipeline } from '../../../../web/src/config/submissions.config.ts'
 import { requireDriverCheckout } from '../../ci/app-candidates/context.ts'
 import { withCandidateBundle } from './artifact.ts'
+import {
+    openCatalogCore,
+    type CatalogCore,
+    type SigningKeys,
+} from './catalog-core.ts'
 import { createDistribution } from './distribution.ts'
 import { marketplacePublisher } from './marketplace.ts'
 import { publishCatalogQueue, refreshDistributionCatalog } from './publisher.ts'
-import { catalogBootstrap, type SigningKeys } from './tuf.ts'
 
 function setting(name: string) {
     const value = process.env[name]
@@ -33,8 +37,8 @@ function signingKeys(): SigningKeys {
     }
 }
 
-async function bootstrap(destination: string, root: Buffer, keys: SigningKeys) {
-    const files = await catalogBootstrap(root, keys)
+async function bootstrap(core: CatalogCore, destination: string, root: Buffer) {
+    const files = await core.bootstrap(root)
     const out = resolve(destination)
     await mkdir(out, { mode: 0o700 })
     for (const [name, bytes] of files) {
@@ -50,22 +54,7 @@ async function bootstrap(destination: string, root: Buffer, keys: SigningKeys) {
     )
 }
 
-async function main() {
-    const [command, destination, ...rest] = process.argv.slice(2)
-    if (
-        rest.length ||
-        !['bootstrap', 'sync'].includes(command ?? '') ||
-        (command === 'bootstrap' ? !destination : destination !== undefined)
-    )
-        throw new Error('Expected bootstrap <new-directory> or sync')
-
-    const root = rootBytes(setting('APP_CATALOG_TRUSTED_ROOT'))
-    const keys = signingKeys()
-    if (command === 'bootstrap' && destination) {
-        await bootstrap(destination, root, keys)
-        return
-    }
-
+async function requireCatalogWorkflow() {
     if (
         process.env.GITHUB_ACTIONS !== 'true' ||
         process.env.GITHUB_REPOSITORY !== pipeline.repository ||
@@ -86,16 +75,18 @@ async function main() {
     if (process.env.GITHUB_WORKFLOW_SHA !== sha)
         throw new Error('Catalog workflow and source commits differ')
     await requireDriverCheckout(sha)
+}
 
+async function syncCatalog(core: CatalogCore, root: Buffer) {
     const distribution = createDistribution(
         setting('APP_CATALOG_DISTRIBUTION_TOKEN'),
     )
     const next = process.env.APP_CATALOG_NEXT_ROOT?.trim()
     // Metadata refresh depends solely on the public distribution and its keys.
     await refreshDistributionCatalog(
+        core,
         distribution,
         root,
-        keys,
         next ? rootBytes(next) : undefined,
     )
     console.log('Signed catalog metadata is current')
@@ -107,11 +98,34 @@ async function main() {
         distribution,
         marketplace,
         root,
-        keys,
+        core,
         withBundle: (handoff, use) =>
             withCandidateBundle(handoff, sourceToken, runnerTemp, use),
     })
     console.log('Marketplace publication queue processed')
+}
+
+async function main() {
+    const [command, destination, ...rest] = process.argv.slice(2)
+    if (
+        rest.length ||
+        !['bootstrap', 'sync'].includes(command ?? '') ||
+        (command === 'bootstrap' ? !destination : destination !== undefined)
+    )
+        throw new Error('Expected bootstrap <new-directory> or sync')
+
+    if (command === 'sync') await requireCatalogWorkflow()
+    const root = rootBytes(setting('APP_CATALOG_TRUSTED_ROOT'))
+    const core = openCatalogCore(signingKeys())
+    try {
+        if (command === 'bootstrap' && destination) {
+            await bootstrap(core, destination, root)
+        } else {
+            await syncCatalog(core, root)
+        }
+    } finally {
+        await core.close()
+    }
 }
 
 if (import.meta.main) {

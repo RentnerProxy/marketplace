@@ -33,6 +33,11 @@ jobs:
             - run: bun --no-env-file ci --linker=isolated --ignore-scripts
               env:
                   BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER: '1'
+            - name: Build the catalog core before credentials are issued
+              working-directory: core
+              run: |
+                  rustup toolchain install 1.100.0 --profile minimal
+                  cargo build --locked --release -p marketplace-app-catalog
             - name: Issue a short-lived distribution-only token
               id: distribution
               uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
