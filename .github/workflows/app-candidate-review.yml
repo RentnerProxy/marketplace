@@ -1,0 +1,39 @@
+name: App Candidate Review Build
+
+on:
+    workflow_dispatch:
+        inputs:
+            source_repository:
+                description: Public GitHub repository in owner/name form
+                type: string
+                required: true
+            source_commit:
+                description: Exact 40-character source commit SHA
+                type: string
+                required: true
+            source_path:
+                description: Relative app module directory
+                type: string
+                default: '.'
+            publisher_name:
+                description: Proposed publisher display name
+                type: string
+                default: ''
+
+permissions:
+    contents: read
+
+concurrency:
+    group: app-candidate-review-${{ github.run_id }}
+    cancel-in-progress: false
+
+jobs:
+    build:
+        name: Build reviewed-source candidate
+        if: github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main'
+        uses: ./.github/workflows/app-candidate.yml
+        with:
+            source_repository: ${{ inputs.source_repository }}
+            source_commit: ${{ inputs.source_commit }}
+            source_path: ${{ inputs.source_path }}
+            publisher_name: ${{ inputs.publisher_name }}

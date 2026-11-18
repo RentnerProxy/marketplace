@@ -1,0 +1,45 @@
+{
+    "formatVersion": 1,
+    "id": "rentnerproxy.candidate-reference",
+    "version": "1.0.0",
+    "display": {
+        "name": "Candidate Reference",
+        "summary": "A self-contained fixture for app candidate CI.",
+        "license": "MIT"
+    },
+    "requires": {
+        "runtimeProfile": "rentnerproxy-linux-v1",
+        "platformApi": ">=1.0.0 <2.0.0",
+        "appProtocol": ">=1.0.0 <2.0.0",
+        "uiBridge": ">=1.0.0 <2.0.0",
+        "engineCapabilities": []
+    },
+    "entrypoint": "bin/app",
+    "api": "api/openapi.json",
+    "configSchema": "schemas/settings.json",
+    "ui": {
+        "entrypoint": "ui/index.html",
+        "slots": ["navigation"]
+    },
+    "providers": [],
+    "capabilities": [],
+    "permissions": [],
+    "data": {
+        "targetVersion": 1,
+        "readVersions": [1],
+        "writeVersions": [1],
+        "migrations": [
+            {
+                "fromVersion": 0,
+                "toVersion": 1,
+                "path": "migrations/initialize.sql"
+            }
+        ]
+    },
+    "resources": {
+        "startupTimeoutMs": 10000,
+        "drainTimeoutMs": 2000,
+        "memoryMiB": 128,
+        "processLimit": 16
+    }
+}

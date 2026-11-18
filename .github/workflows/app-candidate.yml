@@ -1,0 +1,207 @@
+name: App Candidate
+
+on:
+    workflow_call:
+        inputs:
+            source_repository:
+                type: string
+                required: true
+            source_commit:
+                type: string
+                required: true
+            source_path:
+                type: string
+                default: '.'
+            artifact_prefix:
+                type: string
+                default: app-candidate
+            publisher_name:
+                type: string
+                default: ''
+        outputs:
+            candidate_id:
+                description: ID of the exact sealed candidate
+                value: ${{ jobs.seal.outputs.candidate_id }}
+            artifact_id:
+                description: GitHub Actions artifact ID
+                value: ${{ jobs.seal.outputs.artifact_id }}
+            artifact_digest:
+                description: SHA-256 of the GitHub Actions artifact
+                value: ${{ jobs.seal.outputs.artifact_digest }}
+permissions:
+    contents: read
+
+concurrency:
+    group: app-candidate-${{ github.run_id }}-${{ inputs.artifact_prefix }}
+    cancel-in-progress: true
+
+env:
+    SOURCE_REPOSITORY: ${{ inputs.source_repository }}
+    SOURCE_COMMIT: ${{ inputs.source_commit }}
+    SOURCE_PATH: ${{ inputs.source_path }}
+    ARTIFACT_PREFIX: ${{ inputs.artifact_prefix }}
+    PUBLISHER_NAME: ${{ inputs.publisher_name }}
+    BUN_VERSION: 1.4.4
+    BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER: '1'
+
+# GitHub exposes the callee workflow identity in job. The JSON conversion
+# preserves those fields for actionlint versions that model the older context.
+jobs:
+    resolve:
+        name: Resolve immutable source
+        runs-on: ubuntu-24.04
+        timeout-minutes: 5
+        outputs:
+            source: ${{ steps.source.outputs.source }}
+            artifact_key: ${{ steps.source.outputs.artifact_key }}
+        steps:
+            - name: Check out the effective workflow implementation
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  repository: RentnerProxy/marketplace
+                  fetch-depth: ${{ github.repository == 'RentnerProxy/marketplace' && 1 || 0 }}
+                  persist-credentials: false
+            - name: Verify and select the workflow revision
+              shell: bash
+              env:
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_REF: ${{ fromJSON(toJSON(job)).workflow_ref }}
+              run: |
+                  [[ "$DRIVER_SHA" =~ ^[a-f0-9]{40}$ ]]
+                  if [[ "${GITHUB_REPOSITORY,,}" == rentnerproxy/marketplace ]]; then
+                      test "$(git rev-parse HEAD)" = "$DRIVER_SHA"
+                  else
+                      test "${DRIVER_REF,,}" = "rentnerproxy/marketplace/.github/workflows/app-candidate.yml@$DRIVER_SHA"
+                      git merge-base --is-ancestor "$DRIVER_SHA" refs/remotes/origin/main
+                      git -c core.hooksPath=/dev/null checkout --quiet --detach "$DRIVER_SHA"
+                  fi
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: ${{ env.BUN_VERSION }}
+            - run: bun --no-env-file ci --linker=isolated --ignore-scripts
+            - name: Resolve the public repository and exact commit
+              id: source
+              env:
+                  DRIVER_REPOSITORY: ${{ fromJSON(toJSON(job)).workflow_repository }}
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_PATH: ${{ fromJSON(toJSON(job)).workflow_file_path }}
+                  GH_TOKEN: ${{ github.token }}
+              run: bun --no-env-file .github/scripts/ci/app-candidates/run.ts resolve
+
+    native:
+        name: Build and validate (${{ matrix.target }})
+        needs: resolve
+        runs-on: ${{ matrix.runner }}
+        timeout-minutes: 18
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - target: linux-amd64
+                      runner: ubuntu-24.04
+                    - target: linux-arm64
+                      runner: ubuntu-24.04-arm
+        steps:
+            - name: Check out the effective workflow implementation
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  repository: RentnerProxy/marketplace
+                  fetch-depth: ${{ github.repository == 'RentnerProxy/marketplace' && 1 || 0 }}
+                  persist-credentials: false
+            - name: Verify and select the workflow revision
+              shell: bash
+              env:
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_REF: ${{ fromJSON(toJSON(job)).workflow_ref }}
+              run: |
+                  [[ "$DRIVER_SHA" =~ ^[a-f0-9]{40}$ ]]
+                  if [[ "${GITHUB_REPOSITORY,,}" == rentnerproxy/marketplace ]]; then
+                      test "$(git rev-parse HEAD)" = "$DRIVER_SHA"
+                  else
+                      test "${DRIVER_REF,,}" = "rentnerproxy/marketplace/.github/workflows/app-candidate.yml@$DRIVER_SHA"
+                      git merge-base --is-ancestor "$DRIVER_SHA" refs/remotes/origin/main
+                      git -c core.hooksPath=/dev/null checkout --quiet --detach "$DRIVER_SHA"
+                  fi
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: ${{ env.BUN_VERSION }}
+            - run: bun --no-env-file ci --linker=isolated --ignore-scripts
+            - name: Install the checksum-verified native scanner
+              run: bash .github/scripts/security/install-trivy.sh
+            - name: Build, scan and test the exact candidate
+              env:
+                  DRIVER_REPOSITORY: ${{ fromJSON(toJSON(job)).workflow_repository }}
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_PATH: ${{ fromJSON(toJSON(job)).workflow_file_path }}
+                  GH_TOKEN: ${{ github.token }}
+                  RESOLVED_SOURCE: ${{ needs.resolve.outputs.source }}
+                  TARGET: ${{ matrix.target }}
+              run: bun --no-env-file .github/scripts/ci/app-candidates/run.ts build "$TARGET" "$RUNNER_TEMP/target-out"
+            - name: Retain the verified target bytes
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: ${{ needs.resolve.outputs.artifact_key }}-${{ matrix.target }}
+                  path: ${{ runner.temp }}/target-out/
+                  if-no-files-found: error
+                  retention-days: 14
+                  compression-level: 0
+
+    seal:
+        name: Seal both targets for review
+        needs: [resolve, native]
+        runs-on: ubuntu-24.04
+        timeout-minutes: 8
+        outputs:
+            candidate_id: ${{ steps.candidate.outputs.candidate_id }}
+            artifact_id: ${{ steps.upload.outputs.artifact-id }}
+            artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+        steps:
+            - name: Check out the effective workflow implementation
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  repository: RentnerProxy/marketplace
+                  fetch-depth: ${{ github.repository == 'RentnerProxy/marketplace' && 1 || 0 }}
+                  persist-credentials: false
+            - name: Verify and select the workflow revision
+              shell: bash
+              env:
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_REF: ${{ fromJSON(toJSON(job)).workflow_ref }}
+              run: |
+                  [[ "$DRIVER_SHA" =~ ^[a-f0-9]{40}$ ]]
+                  if [[ "${GITHUB_REPOSITORY,,}" == rentnerproxy/marketplace ]]; then
+                      test "$(git rev-parse HEAD)" = "$DRIVER_SHA"
+                  else
+                      test "${DRIVER_REF,,}" = "rentnerproxy/marketplace/.github/workflows/app-candidate.yml@$DRIVER_SHA"
+                      git merge-base --is-ancestor "$DRIVER_SHA" refs/remotes/origin/main
+                      git -c core.hooksPath=/dev/null checkout --quiet --detach "$DRIVER_SHA"
+                  fi
+            - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: ${{ env.BUN_VERSION }}
+            - run: bun --no-env-file ci --linker=isolated --ignore-scripts
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  name: ${{ needs.resolve.outputs.artifact_key }}-linux-amd64
+                  path: ${{ runner.temp }}/amd64
+            - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  name: ${{ needs.resolve.outputs.artifact_key }}-linux-arm64
+                  path: ${{ runner.temp }}/arm64
+            - name: Verify evidence and preserve exact candidate bytes
+              id: candidate
+              env:
+                  DRIVER_REPOSITORY: ${{ fromJSON(toJSON(job)).workflow_repository }}
+                  DRIVER_SHA: ${{ fromJSON(toJSON(job)).workflow_sha }}
+                  DRIVER_PATH: ${{ fromJSON(toJSON(job)).workflow_file_path }}
+                  RESOLVED_SOURCE: ${{ needs.resolve.outputs.source }}
+              run: bun --no-env-file .github/scripts/ci/app-candidates/run.ts seal "$RUNNER_TEMP/amd64" "$RUNNER_TEMP/arm64" "$RUNNER_TEMP/candidate"
+            - name: Retain the sealed candidate
+              id: upload
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: ${{ needs.resolve.outputs.artifact_key }}-bundle
+                  path: ${{ runner.temp }}/candidate/
+                  if-no-files-found: error
+                  retention-days: 14
+                  compression-level: 0
