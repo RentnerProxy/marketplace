@@ -2,13 +2,10 @@ import type {
     AuthenticatedNavItem,
     AuthenticatedRoute,
 } from '@/shared/Types/navigation.types.ts'
+import type { UserThemeMode } from '@/lib/Theme/Types/userTheme.types.ts'
 import type { ReactNode } from 'react'
 
-export type LogoutButtonProps = {
-    isCollapsed: boolean
-}
-
-export type AuthenticatedSidebarProps = {
+export type SidebarContentProps = {
     title: string
     subtitle: string
     logoSrc: string
@@ -16,13 +13,16 @@ export type AuthenticatedSidebarProps = {
     navItems: Array<AuthenticatedNavItem>
     username: string
     userIconSrc: string
-    isCollapsed: boolean
     activeGroupKey: string | null
-}
-
-export type SidebarContentProps = AuthenticatedSidebarProps & {
     isDesktop?: boolean
     onNavigate?: () => void
+}
+
+export type AuthenticatedSidebarProps = Omit<
+    SidebarContentProps,
+    'isDesktop' | 'onNavigate'
+> & {
+    isCollapsed: boolean
 }
 
 export type AuthenticatedMainProps = {
@@ -35,6 +35,7 @@ export type AuthenticatedMainProps = {
 export type AuthenticatedTopbarProps = {
     isCollapsed: boolean
     isMobileNavigationOpen: boolean
+    themeMode: UserThemeMode
     showMaintenanceCountdown: boolean
     millisecondsUntilMaintenance: number
     onToggleCollapse: () => void
@@ -45,7 +46,6 @@ export type AuthenticatedTopbarProps = {
 export type NavigationItemProps = {
     item: AuthenticatedNavItem
     navigationKey?: string
-    isCollapsed: boolean
     activeGroupKey: string | null
     openGroups: Record<string, boolean>
     onToggleGroup: (group: string) => void
@@ -57,12 +57,10 @@ export type SidebarHeaderProps = {
     subtitle: string
     logoSrc: string
     homeTo: AuthenticatedRoute
-    isCollapsed: boolean
     onNavigate?: () => void
 }
 
 export type UserProfileButtonProps = {
-    isCollapsed: boolean
     username: string
     profileImageSrc: string
     onNavigate?: () => void
@@ -71,7 +69,7 @@ export type UserProfileButtonProps = {
 export type MobileNavigationProps = {
     isOpen: boolean
     onClose: () => void
-    sidebar: Omit<AuthenticatedSidebarProps, 'isCollapsed'>
+    sidebar: Omit<SidebarContentProps, 'isDesktop' | 'onNavigate'>
 }
 
 export type MaintenanceBannerProps = {

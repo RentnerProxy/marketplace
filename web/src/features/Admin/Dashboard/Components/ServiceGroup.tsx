@@ -9,22 +9,31 @@ export default function ServiceGroup({
     onSelect,
 }: ServiceGroupProps) {
     const { t } = useTranslationStore()
+    const groupId = `dashboard-group-${group.id}`
     return (
         <div
-            id={`dashboard-group-${group.id}`}
+            id={groupId}
             role="group"
-            aria-label={t(`admin.dashboard.groups.${group.id}.title`)}
-            className="contents"
+            aria-labelledby={`${groupId}-heading`}
+            className="flex min-w-0 flex-col gap-3"
         >
-            {group.services.map((service) => (
-                <ServiceStatusCard
-                    key={service}
-                    service={service}
-                    health={health[service]}
-                    isSelected={selectedService === service}
-                    onSelect={onSelect}
-                />
-            ))}
+            <h3
+                id={`${groupId}-heading`}
+                className="text-sm font-bold text-foreground"
+            >
+                {t(`admin.dashboard.groups.${group.id}.title`)}
+            </h3>
+            <div className="grid flex-1 auto-rows-fr gap-3">
+                {group.services.map((service) => (
+                    <ServiceStatusCard
+                        key={service}
+                        service={service}
+                        health={health[service]}
+                        isSelected={selectedService === service}
+                        onSelect={onSelect}
+                    />
+                ))}
+            </div>
         </div>
     )
 }

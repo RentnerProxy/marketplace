@@ -12,17 +12,11 @@ export default function SidebarHeader({
     subtitle,
     logoSrc,
     homeTo,
-    isCollapsed,
     onNavigate,
 }: SidebarHeaderProps) {
     const usesDefaultLogo =
         logoSrc === DEFAULT_FAVICON_SRC || logoSrc === '/images/default.webp'
-    const showWordmark = usesDefaultLogo && !isCollapsed
-    const imageSrc = showWordmark
-        ? defaultWordmark
-        : usesDefaultLogo
-          ? DEFAULT_FAVICON_SRC
-          : logoSrc
+    const imageSrc = usesDefaultLogo ? defaultWordmark : logoSrc
 
     return (
         <div className="shrink-0">
@@ -31,9 +25,7 @@ export default function SidebarHeader({
                 preload={false}
                 aria-label={title}
                 onClick={onNavigate}
-                className={`flex items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary ${
-                    isCollapsed ? 'min-h-12 justify-center' : 'min-h-21'
-                }`}
+                className="flex min-h-21 items-center gap-3 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
             >
                 <img
                     src={imageSrc}
@@ -45,12 +37,12 @@ export default function SidebarHeader({
                         applyImageFallback(event, DEFAULT_FAVICON_SRC)
                     }
                     className={
-                        showWordmark
+                        usesDefaultLogo
                             ? 'aspect-8/3 w-full max-w-56 object-contain'
-                            : `${isCollapsed ? 'size-10' : 'size-20'} shrink-0 object-contain`
+                            : 'size-20 shrink-0 object-contain'
                     }
                 />
-                {!isCollapsed && !usesDefaultLogo && (
+                {!usesDefaultLogo && (
                     <div className="min-w-0">
                         <p className="line-clamp-2 wrap-anywhere font-display text-xl leading-tight tracking-tight">
                             {title}

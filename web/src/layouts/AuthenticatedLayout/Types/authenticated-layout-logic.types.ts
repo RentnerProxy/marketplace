@@ -69,10 +69,7 @@ export type AuthenticatedSidebarLogicReturn = {
     handler: {
         handleLogout: () => void
         handleOpenUserSettings: () => void
-        handleToggleGroup: (
-            group: string,
-            expandCollapsedSidebar?: boolean,
-        ) => void
+        handleToggleGroup: (group: string) => void
     }
 }
 

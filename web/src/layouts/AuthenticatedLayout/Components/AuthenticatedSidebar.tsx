@@ -18,7 +18,6 @@ export function SidebarContent({
     navItems,
     username,
     userIconSrc,
-    isCollapsed,
     activeGroupKey,
     isDesktop = false,
     onNavigate,
@@ -28,21 +27,14 @@ export function SidebarContent({
 
     return (
         <div
-            className={`relative flex min-h-0 w-full flex-1 flex-col text-[#f4f5f7] ${
-                isCollapsed ? 'gap-4 pt-5 pb-2' : 'gap-6 pt-5 pb-1 lg:pt-7'
-            } ${isDesktop ? 'marketplace-sidebar-mask' : ''}`}
+            className={`relative flex min-h-0 w-full flex-1 flex-col gap-6 pt-5 pb-1 text-[#f4f5f7] lg:pt-7 ${isDesktop ? 'marketplace-sidebar-mask' : ''}`}
         >
-            <div
-                className={
-                    isCollapsed ? 'pr-4 pl-2' : 'px-5 lg:pr-15 lg:pl-[1.35rem]'
-                }
-            >
+            <div className="px-5 lg:pr-15 lg:pl-[1.35rem]">
                 <SidebarHeader
                     title={title}
                     subtitle={subtitle}
                     logoSrc={logoSrc}
                     homeTo={homeTo}
-                    isCollapsed={isCollapsed}
                     onNavigate={onNavigate}
                 />
             </div>
@@ -50,56 +42,47 @@ export function SidebarContent({
             <nav
                 aria-label={t('nav.navigation')}
                 className={`min-h-0 flex-1 space-y-2.5 overflow-x-hidden overflow-y-auto overscroll-contain ${
-                    isDesktop && !isCollapsed
-                        ? 'scrollbar-none'
-                        : 'marketplace-sidebar-scroll'
-                } ${isCollapsed ? 'pr-4 pl-2' : ''}`}
+                    isDesktop ? 'scrollbar-none' : 'marketplace-sidebar-scroll'
+                }`}
             >
                 {navItems.map((item) => (
                     <NavigationItem
                         key={item.to ?? item.labelKey}
                         item={item}
                         navigationKey={item.to ?? item.labelKey}
-                        isCollapsed={isCollapsed}
                         activeGroupKey={activeGroupKey}
                         openGroups={state.openGroups}
-                        onToggleGroup={(group) =>
-                            handler.handleToggleGroup(group, isCollapsed)
-                        }
+                        onToggleGroup={handler.handleToggleGroup}
                         onNavigate={onNavigate}
                     />
                 ))}
             </nav>
 
-            <div
-                className={`shrink-0 border-y border-white/10 bg-[#020a0b]/80 py-3 backdrop-blur-sm ${
-                    isCollapsed ? 'pr-4 pl-2' : 'pr-5 pl-5 lg:pr-16 lg:pl-9'
-                }`}
-            >
+            <div className="shrink-0 border-y border-white/10 bg-[#020a0b]/80 px-5 py-3 backdrop-blur-sm lg:pr-16 lg:pl-9">
                 <UserProfileButton
-                    isCollapsed={isCollapsed}
                     username={username}
                     profileImageSrc={userIconSrc}
                     onNavigate={onNavigate}
                 />
-                <LogoutButton isCollapsed={isCollapsed} />
+                <LogoutButton />
             </div>
         </div>
     )
 }
 
-export default function AuthenticatedSidebar(props: AuthenticatedSidebarProps) {
+export default function AuthenticatedSidebar({
+    isCollapsed,
+    ...sidebar
+}: AuthenticatedSidebarProps) {
+    if (isCollapsed) return <aside id="marketplace-desktop-navigation" hidden />
+
     return (
         <aside
             id="marketplace-desktop-navigation"
-            className={`fixed inset-y-0 left-0 z-30 isolate hidden w-(--marketplace-navigation-width) overflow-hidden transition-[width] duration-200 motion-reduce:transition-none lg:flex ${
-                props.isCollapsed
-                    ? '[--marketplace-sidebar-tail:1.5rem]'
-                    : '[--marketplace-sidebar-tail:5rem]'
-            }`}
+            className="fixed inset-y-0 left-0 z-30 isolate hidden w-(--marketplace-navigation-width) overflow-hidden [--marketplace-sidebar-tail:5rem] lg:flex"
         >
             <SidebarSurface />
-            <SidebarContent {...props} isDesktop />
+            <SidebarContent {...sidebar} isDesktop />
         </aside>
     )
 }

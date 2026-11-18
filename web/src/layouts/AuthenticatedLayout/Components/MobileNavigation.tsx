@@ -44,11 +44,7 @@ export default function MobileNavigation({
                             <X aria-hidden="true" className="size-5" />
                         </button>
                     </div>
-                    <SidebarContent
-                        {...sidebar}
-                        isCollapsed={false}
-                        onNavigate={onClose}
-                    />
+                    <SidebarContent {...sidebar} onNavigate={onClose} />
                 </>
             )}
         </dialog>

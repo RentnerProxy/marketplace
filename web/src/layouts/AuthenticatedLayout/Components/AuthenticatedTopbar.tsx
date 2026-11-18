@@ -4,10 +4,12 @@ import NotificationMenu from '@/features/Notifications/Components/NotificationMe
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import type { AuthenticatedTopbarProps } from '../Types/authenticated-layout-component-props.types.ts'
 import MaintenanceCountdownButton from './MaintenanceCountdownButton.tsx'
+import ThemeModeSwitch from './ThemeModeSwitch.tsx'
 
 export default function AuthenticatedTopbar({
     isCollapsed,
     isMobileNavigationOpen,
+    themeMode,
     showMaintenanceCountdown,
     millisecondsUntilMaintenance,
     onToggleCollapse,
@@ -20,8 +22,8 @@ export default function AuthenticatedTopbar({
 
     return (
         <header
-            className={`sticky top-0 z-20 flex min-h-[4.625rem] items-center justify-between gap-4 border-b border-border-dark bg-(--marketplace-topbar) px-5 py-3 backdrop-blur-[16px] ${
-                isCollapsed ? 'lg:px-8' : 'lg:-ml-12 lg:pr-8 lg:pl-[5.25rem]'
+            className={`sticky top-0 z-20 flex min-h-[4.625rem] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border-dark bg-(--marketplace-topbar) px-4 py-3 backdrop-blur-[16px] sm:px-6 2xl:px-8 ${
+                isCollapsed ? '' : 'lg:-ml-12 lg:pl-18 2xl:pl-20'
             }`}
         >
             <button
@@ -48,7 +50,7 @@ export default function AuthenticatedTopbar({
                 </button>
             </CustomTooltip>
 
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
                 {showMaintenanceCountdown && (
                     <MaintenanceCountdownButton
                         millisecondsUntilMaintenance={
@@ -57,6 +59,7 @@ export default function AuthenticatedTopbar({
                         onExpand={onExpandMaintenanceBanner}
                     />
                 )}
+                <ThemeModeSwitch themeMode={themeMode} />
                 <NotificationMenu />
             </div>
         </header>

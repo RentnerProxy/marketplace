@@ -6,7 +6,9 @@ import { Home } from 'lucide-react'
 import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
 
 const action = vi.fn()
+const saveThemeMode = vi.fn()
 let collapsed = false
+let savingTheme = false
 let loggingOut = false
 let requesting = false
 let minimized = false
@@ -96,6 +98,12 @@ vi.mock('@/features/Notifications/Components/NotificationMenu.tsx', () => ({
 vi.mock('@/features/UserSettings/index.tsx', () => ({
     default: () => createElement('div', null, 'User settings dialog'),
 }))
+vi.mock('@/features/UserSettings/Hooks/useThemeModeMutation.ts', () => ({
+    default: () => ({
+        state: { isSavingThemeMode: savingTheme },
+        handler: { saveThemeMode },
+    }),
+}))
 vi.mock('@/shared/Hooks/useModalDialogLogic.ts', () => ({
     default: ({ isOpen }: { isOpen: boolean }) => ({
         state: { shouldRender: isOpen },
@@ -173,6 +181,8 @@ const { default: Sidebar } =
     await import('@/layouts/AuthenticatedLayout/Components/AuthenticatedSidebar.tsx')
 const { default: Topbar } =
     await import('@/layouts/AuthenticatedLayout/Components/AuthenticatedTopbar.tsx')
+const { default: ThemeModeSwitch } =
+    await import('@/layouts/AuthenticatedLayout/Components/ThemeModeSwitch.tsx')
 const { default: Banner } =
     await import('@/layouts/AuthenticatedLayout/Components/MaintenanceBanner.tsx')
 const { default: NavigationItem } =
@@ -200,6 +210,7 @@ function callbacks(
 beforeEach(() => {
     vi.clearAllMocks()
     collapsed = false
+    savingTheme = false
     loggingOut = false
     requesting = false
     minimized = false
@@ -220,10 +231,13 @@ it.each([false, true])(
         expect(main).toContain('>Dashboard title</h1>')
         expect(main).toContain('>Your overview</p>')
         expect(main).toContain('>Admin</p>')
+        expect(main).toContain('sm:px-6 2xl:px-8')
+        expect(main).not.toContain('max-w-360')
         const top = renderToStaticMarkup(
             createElement(Topbar, {
                 isCollapsed,
                 isMobileNavigationOpen: false,
+                themeMode: isCollapsed ? 'light' : 'dark',
                 showMaintenanceCountdown: isCollapsed,
                 millisecondsUntilMaintenance: 60000,
                 onToggleCollapse: action,
@@ -239,14 +253,20 @@ it.each([false, true])(
         expect(top).not.toContain('Dashboard title')
         expect(top).not.toContain('<h1')
         expect(top).toContain('Notifications')
+        expect(top).toContain(
+            `role="switch" aria-label="userSettings.theme.dark" aria-checked="${!isCollapsed}"`,
+        )
+        expect(top.indexOf('role="switch"')).toBeLessThan(
+            top.indexOf('Notifications'),
+        )
         expect(top.includes('maintenance.expandBanner')).toBe(isCollapsed)
     },
 )
 
 it.each([false, true])(
-    'renders sidebar identity and navigation with collapsed=%s',
+    'fully hides sidebar identity and navigation with collapsed=%s',
     (isCollapsed) => {
-        loggingOut = isCollapsed
+        loggingOut = true
         const html = renderToStaticMarkup(
             createElement(Sidebar, {
                 title: 'Company',
@@ -260,11 +280,14 @@ it.each([false, true])(
                 activeGroupKey: null,
             }),
         )
-        expect(html).toContain(
-            isCollapsed
-                ? '--marketplace-sidebar-tail:1.5rem'
-                : '--marketplace-sidebar-tail:5rem',
-        )
+        if (isCollapsed) {
+            expect(html).toBe(
+                '<aside id="marketplace-desktop-navigation" hidden=""></aside>',
+            )
+            return
+        }
+
+        expect(html).toContain('--marketplace-sidebar-tail:5rem')
         expect(html).toContain(
             'marketplace-sidebar-mask marketplace-sidebar-trim',
         )
@@ -273,13 +296,13 @@ it.each([false, true])(
         expect(html).toContain('href="/user/dashboard"')
         expect(html).toContain('aria-[current=page]:before:bg-primary')
         expect(html).toContain('alt="Kevin"')
-        expect(html.includes('aria-label="nav.home"')).toBe(isCollapsed)
-        expect(html.includes('userSettings.settingsLabel')).toBe(!isCollapsed)
-        expect(html.includes('disabled=""')).toBe(isCollapsed)
+        expect(html).toContain('userSettings.settingsLabel')
+        expect(html).toContain('common.loggingOut')
+        expect(html).toContain('disabled=""')
     },
 )
 
-it('keeps navigation groups accessible in both sidebar modes', () => {
+it('toggles visible navigation groups independently of desktop visibility', () => {
     const item: AuthenticatedNavItem = {
         labelKey: 'nav.group',
         icon: Home,
@@ -287,7 +310,6 @@ it('keeps navigation groups accessible in both sidebar modes', () => {
     }
     const props = {
         item,
-        isCollapsed: false,
         activeGroupKey: item.labelKey,
         openGroups: {},
         onToggleGroup: action,
@@ -304,16 +326,6 @@ it('keeps navigation groups accessible in both sidebar modes', () => {
     const tree = NavigationItem(props)
     callbacks(tree, 'onClick')[0]?.()
     expect(action).toHaveBeenCalledWith('nav.group')
-    vi.clearAllMocks()
-    const compactProps = { ...props, isCollapsed: true }
-    const compact = renderToStaticMarkup(
-        createElement(NavigationItem, compactProps),
-    )
-    expect(compact).toContain('aria-label="nav.group"')
-    expect(compact).toContain('aria-expanded="false"')
-    expect(compact).not.toContain('nav.home')
-    callbacks(NavigationItem(compactProps), 'onClick')[0]?.()
-    expect(action).toHaveBeenCalledWith('nav.group')
     expect(
         renderToStaticMarkup(
             createElement(NavigationItem, {
@@ -326,6 +338,23 @@ it('keeps navigation groups accessible in both sidebar modes', () => {
         NavigationItem({ ...props, item: { labelKey: 'hidden', icon: Home } }),
     ).toBeNull()
 })
+
+it.each([
+    ['dark', 'light'],
+    ['light', 'dark'],
+] as const)(
+    'saves the opposite theme from %s and ignores a pending save',
+    (themeMode, nextThemeMode) => {
+        callbacks(ThemeModeSwitch({ themeMode }), 'onClick')[0]?.()
+        expect(saveThemeMode).toHaveBeenCalledWith(nextThemeMode)
+
+        savingTheme = true
+        const pending = ThemeModeSwitch({ themeMode })
+        expect(renderToStaticMarkup(pending)).toContain('aria-disabled="true"')
+        callbacks(pending, 'onClick')[0]?.()
+        expect(saveThemeMode).toHaveBeenCalledTimes(1)
+    },
+)
 
 it('renders a maintenance form and forwards a prevented submit', () => {
     const props = {
@@ -393,7 +422,7 @@ it.each([false, true])(
         expect(html).toContain('marketplace-signed-in')
         expect(html).toContain(
             isMinimized
-                ? '--marketplace-navigation-width:5rem'
+                ? '--marketplace-navigation-width:0px'
                 : '--marketplace-navigation-width:19rem',
         )
         expect(html).not.toContain('background-image:')
@@ -420,7 +449,7 @@ it('offers expanded mobile navigation even when the desktop rail is collapsed', 
     expect(html).toContain('userSettings.settingsLabel')
 })
 
-it('uses the Marketplace wordmark only for expanded default branding', () => {
+it('uses the Marketplace wordmark for default branding', () => {
     const sidebar = {
         title: 'RentnerProxy Marketplace',
         subtitle: 'Overview',
@@ -436,8 +465,4 @@ it('uses the Marketplace wordmark only for expanded default branding', () => {
     )
     expect(expanded).toContain('src="/brand/marketplace-logo-640.webp"')
     expect(expanded).toContain('aria-label="RentnerProxy Marketplace"')
-    const compact = renderToStaticMarkup(
-        createElement(Sidebar, { ...sidebar, isCollapsed: true }),
-    )
-    expect(compact).toContain('src="/rentnerproxy-logo.png"')
 })

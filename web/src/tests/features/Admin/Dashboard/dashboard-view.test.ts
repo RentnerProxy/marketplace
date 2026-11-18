@@ -43,11 +43,31 @@ it('renders a status card for every service with the received service health', (
     for (const status of ['running', 'down', 'connecting', 'error'])
         expect(html).toContain(`admin.dashboard.status.${status}`)
     expect(html.match(/aria-live="polite"/g)).toHaveLength(6)
-    expect(html.match(/id="dashboard-group-[^"]+"/g)).toHaveLength(3)
+    expect(html.match(/id="dashboard-group-[^"]+" role="group"/g)).toHaveLength(
+        3,
+    )
     expect(html.match(/id="dashboard-service-console"/g)).toHaveLength(1)
     expect(html).toContain('admin.dashboard.console.noSelection')
-    for (const group of ['application', 'processing', 'infrastructure'])
-        expect(html).toContain(`dashboard-group-${group}`)
+    const groups = {
+        application: ['webserver', 'websocket'],
+        processing: ['worker', 'core'],
+        infrastructure: ['postgresql', 'valkey'],
+    }
+    for (const [group, services] of Object.entries(groups)) {
+        const groupId = `dashboard-group-${group}`
+        const markupFromGroup = html.slice(html.indexOf(`id="${groupId}"`))
+        const groupMarkup = markupFromGroup.slice(
+            0,
+            markupFromGroup.indexOf('</div></div>'),
+        )
+        expect(groupMarkup).toContain(`aria-labelledby="${groupId}-heading"`)
+        for (const service of services) {
+            expect(groupMarkup).toContain(`service-console-toggle-${service}`)
+        }
+        expect(groupMarkup.match(/id="service-console-toggle-/g)).toHaveLength(
+            2,
+        )
+    }
 })
 
 it('replaces all stale status cards with unavailable indicators when the refresh fails', () => {

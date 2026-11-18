@@ -43,14 +43,13 @@ describe('useAuthenticatedShellUiStore', function () {
         updatedStore.handler.toggleGroup('navigation.admin')
 
         expect(useAuthenticatedShellUiStore().state).toEqual({
-            isCollapsed: false,
+            isCollapsed: true,
             isMaintenanceBannerMinimized: false,
             isUserSettingsOpen: false,
             openGroups: { 'navigation.admin': true },
         })
 
-        updatedStore.handler.toggleCollapse()
-        updatedStore.handler.toggleGroup('navigation.admin', false)
+        updatedStore.handler.toggleGroup('navigation.admin')
         expect(useAuthenticatedShellUiStore().state).toMatchObject({
             isCollapsed: true,
             openGroups: { 'navigation.admin': false },

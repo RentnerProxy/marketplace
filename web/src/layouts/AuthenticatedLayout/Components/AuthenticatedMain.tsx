@@ -8,7 +8,7 @@ export default function AuthenticatedMain({
     children,
 }: AuthenticatedMainProps) {
     return (
-        <main className="mx-auto flex w-full min-w-0 max-w-360 flex-1 flex-col p-[clamp(1.25rem,4vw,3.5rem)]">
+        <main className="flex w-full min-w-0 flex-1 flex-col px-4 py-[clamp(1.25rem,4vw,3.5rem)] sm:px-6 2xl:px-8">
             {children}
             <header className="marketplace-content-header mb-8">
                 {eyebrow && (

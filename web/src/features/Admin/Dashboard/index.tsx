@@ -28,7 +28,7 @@ export default function AdminDashboard() {
                         {t('admin.dashboard.console.chooseService')}
                     </p>
                 </div>
-                <div className="grid gap-3 @sm/dashboard:grid-cols-2 @2xl/dashboard:grid-cols-3 @6xl/dashboard:grid-cols-6">
+                <div className="grid gap-4 @2xl/dashboard:grid-cols-3">
                     {state.groups.map((group) => (
                         <ServiceGroup
                             key={group.id}

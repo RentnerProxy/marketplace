@@ -32,7 +32,7 @@ export default function AuthenticatedShell() {
         <div
             className={`marketplace-signed-in app-theme-${state.themeMode} min-h-dvh bg-background-dark text-foreground ${
                 state.isCollapsed
-                    ? 'lg:[--marketplace-navigation-width:5rem]'
+                    ? 'lg:[--marketplace-navigation-width:0px]'
                     : 'lg:[--marketplace-navigation-width:19rem]'
             }`}
             style={state.shellStyle}
@@ -51,6 +51,7 @@ export default function AuthenticatedShell() {
                 <AuthenticatedTopbar
                     isCollapsed={state.isCollapsed}
                     isMobileNavigationOpen={mobileNavigation.state.isOpen}
+                    themeMode={state.themeMode}
                     showMaintenanceCountdown={
                         state.showMaintenanceBanner &&
                         state.isMaintenanceBannerMinimized
