@@ -91,7 +91,8 @@
             "buildTimedOut": "Candidate validation reached its time limit.",
             "invalidEvidence": "The sealed evidence is incomplete or differs from the submission.",
             "expiredEvidence": "The package or evidence expired or was removed.",
-            "ownershipChanged": "The ownership proof, commit, or namespace could not be verified."
+            "ownershipChanged": "The ownership proof, commit, or namespace could not be verified.",
+            "approvalRevoked": "The reviewer no longer has permission to approve this candidate."
         },
         "feedback": {
             "claim": "The ownership proof is ready.",

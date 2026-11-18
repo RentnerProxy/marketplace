@@ -86,9 +86,10 @@ test('CI preserves language, coverage and native contract checks without prepare
         'run test',
         'run build',
         'cargo fmt',
-        'cargo clippy --locked --all-targets --all-features',
-        '--fail-under-lines 90 --fail-under-functions 90',
-        'cargo build --locked --release --bins',
+        'cargo clippy --locked --workspace --all-targets --all-features',
+        'cargo llvm-cov --locked --workspace --all-targets --all-features --fail-under-lines 90 --fail-under-functions 90',
+        'cargo build --locked --release --workspace --bins',
+        'run test:catalog-integration',
     ])
         expect(commands).toContain(command)
     expect(commands).not.toMatch(
@@ -100,6 +101,24 @@ test('CI preserves language, coverage and native contract checks without prepare
     expect(integration).toContain('--build-context integration-web=./web')
     expect(integration).toContain('docker run --rm --network none')
     expect(integration).toContain('trap ')
+})
+
+test('catalog publication builds the locked native signer before issuing credentials', async () => {
+    const publication = await workflow('app-catalog-publish')
+    const steps = publication.jobs.publish!.steps
+    const build = steps.findIndex((step) =>
+        step.run?.includes(
+            'cargo build --locked --release -p marketplace-app-catalog',
+        ),
+    )
+    const token = steps.findIndex((step) => step.id === 'distribution')
+    const publish = steps.findIndex((step) =>
+        step.run?.endsWith('app-catalog/run.ts sync'),
+    )
+    expect(build).toBeGreaterThanOrEqual(0)
+    expect(token).toBeGreaterThan(build)
+    expect(publish).toBeGreaterThan(token)
+    expect(steps[build]?.env).toBeUndefined()
 })
 
 test.each(['image', 'release'])(

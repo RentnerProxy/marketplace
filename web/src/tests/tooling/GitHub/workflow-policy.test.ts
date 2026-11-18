@@ -26,6 +26,14 @@ test('all active GitHub workflows satisfy their security policy', async () => {
     expect(count).toBeGreaterThan(0)
 })
 
+test('GitHub workflow helpers use the project languages', () => {
+    const pythonSources = new Glob('.github/**/*.{py,pyw}').scanSync({
+        cwd: '.',
+        dot: true,
+    })
+    expect([...pythonSources]).toEqual([])
+})
+
 test.each([
     [
         'missing default permissions',

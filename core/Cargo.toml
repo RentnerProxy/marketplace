@@ -6,7 +6,7 @@ rust-version = "1.99"
 publish = false
 
 [workspace]
-members = ["app-contracts"]
+members = ["app-catalog", "app-contracts"]
 default-members = [".", "app-contracts"]
 resolver = "3"
 

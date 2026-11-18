@@ -12,7 +12,11 @@ linker = "isolated"
 globalStore = false
 [test]
 root = "web/src/tests"
-pathIgnorePatterns = ["**/*.db.test.ts", "**/*.core.test.ts"]
+pathIgnorePatterns = [
+    "**/*.db.test.ts",
+    "**/*.core.test.ts",
+    "**/app-catalog.integration.test.ts",
+]
 # Aggregate thresholds are enforced by web/src/scripts/test-coverage.ts.
 coverageReporter = ["text", "lcov"]
 coverageDir = ".tools/coverage"

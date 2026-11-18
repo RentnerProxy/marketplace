@@ -91,7 +91,8 @@
             "buildTimedOut": "Die Build-Validierung hat das Zeitlimit erreicht.",
             "invalidEvidence": "Der versiegelte Prüfbeleg fehlt oder stimmt nicht mit der Einreichung überein.",
             "expiredEvidence": "Paket oder Prüfbeleg ist abgelaufen oder wurde entfernt.",
-            "ownershipChanged": "Der Besitznachweis, Commit oder Namensraum konnte nicht bestätigt werden."
+            "ownershipChanged": "Der Besitznachweis, Commit oder Namensraum konnte nicht bestätigt werden.",
+            "approvalRevoked": "Der Prüfer hat keine Berechtigung mehr, diesen Kandidaten freizugeben."
         },
         "feedback": {
             "claim": "Der Besitznachweis ist bereit.",

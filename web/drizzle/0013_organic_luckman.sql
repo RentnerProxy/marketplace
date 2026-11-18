@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace"."marketplace_submissions" ADD COLUMN "publication_retry_at" timestamp with time zone;

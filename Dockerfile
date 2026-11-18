@@ -6,6 +6,8 @@ WORKDIR /app/core
 RUN apk add --no-cache musl-dev
 COPY core/Cargo.toml core/Cargo.lock core/rust-toolchain.toml ./
 COPY core/src ./src
+COPY core/app-catalog/Cargo.toml ./app-catalog/
+COPY core/app-catalog/src ./app-catalog/src
 COPY core/app-contracts/Cargo.toml core/app-contracts/build.rs ./app-contracts/
 COPY core/app-contracts/src ./app-contracts/src
 COPY contracts/v1/contracts.schema.json /app/contracts/v1/contracts.schema.json
