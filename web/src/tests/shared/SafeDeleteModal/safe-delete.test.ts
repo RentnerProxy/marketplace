@@ -70,7 +70,9 @@ it.each([false, true])(
         )
         expect(html).toContain('role="dialog"')
         expect(html).toContain('aria-modal="true"')
-        expect(html).toContain('aria-describedby="safe-delete-modal-question"')
+        const describedBy = /aria-describedby="([^"]+)"/.exec(html)?.[1]
+        expect(describedBy).toBeDefined()
+        expect(html).toContain(`id="${describedBy}"`)
         expect(html).toContain('Delete synthetic record?')
         expect(html).toContain(
             isConfirming ? 'safeDelete.confirming' : 'common.delete',

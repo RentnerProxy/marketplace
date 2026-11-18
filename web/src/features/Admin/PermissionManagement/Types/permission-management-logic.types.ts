@@ -6,17 +6,6 @@ import type {
 } from './permission-management-domain.types.ts'
 import type { PermissionPresetFormValues } from './permission-management-form.types.ts'
 
-export type DefaultPermissionsState = {
-    permissionKeys: Array<string>
-    isDirty: boolean
-    isSaving: boolean
-}
-
-export type DefaultPermissionsHandler = {
-    handleTogglePermission: (permissionKey: string) => void
-    handleSave: () => void
-}
-
 export type PermissionPresetsState = {
     formValues: PermissionPresetFormValues
     presets: Array<PermissionPreset>
@@ -99,8 +88,4 @@ export type UsePermissionPresetsParams = {
 export type UseManagedUserPermissionsParams = {
     enabled: boolean
     presets: Array<PermissionPreset>
-}
-
-export type UseDefaultPermissionsParams = {
-    defaultPermissionKeys: Array<string>
 }

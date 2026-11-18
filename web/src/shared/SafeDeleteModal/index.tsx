@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { useId } from 'react'
 import { AlertTriangle, Trash2, X } from 'lucide-react'
 
 import useTranslationStore from '@/language/useTranslationStore.ts'
@@ -12,6 +13,8 @@ export default function SafeDeleteModal({
     title,
     description,
     confirmLabel,
+    confirmIcon: ConfirmIcon = Trash2,
+    confirmingLabel,
     cancelLabel,
     isConfirming = false,
     onClose,
@@ -19,6 +22,8 @@ export default function SafeDeleteModal({
 }: SafeDeleteModalProps) {
     const { t } = useTranslationStore()
     const { state } = useSafeDeleteModalLogic({ isOpen })
+    const titleId = useId()
+    const questionId = useId()
 
     const resolvedTitle = title ?? t('safeDelete.title')
     const resolvedDescription = description ?? t('safeDelete.description')
@@ -34,8 +39,8 @@ export default function SafeDeleteModal({
             <div
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby="safe-delete-modal-title"
-                aria-describedby="safe-delete-modal-question"
+                aria-labelledby={titleId}
+                aria-describedby={questionId}
                 className="w-full max-w-md overflow-hidden rounded-lg border border-border-dark bg-surface-dark shadow-xl shadow-black/30"
             >
                 <div className="flex items-start justify-between gap-4 border-b border-border-dark px-6 py-4">
@@ -48,7 +53,7 @@ export default function SafeDeleteModal({
 
                         <div>
                             <h2
-                                id="safe-delete-modal-title"
+                                id={titleId}
                                 className="text-lg font-bold text-white"
                             >
                                 {resolvedTitle}
@@ -72,10 +77,7 @@ export default function SafeDeleteModal({
                 </div>
 
                 <div className="space-y-5 p-6">
-                    <p
-                        id="safe-delete-modal-question"
-                        className="text-sm leading-6 text-white"
-                    >
+                    <p id={questionId} className="text-sm leading-6 text-white">
                         {question}
                     </p>
 
@@ -95,10 +97,11 @@ export default function SafeDeleteModal({
                             disabled={isConfirming}
                             className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <ConfirmIcon className="h-4 w-4" />
 
                             {isConfirming
-                                ? t('safeDelete.confirming')
+                                ? (confirmingLabel ??
+                                  t('safeDelete.confirming'))
                                 : resolvedConfirmLabel}
                         </button>
                     </div>

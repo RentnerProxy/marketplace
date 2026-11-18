@@ -116,7 +116,7 @@ const auditLogCreatedPayloadSchema = z.object({
 })
 
 const permissionManagementUpdatedPayloadSchema = z.object({
-    scope: z.enum(['defaults', 'presets']),
+    scope: z.enum(['defaults', 'presets', 'staff-invitations']),
     updatedAt: eventTimestampSchema,
 })
 

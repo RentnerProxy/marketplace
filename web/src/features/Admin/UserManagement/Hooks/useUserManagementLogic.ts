@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import { authenticatedSessionQueryOptions } from '@/lib/Queries/appQueries.ts'
-import { getAccountManagementPermission } from '@/lib/UserManagement/accountManagementPermission.ts'
+import {
+    canConvertAccountType,
+    getAccountManagementPermission,
+} from '@/lib/UserManagement/accountManagementPermission.ts'
 import { hasPermission } from '@/lib/Permissions/permissions.ts'
 import { getPermissionsHandler } from '../middleware.ts'
 import type { UserManagementLogicReturn } from '../Types/user-management-logic.types.ts'
@@ -33,12 +36,16 @@ export default function useUserManagementLogic(
         ? (permissionsQuery.data ?? [])
         : []
     const canManageSuperUsers = accountType === 'staff' && canManageAccounts
+    const canConvertAccounts =
+        canManageAccounts &&
+        canConvertAccountType(sessionData?.permissions, accountType)
 
     useUserManagementRealtime()
 
     const accountActions = useUserAccountActions(
         accountType,
         canManageSuperUsers,
+        canConvertAccounts,
     )
     const userEditor = useUserEditor(accountType, canManageSuperUsers)
 
@@ -46,10 +53,13 @@ export default function useUserManagementLogic(
         state: {
             availablePermissions,
             canManageSuperUsers,
+            canConvertAccounts,
             editForm: userEditor.state.editForm,
             isEditModalOpen: userEditor.state.isEditModalOpen,
             isUpdatingUser: userEditor.state.isUpdatingUser,
             deleteTargetUser: accountActions.state.deleteTargetUser,
+            conversionTarget: accountActions.state.conversionTarget,
+            isConvertingAccount: accountActions.state.isConvertingAccount,
             isDeletingUser: accountActions.state.isDeletingUser,
             isTogglingUserActive: accountActions.state.isTogglingUserActive,
             isResendingPasswordReset:
@@ -67,6 +77,11 @@ export default function useUserManagementLogic(
             handleToggleUserActive:
                 accountActions.handler.handleToggleUserActive,
             onPasswordReset: accountActions.handler.onPasswordReset,
+            handleAskConvertAccount:
+                accountActions.handler.handleAskConvertAccount,
+            handleCloseConversion: accountActions.handler.handleCloseConversion,
+            handleConfirmConversion:
+                accountActions.handler.handleConfirmConversion,
         },
     }
 }

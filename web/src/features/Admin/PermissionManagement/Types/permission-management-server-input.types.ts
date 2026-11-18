@@ -1,7 +1,3 @@
-export type ReplaceDefaultPermissionsInput = {
-    permissionKeys: Array<string>
-}
-
 export type CreatePermissionPresetInput = {
     name: string
     description: string

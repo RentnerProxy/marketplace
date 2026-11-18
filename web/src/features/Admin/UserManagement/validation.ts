@@ -23,9 +23,12 @@ export const updateUserProfileInputSchema = accountManagementScopeSchema.extend(
     },
 )
 
-export const deleteUserInputSchema = accountManagementScopeSchema.extend({
+const scopedAccountIdSchema = accountManagementScopeSchema.extend({
     id: userIdSchema,
 })
+
+export const deleteUserInputSchema = scopedAccountIdSchema
+export const convertAccountTypeInputSchema = scopedAccountIdSchema
 
 export const setUserActiveInputSchema = accountManagementScopeSchema.extend({
     id: userIdSchema,

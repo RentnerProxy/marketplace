@@ -9,11 +9,10 @@ import {
 } from '../UserManagement/admin-audit.test.helpers.ts'
 
 installAdminAuditTestMocks()
-const {
-    getStaffInvitationsService,
-    inviteStaffService,
-    revokeStaffInvitationService,
-} = await import('@/server/Admin/StaffManagement/invitations.service.ts')
+const { getStaffInvitationsService, inviteStaffService } =
+    await import('@/server/Admin/StaffManagement/invitations.service.ts')
+const { manageStaffInvitationService } =
+    await import('@/server/Admin/StaffManagement/manageInvitation.service.ts')
 const { acceptStaffInvitationService } =
     await import('@/server/Auth/StaffInvitation/accept.service.ts')
 
@@ -28,6 +27,10 @@ async function sendInvitation() {
     expect(await inviteStaffService(input, ADMIN_ACTOR_ID)).toEqual({
         success: true,
     })
+    return lastInvitationToken()
+}
+
+function lastInvitationToken() {
     const payload = adminAuditExternal.enqueueInvitation.mock.lastCall?.[0]
     if (!payload) throw new Error('Expected a queued invitation')
     const token = new URLSearchParams(
@@ -53,6 +56,8 @@ describe('staff invitation lifecycle', () => {
             username: input.username,
             email: input.email,
             expiresAt: expect.any(String),
+            status: 'active',
+            permissionKeys: input.permissionKeys,
         })
         expect(adminAuditDb.state.rows.staffInvitations[0].tokenHash).toBe(
             await createTokenHash(token),
@@ -142,7 +147,10 @@ describe('staff invitation lifecycle', () => {
         expect(adminAuditDb.state.rows.staffInvitations).toEqual([])
         const token = await sendInvitation()
         const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
-        await revokeStaffInvitationService(invitation.id, ADMIN_ACTOR_ID)
+        await manageStaffInvitationService(
+            { id: invitation.id, action: 'revoke' },
+            ADMIN_ACTOR_ID,
+        )
         expect(await acceptStaffInvitationService({ token, password })).toEqual(
             { success: false },
         )
@@ -154,5 +162,97 @@ describe('staff invitation lifecycle', () => {
             'admin.staff.invitation_created',
             'admin.staff.invitation_revoked',
         ])
+    })
+
+    it('pauses acceptance, then applies edited permissions when the invitation is enabled again', async () => {
+        const token = await sendInvitation()
+        const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const id = invitation.id
+        await expect(
+            manageStaffInvitationService(
+                { id, action: 'setActive', isActive: false },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'disabled' }])
+        await expect(
+            acceptStaffInvitationService({ token, password }),
+        ).resolves.toEqual({ success: false })
+
+        const permissionKeys = [PERMISSIONS.USER_DASHBOARD]
+        await expect(
+            manageStaffInvitationService(
+                {
+                    id,
+                    action: 'permissions',
+                    permissionKeys: [PERMISSIONS.ADMIN_SUPER_USER],
+                },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: false, error: 'invalidPermissions' })
+        await expect(
+            manageStaffInvitationService(
+                { id, action: 'permissions', permissionKeys },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'disabled', permissionKeys }])
+        await expect(
+            manageStaffInvitationService(
+                { id, action: 'setActive', isActive: true },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            acceptStaffInvitationService({ token, password }),
+        ).resolves.toEqual({ success: true })
+        const user = adminAuditDb.state.rows.users.find(
+            ({ email }) => email === input.email,
+        )
+        expect(
+            adminAuditDb.state.rows.staffUserPermissions.filter(
+                ({ userId }) => userId === user?.id,
+            ),
+        ).toMatchObject([
+            { permissionId: 'permission:' + PERMISSIONS.USER_DASHBOARD },
+        ])
+    })
+
+    it('leaves the previous link intact on a queue failure and only accepts the latest link after a successful resend', async () => {
+        const oldToken = await sendInvitation()
+        const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const data = { id: invitation.id, action: 'resend' as const }
+        adminAuditExternal.enqueueInvitation.mockRejectedValueOnce(
+            new Error('isolated queue failure'),
+        )
+        await expect(
+            manageStaffInvitationService(data, ADMIN_ACTOR_ID),
+        ).resolves.toEqual({ success: false, error: 'deliveryFailed' })
+        expect(adminAuditDb.state.rows.staffInvitations[0].tokenHash).toBe(
+            await createTokenHash(oldToken),
+        )
+        expect(
+            adminAuditDb.state.rows.auditLogs.map(({ action }) => action),
+        ).toEqual(['admin.staff.invitation_created'])
+
+        adminAuditDb.state.rows.staffInvitations[0].expiresAt = new Date(0)
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'expired' }])
+        await expect(
+            manageStaffInvitationService(data, ADMIN_ACTOR_ID),
+        ).resolves.toEqual({ success: true })
+        const newToken = lastInvitationToken()
+        expect(newToken).not.toBe(oldToken)
+        await expect(
+            acceptStaffInvitationService({ token: oldToken, password }),
+        ).resolves.toEqual({ success: false })
+        await expect(
+            acceptStaffInvitationService({ token: newToken, password }),
+        ).resolves.toEqual({ success: true })
     })
 })

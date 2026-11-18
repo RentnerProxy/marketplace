@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import type {
     UserManagementPermission,
@@ -18,27 +17,21 @@ export type UsersTableProps = {
     isDeletingUser: boolean
     isTogglingUserActive: boolean
     isResendingPasswordReset: boolean
+    isConvertingAccount: boolean
     canManageSuperUsers: boolean
+    canConvertAccounts: boolean
     onEditUser: (user: UserManagementUser) => void
     onDeleteUser: (user: UserManagementUser) => void
     onToggleUserActive: (user: UserManagementUser) => void
     onPasswordReset: (user: UserManagementUser) => void
+    onConvertAccount: (user: UserManagementUser) => void
 }
 
 export type UserTableActionsProps = Omit<
     UsersTableProps,
-    'availablePermissions' | 'accountType'
+    'availablePermissions'
 > & {
     user: UserManagementUser
-}
-
-export type UserTableActionButtonProps = {
-    ariaLabel: string
-    children: ReactNode
-    className: string
-    disabled: boolean
-    onClick: () => void
-    tooltip: string
 }
 
 export type UserTableActionsLogicReturn = {
@@ -49,6 +42,8 @@ export type UserTableActionsLogicReturn = {
         isToggleStatusDisabled: boolean
         isPasswordResetDisabled: boolean
         isDeleteDisabled: boolean
+        showConvertAccount: boolean
+        convertAccountLabel: string
         editTooltip: string
         toggleStatusTooltip: string
         passwordResetTooltip: string
@@ -59,5 +54,6 @@ export type UserTableActionsLogicReturn = {
         handleToggleUserActive: () => void
         handlePasswordReset: () => void
         handleDeleteUser: () => void
+        handleConvertAccount: () => void
     }
 }

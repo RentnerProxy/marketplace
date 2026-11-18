@@ -58,8 +58,8 @@
         "auditLogs": "Dzienniki audytu",
         "publicAccounts": "Konta publiczne",
         "accounts": "Konta",
-        "registrationDefaults": "Uprawnienia rejestracji",
         "staff": "Zespół",
+        "staffInvitations": "Zaproszenia",
         "staffAccounts": "Konta zespołu"
     },
     "auth": {

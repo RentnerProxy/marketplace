@@ -8,7 +8,6 @@ import { PERMISSIONS } from '@/config/permissions.config.ts'
 
 const overview = vi.fn()
 const users = vi.fn()
-const defaults = vi.fn()
 const create = vi.fn()
 const update = vi.fn()
 const remove = vi.fn()
@@ -19,10 +18,6 @@ vi.mock('@/server/Admin/PermissionManagement/overview.service.ts', () => ({
 }))
 vi.mock('@/server/Admin/PermissionManagement/users.service.ts', () => ({
     getPermissionManagementUsersService: users,
-}))
-vi.mock('@/server/Admin/PermissionManagement/defaults.service.ts', () => ({
-    getPublicAccountDefaultsService: vi.fn(),
-    replaceDefaultPermissionsService: defaults,
 }))
 vi.mock('@/server/Admin/PermissionManagement/presets.service.ts', () => ({
     createPermissionPresetService: create,
@@ -40,11 +35,6 @@ const id = '01941f29-7c00-7000-8000-000000000001'
 const cases = [
     ['getPermissionManagementOverviewHandler', overview, undefined],
     ['getPermissionManagementUsersHandler', users, undefined],
-    [
-        'replaceDefaultPermissionsHandler',
-        defaults,
-        { permissionKeys: [PERMISSIONS.USER_DASHBOARD] },
-    ],
     [
         'createPermissionPresetHandler',
         create,
@@ -118,7 +108,6 @@ describe('permission management server boundaries', () => {
     )
 
     it.each([
-        'replaceDefaultPermissionsHandler',
         'createPermissionPresetHandler',
         'updatePermissionPresetHandler',
     ] as const)(
@@ -135,7 +124,6 @@ describe('permission management server boundaries', () => {
                 }),
             ).rejects.toThrow()
             expect(authorize).not.toHaveBeenCalled()
-            expect(defaults).not.toHaveBeenCalled()
             expect(create).not.toHaveBeenCalled()
             expect(update).not.toHaveBeenCalled()
         },

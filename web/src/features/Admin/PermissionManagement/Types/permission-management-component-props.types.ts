@@ -1,6 +1,4 @@
 import type {
-    DefaultPermissionsHandler,
-    DefaultPermissionsState,
     ManagedUserPermissionsHandler,
     ManagedUserPermissionsState,
     PermissionPresetsHandler,
@@ -26,13 +24,6 @@ export type PermissionChecklistProps = {
     disabled?: boolean
     presetPermissionKeys?: Array<string>
     onTogglePermission: (permissionKey: string) => void
-}
-
-export type DefaultPermissionsPanelProps = {
-    permissions: Array<PermissionManagementPermission>
-    isLoading: boolean
-    state: DefaultPermissionsState
-    handler: DefaultPermissionsHandler
 }
 
 export type PermissionPresetsPanelProps = {

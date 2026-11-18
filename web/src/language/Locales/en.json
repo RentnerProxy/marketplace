@@ -58,8 +58,8 @@
         "backups": "Backups",
         "publicAccounts": "Public accounts",
         "accounts": "Accounts",
-        "registrationDefaults": "Registration defaults",
         "staff": "Staff",
+        "staffInvitations": "Invitations",
         "staffAccounts": "Staff accounts"
     },
     "auth": {
@@ -642,7 +642,6 @@
             "overviewLoadError": "Permission management could not be loaded.",
             "retry": "Try again",
             "tabs": {
-                "defaults": "Default permissions",
                 "presets": "Presets",
                 "users": "Staff permissions"
             },
@@ -655,6 +654,10 @@
                     "name": "Public accounts",
                     "description": "Can manage publicly registered accounts."
                 },
+                "accountConversion": {
+                    "name": "Change account type",
+                    "description": "Can convert accounts they manage between public and staff."
+                },
                 "systemSettings": {
                     "name": "System settings",
                     "description": "Can manage the logo, company name, and system options."
@@ -665,7 +668,7 @@
                 },
                 "superUser": {
                     "name": "Superuser",
-                    "description": "Can manage user permissions, permission presets, and default permissions."
+                    "description": "Can invite and manage staff accounts and configure staff permissions."
                 },
                 "userDashboard": {
                     "name": "User dashboard",
@@ -684,15 +687,6 @@
                 "loading": "Loading permissions...",
                 "empty": "No permissions available.",
                 "superUser": "Critical permission"
-            },
-            "defaults": {
-                "title": "Default permissions for public accounts",
-                "description": "These permissions are assigned when a public registration completes.",
-                "hint": "If you clear all defaults, newly registered accounts will have no access and cannot sign in.",
-                "save": "Save default permissions",
-                "saved": "Default permissions were saved.",
-                "saveError": "Default permissions could not be saved.",
-                "loadError": "Default permissions could not be loaded."
             },
             "presets": {
                 "createTitle": "Create preset",
@@ -811,7 +805,22 @@
             "toggleStatusAriaLabel": "Activate or deactivate user",
             "passwordResetAriaLabel": "Reset user password",
             "deleteAriaLabel": "Delete user",
-            "closeModalAriaLabel": "Close modal"
+            "closeModalAriaLabel": "Close modal",
+            "conversion": {
+                "title": "Change account type",
+                "toStaff": "Convert to staff",
+                "toPublic": "Convert to public",
+                "staffQuestion": "Are you sure you want to convert {{username}} to a staff account?",
+                "publicQuestion": "Are you sure you want to convert {{username}} to a public account?",
+                "staffDescription": "The staff account will carry over its current public permissions. The user will need to sign in again.",
+                "publicDescription": "Public account defaults will replace the staff permissions. Active sessions will end and invitations from this account will be deactivated.",
+                "converted": "The account type was changed.",
+                "errors": {
+                    "self": "You cannot change your own account type.",
+                    "notFound": "The account was moved or is no longer available.",
+                    "lastSuperUser": "The last active superuser must remain a staff member."
+                }
+            }
         },
         "staff": {
             "title": "Staff accounts",
@@ -823,18 +832,44 @@
             "invitePermissions": "Initial permissions",
             "invite": "Send invitation",
             "inviteSent": "The invitation email was queued.",
-            "pendingTitle": "Pending invitations",
-            "noInvitations": "There are no pending invitations.",
-            "expires": "Expires {{date}}",
-            "revoke": "Revoke",
-            "revokeQuestion": "Revoke the invitation for {{email}}?",
-            "revoked": "The invitation was revoked.",
-            "revokeError": "The invitation could not be revoked.",
-            "loadError": "Invitations or staff permissions could not be loaded.",
+            "permissionsLoadError": "Staff permissions could not be loaded.",
             "inviteErrors": {
-                "identityInUse": "The username or email address is in use or reserved by a pending invitation.",
+                "identityInUse": "The username or email address is already in use.",
+                "invitationExists": "An invitation already uses this username or email address. You can manage it under Invitations.",
                 "invalidPermissions": "Choose at least one permission that grants access to a page.",
-                "deliveryFailed": "The invitation email could not be queued."
+                "deliveryFailed": "The invitation email could not be queued.",
+                "notFound": "The invitation is no longer available.",
+                "expired": "The invitation link has expired. Resend the invitation to issue a new link."
+            },
+            "invitations": {
+                "title": "Staff invitations",
+                "description": "Manage invitation links and initial permissions for new staff members.",
+                "manage": "Manage invitations",
+                "tableTitle": "Pending invitations",
+                "itemLabel": "invitations",
+                "search": "Search invitations …",
+                "loading": "Loading invitations …",
+                "empty": "There are no pending invitations.",
+                "loadError": "Invitations could not be loaded.",
+                "expiresAt": "Expires at",
+                "editPermissions": "Edit permissions",
+                "editTitle": "Initial permissions for {{username}}",
+                "resend": "Resend invitation",
+                "revoke": "Withdraw invitation",
+                "revokeDescription": "The invitation link will expire immediately.",
+                "revokeQuestion": "Withdraw the invitation for {{email}}?",
+                "status": {
+                    "active": "Active",
+                    "disabled": "Deactivated",
+                    "expired": "Expired"
+                },
+                "feedback": {
+                    "permissions": "Initial permissions were saved.",
+                    "resend": "A new link was queued. Previous links are invalid.",
+                    "revoke": "The invitation was withdrawn.",
+                    "activated": "The invitation was activated.",
+                    "deactivated": "The invitation was deactivated."
+                }
             }
         }
     },

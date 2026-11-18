@@ -57,15 +57,17 @@ describe('Sidebar-Navigation', function () {
             '/admin/users',
         ])
         expect(
-            owner
-                .find((item) => item.labelKey === 'nav.publicAccounts')
-                ?.children?.map(({ to }) => to),
-        ).toEqual(['/admin/users', '/admin/user-defaults'])
+            owner.find((item) => item.labelKey === 'nav.publicAccounts')?.to,
+        ).toBe('/admin/users')
         expect(
             owner
                 .find((item) => item.labelKey === 'nav.staff')
                 ?.children?.map(({ to }) => to),
-        ).toEqual(['/admin/staff', '/admin/permissions'])
+        ).toEqual([
+            '/admin/staff',
+            '/admin/staff-invitations',
+            '/admin/permissions',
+        ])
     })
 
     it('filtert Berechtigungen über beliebig tiefe Child-Ebenen', function () {

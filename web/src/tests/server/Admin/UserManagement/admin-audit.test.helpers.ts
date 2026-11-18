@@ -61,6 +61,7 @@ const adminAuditSchema = {
         'email',
         'username',
         'expiresAt',
+        'isActive',
         'invitedByUserId',
         'permissionKeys',
         'tokenHash',
@@ -596,6 +597,7 @@ export function installAdminAuditTestMocks() {
         ne: (...values: unknown[]) => ({ kind: 'ne', values }),
         inArray: (...values: unknown[]) => ({ kind: 'inArray', values }),
         asc: (value: unknown) => value,
+        desc: (value: unknown) => value,
         count: () => 'count',
         sql: (strings: TemplateStringsArray, ...values: unknown[]) => {
             if (strings.join('') === 'lower() = ')

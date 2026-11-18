@@ -36,16 +36,19 @@ export async function acceptStaffInvitationService(input: {
     const result = await db.transaction(async (transaction) => {
         await lockAccountUniquenessInTransactionService(transaction)
         const rows = await transaction
-            .delete(staffInvitations)
+            .select()
+            .from(staffInvitations)
             .where(
                 and(
                     eq(staffInvitations.tokenHash, tokenHash),
+                    eq(staffInvitations.isActive, true),
                     gt(staffInvitations.expiresAt, new Date()),
                 ),
             )
-            .returning()
+            .limit(1)
+            .for('update')
         const invitation = rows.at(0)
-        if (!invitation) return null
+        if (!invitation?.invitedByUserId) return null
 
         await lockAuditUsersInTransactionService(transaction, [
             invitation.invitedByUserId,
@@ -80,6 +83,10 @@ export async function acceptStaffInvitationService(input: {
             getDefaultRouteForPermissions(selection.permissionKeys) === '/login'
         )
             return null
+
+        await transaction
+            .delete(staffInvitations)
+            .where(eq(staffInvitations.id, invitation.id))
 
         const userId = Bun.randomUUIDv7()
         await transaction.insert(users).values({

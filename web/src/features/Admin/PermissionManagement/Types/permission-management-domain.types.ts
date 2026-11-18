@@ -16,11 +16,6 @@ export type PermissionPreset = {
     updatedAt: string
 }
 
-export type PublicAccountDefaults = {
-    permissions: Array<PermissionManagementPermission>
-    defaultPermissionKeys: Array<string>
-}
-
 export type PermissionManagementOverview = {
     permissions: Array<PermissionManagementPermission>
     presets: Array<PermissionPreset>

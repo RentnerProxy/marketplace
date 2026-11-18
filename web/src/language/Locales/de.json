@@ -58,8 +58,8 @@
         "backups": "Backups",
         "publicAccounts": "Öffentliche Konten",
         "accounts": "Konten",
-        "registrationDefaults": "Standardrechte",
         "staff": "Team",
+        "staffInvitations": "Einladungen",
         "staffAccounts": "Teamkonten"
     },
     "auth": {
@@ -642,7 +642,6 @@
             "overviewLoadError": "Die Rechteverwaltung konnte nicht geladen werden.",
             "retry": "Erneut versuchen",
             "tabs": {
-                "defaults": "Standardrechte",
                 "presets": "Presets",
                 "users": "Teamrechte"
             },
@@ -655,6 +654,10 @@
                     "name": "Öffentliche Konten",
                     "description": "Darf öffentlich registrierte Konten verwalten."
                 },
+                "accountConversion": {
+                    "name": "Kontotyp ändern",
+                    "description": "Darf verwaltbare Konten zwischen öffentlich und Team umwandeln."
+                },
                 "systemSettings": {
                     "name": "Systemeinstellungen",
                     "description": "Darf Logo, Firmenname und Systemoptionen verwalten."
@@ -665,7 +668,7 @@
                 },
                 "superUser": {
                     "name": "Superuser",
-                    "description": "Darf Benutzerrechte, Rechte-Presets und Standardrechte verwalten."
+                    "description": "Darf Teamkonten einladen und verwalten sowie Teamrechte konfigurieren."
                 },
                 "userDashboard": {
                     "name": "User Dashboard",
@@ -684,15 +687,6 @@
                 "loading": "Rechte werden geladen...",
                 "empty": "Keine Rechte verfügbar.",
                 "superUser": "Kritisches Recht"
-            },
-            "defaults": {
-                "title": "Standardrechte für öffentliche Konten",
-                "description": "Diese Rechte werden bei Abschluss einer öffentlichen Registrierung vergeben.",
-                "hint": "Wenn du alle Standardrechte entfernst, können sich neu registrierte Konten ohne Zugriffsrecht nicht anmelden.",
-                "save": "Standardrechte speichern",
-                "saved": "Standardrechte wurden gespeichert.",
-                "saveError": "Standardrechte konnten nicht gespeichert werden.",
-                "loadError": "Die Standardrechte konnten nicht geladen werden."
             },
             "presets": {
                 "createTitle": "Preset anlegen",
@@ -811,7 +805,22 @@
             "toggleStatusAriaLabel": "Benutzer aktivieren oder deaktivieren",
             "passwordResetAriaLabel": "Passwort für Benutzer zurücksetzen",
             "deleteAriaLabel": "Benutzer löschen",
-            "closeModalAriaLabel": "Modal schließen"
+            "closeModalAriaLabel": "Modal schließen",
+            "conversion": {
+                "title": "Kontotyp ändern",
+                "toStaff": "Zum Teamkonto machen",
+                "toPublic": "Zum öffentlichen Konto machen",
+                "staffQuestion": "Bist du sicher, dass du {{username}} zum Teamkonto machen willst?",
+                "publicQuestion": "Bist du sicher, dass du {{username}} zum öffentlichen Konto machen willst?",
+                "staffDescription": "Das Teamkonto übernimmt die bisherigen öffentlichen Rechte. Die Person muss sich erneut anmelden.",
+                "publicDescription": "Die Teamrechte werden durch öffentliche Standardrechte ersetzt. Laufende Sitzungen und offene Einladungen dieses Kontos werden deaktiviert.",
+                "converted": "Der Kontotyp wurde geändert.",
+                "errors": {
+                    "self": "Du kannst deinen eigenen Kontotyp nicht ändern.",
+                    "notFound": "Das Konto wurde verschoben oder ist nicht mehr verfügbar.",
+                    "lastSuperUser": "Der letzte aktive Superuser muss ein Teamkonto bleiben."
+                }
+            }
         },
         "staff": {
             "title": "Teamkonten",
@@ -823,18 +832,44 @@
             "invitePermissions": "Startrechte",
             "invite": "Einladung senden",
             "inviteSent": "Die Einladungs-E-Mail wurde zum Versand eingeplant.",
-            "pendingTitle": "Offene Einladungen",
-            "noInvitations": "Es gibt keine offenen Einladungen.",
-            "expires": "Gültig bis {{date}}",
-            "revoke": "Widerrufen",
-            "revokeQuestion": "Einladung für {{email}} widerrufen?",
-            "revoked": "Die Einladung wurde widerrufen.",
-            "revokeError": "Die Einladung konnte nicht widerrufen werden.",
-            "loadError": "Die Einladungen oder Teamrechte konnten nicht geladen werden.",
+            "permissionsLoadError": "Die Teamrechte konnten nicht geladen werden.",
             "inviteErrors": {
-                "identityInUse": "Der Benutzername oder die E-Mail-Adresse ist bereits vergeben oder für eine offene Einladung reserviert.",
+                "identityInUse": "Der Benutzername oder die E-Mail-Adresse ist bereits vergeben.",
+                "invitationExists": "Für diesen Benutzernamen oder diese E-Mail-Adresse gibt es schon eine Einladung. Du kannst sie unter Einladungen verwalten.",
                 "invalidPermissions": "Wähle mindestens ein Recht, das den Zugriff auf eine Seite erlaubt.",
-                "deliveryFailed": "Die Einladung konnte nicht zum Versand eingeplant werden."
+                "deliveryFailed": "Die Einladung konnte nicht zum Versand eingeplant werden.",
+                "notFound": "Die Einladung ist nicht mehr verfügbar.",
+                "expired": "Der Einladungslink ist abgelaufen. Sende die Einladung erneut."
+            },
+            "invitations": {
+                "title": "Teameinladungen",
+                "description": "Verwalte die Einladungslinks und Startrechte für neue Teammitglieder.",
+                "manage": "Einladungen verwalten",
+                "tableTitle": "Offene Einladungen",
+                "itemLabel": "Einladungen",
+                "search": "Einladungen suchen …",
+                "loading": "Einladungen werden geladen …",
+                "empty": "Es gibt keine offenen Einladungen.",
+                "loadError": "Die Einladungen konnten nicht geladen werden.",
+                "expiresAt": "Gültig bis",
+                "editPermissions": "Rechte bearbeiten",
+                "editTitle": "Startrechte für {{username}}",
+                "resend": "Einladung erneut senden",
+                "revoke": "Einladung zurückziehen",
+                "revokeDescription": "Der Einladungslink wird sofort ungültig.",
+                "revokeQuestion": "Einladung für {{email}} zurückziehen?",
+                "status": {
+                    "active": "Aktiv",
+                    "disabled": "Deaktiviert",
+                    "expired": "Abgelaufen"
+                },
+                "feedback": {
+                    "permissions": "Die Startrechte wurden gespeichert.",
+                    "resend": "Ein neuer Link wurde zum Versand eingeplant. Frühere Links sind ungültig.",
+                    "revoke": "Die Einladung wurde zurückgezogen.",
+                    "activated": "Die Einladung wurde aktiviert.",
+                    "deactivated": "Die Einladung wurde deaktiviert."
+                }
             }
         }
     },

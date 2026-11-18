@@ -14,12 +14,16 @@ const resetPassword = vi.fn()
 const users = vi.fn()
 const permissions = vi.fn()
 const rateLimit = vi.fn()
+const convertAccount = vi.fn()
 vi.mock('@tanstack/react-start', () => ({ createServerFn: createServerFnStub }))
 vi.mock('@/server/Admin/UserManagement/update.service.ts', () => ({
     updateUserProfileService: update,
 }))
 vi.mock('@/server/Admin/UserManagement/delete.service.ts', () => ({
     deleteUserService: remove,
+}))
+vi.mock('@/server/Admin/UserManagement/accountConversion.service.ts', () => ({
+    convertAccountTypeService: convertAccount,
 }))
 vi.mock('@/server/Admin/UserManagement/active.service.ts', () => ({
     setUserActiveService: active,
@@ -69,6 +73,34 @@ beforeEach(() => {
 })
 
 describe('user management server boundaries', () => {
+    it('requires the conversion permission and verifies the requested account scope', async () => {
+        const data = { id, accountType: 'staff' as const }
+        authorize.mockResolvedValue({
+            userId: 'actor',
+            permissionKeys: [
+                PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
+                PERMISSIONS.ADMIN_USER_MANAGEMENT,
+            ],
+        })
+        await expect(
+            handlers.convertAccountTypeHandler({ data }),
+        ).rejects.toThrow()
+        expect(authorize).toHaveBeenCalledWith(
+            PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
+        )
+        expect(convertAccount).not.toHaveBeenCalled()
+
+        authorize.mockResolvedValue({
+            userId: 'actor',
+            permissionKeys: [
+                PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
+                PERMISSIONS.ADMIN_SUPER_USER,
+            ],
+        })
+        await handlers.convertAccountTypeHandler({ data })
+        expect(convertAccount).toHaveBeenCalledWith(data, 'actor')
+    })
+
     it.each(cases)(
         'authorizes %s before delegating to its service',
         async (name, service, data) => {

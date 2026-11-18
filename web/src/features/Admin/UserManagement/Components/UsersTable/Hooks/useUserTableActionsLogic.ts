@@ -5,8 +5,10 @@ import type {
 } from '../Types/user-management-table.types.ts'
 
 export default function useUserTableActionsLogic({
+    accountType,
     user,
     canManageSuperUsers,
+    canConvertAccounts,
     isDeletingUser,
     isTogglingUserActive,
     isResendingPasswordReset,
@@ -14,6 +16,7 @@ export default function useUserTableActionsLogic({
     onToggleUserActive,
     onPasswordReset,
     onDeleteUser,
+    onConvertAccount,
 }: UserTableActionsProps): UserTableActionsLogicReturn {
     const { t } = useTranslationStore()
     const isProtectedSuperUser = user.isSuperUser && !canManageSuperUsers
@@ -58,6 +61,15 @@ export default function useUserTableActionsLogic({
                 isDeletingUser ||
                 cannotDeleteCurrentUser ||
                 isProtectedSuperUser,
+            showConvertAccount:
+                canConvertAccounts &&
+                !user.isCurrentUser &&
+                !isProtectedSuperUser,
+            convertAccountLabel: t(
+                accountType === 'public'
+                    ? 'admin.users.conversion.toStaff'
+                    : 'admin.users.conversion.toPublic',
+            ),
             editTooltip: isProtectedSuperUser
                 ? t('admin.users.editForbiddenShort')
                 : t('common.edit'),
@@ -70,6 +82,7 @@ export default function useUserTableActionsLogic({
             handleToggleUserActive: () => onToggleUserActive(user),
             handlePasswordReset: () => onPasswordReset(user),
             handleDeleteUser: () => onDeleteUser(user),
+            handleConvertAccount: () => onConvertAccount(user),
         },
     }
 }

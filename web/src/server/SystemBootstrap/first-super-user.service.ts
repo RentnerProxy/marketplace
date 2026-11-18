@@ -2,17 +2,13 @@ import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts
 import { sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
-    defaultUserPermissions,
     staffAccounts,
     systemSettings,
     staffUserPermissions,
     user_profiles,
     users,
 } from '@/db/schema.ts'
-import {
-    DEFAULT_ADMIN_PERMISSION_KEYS,
-    PERMISSIONS,
-} from '@/config/permissions.config.ts'
+import { DEFAULT_ADMIN_PERMISSION_KEYS } from '@/config/permissions.config.ts'
 import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import {
     prepareAuditContextService,
@@ -109,17 +105,6 @@ export async function createFirstSuperUserAccountService(
         }
 
         await transaction.insert(staffAccounts).values({ userId: user.id })
-        const publicDashboard = availablePermissions.find(
-            ({ key }) => key === PERMISSIONS.USER_DASHBOARD,
-        )
-        if (!publicDashboard)
-            throw new Error(
-                'Public dashboard permission is unavailable during setup',
-            )
-        await transaction
-            .insert(defaultUserPermissions)
-            .values({ permissionId: publicDashboard.id })
-            .onConflictDoNothing()
 
         await transaction.insert(user_profiles).values({
             userId: user.id,

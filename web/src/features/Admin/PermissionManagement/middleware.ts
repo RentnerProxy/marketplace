@@ -1,10 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { requirePermissionService } from '@/server/Auth/authorization.service.ts'
-import {
-    getPublicAccountDefaultsService,
-    replaceDefaultPermissionsService,
-} from '@/server/Admin/PermissionManagement/defaults.service.ts'
 import { getPermissionManagementOverviewService } from '@/server/Admin/PermissionManagement/overview.service.ts'
 import {
     createPermissionPresetService,
@@ -16,7 +12,6 @@ import { replaceManagedUserPermissionsService } from '@/server/Admin/PermissionM
 import {
     createPermissionPresetInputSchema,
     deletePermissionPresetInputSchema,
-    replaceDefaultPermissionsInputSchema,
     replaceManagedUserPermissionsInputSchema,
     updatePermissionPresetInputSchema,
 } from './validation.ts'
@@ -34,28 +29,6 @@ export const getPermissionManagementUsersHandler = createServerFn({
     const access = await requirePermissionService(PERMISSIONS.ADMIN_SUPER_USER)
     return getPermissionManagementUsersService(access.userId)
 })
-
-export const getPublicAccountDefaultsHandler = createServerFn({
-    method: 'GET',
-}).handler(async () => {
-    const { userId } = await requirePermissionService(
-        PERMISSIONS.ADMIN_SUPER_USER,
-    )
-    return getPublicAccountDefaultsService(userId)
-})
-
-export const replaceDefaultPermissionsHandler = createServerFn({
-    method: 'POST',
-})
-    .validator(function (data: unknown) {
-        return replaceDefaultPermissionsInputSchema.parse(data)
-    })
-    .handler(async function ({ data }) {
-        const access = await requirePermissionService(
-            PERMISSIONS.ADMIN_SUPER_USER,
-        )
-        return replaceDefaultPermissionsService(data, access.userId)
-    })
 
 export const createPermissionPresetHandler = createServerFn({ method: 'POST' })
     .validator(function (data: unknown) {

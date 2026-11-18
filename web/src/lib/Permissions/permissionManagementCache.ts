@@ -8,7 +8,7 @@ export const PERMISSION_MANAGEMENT_USERS_QUERY_KEY = [
     'users',
 ] as const
 
-export const PUBLIC_ACCOUNT_DEFAULTS_QUERY_KEY = [
+export const STAFF_INVITATIONS_QUERY_KEY = [
     'admin-permission-management',
-    'public-defaults',
+    'staff-invitations',
 ] as const
