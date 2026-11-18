@@ -95,16 +95,7 @@ export async function findCandidateRun(
     submission: SubmissionRunRequest,
     token: string,
 ) {
-    if (submission.buildRunId) {
-        const run = runSchema.parse(
-            await githubJson(
-                candidateApiPath('runs/' + submission.buildRunId),
-                { token },
-            ),
-        )
-        assertSubmissionRun(run, submission)
-        return run
-    }
+    if (submission.buildRunId) return loadRun(submission.buildRunId)
 
     if (!submission.dispatchRequestedAt) return null
     const requestedAt = submission.dispatchRequestedAt.getTime()
@@ -138,11 +129,19 @@ export async function findCandidateRun(
                 'display_title' in entry &&
                 entry.display_title === title,
         )
-    if (matching.length > 1) throw new InvalidCandidateError('invalidEvidence')
-    if (!matching.length) return null
-    const run = runSchema.parse(matching[0])
-    assertSubmissionRun(run, submission)
-    return run
+    const idOnly = z.object({ id: githubNumericId })
+    const runIds = new Set(matching.map((entry) => idOnly.parse(entry).id))
+    if (runIds.size > 1) throw new InvalidCandidateError('invalidEvidence')
+    const [runId] = runIds
+    return runId ? loadRun(runId) : null
+
+    async function loadRun(id: string) {
+        const run = runSchema.parse(
+            await githubJson(candidateApiPath('runs/' + id), { token }),
+        )
+        assertSubmissionRun(run, submission)
+        return run
+    }
 
     async function loadPage(page: number) {
         const path =

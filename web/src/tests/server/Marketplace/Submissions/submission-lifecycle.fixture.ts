@@ -177,9 +177,12 @@ export async function exerciseSubmissionLifecycle() {
                 total_count: 101,
                 workflow_runs:
                     page === 1
-                        ? Array.from({ length: 100 }, () => ({
-                              display_title: 'Unrelated workflow',
-                          }))
+                        ? [
+                              ...Array.from({ length: 99 }, () => ({
+                                  display_title: 'Unrelated workflow',
+                              })),
+                              githubRun,
+                          ]
                         : [githubRun],
             })
         }
