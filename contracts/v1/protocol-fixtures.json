@@ -885,6 +885,14 @@
             "valid": true
         },
         {
+            "title": "app-owned JSON validates every member value including special keys",
+            "schema": "AppApiPayload",
+            "document": {
+                "__proto__": { "count": 9007199254740992 }
+            },
+            "valid": false
+        },
+        {
             "title": "dialog result on the bound channel",
             "schema": "UiBridgeMessage",
             "document": {

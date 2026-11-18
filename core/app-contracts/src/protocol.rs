@@ -4,9 +4,25 @@ use jsonschema::Validator;
 use serde_json::Value;
 
 use crate::validation::{array, string, unique_strings};
-use crate::{ContractError, compile_schema, embedded_schema, validate_shape};
+use crate::{ContractError, MAX_JSON_DEPTH, compile_schema, embedded_schema, validate_shape};
 
 const DOCUMENTS: &str = "x-rentnerproxy-protocol-documents";
+const MAX_JSON_NUMBER: f64 = 9_007_199_254_740_991.0;
+
+fn is_wire_json(value: &Value, depth: usize) -> bool {
+    match value {
+        Value::Number(number) => number
+            .as_f64()
+            .is_some_and(|value| value.abs() <= MAX_JSON_NUMBER),
+        Value::Array(items) => {
+            depth < MAX_JSON_DEPTH && items.iter().all(|item| is_wire_json(item, depth + 1))
+        }
+        Value::Object(fields) => {
+            depth < MAX_JSON_DEPTH && fields.values().all(|value| is_wire_json(value, depth + 1))
+        }
+        _ => true,
+    }
+}
 
 /// Offline validators for the app protocol document registry. Callers enforce
 /// input byte limits, reject duplicate JSON members during decoding, and verify
@@ -53,6 +69,9 @@ impl ProtocolContracts {
             .documents
             .get(name)
             .ok_or(ContractError::InvalidShape)?;
+        if !is_wire_json(document, 0) {
+            return Err(ContractError::InvalidShape);
+        }
         validate_shape(validator, document)?;
         if name == "BootstrapDescriptor" && document["appCredential"] == document["coreCredential"]
         {

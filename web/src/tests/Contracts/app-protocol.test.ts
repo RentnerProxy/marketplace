@@ -9,6 +9,7 @@ import {
     parseHttpResponse,
     parseProtocolDocument,
     prepareHttpRequest,
+    rpcLimits,
     type HttpOperationName,
     type ProtocolDocumentName,
 } from '../../../../contracts/v1/index.ts'
@@ -45,6 +46,17 @@ describe('app protocol v1', () => {
         })
         expect(readiness.ready).toBe(true)
         expect(readiness.providers).toEqual([])
+    })
+
+    test('bounds the depth of decoded wire JSON', () => {
+        let document: Record<string, unknown> = {}
+        for (let depth = 1; depth < rpcLimits.maxJsonDepth; depth++) {
+            document = { nested: document }
+        }
+        expect(parseProtocolDocument('AppApiPayload', document)).toBeDefined()
+        expect(() =>
+            parseProtocolDocument('AppApiPayload', { nested: document }),
+        ).toThrow(ContractError)
     })
 
     test('advertises the private direction, authentication, and request controls', () => {

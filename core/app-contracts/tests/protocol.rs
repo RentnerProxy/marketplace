@@ -38,6 +38,19 @@ fn rejects_an_unknown_protocol_schema_name() {
 }
 
 #[test]
+fn bounds_the_depth_of_decoded_wire_json() {
+    let mut document = serde_json::json!({});
+    for _ in 1..rentnerproxy_app_contracts::MAX_JSON_DEPTH {
+        document = serde_json::json!({"nested": document});
+    }
+    assert_eq!(CONTRACTS.validate("AppApiPayload", &document), Ok(()));
+    assert_eq!(
+        CONTRACTS.validate("AppApiPayload", &serde_json::json!({"nested": document})),
+        Err(ContractError::InvalidShape)
+    );
+}
+
+#[test]
 fn generated_http_operations_match_openapi() {
     let document: Value =
         serde_json::from_str(include_str!("../../../contracts/v1/openapi.json")).unwrap();

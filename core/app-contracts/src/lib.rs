@@ -9,6 +9,7 @@ use serde_json::Value;
 
 pub use http::{
     HttpDescriptor, HttpMethod, HttpOperation, HttpRequest, HttpRequestOptions, HttpSocket,
+    MAX_JSON_DEPTH,
 };
 pub use protocol::ProtocolContracts;
 

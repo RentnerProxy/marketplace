@@ -37,7 +37,8 @@ function describeOperation(name: string, operation: HttpOperationDefinition) {
         403: problem(
             'The installation, generation, actor, or resource is unauthorized.',
         ),
-        default: problem('The request failed with a stable problem code.'),
+        '4XX': problem('The request was rejected with a stable problem code.'),
+        '5XX': problem('The operation failed with a stable problem code.'),
     }
     if (operation.idempotencyKey) {
         responses[409] = problem(

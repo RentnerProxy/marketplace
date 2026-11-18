@@ -5,7 +5,7 @@ use serde_json::Value;
 use crate::validation::integer;
 use crate::{ContractError, ProtocolContracts};
 
-pub use operations::HttpOperation;
+pub use operations::{HttpOperation, MAX_JSON_DEPTH};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HttpMethod {

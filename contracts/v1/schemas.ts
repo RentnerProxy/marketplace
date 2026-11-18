@@ -45,7 +45,7 @@ const compatibility = {
     responses:
         'Readers tolerate additional fields only in open response schemas. Unknown discriminants, required capabilities and security-relevant values are rejected.',
     encoding:
-        'JSON member names use camelCase. IDs, revisions and cursors are strings. Timestamps use UTC with milliseconds. Integers stay within the exact JSON range. Decoders must reject duplicate members.',
+        'Protocol member names use camelCase. IDs, revisions and cursors are strings. Timestamps use UTC with milliseconds. Numbers stay within the safe JSON integer magnitude, including in app payloads and open fields. Decoders must reject duplicate members and invalid Unicode. The JSON depth limit counts nested arrays and objects.',
     evolution:
         'Within v1 preserve required fields, units, defaults and semantics. Add new optional response fields only to open shapes. Breaking wire changes require a new major version and negotiation before use.',
     admission:

@@ -5,6 +5,7 @@ export type HttpMethod = 'GET' | 'POST'
 
 export const rpcLimits = Object.freeze({
     maxJsonBytes: 1_048_576,
+    maxJsonDepth: 64,
     maxListEntries: 100,
     defaultDeadlineMs: 10_000,
     maxDeadlineMs: 30_000,

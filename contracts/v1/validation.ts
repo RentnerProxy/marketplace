@@ -17,6 +17,7 @@ import type {
     ProtocolDocument,
     ProtocolDocumentName,
 } from './Types/contract.types.ts'
+import { isWireJson } from './wire.ts'
 
 export class ContractError extends Error {
     constructor(
@@ -50,7 +51,7 @@ function matchesProtocolSchema<Output>(
     schema: z.core.$ZodType<Output>,
     input: unknown,
 ): input is Output {
-    return z.safeParse(schema, input).success
+    return isWireJson(input) && z.safeParse(schema, input).success
 }
 
 /** Validate already-decoded wire JSON and retain its application payload and open response fields. */

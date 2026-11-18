@@ -2,6 +2,8 @@
 
 use super::{HttpDescriptor, HttpMethod, HttpSocket};
 
+pub const MAX_JSON_DEPTH: usize = 64;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum HttpOperation {
     GetAppHealth,

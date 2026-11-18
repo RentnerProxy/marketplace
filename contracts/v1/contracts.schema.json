@@ -3305,7 +3305,7 @@
     "x-rentnerproxy-compatibility": {
         "requests": "Versioned requests and closed package, approval, credential and bridge records reject unknown fields. Omitted optional fields are absent. Null is valid only where explicitly declared.",
         "responses": "Readers tolerate additional fields only in open response schemas. Unknown discriminants, required capabilities and security-relevant values are rejected.",
-        "encoding": "JSON member names use camelCase. IDs, revisions and cursors are strings. Timestamps use UTC with milliseconds. Integers stay within the exact JSON range. Decoders must reject duplicate members.",
+        "encoding": "Protocol member names use camelCase. IDs, revisions and cursors are strings. Timestamps use UTC with milliseconds. Numbers stay within the safe JSON integer magnitude, including in app payloads and open fields. Decoders must reject duplicate members and invalid Unicode. The JSON depth limit counts nested arrays and objects.",
         "evolution": "Within v1 preserve required fields, units, defaults and semantics. Add new optional response fields only to open shapes. Breaking wire changes require a new major version and negotiation before use.",
         "admission": "Check payload bounds and authenticated identity before dispatch. Recheck current installation generation, user delegation, capability and resource scope at the platform boundary. Bound concurrent requests per installation.",
         "optionalMarketplace": "Use separate bounded background requests and keep enrichment outside trusted catalog and installation decisions. Cache or omit enrichment if unavailable. Respect the advertised request size, page and deadline limits."
