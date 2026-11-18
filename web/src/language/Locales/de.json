@@ -839,7 +839,7 @@
                 "invalidPermissions": "Wähle mindestens ein Recht, das den Zugriff auf eine Seite erlaubt.",
                 "deliveryFailed": "Die Einladung konnte nicht zum Versand eingeplant werden.",
                 "notFound": "Die Einladung ist nicht mehr verfügbar.",
-                "permissionConflict": "Die Startrechte wurden zwischenzeitlich geändert. Öffne die Bearbeitung erneut, um die aktuellen Rechte zu laden.",
+                "permissionConflict": "Die Startrechte wurden zwischenzeitlich geändert. Lade die aktuellen Rechte, bevor du speicherst.",
                 "expired": "Der Einladungslink ist abgelaufen. Sende die Einladung erneut."
             },
             "invitations": {
@@ -854,6 +854,7 @@
                 "loadError": "Die Einladungen konnten nicht geladen werden.",
                 "expiresAt": "Gültig bis",
                 "editPermissions": "Rechte bearbeiten",
+                "reloadPermissions": "Aktuelle Rechte laden",
                 "editTitle": "Startrechte für {{username}}",
                 "resend": "Einladung erneut senden",
                 "revoke": "Einladung zurückziehen",

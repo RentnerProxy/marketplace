@@ -46,8 +46,8 @@ export async function requestStaffInvitationResendService(
         await enqueueStaffInvitationResendMail({
             invitationId,
             actorUserId,
-            previousTokenHash: staged.invitation.tokenHash,
-            previousIsActive: staged.invitation.isActive,
+            previousStatusRevision: staged.invitation.statusRevision,
+            statusRevision: Bun.randomUUIDv7(),
             ...link,
         })
     } catch (error) {
@@ -72,17 +72,18 @@ export async function prepareStaffInvitationResendMailService(
             )
             if (!invitation) return null
 
-            const alreadyRotated = invitation.tokenHash === job.tokenHash
+            const alreadyRotated =
+                invitation.statusRevision === job.statusRevision
             if (alreadyRotated) {
                 if (
                     !invitation.isActive ||
+                    invitation.tokenHash !== job.tokenHash ||
                     invitation.invitedByUserId !== job.actorUserId ||
                     invitation.expiresAt.getTime() <= Date.now()
                 )
                     return null
             } else if (
-                invitation.tokenHash !== job.previousTokenHash ||
-                invitation.isActive !== job.previousIsActive
+                invitation.statusRevision !== job.previousStatusRevision
             ) {
                 return null
             }
@@ -106,6 +107,7 @@ export async function prepareStaffInvitationResendMailService(
                 permissionKeys: validation.permissionKeys,
                 isActive: true,
                 invitedByUserId: job.actorUserId,
+                statusRevision: job.statusRevision,
             }
             await transaction
                 .update(staffInvitations)
@@ -120,7 +122,10 @@ export async function prepareStaffInvitationResendMailService(
                 message:
                     'Ein neuer Link für eine Teameinladung wurde erstellt.',
                 oldValues,
-                newValues: { ...oldValues, ...changes },
+                newValues: getStaffInvitationAuditValues({
+                    ...invitation,
+                    ...changes,
+                }),
             })
             return { mail, audit }
         })

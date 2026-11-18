@@ -67,7 +67,7 @@ export async function acceptStaffInvitationService(input: {
         ) {
             await transaction
                 .update(staffInvitations)
-                .set({ isActive: false })
+                .set({ isActive: false, statusRevision: Bun.randomUUIDv7() })
                 .where(eq(staffInvitations.id, invitation.id))
             const audit = await writeAuditLogInTransactionService(transaction, {
                 ...auditContext,

@@ -71,6 +71,7 @@ export const staffInvitations = appSchema.table(
         tokenHash: varchar('tokenHash', { length: 64 }).notNull().unique(),
         expiresAt: timestamp('expiresAt', { withTimezone: true }).notNull(),
         isActive: boolean('isActive').default(true).notNull(),
+        statusRevision: uuid('statusRevision').defaultRandom().notNull(),
         invitedByUserId: uuid('invitedByUserId').references(
             () => staffAccounts.userId,
             { onDelete: 'set null' },

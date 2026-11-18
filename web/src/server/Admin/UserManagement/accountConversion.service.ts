@@ -101,7 +101,7 @@ export async function convertAccountTypeService(
         if (accountType === 'staff') {
             await transaction
                 .update(staffInvitations)
-                .set({ isActive: false })
+                .set({ isActive: false, statusRevision: Bun.randomUUIDv7() })
                 .where(eq(staffInvitations.invitedByUserId, id))
             await transaction
                 .delete(staffAccounts)

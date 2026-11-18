@@ -68,8 +68,8 @@ const invitationResend = {
     resetLink: 'https://app.example.test/staff-invitation#invite=synthetic',
     invitationId: '01941f29-7c00-7000-8000-000000000011',
     actorUserId: '01941f29-7c00-7000-8000-000000000012',
-    previousTokenHash: 'a'.repeat(64),
-    previousIsActive: true,
+    previousStatusRevision: '01941f29-7c00-7000-8000-000000000013',
+    statusRevision: '01941f29-7c00-7000-8000-000000000014',
     tokenHash: 'b'.repeat(64),
 }
 const failedLoginAlertMail = {

@@ -83,6 +83,28 @@ export default function StaffInvitationManagement() {
                             selection={state.permissionSelection}
                             disabled={state.isPending}
                         />
+                        {state.hasPermissionConflict && (
+                            <div
+                                role="alert"
+                                className="flex flex-wrap items-center gap-3 text-sm text-secondary-text"
+                            >
+                                <p>
+                                    {t(
+                                        'admin.staff.inviteErrors.permissionConflict',
+                                    )}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handler.handleReloadPermissions}
+                                    disabled={state.isPending}
+                                    className="rounded-md border border-border-dark px-3 py-2 font-semibold hover:bg-input-dark disabled:opacity-60"
+                                >
+                                    {t(
+                                        'admin.staff.invitations.reloadPermissions',
+                                    )}
+                                </button>
+                            </div>
+                        )}
                         <div className="flex flex-wrap gap-2">
                             <button
                                 type="button"

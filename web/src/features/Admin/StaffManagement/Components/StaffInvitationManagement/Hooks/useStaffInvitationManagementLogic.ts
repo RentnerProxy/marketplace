@@ -25,17 +25,32 @@ export default function useStaffInvitationManagementLogic(): StaffInvitationMana
     )
     const [revokeTarget, setRevokeTarget] =
         useState<StaffInvitationSummary | null>(null)
+    const [conflict, setConflict] = useState<Pick<
+        StaffInvitationSummary,
+        'id' | 'permissionKeys'
+    > | null>(null)
     const permissionSelection = useStaffInvitationPermissions()
     const invitations = useQuery({
         queryKey: STAFF_INVITATIONS_QUERY_KEY,
         queryFn: getStaffInvitationsHandler,
     })
     const { permissionKeys, isValid } = permissionSelection.state
+    const hasPermissionConflict =
+        editTarget !== null && conflict?.id === editTarget.id
     const canSavePermissions = Boolean(
         editTarget &&
+        !hasPermissionConflict &&
         isValid &&
         !haveSamePermissionKeys(editTarget.permissionKeys, permissionKeys),
     )
+
+    function handleEdit(invitation: StaffInvitationSummary) {
+        setConflict(null)
+        setEditTarget(invitation)
+        permissionSelection.handler.handleResetSelection(
+            invitation.permissionKeys,
+        )
+    }
 
     useEffect(
         () =>
@@ -63,6 +78,10 @@ export default function useStaffInvitationManagementLogic(): StaffInvitationMana
                     title,
                 })
                 if (result.error === 'permissionConflict') {
+                    setConflict({
+                        id: data.id,
+                        permissionKeys: result.currentPermissionKeys,
+                    })
                     await queryClient.invalidateQueries({
                         queryKey: STAFF_INVITATIONS_QUERY_KEY,
                     })
@@ -106,18 +125,14 @@ export default function useStaffInvitationManagementLogic(): StaffInvitationMana
             editTarget,
             permissionSelection,
             canSavePermissions,
+            hasPermissionConflict,
             revokeTarget,
         },
         handler: {
             handleRetry() {
                 void invitations.refetch().catch(toastAppError)
             },
-            handleEdit(invitation) {
-                setEditTarget(invitation)
-                permissionSelection.handler.handleResetSelection(
-                    invitation.permissionKeys,
-                )
-            },
+            handleEdit,
             handleResend(invitation) {
                 mutate({ id: invitation.id, action: 'resend' })
             },
@@ -135,6 +150,14 @@ export default function useStaffInvitationManagementLogic(): StaffInvitationMana
                     mutate({ id: revokeTarget.id, action: 'revoke' })
             },
             handleCloseEdit: () => setEditTarget(null),
+            handleReloadPermissions: () => {
+                if (editTarget && conflict?.id === editTarget.id) {
+                    handleEdit({
+                        ...editTarget,
+                        permissionKeys: conflict.permissionKeys,
+                    })
+                }
+            },
             handleSavePermissions() {
                 if (editTarget && canSavePermissions && !isPending) {
                     mutate({

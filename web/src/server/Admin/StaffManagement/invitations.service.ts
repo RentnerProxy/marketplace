@@ -216,6 +216,7 @@ export async function inviteStaffService(
             username: input.username,
             email: input.email,
             invitedByUserId: actorUserId,
+            statusRevision: Bun.randomUUIDv7(),
             expiresAt: getStaffInvitationExpiryService(),
             tokenHash,
             permissionKeys,

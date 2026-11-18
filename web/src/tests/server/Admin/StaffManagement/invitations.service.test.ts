@@ -227,7 +227,11 @@ describe('staff invitation lifecycle', () => {
                 },
                 ADMIN_ACTOR_ID,
             ),
-        ).resolves.toEqual({ success: false, error: 'permissionConflict' })
+        ).resolves.toEqual({
+            success: false,
+            error: 'permissionConflict',
+            currentPermissionKeys: permissionKeys,
+        })
         await expect(
             getStaffInvitationsService(ADMIN_ACTOR_ID),
         ).resolves.toMatchObject([{ status: 'disabled', permissionKeys }])
@@ -323,6 +327,18 @@ describe('staff invitation lifecycle', () => {
                 ({ action }) => action === 'admin.staff.invitation_resent',
             ),
         ).toHaveLength(1)
+        const statusAction = { id: invitation.id, action: 'setActive' as const }
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: false },
+            ADMIN_ACTOR_ID,
+        )
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: true },
+            ADMIN_ACTOR_ID,
+        )
+        await expect(
+            prepareStaffInvitationResendMailService(job),
+        ).resolves.toBeNull()
         await expect(
             acceptStaffInvitationService({ token: oldToken, password }),
         ).resolves.toEqual({ success: false })
@@ -331,9 +347,14 @@ describe('staff invitation lifecycle', () => {
         ).resolves.toEqual({ success: true })
     })
 
-    it('drops a queued resend when the invitation is subsequently disabled', async () => {
+    it('drops a queued resend when intervening changes restore the previous status', async () => {
         await sendInvitation()
         const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const statusAction = { id: invitation.id, action: 'setActive' as const }
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: false },
+            ADMIN_ACTOR_ID,
+        )
         await manageStaffInvitationService(
             { id: invitation.id, action: 'resend' },
             ADMIN_ACTOR_ID,
@@ -342,11 +363,16 @@ describe('staff invitation lifecycle', () => {
             adminAuditExternal.enqueueInvitationResend.mock.lastCall?.[0]
         if (!job) throw new Error('Expected a queued resend')
         await manageStaffInvitationService(
-            { id: invitation.id, action: 'setActive', isActive: false },
+            { ...statusAction, isActive: true },
+            ADMIN_ACTOR_ID,
+        )
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: false },
             ADMIN_ACTOR_ID,
         )
         await expect(
             prepareStaffInvitationResendMailService(job),
         ).resolves.toBeNull()
+        expect(adminAuditDb.state.rows.staffInvitations[0].isActive).toBe(false)
     })
 })

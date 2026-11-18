@@ -19,6 +19,7 @@ export type StaffInvitationManagementLogic = {
         editTarget: StaffInvitationSummary | null
         permissionSelection: StaffInvitationPermissionSelection
         canSavePermissions: boolean
+        hasPermissionConflict: boolean
         revokeTarget: StaffInvitationSummary | null
     }
     handler: {
@@ -30,6 +31,7 @@ export type StaffInvitationManagementLogic = {
         handleCloseRevoke: () => void
         handleRevoke: () => void
         handleCloseEdit: () => void
+        handleReloadPermissions: () => void
         handleSavePermissions: () => void
     }
 }

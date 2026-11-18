@@ -64,6 +64,7 @@ const adminAuditSchema = {
         'expiresAt',
         'isActive',
         'invitedByUserId',
+        'statusRevision',
         'permissionKeys',
         'tokenHash',
     ]),

@@ -839,7 +839,7 @@
                 "invalidPermissions": "Choose at least one permission that grants access to a page.",
                 "deliveryFailed": "The invitation email could not be queued.",
                 "notFound": "The invitation is no longer available.",
-                "permissionConflict": "The initial permissions changed while you were editing. Reopen the editor to load the current permissions.",
+                "permissionConflict": "The initial permissions changed while you were editing. Load the current permissions before saving.",
                 "expired": "The invitation link has expired. Resend the invitation to issue a new link."
             },
             "invitations": {
@@ -854,6 +854,7 @@
                 "loadError": "Invitations could not be loaded.",
                 "expiresAt": "Expires at",
                 "editPermissions": "Edit permissions",
+                "reloadPermissions": "Load current permissions",
                 "editTitle": "Initial permissions for {{username}}",
                 "resend": "Resend invitation",
                 "revoke": "Withdraw invitation",

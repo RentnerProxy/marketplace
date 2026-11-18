@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace"."staff_invitations" ADD COLUMN "statusRevision" uuid DEFAULT gen_random_uuid() NOT NULL;

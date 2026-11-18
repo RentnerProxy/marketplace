@@ -93,6 +93,27 @@ function getSaveButton(node: ReactNode) {
     )
 }
 
+function permissionEditorView() {
+    const { table } = tableView()
+    expect(table.expandedRowId).toBe(activeInvitation.id)
+    if (!table.renderExpandedRow)
+        throw new Error('Expected invitation permission editor')
+    return table.renderExpandedRow({ original: activeInvitation } as Parameters<
+        typeof table.renderExpandedRow
+    >[0])
+}
+
+function togglePermissionInEditor(key: string) {
+    invoke(
+        findElement(
+            fieldsIn(permissionEditorView()),
+            (element) => 'onTogglePermission' in element.props,
+        ),
+        'onTogglePermission',
+        key,
+    )
+}
+
 function revokeModal() {
     return findElement(
         tableView().tree,
@@ -246,28 +267,12 @@ describe('staff invitation management table', () => {
             activeInvitation,
             'admin.staff.invitations.editPermissions',
         )
-        const expanded = () => {
-            const { table } = tableView()
-            expect(table.expandedRowId).toBe(activeInvitation.id)
-            if (!table.renderExpandedRow)
-                throw new Error('Expected invitation permission editor')
-            return table.renderExpandedRow({
-                original: activeInvitation,
-            } as Parameters<typeof table.renderExpandedRow>[0])
-        }
-        expect(getSaveButton(expanded()).props.disabled).toBe(true)
-        invoke(
-            findElement(
-                fieldsIn(expanded()),
-                (element) => 'onTogglePermission' in element.props,
-            ),
-            'onTogglePermission',
-            PERMISSIONS.ADMIN_DASHBOARD,
-        )
+        expect(getSaveButton(permissionEditorView()).props.disabled).toBe(true)
+        togglePermissionInEditor(PERMISSIONS.ADMIN_DASHBOARD)
         clickRowAction(activeInvitation, 'admin.staff.invitations.resend')
         await settle()
         expect(tableView().table.expandedRowId).toBe(activeInvitation.id)
-        const save = getSaveButton(expanded())
+        const save = getSaveButton(permissionEditorView())
         expect(save.props.disabled).toBe(false)
         invoke(save, 'onClick')
         await settle()
@@ -323,6 +328,54 @@ describe('staff invitation management table', () => {
             ],
             [{ data: { id: activeInvitation.id, action: 'revoke' } }],
         ])
+    })
+
+    it('blocks a conflicting draft until the administrator loads and reviews current permissions', async () => {
+        const currentPermissionKeys = [PERMISSIONS.ADMIN_DASHBOARD]
+        manage.mockResolvedValueOnce({
+            success: false,
+            error: 'permissionConflict',
+            currentPermissionKeys,
+        })
+        clickRowAction(
+            activeInvitation,
+            'admin.staff.invitations.editPermissions',
+        )
+        togglePermissionInEditor(PERMISSIONS.ADMIN_DASHBOARD)
+        invoke(getSaveButton(permissionEditorView()), 'onClick')
+        await settle()
+        expect(getSaveButton(permissionEditorView()).props.disabled).toBe(true)
+        invoke(
+            findElement(
+                permissionEditorView(),
+                (element) =>
+                    element.props.children ===
+                    'admin.staff.invitations.reloadPermissions',
+            ),
+            'onClick',
+        )
+        const permissions = findElement(
+            fieldsIn(permissionEditorView()),
+            (element) => 'selectedPermissionKeys' in element.props,
+        )
+        expect(permissions.props.selectedPermissionKeys).toEqual(
+            currentPermissionKeys,
+        )
+        expect(getSaveButton(permissionEditorView()).props.disabled).toBe(true)
+        togglePermissionInEditor(PERMISSIONS.USER_DASHBOARD)
+        invoke(getSaveButton(permissionEditorView()), 'onClick')
+        await settle()
+        expect(manage).toHaveBeenLastCalledWith({
+            data: {
+                id: activeInvitation.id,
+                action: 'permissions',
+                expectedPermissionKeys: currentPermissionKeys,
+                permissionKeys: [
+                    PERMISSIONS.ADMIN_DASHBOARD,
+                    PERMISSIONS.USER_DASHBOARD,
+                ],
+            },
+        })
     })
 
     it('reports failed delivery and refreshes the table on invitation updates', async () => {

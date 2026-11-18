@@ -70,6 +70,7 @@ export async function manageStaffInvitationService(
             permissionKeys: invitation.permissionKeys,
             isActive: invitation.isActive,
             invitedByUserId: invitation.invitedByUserId,
+            statusRevision: invitation.statusRevision,
         }
         if (input.action === 'permissions') {
             if (
@@ -81,6 +82,7 @@ export async function manageStaffInvitationService(
                 return {
                     success: false as const,
                     error: 'permissionConflict' as const,
+                    currentPermissionKeys: invitation.permissionKeys,
                 }
             }
             const permissionKeys =
@@ -115,6 +117,7 @@ export async function manageStaffInvitationService(
                 changes.invitedByUserId = actorUserId
             }
             changes.isActive = input.isActive
+            changes.statusRevision = Bun.randomUUIDv7()
         }
 
         await transaction
@@ -126,7 +129,10 @@ export async function manageStaffInvitationService(
             action,
             message,
             oldValues,
-            newValues: { ...oldValues, ...changes },
+            newValues: getStaffInvitationAuditValues({
+                ...invitation,
+                ...changes,
+            }),
         })
         return { success: true as const, audit }
     })

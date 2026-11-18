@@ -389,13 +389,13 @@ describe('public and staff account separation in PostgreSQL', () => {
         ).resolves.toEqual({ success: true })
         const job = queueInvitationResend.mock.lastCall?.[0]
         if (!job) throw new Error('Expected a queued invitation resend')
-        expect(job.previousTokenHash).toBe(await createTokenHash(oldToken))
+        expect(job.previousStatusRevision).toBe(invitation.statusRevision)
         expect(
             await db
                 .select()
                 .from(staffInvitations)
                 .where(eq(staffInvitations.id, invitation.id)),
-        ).toMatchObject([{ tokenHash: job.previousTokenHash }])
+        ).toMatchObject([{ tokenHash: await createTokenHash(oldToken) }])
         await expect(
             prepareStaffInvitationResendMailService(job),
         ).resolves.toEqual({
