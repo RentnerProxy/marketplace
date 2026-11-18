@@ -30,6 +30,8 @@ import { Route as PublicMaintenanceRouteImport } from './routes/_public/maintena
 import { Route as PublicPasswordResetRouteImport } from './routes/_public/password-reset'
 import { Route as PublicTermsRouteImport } from './routes/_public/terms'
 import { Route as BlogSlugRouteImport } from './routes/blog_/$slug'
+import { Route as AuthenticatedAdminAppNamespacesRouteImport } from './routes/_authenticated/admin/app-namespaces'
+import { Route as AuthenticatedAdminAppReviewsRouteImport } from './routes/_authenticated/admin/app-reviews'
 import { Route as AuthenticatedAdminAuditLogsRouteImport } from './routes/_authenticated/admin/audit-logs'
 import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authenticated/admin/backups'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
@@ -38,6 +40,7 @@ import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminSystemSettingsRouteImport } from './routes/_authenticated/admin/system-settings'
 import { Route as AuthenticatedAdminUserDefaultsRouteImport } from './routes/_authenticated/admin/user-defaults'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as AuthenticatedUserAppSubmissionsRouteImport } from './routes/_authenticated/user/app-submissions'
 import { Route as AuthenticatedUserDashboardRouteImport } from './routes/_authenticated/user/dashboard'
 import { Route as ApiSystemRestoreStatusRouteImport } from './routes/api/system/restore-status'
 import { Route as ApiUserBackgroundRouteImport } from './routes/api/user/background'
@@ -150,6 +153,18 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminAppNamespacesRoute =
+  AuthenticatedAdminAppNamespacesRouteImport.update({
+    id: '/app-namespaces',
+    path: '/app-namespaces',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminAppReviewsRoute =
+  AuthenticatedAdminAppReviewsRouteImport.update({
+    id: '/app-reviews',
+    path: '/app-reviews',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminAuditLogsRoute =
   AuthenticatedAdminAuditLogsRouteImport.update({
     id: '/audit-logs',
@@ -196,6 +211,12 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedUserAppSubmissionsRoute =
+  AuthenticatedUserAppSubmissionsRouteImport.update({
+    id: '/app-submissions',
+    path: '/app-submissions',
+    getParentRoute: () => AuthenticatedUserRouteRoute,
+  } as any)
 const AuthenticatedUserDashboardRoute =
   AuthenticatedUserDashboardRouteImport.update({
     id: '/dashboard',
@@ -258,6 +279,8 @@ export interface FileRoutesByFullPath {
   '/password-reset': typeof PublicPasswordResetRoute
   '/terms': typeof PublicTermsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/admin/app-namespaces': typeof AuthenticatedAdminAppNamespacesRoute
+  '/admin/app-reviews': typeof AuthenticatedAdminAppReviewsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -266,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
   '/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
@@ -295,6 +319,8 @@ export interface FileRoutesByTo {
   '/password-reset': typeof PublicPasswordResetRoute
   '/terms': typeof PublicTermsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/admin/app-namespaces': typeof AuthenticatedAdminAppNamespacesRoute
+  '/admin/app-reviews': typeof AuthenticatedAdminAppReviewsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -303,6 +329,7 @@ export interface FileRoutesByTo {
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
   '/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
@@ -335,6 +362,8 @@ export interface FileRoutesById {
   '/_public/password-reset': typeof PublicPasswordResetRoute
   '/_public/terms': typeof PublicTermsRoute
   '/blog_/$slug': typeof BlogSlugRoute
+  '/_authenticated/admin/app-namespaces': typeof AuthenticatedAdminAppNamespacesRoute
+  '/_authenticated/admin/app-reviews': typeof AuthenticatedAdminAppReviewsRoute
   '/_authenticated/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
   '/_authenticated/admin/backups': typeof AuthenticatedAdminBackupsRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
@@ -343,6 +372,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
   '/_authenticated/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
   '/_authenticated/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
@@ -374,6 +404,8 @@ export interface FileRouteTypes {
     | '/password-reset'
     | '/terms'
     | '/blog/$slug'
+    | '/admin/app-namespaces'
+    | '/admin/app-reviews'
     | '/admin/audit-logs'
     | '/admin/backups'
     | '/admin/dashboard'
@@ -382,6 +414,7 @@ export interface FileRouteTypes {
     | '/admin/system-settings'
     | '/admin/user-defaults'
     | '/admin/users'
+    | '/user/app-submissions'
     | '/user/dashboard'
     | '/api/system/restore-status'
     | '/api/user/background'
@@ -411,6 +444,8 @@ export interface FileRouteTypes {
     | '/password-reset'
     | '/terms'
     | '/blog/$slug'
+    | '/admin/app-namespaces'
+    | '/admin/app-reviews'
     | '/admin/audit-logs'
     | '/admin/backups'
     | '/admin/dashboard'
@@ -419,6 +454,7 @@ export interface FileRouteTypes {
     | '/admin/system-settings'
     | '/admin/user-defaults'
     | '/admin/users'
+    | '/user/app-submissions'
     | '/user/dashboard'
     | '/api/system/restore-status'
     | '/api/user/background'
@@ -450,6 +486,8 @@ export interface FileRouteTypes {
     | '/_public/password-reset'
     | '/_public/terms'
     | '/blog_/$slug'
+    | '/_authenticated/admin/app-namespaces'
+    | '/_authenticated/admin/app-reviews'
     | '/_authenticated/admin/audit-logs'
     | '/_authenticated/admin/backups'
     | '/_authenticated/admin/dashboard'
@@ -458,6 +496,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/system-settings'
     | '/_authenticated/admin/user-defaults'
     | '/_authenticated/admin/users'
+    | '/_authenticated/user/app-submissions'
     | '/_authenticated/user/dashboard'
     | '/api/system/restore-status'
     | '/api/user/background'
@@ -641,6 +680,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/app-namespaces': {
+      id: '/_authenticated/admin/app-namespaces'
+      path: '/app-namespaces'
+      fullPath: '/admin/app-namespaces'
+      preLoaderRoute: typeof AuthenticatedAdminAppNamespacesRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/app-reviews': {
+      id: '/_authenticated/admin/app-reviews'
+      path: '/app-reviews'
+      fullPath: '/admin/app-reviews'
+      preLoaderRoute: typeof AuthenticatedAdminAppReviewsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/audit-logs': {
       id: '/_authenticated/admin/audit-logs'
       path: '/audit-logs'
@@ -696,6 +749,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/user/app-submissions': {
+      id: '/_authenticated/user/app-submissions'
+      path: '/app-submissions'
+      fullPath: '/user/app-submissions'
+      preLoaderRoute: typeof AuthenticatedUserAppSubmissionsRouteImport
+      parentRoute: typeof AuthenticatedUserRouteRoute
     }
     '/_authenticated/user/dashboard': {
       id: '/_authenticated/user/dashboard'
@@ -757,6 +817,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminAppNamespacesRoute: typeof AuthenticatedAdminAppNamespacesRoute
+  AuthenticatedAdminAppReviewsRoute: typeof AuthenticatedAdminAppReviewsRoute
   AuthenticatedAdminAuditLogsRoute: typeof AuthenticatedAdminAuditLogsRoute
   AuthenticatedAdminBackupsRoute: typeof AuthenticatedAdminBackupsRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
@@ -769,6 +831,8 @@ interface AuthenticatedAdminRouteRouteChildren {
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
+    AuthenticatedAdminAppNamespacesRoute: AuthenticatedAdminAppNamespacesRoute,
+    AuthenticatedAdminAppReviewsRoute: AuthenticatedAdminAppReviewsRoute,
     AuthenticatedAdminAuditLogsRoute: AuthenticatedAdminAuditLogsRoute,
     AuthenticatedAdminBackupsRoute: AuthenticatedAdminBackupsRoute,
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
@@ -786,11 +850,13 @@ const AuthenticatedAdminRouteRouteWithChildren =
   )
 
 interface AuthenticatedUserRouteRouteChildren {
+  AuthenticatedUserAppSubmissionsRoute: typeof AuthenticatedUserAppSubmissionsRoute
   AuthenticatedUserDashboardRoute: typeof AuthenticatedUserDashboardRoute
 }
 
 const AuthenticatedUserRouteRouteChildren: AuthenticatedUserRouteRouteChildren =
   {
+    AuthenticatedUserAppSubmissionsRoute: AuthenticatedUserAppSubmissionsRoute,
     AuthenticatedUserDashboardRoute: AuthenticatedUserDashboardRoute,
   }
 

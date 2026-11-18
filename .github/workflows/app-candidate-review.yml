@@ -1,4 +1,5 @@
 name: App Candidate Review Build
+run-name: ${{ inputs.submission_id && format('Marketplace submission {0}', inputs.submission_id) || 'App Candidate Review Build' }}
 
 on:
     workflow_dispatch:
@@ -19,6 +20,10 @@ on:
                 description: Proposed publisher display name
                 type: string
                 default: ''
+            submission_id:
+                description: Server-issued Marketplace build correlation ID
+                type: string
+                default: ''
 
 permissions:
     contents: read
@@ -37,3 +42,5 @@ jobs:
             source_commit: ${{ inputs.source_commit }}
             source_path: ${{ inputs.source_path }}
             publisher_name: ${{ inputs.publisher_name }}
+            artifact_prefix: ${{ inputs.submission_id || 'app-candidate' }}
+            submission_id: ${{ inputs.submission_id }}

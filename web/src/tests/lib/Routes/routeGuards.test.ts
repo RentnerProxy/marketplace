@@ -80,6 +80,7 @@ describe('Route-Guards', function () {
     it('leitet während aktiver Wartung auf die Wartungsseite weiter', async function () {
         mockedValidateSession.mockResolvedValueOnce({
             user: createSessionUser('user-1'),
+            canSubmitMarketplaceApps: false,
             expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
             absoluteExpiresAt: new Date(
                 Date.now() + 8 * 60 * 60_000,

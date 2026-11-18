@@ -9,6 +9,7 @@ export type AuthenticatedNavItem = {
     icon: LucideIcon
     to?: AuthenticatedRoute
     permission?: PermissionKey
+    requiresVerifiedDeveloper?: boolean
     title?: string
     description?: string
     children?: Array<AuthenticatedNavItem>

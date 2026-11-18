@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { byteIdentity } from '../../../../web/src/lib/Marketplace/evidenceIdentity.ts'
 import { constants } from 'node:fs'
 import { copyFile, lstat, mkdir, open, opendir, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -11,17 +12,6 @@ export const packageLimit = 257 * 1024 * 1024
 interface FileIdentity {
     sha256: string
     sizeBytes: number
-}
-
-export function byteIdentity(bytes: Buffer): FileIdentity {
-    return {
-        sha256: createHash('sha256').update(bytes).digest('hex'),
-        sizeBytes: bytes.length,
-    }
-}
-
-export function jsonBytes(value: object) {
-    return Buffer.from(JSON.stringify(value, null, 2) + '\n')
 }
 
 async function readRegularFile<T>(

@@ -6,6 +6,7 @@ pub type Environment = BTreeMap<String, String>;
 const APPLICATION_KEYS: &[&str] = &[
     "ORIGIN",
     "AUTH_ENCRYPTION_KEY",
+    "MARKETPLACE_CANDIDATE_GITHUB_TOKEN",
     "SMTP_HOST",
     "SMTP_PORT",
     "SMTP_SECURE",

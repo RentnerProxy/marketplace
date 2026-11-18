@@ -26,6 +26,7 @@ import {
 import { assertRuntimeDatabaseRolePolicyService } from '@/server/Runtime/database-role-policy.service.ts'
 import { createWorkerShutdownService } from '@/server/Runtime/worker-shutdown.service.ts'
 import type { startMailWorker } from '@/server/Queues/mail.worker.ts'
+import { runCandidateValidationWorker } from '@/server/Marketplace/Submissions/validation.worker.ts'
 
 setRuntimeLogProcessService('worker')
 installStorageMutationBarrierFatalExitHandlerService()
@@ -46,6 +47,7 @@ await workerStatusReporter.reportStatus('starting')
 
 const startupReady = Promise.withResolvers<void>()
 let mailWorker: Awaited<ReturnType<typeof startMailWorker>> | undefined
+let candidateWorker: Promise<void> | undefined
 let backupWorkerStarter:
     ReturnType<typeof createBackupWorkerStartCoordinatorService> | undefined
 let workerHeartbeat:
@@ -57,6 +59,7 @@ const shutdown = createWorkerShutdownService({
     },
     closeWorkers: async function () {
         try {
+            await candidateWorker
             await backupWorkerStarter?.stop()
         } finally {
             try {
@@ -124,6 +127,11 @@ async function startWorkers() {
         if (process.env.NODE_ENV === 'production') throw error
     }
     if (shutdown.signal.aborted) return
+
+    candidateWorker = runCandidateValidationWorker(
+        shutdown.signal,
+        currentMailWorker.isRestoreQuiescenceActive,
+    )
 
     logInfo('background_worker.started', {
         backupConcurrency: backupStarter.getWorker() ? 1 : 0,
