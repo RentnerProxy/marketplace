@@ -210,10 +210,12 @@ fn sync(input: Sync) -> io::Result<Value> {
         if !parse_json(document.as_bytes())?.is_object() {
             return Err(invalid("Invalid contract document"));
         }
+    }
+    for name in DEFINITIONS {
         sync_file(
             &input.root,
             &format!("contracts/v1/{name}"),
-            document,
+            &input.documents[name],
             input.check,
         )?;
     }

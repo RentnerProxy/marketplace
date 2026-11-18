@@ -38,7 +38,8 @@ async function fixture(
         execute: (
             command: string,
             changes?: Record<string, string>,
-        ) => Promise<{ code: number; stderr: string }>
+            args?: string[],
+        ) => Promise<{ code: number; stderr: string; stdout: string }>
     }) => Promise<void>,
 ) {
     const temporary = await mkdtemp(join(tmpdir(), 'marketplace-dev-evidence-'))
@@ -119,6 +120,9 @@ async function fixture(
     const env: Record<string, string> = {
         SystemRoot: process.env.SystemRoot ?? '',
         MARKETPLACE_TOOLING_BIN: nativeToolPath('marketplace-tooling'),
+        ...(process.env.LLVM_PROFILE_FILE && {
+            LLVM_PROFILE_FILE: process.env.LLVM_PROFILE_FILE,
+        }),
         GITHUB_REPOSITORY: 'RentnerProxy/marketplace',
         GITHUB_EVENT_NAME: 'workflow_dispatch',
         GITHUB_REF: 'refs/heads/main',
@@ -138,6 +142,7 @@ async function fixture(
     const execute = async (
         command: string,
         changes: Record<string, string> = {},
+        args: string[] = [],
     ) => {
         const child = Bun.spawn(
             [
@@ -145,6 +150,7 @@ async function fixture(
                 '--no-env-file',
                 decodeURIComponent(script),
                 command,
+                ...args,
             ],
             {
                 env: { ...env, ...changes },
@@ -152,12 +158,12 @@ async function fixture(
                 stderr: 'pipe',
             },
         )
-        const [code, stderr] = await Promise.all([
+        const [code, stderr, stdout] = await Promise.all([
             child.exited,
             new Response(child.stderr).text(),
             new Response(child.stdout).text(),
         ])
-        return { code, stderr }
+        return { code, stderr, stdout }
     }
     try {
         expect((await execute('candidate')).code).toBe(0)
@@ -187,7 +193,10 @@ test('CLI verifies sealed data and requires an assessment and two matching remot
         ).toBe(revision)
         expect((await execute('ready')).code).not.toBe(0)
         expect((await execute('assess')).code).toBe(0)
-        expect((await execute('ready')).code).toBe(0)
+        expect(await execute('ready')).toMatchObject({
+            code: 0,
+            stdout: 'dev-aaaaaaaaaaaa-1234-1\n',
+        })
         expect(
             (
                 await execute('published', {
@@ -279,5 +288,65 @@ test('CLI rejects OCI configuration bytes changed inside the archive', async () 
         expect(await Bun.file(join(directory, 'identity.json')).exists()).toBe(
             false,
         )
+    })
+})
+
+test('CLI prepares the run, checks the exact archive before import, and binds the runtime result', async () => {
+    await fixture(async ({ directory, env, execute }) => {
+        expect(await execute('prepare')).toMatchObject({ code: 0, stderr: '' })
+        const output = await readFile(env.GITHUB_OUTPUT!, 'utf8')
+        expect(output).toContain('revision=' + revision + '\n')
+        expect(output).toContain('immutable_tag=dev-aaaaaaaaaaaa-1234-1\n')
+
+        expect(await execute('preflight')).toMatchObject({
+            code: 0,
+            stdout: env.EXPECTED_ARCHIVE_SHA256 + '\n',
+        })
+        const wrongId = await execute('preflight', {
+            IMAGE_ID: 'sha256:' + 'b'.repeat(64),
+        })
+        expect(wrongId.code).toBe(1)
+        expect(wrongId.stderr).toContain('OCI config digest mismatch')
+
+        const changedArchive = await execute('loaded', {
+            PREFLIGHT_ARCHIVE_SHA256: 'b'.repeat(64),
+        })
+        expect(changedArchive.code).toBe(1)
+        expect(changedArchive.stderr).toContain(
+            'archive changed after preflight',
+        )
+
+        await writeFile(join(directory, 'runtime-inspect.json'), '[]')
+        const missingImage = await execute('loaded')
+        expect(missingImage.code).toBe(1)
+        expect(missingImage.stderr).toContain(
+            'exactly one imported runtime image',
+        )
+    })
+})
+
+test('CLI accepts only exact registry bytes and current main', async () => {
+    await fixture(async ({ directory, execute }) => {
+        const raw = JSON.stringify({ schemaVersion: 2 })
+        const file = join(directory, 'raw-registry-manifest.json')
+        await writeFile(file, raw)
+        const digest = 'sha256:' + hash(raw)
+        expect(
+            await execute('registry-digest', {}, [file, digest]),
+        ).toMatchObject({
+            code: 0,
+            stdout: digest + '\n',
+        })
+        const different = await execute('registry-digest', {}, [
+            file,
+            'sha256:' + 'b'.repeat(64),
+        ])
+        expect(different.code).toBe(1)
+        expect(different.stderr).toContain('registry tag digest mismatch')
+
+        expect((await execute('registry-main', {}, [revision])).code).toBe(0)
+        const stale = await execute('registry-main', {}, ['b'.repeat(40)])
+        expect(stale.code).toBe(1)
+        expect(stale.stderr).toContain('main advanced')
     })
 })

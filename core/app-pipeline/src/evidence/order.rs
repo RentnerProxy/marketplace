@@ -1,4 +1,9 @@
-use std::{collections::HashSet, fmt, io, sync::LazyLock};
+use std::{
+    collections::HashSet,
+    fmt,
+    io::{self, Write},
+    sync::LazyLock,
+};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de, ser::SerializeMap};
 use serde_json::{Number, Value};
@@ -20,6 +25,15 @@ impl OrderedJson {
     pub(crate) fn parse(bytes: &[u8]) -> io::Result<Self> {
         let bytes = bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes);
         Ok(serde_json::from_slice(bytes)?)
+    }
+
+    pub(crate) fn compact_scanner_bytes(&self) -> io::Result<Vec<u8>> {
+        let mut bytes = Vec::new();
+        self.serialize(&mut serde_json::Serializer::with_formatter(
+            &mut bytes,
+            ScannerNumbers,
+        ))?;
+        Ok(bytes)
     }
 
     pub(crate) fn get(&self, name: &str) -> Option<&Self> {
@@ -206,6 +220,57 @@ fn array_index(key: &str) -> Option<u32> {
         return None;
     }
     key.parse().ok().filter(|index| *index != u32::MAX)
+}
+
+struct ScannerNumbers;
+
+impl serde_json::ser::Formatter for ScannerNumbers {
+    fn write_i64<W: Write + ?Sized>(&mut self, writer: &mut W, value: i64) -> io::Result<()> {
+        if value.unsigned_abs() > 9_007_199_254_740_991 {
+            return self.write_f64(writer, value as f64);
+        }
+        write!(writer, "{value}")
+    }
+
+    fn write_u64<W: Write + ?Sized>(&mut self, writer: &mut W, value: u64) -> io::Result<()> {
+        if value > 9_007_199_254_740_991 {
+            return self.write_f64(writer, value as f64);
+        }
+        write!(writer, "{value}")
+    }
+
+    fn write_f64<W: Write + ?Sized>(&mut self, writer: &mut W, value: f64) -> io::Result<()> {
+        // Mirror JSON.stringify's fixed decimal range so reformatting an
+        // otherwise unchanged Trivy document retains its previous byte identity.
+        let shortest = Number::from_f64(value)
+            .expect("finite JSON number")
+            .to_string();
+        if !(1e-6..1e21).contains(&value.abs()) {
+            return writer.write_all(shortest.as_bytes());
+        }
+        let Some((coefficient, exponent)) = shortest.split_once('e') else {
+            return writer.write_all(shortest.trim_end_matches(".0").as_bytes());
+        };
+        let exponent: i32 = exponent.parse().expect("JSON number exponent");
+        let coefficient = if let Some(unsigned) = coefficient.strip_prefix('-') {
+            writer.write_all(b"-")?;
+            unsigned
+        } else {
+            coefficient
+        };
+        let point = coefficient.find('.').unwrap_or(coefficient.len()) as i32 + exponent;
+        let digits = coefficient.replace('.', "");
+        if point <= 0 {
+            write!(writer, "0.{}{digits}", "0".repeat((-point) as usize))
+        } else {
+            let point = point as usize;
+            if point < digits.len() {
+                write!(writer, "{}.{}", &digits[..point], &digits[point..])
+            } else {
+                write!(writer, "{digits}{}", "0".repeat(point - digits.len()))
+            }
+        }
+    }
 }
 
 static SCHEMA: LazyLock<OrderedJson> = LazyLock::new(|| {

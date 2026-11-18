@@ -249,3 +249,89 @@ fn evidence_file_apis_preserve_exact_bytes_and_reject_aliases() {
     fs::write(&path, b"").unwrap();
     assert!(execute("file-identity", json!({"path": path, "limit": 512})).is_err());
 }
+
+#[test]
+fn assembly_rejects_invalid_document_identities_and_unmatched_appliances() {
+    let directory = tempfile::tempdir().unwrap();
+    let (_, assembly, _) = create_seals(directory.path());
+    for (field, replacement, reason) in [
+        ("/source/repositoryId", json!("01"), "source identity"),
+        (
+            "/build/workflowCommit",
+            json!("A".repeat(40)),
+            "build identity",
+        ),
+        (
+            "/build/workflowPath",
+            json!(".github/workflows/../../../other.yml"),
+            "build identity",
+        ),
+        (
+            "/build/attempt",
+            json!(9_007_199_254_740_992_u64),
+            "build identity",
+        ),
+        ("/records/0/formatVersion", json!(2), "target context"),
+        (
+            "/records/0/applianceImage",
+            json!("ghcr.io/example/appliance:latest"),
+            "target context",
+        ),
+        (
+            "/records/0/package/manifestSha256",
+            json!("A".repeat(64)),
+            "package identity",
+        ),
+        (
+            "/records/0/package/archive/sizeBytes",
+            json!(0),
+            "package identity",
+        ),
+        (
+            "/records/0/package/sbom/sizeBytes",
+            json!(16_777_217),
+            "package identity",
+        ),
+        (
+            "/records/0/applianceImage",
+            json!(format!(
+                "ghcr.io/example/appliance@sha256:{}",
+                "c".repeat(64)
+            )),
+            "different appliance image",
+        ),
+    ] {
+        let mut changed = assembly.clone();
+        *changed.pointer_mut(field).unwrap() = replacement;
+        assert!(
+            execute("assemble", changed)
+                .unwrap_err()
+                .to_string()
+                .contains(reason),
+            "{field} must fail as {reason}"
+        );
+    }
+
+    let mut reference = assembly;
+    for record in reference["records"].as_array_mut().unwrap() {
+        record["package"]["manifest"]["id"] = json!("rentnerproxy.candidate-reference");
+    }
+    assert!(
+        execute("assemble", reference.clone())
+            .unwrap_err()
+            .to_string()
+            .contains("non-publication purpose")
+    );
+    reference["purpose"] = json!("reference");
+    for record in reference["records"].as_array_mut().unwrap() {
+        record["purpose"] = json!("reference");
+    }
+    let report = execute("assemble", reference).unwrap();
+    let report_bytes = report["reportBytes"].as_str().unwrap().as_bytes();
+    assert_eq!(
+        report["sealed"]["evidence"]["report"],
+        json!({
+            "sha256": marketplace_artifacts::digest(report_bytes), "sizeBytes": report_bytes.len(),
+        })
+    );
+}

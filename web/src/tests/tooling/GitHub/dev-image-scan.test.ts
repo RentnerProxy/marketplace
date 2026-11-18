@@ -139,6 +139,7 @@ exit "$SYNTHETIC_STATUS"
                 cwd: directory,
                 env: {
                     SystemRoot: process.env.SystemRoot,
+                    LLVM_PROFILE_FILE: process.env.LLVM_PROFILE_FILE,
                     MARKETPLACE_TOOLING_BIN: nativeToolPath(
                         'marketplace-tooling',
                     ),

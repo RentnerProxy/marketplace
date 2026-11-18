@@ -338,3 +338,31 @@ fn sbom_counts_nested_components_and_rejects_ambiguous_scanner_output() {
     );
     assert_eq!(fs::read(&path).unwrap(), duplicate);
 }
+
+#[test]
+fn scanner_preserves_javascript_member_order_for_extension_objects() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("sbom.json");
+    fs::write(directory.path().join("package.json"), b"{}").unwrap();
+    let source = concat!(
+        "\u{feff}",
+        r#"{"specVersion":"1.6","extra":{"10":null,"2":false,"01":"first","+1":"second","4294967295":"third","0":-4,"4294967294":4.25,"value":"\u00fc","numbers":[1e-6,-1e-6,1e-7,1e21,1000000000000000101,-1000000000000000101,333333333.33333329]},"version":1.0,"bomFormat":"CycloneDX"}"#,
+    );
+    fs::write(&path, source).unwrap();
+    sbom::execute(
+        "normalize-file",
+        json!({
+            "path": path,
+            "manifest": {"id": "publisher.app", "version": "1.2.3", "display": {"license": "MIT"}},
+            "dependenciesDirectory": directory.path(),
+        }),
+    )
+    .unwrap();
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        concat!(
+            r#"{"bomFormat":"CycloneDX","specVersion":"1.6","version":1,"extra":{"0":-4,"2":false,"10":null,"4294967294":4.25,"01":"first","+1":"second","4294967295":"third","value":"ü","numbers":[0.000001,-0.000001,1e-7,1e+21,1000000000000000100,-1000000000000000100,333333333.3333333]},"components":[],"metadata":{"component":{"type":"application","name":"publisher.app","version":"1.2.3","licenses":[{"license":{"name":"MIT"}}]}}}"#,
+            "\n",
+        )
+    );
+}

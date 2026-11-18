@@ -169,6 +169,16 @@ async function coverage() {
                 'report',
                 ...manifest,
                 '--workspace',
+                '--summary-only',
+            ],
+            env: coverageEnv,
+        },
+        {
+            args: [
+                ...cov,
+                'report',
+                ...manifest,
+                '--workspace',
                 '--fail-under-lines',
                 '90',
                 '--fail-under-functions',

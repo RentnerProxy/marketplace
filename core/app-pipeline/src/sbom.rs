@@ -180,7 +180,7 @@ fn normalize_file(input: NormalizeFileInput) -> io::Result<Value> {
         input.manifest,
         has_deps,
     )?;
-    let mut bytes = serde_json::to_vec(&bom)?;
+    let mut bytes = bom.compact_scanner_bytes()?;
     bytes.push(b'\n');
     if bytes.len() as u64 > SIZE_LIMIT {
         return Err(invalid("Candidate SBOM violates its size limit"));

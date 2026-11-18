@@ -270,51 +270,10 @@ mod http {
 
     #[cfg(test)]
     mod tests {
-        use super::*;
-        use serde_json::json;
-        use std::io::Cursor;
-
-        fn response(frame: &str) -> io::Result<(u16, Value)> {
-            let wire = format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n{frame}");
-            read_response(&mut Cursor::new(wire))
-        }
-
-        #[test]
-        fn accepts_fixed_chunked_and_close_delimited_json() {
-            for frame in [
-                "Content-Length: 2\r\n\r\n{}",
-                "Transfer-Encoding: chunked\r\n\r\n1;extension=value\r\n{\r\n1\r\n}\r\n0\r\nX-Trailer: value\r\n\r\n",
-                "Connection: close\r\n\r\n{}",
-            ] {
-                assert_eq!(response(frame).unwrap(), (200, json!({})));
-            }
-            let hints = b"HTTP/1.1 103 Early Hints\r\nLink: </example>\r\n\r\nHTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{}";
-            assert_eq!(
-                read_response(&mut Cursor::new(hints)).unwrap(),
-                (200, json!({}))
-            );
-        }
-
-        #[test]
-        fn rejects_ambiguous_incomplete_and_oversized_http_responses() {
-            for frame in [
-                "Content-Length: 2\r\nTransfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\n\r\n",
-                "Content-Length: 2\r\ncontent-length: 2\r\n\r\n{}",
-                "Content-Length: +2\r\n\r\n{}",
-                "Content-Length: 3\r\n\r\n{}",
-                "Content-Length: 1048577\r\n\r\n",
-                "Transfer-Encoding: chunked\r\n\r\n+2\r\n{}\r\n0\r\n\r\n",
-                "Transfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\n",
-                "Transfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\nX-Trailer: value\r\n",
-                "Transfer-Encoding: chunked\r\n\r\n100001\r\n",
-                "Content-Encoding: gzip\r\n\r\n{}",
-                "\r\n{\"healthy\":true,\"healthy\":false}",
-            ] {
-                assert!(response(frame).is_err(), "accepted frame {frame:?}");
-            }
-            let oversized = format!("X-Long: {}\r\n\r\n{{}}", "x".repeat(HEADER_LIMIT));
-            assert!(response(&oversized).is_err());
-        }
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/unit/smoke_http.rs"
+        ));
     }
 }
 
@@ -600,16 +559,38 @@ mod unix {
     }
 
     pub(super) fn probe(value: Value) -> io::Result<()> {
+        probe_fixture(
+            value,
+            &Fixture {
+                manifest: Path::new("/package/app.json"),
+                app: AppEndpoint {
+                    path: Path::new(APP_SOCKET),
+                    uid: 21001,
+                },
+                core: Path::new(CORE_SOCKET),
+            },
+        )
+    }
+
+    struct Fixture<'a> {
+        manifest: &'a Path,
+        app: AppEndpoint<'a>,
+        core: &'a Path,
+    }
+
+    fn probe_fixture(value: Value, fixture: &Fixture<'_>) -> io::Result<()> {
         let protocol =
             ProtocolContracts::new().map_err(|_| invalid("Runtime protocol is unavailable"))?;
         protocol
             .validate("BootstrapDescriptor", &value)
             .map_err(|_| invalid("Invalid runtime bootstrap"))?;
         let bootstrap: Bootstrap = serde_json::from_value(value)?;
-        if bootstrap.app_socket != APP_SOCKET || bootstrap.core_socket != CORE_SOCKET {
+        if fixture.app.path.as_os_str() != bootstrap.app_socket.as_str()
+            || fixture.core.as_os_str() != bootstrap.core_socket.as_str()
+        {
             return Err(invalid("Invalid runtime fixture sockets"));
         }
-        let manifest = parse_json(&read_file(Path::new("/package/app.json"), MANIFEST_LIMIT)?)?;
+        let manifest = parse_json(&read_file(fixture.manifest, MANIFEST_LIMIT)?)?;
         Contracts::new()
             .and_then(|contract| contract.validate_manifest(&manifest))
             .map_err(|_| invalid("Invalid runtime package manifest"))?;
@@ -622,11 +603,14 @@ mod unix {
             .validate("PlatformContext", &context)
             .map_err(|_| invalid("Invalid runtime fixture context"))?;
         let context = serde_json::to_vec(&context)?;
-        fs::DirBuilder::new()
-            .mode(0o770)
-            .create("/run-fixture/core")?;
-        let listener = UnixListener::bind(CORE_SOCKET)?;
-        fs::set_permissions(CORE_SOCKET, fs::Permissions::from_mode(0o660))?;
+        fs::DirBuilder::new().mode(0o770).create(
+            fixture
+                .core
+                .parent()
+                .ok_or_else(|| invalid("Invalid runtime fixture directory"))?,
+        )?;
+        let listener = UnixListener::bind(fixture.core)?;
+        fs::set_permissions(fixture.core, fs::Permissions::from_mode(0o660))?;
         listener.set_nonblocking(true)?;
         let stop = AtomicBool::new(false);
         thread::scope(|scope| {
@@ -648,19 +632,15 @@ mod unix {
                     .as_u64()
                     .ok_or_else(|| invalid("Missing runtime probe deadline"))?;
                 let end = Instant::now() + Duration::from_millis(timeout);
-                let endpoint = AppEndpoint {
-                    path: Path::new(APP_SOCKET),
-                    uid: 21001,
-                };
                 poll(
-                    &endpoint,
+                    &fixture.app,
                     &bootstrap,
                     &protocol,
                     HttpOperation::GetAppHealth,
                     end,
                 )?;
                 let ready = poll(
-                    &endpoint,
+                    &fixture.app,
                     &bootstrap,
                     &protocol,
                     HttpOperation::GetAppReadiness,
@@ -700,220 +680,10 @@ mod unix {
 
     #[cfg(test)]
     mod tests {
-        use super::*;
-        use std::net::Shutdown;
-        use std::os::unix::fs::symlink;
-
-        fn fixture() -> Bootstrap {
-            Bootstrap {
-                app_id: "rentnerproxy.reference".into(),
-                installation_id: "candidate-smoke".into(),
-                generation: 17,
-                runtime_profile: "rentnerproxy-linux-v1".into(),
-                versions: json!({"platformApi": "1.0.0", "appProtocol": "1.0.0"}),
-                app_socket: APP_SOCKET.into(),
-                core_socket: CORE_SOCKET.into(),
-                app_credential: "a".repeat(64),
-                core_credential: "b".repeat(64),
-            }
-        }
-
-        fn core_response(
-            bootstrap: &Bootstrap,
-            method: &str,
-            authorization: &str,
-            generation: u64,
-            body: &str,
-        ) -> String {
-            let path = HttpOperation::GetPlatformContext.descriptor().path;
-            let request = format!(
-                "{method} {path}?fixture=1 HTTP/1.1\r\nHost: localhost\r\nAuthorization: Bearer {authorization}\r\nX-App-Installation: candidate-smoke\r\nX-App-Generation: {generation}\r\n{body}"
-            );
-            let (server, mut client) = UnixStream::pair().unwrap();
-            client
-                .set_read_timeout(Some(Duration::from_secs(2)))
-                .unwrap();
-            thread::scope(|scope| {
-                let server =
-                    scope.spawn(|| context_request(server, bootstrap, b"{\"context\":true}"));
-                client.write_all(request.as_bytes()).unwrap();
-                client.shutdown(Shutdown::Write).unwrap();
-                let mut output = String::new();
-                client.read_to_string(&mut output).unwrap();
-                server.join().unwrap().unwrap();
-                assert!(!output.contains(&bootstrap.app_credential));
-                assert!(!output.contains(&bootstrap.core_credential));
-                output
-            })
-        }
-
-        #[test]
-        fn core_context_requires_correct_role_installation_and_generation() {
-            let bootstrap = fixture();
-            let core = &bootstrap.core_credential;
-            let output = core_response(&bootstrap, "GET", core, 17, "\r\n");
-            assert!(output.starts_with("HTTP/1.1 200 OK\r\n"));
-            assert!(output.ends_with("{\"context\":true}"));
-            assert!(
-                core_response(&bootstrap, "GET", &bootstrap.app_credential, 17, "\r\n")
-                    .starts_with("HTTP/1.1 403 ")
-            );
-            assert!(
-                core_response(&bootstrap, "GET", core, 16, "\r\n").starts_with("HTTP/1.1 403 ")
-            );
-            assert!(
-                core_response(
-                    &bootstrap,
-                    "GET",
-                    core,
-                    17,
-                    "X-App-Installation: repeated\r\n\r\n"
-                )
-                .starts_with("HTTP/1.1 403 ")
-            );
-            assert!(
-                core_response(&bootstrap, "POST", core, 17, "\r\n").starts_with("HTTP/1.1 404 ")
-            );
-        }
-
-        #[test]
-        fn core_context_applies_the_request_body_limit_before_serving() {
-            let bootstrap = fixture();
-            let core = &bootstrap.core_credential;
-            for body in [
-                "Content-Length: 2\r\n\r\n{}",
-                "Transfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\n\r\n",
-            ] {
-                assert!(
-                    core_response(&bootstrap, "GET", core, 17, body).starts_with("HTTP/1.1 200 ")
-                );
-            }
-            assert!(
-                core_response(&bootstrap, "GET", core, 17, "Content-Length: 4097\r\n\r\n")
-                    .starts_with("HTTP/1.1 413 ")
-            );
-            assert!(
-                core_response(
-                    &bootstrap,
-                    "GET",
-                    core,
-                    17,
-                    "Transfer-Encoding: chunked\r\n\r\n1001\r\n"
-                )
-                .starts_with("HTTP/1.1 413 ")
-            );
-            assert!(
-                core_response(
-                    &bootstrap,
-                    "GET",
-                    core,
-                    17,
-                    "Content-Length: 2\r\nTransfer-Encoding: chunked\r\n\r\n"
-                )
-                .starts_with("HTTP/1.1 400 ")
-            );
-        }
-
-        #[test]
-        fn readiness_checks_socket_ownership_sends_credentials_and_waits_for_a_valid_reply() {
-            let directory = tempfile::tempdir().unwrap();
-            let path = directory.path().join("app.sock");
-            let alias = directory.path().join("alias.sock");
-            let unix = UnixListener::bind(&path).unwrap();
-            unix.set_nonblocking(true).unwrap();
-            symlink(&path, &alias).unwrap();
-            let uid = fs::symlink_metadata(&path).unwrap().uid();
-            assert!(AppEndpoint { path: &alias, uid }.connect().is_err());
-            assert!(
-                AppEndpoint {
-                    path: &path,
-                    uid: uid.wrapping_add(1)
-                }
-                .connect()
-                .is_err()
-            );
-
-            let bootstrap = fixture();
-            let protocol = ProtocolContracts::new().unwrap();
-            let endpoint = AppEndpoint { path: &path, uid };
-            let deadline = Instant::now() + Duration::from_secs(4);
-            thread::scope(|scope| {
-                let server = scope.spawn(|| {
-                    for (status, ready) in [("503 Service Unavailable", false), ("200 OK", true)] {
-                        let stream = loop {
-                            match unix.accept() {
-                                Ok((stream, _)) => break stream,
-                                Err(error)
-                                    if error.kind() == io::ErrorKind::WouldBlock
-                                        && Instant::now() < deadline =>
-                                {
-                                    thread::sleep(Duration::from_millis(5))
-                                }
-                                Err(error) => panic!("test listener failed: {error}"),
-                            }
-                        };
-                        let mut stream =
-                            BufReader::new(DeadlineStream::new(stream, SOCKET_TIMEOUT));
-                        let request = head(&mut stream).unwrap();
-                        let mut slots = [httparse::EMPTY_HEADER; 48];
-                        let mut parsed = httparse::Request::new(&mut slots);
-                        assert!(parsed.parse(&request).unwrap().is_complete());
-                        assert_eq!(
-                            parsed.path,
-                            Some(HttpOperation::GetAppReadiness.descriptor().path)
-                        );
-                        let bearer = format!("Bearer {}", bootstrap.app_credential);
-                        assert!(
-                            header(parsed.headers, "authorization").unwrap()
-                                == Some(bearer.as_str())
-                        );
-                        assert!(
-                            header(parsed.headers, "accept-encoding").unwrap() == Some("identity")
-                        );
-                        assert!(
-                            header(parsed.headers, "x-app-installation").unwrap()
-                                == Some("candidate-smoke")
-                        );
-                        assert!(header(parsed.headers, "x-app-generation").unwrap() == Some("17"));
-                        let payload =
-                            json!({"ready": ready, "protocolVersion": "1.0.0", "providers": []});
-                        respond(
-                            stream.get_mut(),
-                            status,
-                            &serde_json::to_vec(&payload).unwrap(),
-                        )
-                        .unwrap();
-                    }
-                });
-                let result = poll(
-                    &endpoint,
-                    &bootstrap,
-                    &protocol,
-                    HttpOperation::GetAppReadiness,
-                    deadline,
-                )
-                .unwrap();
-                assert_eq!(result["ready"], true);
-                server.join().unwrap();
-            });
-        }
-
-        #[test]
-        fn absolute_deadline_stops_a_peer_that_keeps_dripping_bytes() {
-            let (mut writer, reader) = UnixStream::pair().unwrap();
-            let worker = thread::spawn(move || {
-                for _ in 0..30 {
-                    if writer.write_all(b"x").is_err() {
-                        return;
-                    }
-                    thread::sleep(Duration::from_millis(10));
-                }
-            });
-            let mut reader = DeadlineStream::new(reader, Duration::from_millis(60));
-            assert!(reader.read_to_end(&mut Vec::new()).is_err());
-            drop(reader);
-            worker.join().unwrap();
-        }
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/unit/smoke_unix.rs"
+        ));
     }
 }
 

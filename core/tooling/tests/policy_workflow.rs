@@ -138,3 +138,83 @@ fn review_approval_requires_complete_successful_current_snapshot() -> io::Result
     assert!(execute("policy-pr-successful-checks", failed).is_err());
     Ok(())
 }
+
+#[test]
+fn workflow_fails_closed_for_malformed_job_and_step_values() -> io::Result<()> {
+    let valid = workflow(json!("pull_request"), "fixture");
+    for (key, replacement, error) in [
+        ("jobs", json!([]), "Invalid workflow jobs"),
+        ("gate", json!([]), "Invalid workflow job"),
+        ("steps", json!("not a sequence"), "Invalid workflow steps"),
+        ("step", json!(false), "Invalid workflow step"),
+        (
+            "with",
+            json!("persist-credentials: true"),
+            "Invalid workflow step inputs",
+        ),
+    ] {
+        let mut input = valid.clone();
+        let jobs = &mut input["workflow"]["jobs"];
+        match key {
+            "jobs" => *jobs = replacement,
+            "gate" => jobs["gate"] = replacement,
+            "steps" => jobs["gate"]["steps"] = replacement,
+            "step" => jobs["gate"]["steps"][0] = replacement,
+            "with" => jobs["gate"]["steps"][0]["with"] = replacement,
+            _ => unreachable!(),
+        }
+        assert_eq!(
+            execute("policy-workflow", input).unwrap_err().to_string(),
+            error
+        );
+    }
+
+    let mut input = valid;
+    input["workflow"]["jobs"]["gate"]["steps"][0]["uses"] = json!(null);
+    input["workflow"]["jobs"]["gate"]["steps"][0]["with"]["persist-credentials"] = json!(" TRUE ");
+    let errors = execute("policy-workflow", input)?;
+    assert_eq!(
+        errors,
+        json!([
+            ".github/workflows/pr-fixture.yml: action must use a full commit SHA",
+            ".github/workflows/pr-fixture.yml: persisted checkout credentials",
+        ])
+    );
+    Ok(())
+}
+
+#[test]
+fn pr_metadata_labels_match_repository_paths_and_reject_malformed_api_entries() -> io::Result<()> {
+    assert_eq!(
+        execute(
+            "policy-pr-title",
+            json!({"title":"fix(core): validate receipts"})
+        )?,
+        true
+    );
+    assert_eq!(execute("policy-pr-title", json!({"title":false}))?, false);
+    let files = json!([
+        {"filename":"Dockerfile"}, {"filename":"core/tooling/Cargo.toml"},
+        {"filename":".github/workflows/ci.yml"}, {"filename":"bun.lock"},
+        {"filename":"README.md"}, {"filename":"web/src/index.ts"},
+    ]);
+    assert_eq!(
+        execute("policy-pr-labels", json!({"files":files}))?,
+        json!([
+            "area: web",
+            "area: core",
+            "area: automation",
+            "area: appliance"
+        ])
+    );
+    assert_eq!(
+        execute(
+            "policy-pr-labels",
+            json!({"files":[{"filename":"README.md"}]})
+        )?,
+        json!([])
+    );
+    assert!(execute("policy-pr-labels", json!({"files":[{"filename":null}]})).is_err());
+    assert!(execute("policy-pr-labels", json!({"files":{}})).is_err());
+    Ok(())
+}

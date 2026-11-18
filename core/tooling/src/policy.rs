@@ -104,13 +104,25 @@ fn workflow_errors(input: &Value) -> io::Result<Value> {
                 .as_array()
                 .ok_or_else(|| invalid("Invalid workflow steps"))?;
             for step in steps {
+                let step = step
+                    .as_object()
+                    .ok_or_else(|| invalid("Invalid workflow step"))?;
                 if let Some(action) = step.get("uses") {
                     check_action(action, &mut errors);
                 }
-                if step["with"]["persist-credentials"] == true
-                    || step["with"]["persist-credentials"] == "true"
-                {
-                    errors.push(format!("{file}: persisted checkout credentials"));
+                if let Some(inputs) = step.get("with") {
+                    let inputs = inputs
+                        .as_object()
+                        .ok_or_else(|| invalid("Invalid workflow step inputs"))?;
+                    let persists = inputs.get("persist-credentials").is_some_and(|value| {
+                        value == true
+                            || value
+                                .as_str()
+                                .is_some_and(|value| value.trim().eq_ignore_ascii_case("true"))
+                    });
+                    if persists {
+                        errors.push(format!("{file}: persisted checkout credentials"));
+                    }
                 }
             }
         }

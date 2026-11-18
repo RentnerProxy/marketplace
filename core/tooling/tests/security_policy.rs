@@ -103,3 +103,63 @@ fn scanner_patch_proof_rejects_the_wrong_package_and_ambiguous_oci_layout() -> i
     );
     Ok(())
 }
+
+#[test]
+fn patch_exemption_rejects_malformed_locks_and_scanner_identifiers() -> io::Result<()> {
+    let root = TempDir::new()?;
+    for lock in [
+        json!([]),
+        json!({"patchedDependencies": []}),
+        json!({"patchedDependencies": {"picomatch@4.0.7": 42}}),
+        json!({"packages":[]}),
+        json!({"packages":{"picomatch":[null]}}),
+    ] {
+        assert!(
+            execute(
+                "security-picomatch-audit",
+                json!({"root":root.path(),"lock":lock})
+            )
+            .is_err()
+        );
+    }
+
+    let file = root.path().join("bun.lock");
+    fs::write(&file, b"{ \"packages\": {}, }")?;
+    assert_eq!(
+        execute("security-bun-lock", json!({"root":root.path()}))?,
+        "{ \"packages\": {}, }"
+    );
+    fs::write(&file, [255])?;
+    assert!(
+        execute("security-bun-lock", json!({"root":root.path()}))
+            .unwrap_err()
+            .to_string()
+            .contains("UTF-8 Bun lockfile")
+    );
+
+    let digest = "a".repeat(64);
+    assert_eq!(
+        execute(
+            "security-docker-id",
+            json!({"kind":"container","value":digest})
+        )?,
+        true
+    );
+    assert_eq!(
+        execute(
+            "security-docker-id",
+            json!({"kind":"image","value":format!("sha256:{digest}")})
+        )?,
+        true
+    );
+    assert_eq!(
+        execute("security-docker-id", json!({"kind":"image","value":digest}))?,
+        false
+    );
+    assert!(execute("security-docker-id", json!({"kind":"tag","value":digest})).is_err());
+    assert_eq!(
+        execute("security-picomatch-path", json!({}))?,
+        "app/node_modules/.bun/picomatch@4.0.7/node_modules/picomatch"
+    );
+    Ok(())
+}
