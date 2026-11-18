@@ -5,6 +5,7 @@ import type {
 export const PERMISSIONS = {
     ADMIN_DASHBOARD: 'admin.dashboard',
     ADMIN_USER_MANAGEMENT: 'admin.userManagement',
+    ADMIN_ACCOUNT_CONVERSION: 'admin.accountConversion',
     ADMIN_SYSTEM_SETTINGS: 'admin.systemSettings',
     ADMIN_MAINTENANCE_BYPASS: 'admin.maintenanceBypass',
     ADMIN_SUPER_USER: 'admin.superUser',
@@ -19,6 +20,10 @@ export const PUBLIC_PERMISSION_KEYS: ReadonlyArray<string> = [
     PERMISSIONS.USER_DASHBOARD,
 ] satisfies Array<PermissionKey>
 
+export const DEFAULT_PUBLIC_PERMISSION_KEYS = [
+    PERMISSIONS.USER_DASHBOARD,
+] as const satisfies ReadonlyArray<`user.${string}` & PermissionKey>
+
 export const DEFAULT_PERMISSIONS = [
     {
         key: PERMISSIONS.ADMIN_DASHBOARD,
@@ -29,6 +34,12 @@ export const DEFAULT_PERMISSIONS = [
         key: PERMISSIONS.ADMIN_USER_MANAGEMENT,
         name: 'Öffentliche Konten',
         description: 'Darf öffentlich registrierte Konten verwalten.',
+    },
+    {
+        key: PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
+        name: 'Kontotyp ändern',
+        description:
+            'Darf verwaltbare Konten zwischen öffentlich und Team umwandeln.',
     },
     {
         key: PERMISSIONS.ADMIN_SYSTEM_SETTINGS,
@@ -44,7 +55,7 @@ export const DEFAULT_PERMISSIONS = [
         key: PERMISSIONS.ADMIN_SUPER_USER,
         name: 'Superuser',
         description:
-            'Darf Teamkonten einladen und verwalten sowie Teamrechte und öffentliche Standardrechte konfigurieren.',
+            'Darf Teamkonten einladen und verwalten sowie Teamrechte konfigurieren.',
     },
     {
         key: PERMISSIONS.USER_DASHBOARD,
@@ -77,6 +88,7 @@ export const DEFAULT_PERMISSIONS = [
 export const DEFAULT_ADMIN_PERMISSION_KEYS: Array<string> = [
     PERMISSIONS.ADMIN_DASHBOARD,
     PERMISSIONS.ADMIN_USER_MANAGEMENT,
+    PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
     PERMISSIONS.ADMIN_SYSTEM_SETTINGS,
     PERMISSIONS.ADMIN_MAINTENANCE_BYPASS,
     PERMISSIONS.ADMIN_SUPER_USER,

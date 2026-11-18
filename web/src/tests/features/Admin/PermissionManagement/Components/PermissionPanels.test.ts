@@ -1,6 +1,5 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import DefaultPermissionsPanel from '@/features/Admin/PermissionManagement/Components/DefaultPermissionsPanel.tsx'
 import PermissionChecklist from '@/features/Admin/PermissionManagement/Components/PermissionChecklist.tsx'
 import PermissionPresetForm from '@/features/Admin/PermissionManagement/Components/PermissionPresetForm.tsx'
 import PermissionPresetList from '@/features/Admin/PermissionManagement/Components/PermissionPresetList.tsx'
@@ -68,7 +67,7 @@ function formProps(): PermissionPresetFormProps {
     }
 }
 
-describe('Permission checklist and defaults', () => {
+describe('Permission checklist', () => {
     it('renders loading and empty states without actionable checkboxes', () => {
         for (const isLoading of [true, false]) {
             const html = renderToStaticMarkup(
@@ -110,37 +109,6 @@ describe('Permission checklist and defaults', () => {
         expect(inputs.every((element) => element.props.disabled)).toBe(true)
         invoke(inputs[1]!, 'onChange')
         expect(onTogglePermission).toHaveBeenCalledWith('custom.read')
-    })
-
-    it('allows only dirty, loaded, non-saving defaults to be saved', () => {
-        const handler = { handleTogglePermission: mock(), handleSave: mock() }
-        for (const [isDirty, isLoading, isSaving] of [
-            [true, false, false],
-            [false, false, false],
-            [true, true, false],
-            [true, false, true],
-        ]) {
-            const tree = DefaultPermissionsPanel({
-                permissions,
-                isLoading,
-                state: {
-                    permissionKeys: ['custom.read'],
-                    isDirty,
-                    isSaving,
-                },
-                handler,
-            })
-            const save = findElement(
-                tree,
-                (element) => element.type === 'button',
-            )
-            expect(save.props.disabled).toBe(!isDirty || isLoading || isSaving)
-            const html = renderToStaticMarkup(tree)
-            expect(html).toContain('admin.permissions.defaults.hint')
-            if (isSaving) expect(html).toContain('common.saving')
-            if (!save.props.disabled) invoke(save, 'onClick')
-        }
-        expect(handler.handleSave).toHaveBeenCalledTimes(1)
     })
 })
 

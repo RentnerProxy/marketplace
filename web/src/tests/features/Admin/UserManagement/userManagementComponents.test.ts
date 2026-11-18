@@ -39,7 +39,7 @@ import GeneralUserInfo from '@/features/Admin/UserManagement/Components/UserEdit
 import Header from '@/features/Admin/UserManagement/Components/UserEditModal/Components/Header.tsx'
 import Footer from '@/features/Admin/UserManagement/Components/UserEditModal/Components/Footer.tsx'
 import UserAvatar from '@/features/Admin/UserManagement/Components/UserAvatar.tsx'
-import UserTableActionButton from '@/features/Admin/UserManagement/Components/UsersTable/Components/UserTableActionButton.tsx'
+import TableActionButton from '@/shared/Table/TableActionButton.tsx'
 import UserTableActions from '@/features/Admin/UserManagement/Components/UsersTable/Components/UserTableActions.tsx'
 import useUserEditModalLogic from '@/features/Admin/UserManagement/Components/UserEditModal/Hooks/useUserEditModalLogic.ts'
 const { default: EditUserModal } =
@@ -222,10 +222,14 @@ describe('user management components', () => {
         const props = {
             ...callbacks,
             user,
+            accountType: 'public' as const,
             isDeletingUser: false,
             isTogglingUserActive: false,
             isResendingPasswordReset: false,
+            isConvertingAccount: false,
             canManageSuperUsers: false,
+            canConvertAccounts: false,
+            onConvertAccount: vi.fn(),
         }
         const html = renderToStaticMarkup(UserTableActions(props))
         expect(html).toContain('admin.users.editAriaLabel')
@@ -242,7 +246,7 @@ describe('user management components', () => {
         )
         expect(inactiveHtml.match(/disabled=""/g)).toHaveLength(1)
         const onClick = vi.fn()
-        const buttonTree = UserTableActionButton({
+        const buttonTree = TableActionButton({
             ariaLabel: 'Edit Ada',
             children: 'Edit',
             className: '',

@@ -1,3 +1,5 @@
+LOCK TABLE "marketplace"."users", "marketplace"."user_permissions" IN ACCESS EXCLUSIVE MODE;
+--> statement-breakpoint
 CREATE TABLE "marketplace"."public_accounts" (
 	"userId" uuid PRIMARY KEY NOT NULL,
 	"accountType" varchar(6) DEFAULT 'public' NOT NULL,
@@ -38,16 +40,69 @@ CREATE TABLE "marketplace"."staff_user_permissions" (
 	CONSTRAINT "staff_user_permissions_userId_permissionId_pk" PRIMARY KEY("userId","permissionId")
 );
 --> statement-breakpoint
-ALTER TABLE "marketplace"."user_permissions" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
-DROP TABLE "marketplace"."user_permissions" CASCADE;--> statement-breakpoint
 ALTER TABLE "marketplace"."users" DROP CONSTRAINT "users_createdByUserId_users_id_fk";
 --> statement-breakpoint
 ALTER TABLE "marketplace"."default_user_permissions" DROP CONSTRAINT "default_user_permissions_permissionId_permissions_id_fk";
 --> statement-breakpoint
 DROP INDEX "marketplace"."users_created_by_user_id_idx";--> statement-breakpoint
-ALTER TABLE "marketplace"."users" ADD COLUMN "accountType" varchar(6) NOT NULL;--> statement-breakpoint
+ALTER TABLE "marketplace"."users" ADD COLUMN "accountType" varchar(6);--> statement-breakpoint
 ALTER TABLE "marketplace"."default_user_permissions" ADD COLUMN "publicEligible" boolean DEFAULT true NOT NULL;--> statement-breakpoint
 ALTER TABLE "marketplace"."permissions" ADD COLUMN "publicEligible" boolean GENERATED ALWAYS AS ("key" like 'user.%') STORED NOT NULL;--> statement-breakpoint
+-- Preserve administrative provisioning and the legacy owner role.
+UPDATE "marketplace"."users" AS u
+SET "accountType" = CASE
+    WHEN u."createdByUserId" IS NOT NULL
+        OR EXISTS (
+            SELECT 1 FROM "marketplace"."audit_logs" AS a
+            WHERE a."action" IN ('admin.user.created', 'system.first-super-user.created')
+                AND a."newValues" ->> 'id' = u."id"::text
+        )
+        OR EXISTS (
+            SELECT 1 FROM "marketplace"."user_permissions" AS up
+            JOIN "marketplace"."permissions" AS p ON p."id" = up."permissionId"
+            WHERE up."userId" = u."id" AND p."key" = 'admin.superUser'
+        )
+    THEN 'staff'
+    ELSE 'public'
+END;
+--> statement-breakpoint
+ALTER TABLE "marketplace"."users" ALTER COLUMN "accountType" SET NOT NULL;--> statement-breakpoint
+INSERT INTO "marketplace"."public_accounts" ("userId")
+SELECT "id" FROM "marketplace"."users" WHERE "accountType" = 'public';
+--> statement-breakpoint
+INSERT INTO "marketplace"."staff_accounts" ("userId")
+SELECT "id" FROM "marketplace"."users" WHERE "accountType" = 'staff';
+--> statement-breakpoint
+UPDATE "marketplace"."staff_accounts" AS account
+SET "invitedByUserId" = inviter."userId"
+FROM "marketplace"."users" AS legacy_user
+JOIN "marketplace"."staff_accounts" AS inviter
+    ON inviter."userId" = legacy_user."createdByUserId"
+WHERE account."userId" = legacy_user."id";
+--> statement-breakpoint
+INSERT INTO "marketplace"."staff_user_permissions" ("userId", "permissionId", "createdAt")
+SELECT up."userId", up."permissionId", up."createdAt"
+FROM "marketplace"."user_permissions" AS up
+JOIN "marketplace"."staff_accounts" AS account ON account."userId" = up."userId";
+--> statement-breakpoint
+INSERT INTO "marketplace"."public_user_permissions" ("userId", "permissionId", "createdAt")
+SELECT up."userId", up."permissionId", up."createdAt"
+FROM "marketplace"."user_permissions" AS up
+JOIN "marketplace"."public_accounts" AS account ON account."userId" = up."userId"
+JOIN "marketplace"."permissions" AS p ON p."id" = up."permissionId"
+WHERE p."publicEligible";
+--> statement-breakpoint
+-- The legacy public registration flow always granted the public dashboard.
+DELETE FROM "marketplace"."default_user_permissions" AS dp
+USING "marketplace"."permissions" AS p
+WHERE p."id" = dp."permissionId" AND NOT p."publicEligible";
+--> statement-breakpoint
+INSERT INTO "marketplace"."default_user_permissions" ("permissionId")
+SELECT p."id" FROM "marketplace"."permissions" AS p
+WHERE p."key" = 'user.dashboard'
+    AND NOT EXISTS (SELECT 1 FROM "marketplace"."default_user_permissions");
+--> statement-breakpoint
+DROP TABLE "marketplace"."user_permissions";--> statement-breakpoint
 ALTER TABLE "marketplace"."staff_accounts" ADD CONSTRAINT "staff_accounts_invitedByUserId_staff_accounts_userId_fk" FOREIGN KEY ("invitedByUserId") REFERENCES "marketplace"."staff_accounts"("userId") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "marketplace"."staff_invitations" ADD CONSTRAINT "staff_invitations_invitedByUserId_staff_accounts_userId_fk" FOREIGN KEY ("invitedByUserId") REFERENCES "marketplace"."staff_accounts"("userId") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "marketplace"."public_user_permissions" ADD CONSTRAINT "public_user_permissions_userId_public_accounts_userId_fk" FOREIGN KEY ("userId") REFERENCES "marketplace"."public_accounts"("userId") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

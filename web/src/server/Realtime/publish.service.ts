@@ -155,6 +155,29 @@ export async function publishPermissionManagementUpdatedService(
     })
 }
 
+export async function publishUserAccountConvertedService(
+    payload: Pick<
+        UserUpdatedEvent['payload'],
+        'userId' | 'username' | 'updatedAt'
+    >,
+) {
+    const event = {
+        type: 'admin-user.updated' as const,
+        payload: {
+            ...payload,
+            previousUsername: payload.username,
+            permissionKeys: [],
+            previousPermissionKeys: [],
+            addedPermissionKeys: [],
+            removedPermissionKeys: [],
+        },
+    }
+    await Promise.all([
+        publishRealtimeEventService(ADMIN_USERS_TOPIC, event),
+        publishRealtimeEventService(ADMIN_STAFF_TOPIC, event),
+    ])
+}
+
 export async function publishNotificationCreatedService(
     payload: NotificationCreatedEvent['payload'],
 ) {

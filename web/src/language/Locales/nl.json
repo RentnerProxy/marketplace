@@ -58,8 +58,8 @@
         "auditLogs": "Auditlogboeken",
         "publicAccounts": "Openbare accounts",
         "accounts": "Accounts",
-        "registrationDefaults": "Registratierechten",
         "staff": "Team",
+        "staffInvitations": "Uitnodigingen",
         "staffAccounts": "Teamaccounts"
     },
     "auth": {

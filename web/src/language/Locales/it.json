@@ -58,8 +58,8 @@
         "auditLogs": "Registri di controllo",
         "publicAccounts": "Account pubblici",
         "accounts": "Account",
-        "registrationDefaults": "Permessi di registrazione",
         "staff": "Team",
+        "staffInvitations": "Inviti",
         "staffAccounts": "Account del team"
     },
     "auth": {

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+    boolean,
     check,
     foreignKey,
     index,
@@ -69,9 +70,12 @@ export const staffInvitations = appSchema.table(
         username: varchar('username', { length: 50 }).notNull(),
         tokenHash: varchar('tokenHash', { length: 64 }).notNull().unique(),
         expiresAt: timestamp('expiresAt', { withTimezone: true }).notNull(),
-        invitedByUserId: uuid('invitedByUserId')
-            .notNull()
-            .references(() => staffAccounts.userId, { onDelete: 'cascade' }),
+        isActive: boolean('isActive').default(true).notNull(),
+        statusRevision: uuid('statusRevision').defaultRandom().notNull(),
+        invitedByUserId: uuid('invitedByUserId').references(
+            () => staffAccounts.userId,
+            { onDelete: 'set null' },
+        ),
         permissionKeys: jsonb('permissionKeys')
             .$type<Array<string>>()
             .notNull(),

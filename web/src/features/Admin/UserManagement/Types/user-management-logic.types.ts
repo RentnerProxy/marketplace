@@ -10,11 +10,14 @@ type UserManagementState = {
     editForm: UpdateUserFormValues
     isEditModalOpen: boolean
     deleteTargetUser: UserManagementUser | null
+    conversionTarget: UserManagementUser | null
     isUpdatingUser: boolean
     isDeletingUser: boolean
     isTogglingUserActive: boolean
     isResendingPasswordReset: boolean
+    isConvertingAccount: boolean
     canManageSuperUsers: boolean
+    canConvertAccounts: boolean
 }
 
 type UserManagementHandler = {
@@ -26,6 +29,9 @@ type UserManagementHandler = {
     handleConfirmDeleteUser: () => void
     handleToggleUserActive: (user: UserManagementUser) => void
     onPasswordReset: (user: UserManagementUser) => void
+    handleAskConvertAccount: (user: UserManagementUser) => void
+    handleCloseConversion: () => void
+    handleConfirmConversion: () => void
 }
 
 export type UserManagementLogicReturn = {

@@ -10,27 +10,36 @@ import {
 import { eq, inArray, like } from 'drizzle-orm'
 import { db } from '@/db'
 import {
-    defaultUserPermissions,
     permissions,
     publicAccounts,
     publicUserPermissions,
     staffAccounts,
     staffInvitations,
     staffUserPermissions,
+    sessions,
+    user_profiles,
     users,
 } from '@/db/schema.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
+import {
+    DEFAULT_PUBLIC_PERMISSION_KEYS,
+    PERMISSIONS,
+} from '@/config/permissions.config.ts'
 import type { AuthMailInput } from '@/lib/Mail/Types/mail-domain.types.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 import { getUserPermissionKeys } from '@/lib/Permissions/userPermissions.ts'
+import type { StaffInvitationResendMailInput } from '@/server/Queues/Types/mail-job.types.ts'
 
 const sendInvitation = vi.fn(async (_input: AuthMailInput) => {})
+const queueInvitationResend = vi.fn(
+    async (_input: StaffInvitationResendMailInput) => {},
+)
 const writeAudit = vi.fn(async () => ({
     id: Bun.randomUUIDv7(),
     createdAt: new Date(),
 }))
 vi.mock('@/server/Queues/mail.queue.ts', () => ({
     enqueuePasswordSetupMail: sendInvitation,
+    enqueueStaffInvitationResendMail: queueInvitationResend,
 }))
 vi.mock('@/lib/AuditLogs/auditLogs.ts', () => ({
     prepareAuditContextService: (actorUserId: string | null) => ({
@@ -41,20 +50,26 @@ vi.mock('@/lib/AuditLogs/auditLogs.ts', () => ({
 }))
 vi.mock('@/server/Realtime/publish.service.ts', () => ({
     publishUserUpdatedService: vi.fn(async () => {}),
+    publishUserAccountConvertedService: vi.fn(async () => {}),
+    publishUserSessionsRevokedService: vi.fn(async () => {}),
     publishNotificationCreatedService: vi.fn(async () => {}),
     publishPermissionManagementUpdatedService: vi.fn(async () => {}),
 }))
 
-const { inviteStaffService, revokeStaffInvitationService } =
+const { getStaffInvitationsService, inviteStaffService } =
     await import('@/server/Admin/StaffManagement/invitations.service.ts')
+const { manageStaffInvitationService } =
+    await import('@/server/Admin/StaffManagement/manageInvitation.service.ts')
+const { prepareStaffInvitationResendMailService } =
+    await import('@/server/Admin/StaffManagement/resendInvitation.service.ts')
+const { convertAccountTypeService } =
+    await import('@/server/Admin/UserManagement/accountConversion.service.ts')
 const { acceptStaffInvitationService } =
     await import('@/server/Auth/StaffInvitation/accept.service.ts')
 const { createPublicAccountInTransactionService } =
     await import('@/server/Auth/Registration/account.service.ts')
 const { replaceManagedUserPermissionsService } =
     await import('@/server/Admin/PermissionManagement/managed-user-permissions.service.ts')
-const { replaceDefaultPermissionsService } =
-    await import('@/server/Admin/PermissionManagement/defaults.service.ts')
 const { getPermissionManagementUsersService } =
     await import('@/server/Admin/PermissionManagement/users.service.ts')
 const { getUsersService } =
@@ -66,7 +81,6 @@ const permissionIds = new Map<string, string>()
 const insertedPermissionIds: Array<string> = []
 let superUserId: string
 let moderatorId: string
-let previousDefaults: Array<string>
 
 function permissionId(key: string) {
     const id = permissionIds.get(key)
@@ -88,7 +102,7 @@ function inviteInput(suffix: string) {
     }
 }
 
-async function createStaffFixture(suffix: string, key: string) {
+async function createStaffFixture(suffix: string, ...keys: Array<string>) {
     const userId = Bun.randomUUIDv7()
     await db.transaction(async (tx) => {
         await tx.insert(users).values({
@@ -98,9 +112,12 @@ async function createStaffFixture(suffix: string, key: string) {
             passwordHash: 'fixture',
         })
         await tx.insert(staffAccounts).values({ userId })
-        await tx
-            .insert(staffUserPermissions)
-            .values({ userId, permissionId: permissionId(key) })
+        await tx.insert(staffUserPermissions).values(
+            keys.map((key) => ({
+                userId,
+                permissionId: permissionId(key),
+            })),
+        )
     })
     return userId
 }
@@ -116,13 +133,11 @@ function getInvitationToken() {
 }
 
 beforeAll(async () => {
-    previousDefaults = (await db.select().from(defaultUserPermissions)).map(
-        (row) => row.permissionId,
-    )
     const keys = [
         PERMISSIONS.ADMIN_SUPER_USER,
         PERMISSIONS.ADMIN_DASHBOARD,
         PERMISSIONS.ADMIN_USER_MANAGEMENT,
+        PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
         PERMISSIONS.USER_DASHBOARD,
     ]
     const added = await db
@@ -145,6 +160,7 @@ beforeAll(async () => {
     superUserId = await createStaffFixture(
         'owner',
         PERMISSIONS.ADMIN_SUPER_USER,
+        PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
     )
     moderatorId = await createStaffFixture(
         'moderator',
@@ -157,30 +173,18 @@ beforeEach(() => {
 })
 
 afterAll(async () => {
+    await db
+        .delete(staffInvitations)
+        .where(like(staffInvitations.username, runPrefix + '%'))
     await db.delete(users).where(like(users.username, runPrefix + '%'))
     if (insertedPermissionIds.length > 0)
         await db
             .delete(permissions)
             .where(inArray(permissions.id, insertedPermissionIds))
-    await db.delete(defaultUserPermissions)
-    if (previousDefaults?.length > 0)
-        await db
-            .insert(defaultUserPermissions)
-            .values(previousDefaults.map((id) => ({ permissionId: id })))
 })
 
 describe('public and staff account separation in PostgreSQL', () => {
-    it('copies public defaults on registration and blocks cross-scope assignments', async () => {
-        await expect(
-            replaceDefaultPermissionsService(
-                { permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD] },
-                superUserId,
-            ),
-        ).resolves.toMatchObject({ success: false })
-        await replaceDefaultPermissionsService(
-            { permissionKeys: [PERMISSIONS.USER_DASHBOARD] },
-            superUserId,
-        )
+    it('uses the configured registration permissions and blocks cross-scope assignments', async () => {
         const registered = await db.transaction((tx) =>
             createPublicAccountInTransactionService(tx, {
                 ...identity('public'),
@@ -189,7 +193,7 @@ describe('public and staff account separation in PostgreSQL', () => {
         )
         if (!registered) throw new Error('Expected a public account')
         expect(await getUserPermissionKeys(registered.userId)).toEqual([
-            PERMISSIONS.USER_DASHBOARD,
+            ...DEFAULT_PUBLIC_PERMISSION_KEYS,
         ])
         await expect(
             db
@@ -219,14 +223,6 @@ describe('public and staff account separation in PostgreSQL', () => {
                 .execute(),
         ).rejects.toThrow()
         await expect(
-            db
-                .insert(defaultUserPermissions)
-                .values({
-                    permissionId: permissionId(PERMISSIONS.ADMIN_DASHBOARD),
-                })
-                .execute(),
-        ).rejects.toThrow()
-        await expect(
             replaceManagedUserPermissionsService(
                 {
                     userId: registered.userId,
@@ -244,20 +240,9 @@ describe('public and staff account separation in PostgreSQL', () => {
         const staffList = await getPermissionManagementUsersService(superUserId)
         expect(staffList.map(({ id }) => id)).not.toContain(registered.userId)
         expect(staffList.map(({ id }) => id)).toContain(superUserId)
-        await replaceDefaultPermissionsService(
-            { permissionKeys: [] },
-            superUserId,
-        )
-        expect(await getUserPermissionKeys(registered.userId)).toEqual([
-            PERMISSIONS.USER_DASHBOARD,
-        ])
     })
 
     it('reserves an invited identity, stores a hash, and consumes the token once with explicit staff permissions', async () => {
-        await replaceDefaultPermissionsService(
-            { permissionKeys: [PERMISSIONS.USER_DASHBOARD] },
-            superUserId,
-        )
         const input = inviteInput('invited')
         await expect(inviteStaffService(input, moderatorId)).rejects.toThrow()
         expect(sendInvitation).not.toHaveBeenCalled()
@@ -285,7 +270,7 @@ describe('public and staff account separation in PostgreSQL', () => {
         ).resolves.toBeNull()
         await expect(inviteStaffService(input, superUserId)).resolves.toEqual({
             success: false,
-            error: 'identityInUse',
+            error: 'invitationExists',
         })
 
         const accepted = await Promise.all([
@@ -334,7 +319,10 @@ describe('public and staff account separation in PostgreSQL', () => {
             .select()
             .from(staffInvitations)
             .where(eq(staffInvitations.email, input.email))
-        await revokeStaffInvitationService(invitation.id, superUserId)
+        await manageStaffInvitationService(
+            { id: invitation.id, action: 'revoke' },
+            superUserId,
+        )
         await expect(
             acceptStaffInvitationService({ token, password }),
         ).resolves.toEqual({ success: false })
@@ -351,5 +339,192 @@ describe('public and staff account separation in PostgreSQL', () => {
         expect(
             await db.select().from(users).where(eq(users.email, input.email)),
         ).toEqual([])
+    })
+
+    it('releases a disabled reservation and blocks reactivation after the identity is registered', async () => {
+        const input = inviteInput('disabled-reservation')
+        await expect(inviteStaffService(input, superUserId)).resolves.toEqual({
+            success: true,
+        })
+        const [invitation] = await db
+            .select()
+            .from(staffInvitations)
+            .where(eq(staffInvitations.email, input.email))
+        const action = { id: invitation.id, action: 'setActive' as const }
+        await expect(
+            manageStaffInvitationService(
+                { ...action, isActive: false },
+                superUserId,
+            ),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            db.transaction((tx) =>
+                createPublicAccountInTransactionService(tx, {
+                    ...input,
+                    passwordHash: 'fixture',
+                }),
+            ),
+        ).resolves.toMatchObject({ userId: expect.any(String) })
+        await expect(
+            manageStaffInvitationService(
+                { ...action, isActive: true },
+                superUserId,
+            ),
+        ).resolves.toEqual({ success: false, error: 'identityInUse' })
+    })
+
+    it('rotates a queued resend in PostgreSQL before the worker receives the replacement mail', async () => {
+        const input = inviteInput('worker-resend')
+        await inviteStaffService(input, superUserId)
+        const oldToken = getInvitationToken()
+        const [invitation] = await db
+            .select()
+            .from(staffInvitations)
+            .where(eq(staffInvitations.email, input.email))
+        await expect(
+            manageStaffInvitationService(
+                { id: invitation.id, action: 'resend' },
+                superUserId,
+            ),
+        ).resolves.toEqual({ success: true })
+        const job = queueInvitationResend.mock.lastCall?.[0]
+        if (!job) throw new Error('Expected a queued invitation resend')
+        expect(job.previousStatusRevision).toBe(invitation.statusRevision)
+        expect(
+            await db
+                .select()
+                .from(staffInvitations)
+                .where(eq(staffInvitations.id, invitation.id)),
+        ).toMatchObject([{ tokenHash: await createTokenHash(oldToken) }])
+        await expect(
+            prepareStaffInvitationResendMailService(job),
+        ).resolves.toEqual({
+            to: input.email,
+            username: input.username,
+            resetLink: job.resetLink,
+        })
+        await expect(
+            acceptStaffInvitationService({ token: oldToken, password }),
+        ).resolves.toEqual({ success: false })
+        const newToken = new URL(job.resetLink).hash.slice(8)
+        await expect(
+            acceptStaffInvitationService({ token: newToken, password }),
+        ).resolves.toEqual({ success: true })
+    })
+
+    it('moves accounts across scopes atomically and revokes sessions, including on superuser demotion', async () => {
+        const converter = await createStaffFixture(
+            'converter',
+            PERMISSIONS.ADMIN_USER_MANAGEMENT,
+            PERMISSIONS.ADMIN_ACCOUNT_CONVERSION,
+        )
+        const registered = await db.transaction((tx) =>
+            createPublicAccountInTransactionService(tx, {
+                ...identity('convert'),
+                passwordHash: 'fixture',
+            }),
+        )
+        if (!registered) throw new Error('Expected a public account')
+        const id = registered.userId
+        const promotion = { id, accountType: 'public' as const }
+        await db
+            .update(user_profiles)
+            .set({ firstName: 'Test profile' })
+            .where(eq(user_profiles.userId, id))
+        await db.insert(sessions).values({
+            id: crypto.randomUUID(),
+            userId: id,
+            expiresAt: new Date(Date.now() + 60_000),
+        })
+        await expect(
+            convertAccountTypeService(promotion, moderatorId),
+        ).rejects.toThrow()
+        writeAudit.mockRejectedValueOnce(new Error('Injected audit failure'))
+        await expect(
+            convertAccountTypeService(promotion, converter),
+        ).rejects.toThrow('Injected audit failure')
+        expect(
+            await db
+                .select()
+                .from(publicAccounts)
+                .where(eq(publicAccounts.userId, id)),
+        ).toHaveLength(1)
+        expect(
+            await db.select().from(sessions).where(eq(sessions.userId, id)),
+        ).toHaveLength(1)
+
+        await expect(
+            convertAccountTypeService(promotion, converter),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            convertAccountTypeService(promotion, converter),
+        ).resolves.toEqual({ success: false, error: 'notFound' })
+        expect(
+            await db
+                .select()
+                .from(publicAccounts)
+                .where(eq(publicAccounts.userId, id)),
+        ).toEqual([])
+        expect(
+            await db
+                .select()
+                .from(staffAccounts)
+                .where(eq(staffAccounts.userId, id)),
+        ).toHaveLength(1)
+        expect(
+            await db.select().from(sessions).where(eq(sessions.userId, id)),
+        ).toEqual([])
+        expect(
+            await db
+                .select()
+                .from(user_profiles)
+                .where(eq(user_profiles.userId, id)),
+        ).toMatchObject([{ firstName: 'Test profile' }])
+        expect(await getUserPermissionKeys(id)).toEqual([
+            ...DEFAULT_PUBLIC_PERMISSION_KEYS,
+        ])
+
+        const otherSuperUser = await createStaffFixture(
+            'other-owner',
+            PERMISSIONS.ADMIN_SUPER_USER,
+            PERMISSIONS.ADMIN_DASHBOARD,
+        )
+        const demotion = { id: otherSuperUser, accountType: 'staff' as const }
+        await expect(
+            convertAccountTypeService(demotion, converter),
+        ).rejects.toThrow()
+        await expect(
+            convertAccountTypeService(
+                { ...demotion, id: superUserId.toUpperCase() },
+                superUserId,
+            ),
+        ).resolves.toEqual({ success: false, error: 'self' })
+
+        const invitationInput = inviteInput('from-other-owner')
+        await expect(
+            inviteStaffService(invitationInput, otherSuperUser),
+        ).resolves.toEqual({ success: true })
+        const oldToken = getInvitationToken()
+        await expect(
+            convertAccountTypeService(demotion, superUserId),
+        ).resolves.toEqual({ success: true })
+        expect(await getUserPermissionKeys(otherSuperUser)).toEqual([
+            ...DEFAULT_PUBLIC_PERMISSION_KEYS,
+        ])
+        expect(await getStaffInvitationsService(superUserId)).toContainEqual(
+            expect.objectContaining({
+                email: invitationInput.email,
+                status: 'disabled',
+            }),
+        )
+        expect(
+            await db
+                .select()
+                .from(staffInvitations)
+                .where(eq(staffInvitations.email, invitationInput.email)),
+        ).toMatchObject([{ invitedByUserId: null, isActive: false }])
+        await expect(
+            acceptStaffInvitationService({ token: oldToken, password }),
+        ).resolves.toEqual({ success: false })
     })
 })

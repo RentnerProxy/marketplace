@@ -58,8 +58,8 @@
         "auditLogs": "Registos de auditoria",
         "publicAccounts": "Contas públicas",
         "accounts": "Contas",
-        "registrationDefaults": "Permissões de registo",
         "staff": "Equipa",
+        "staffInvitations": "Convites",
         "staffAccounts": "Contas da equipa"
     },
     "auth": {

@@ -117,13 +117,7 @@ describe('Erster Superuser Setup-Token und Pflichtaudit', function () {
         expect(authAuditState.rows.staffAccounts).toMatchObject([
             { userId: 'new-users-1' },
         ])
-        expect(authAuditState.rows.defaultUserPermissions).toMatchObject([
-            {
-                permissionId:
-                    'permission-' +
-                    String(DEFAULT_ADMIN_PERMISSION_KEYS.length),
-            },
-        ])
+        expect(authAuditState.rows.defaultUserPermissions).toEqual([])
         expect(authAuditState.rows.user_profiles).toHaveLength(1)
         expect(authAuditState.rows.systemSettings).toHaveLength(1)
         expect(authAuditState.rows.permissions.length).toBeGreaterThan(0)

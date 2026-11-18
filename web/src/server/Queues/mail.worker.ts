@@ -17,6 +17,7 @@ import { createMailRestoreQuiescenceService } from './mail-restore-quiescence.se
 import { isRestoreStateActiveService } from '@/server/Admin/Backups/restore-state.service.ts'
 import { createQueueWorkerLifecycleService } from '@/server/Runtime/queue-worker-lifecycle.service.ts'
 import { waitForWorkerCleanupService } from '@/server/Runtime/worker-cleanup.service.ts'
+import { prepareStaffInvitationResendMailService } from '@/server/Admin/StaffManagement/resendInvitation.service.ts'
 
 async function dispatchMailJob(parsedJob: MailJobData) {
     if (await isRestoreStateActiveService()) {
@@ -43,6 +44,12 @@ async function dispatchMailJob(parsedJob: MailJobData) {
         case 'password-setup':
             await sendPasswordSetupMail(parsedJob)
             return
+        case 'staff-invitation-resend': {
+            const mail =
+                await prepareStaffInvitationResendMailService(parsedJob)
+            if (mail) await sendPasswordSetupMail(mail)
+            return
+        }
         case 'password-reset':
             await sendPasswordResetMail(parsedJob)
             return
@@ -96,6 +103,7 @@ function getMailJobNameForLogging(value: unknown) {
         case 'failed-login-alert':
         case 'password-reset':
         case 'password-setup':
+        case 'staff-invitation-resend':
         case 'security-change':
             return value
         default:

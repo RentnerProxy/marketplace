@@ -1,14 +1,14 @@
-import type { UserTableActionButtonProps } from '../Types/user-management-table.types.ts'
 import { CustomTooltip } from '@rentnerkev/tooltips'
+import type { TableActionButtonProps } from './Types/table-action-button.types.ts'
 
-export default function UserTableActionButton({
+export default function TableActionButton({
     ariaLabel,
     children,
     className,
     disabled,
     onClick,
     tooltip,
-}: UserTableActionButtonProps) {
+}: TableActionButtonProps) {
     return (
         <CustomTooltip side="top" content={tooltip} disabledTrigger={disabled}>
             <button

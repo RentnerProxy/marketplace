@@ -9,11 +9,12 @@ import {
 } from '../UserManagement/admin-audit.test.helpers.ts'
 
 installAdminAuditTestMocks()
-const {
-    getStaffInvitationsService,
-    inviteStaffService,
-    revokeStaffInvitationService,
-} = await import('@/server/Admin/StaffManagement/invitations.service.ts')
+const { getStaffInvitationsService, inviteStaffService } =
+    await import('@/server/Admin/StaffManagement/invitations.service.ts')
+const { manageStaffInvitationService } =
+    await import('@/server/Admin/StaffManagement/manageInvitation.service.ts')
+const { prepareStaffInvitationResendMailService } =
+    await import('@/server/Admin/StaffManagement/resendInvitation.service.ts')
 const { acceptStaffInvitationService } =
     await import('@/server/Auth/StaffInvitation/accept.service.ts')
 
@@ -28,11 +29,19 @@ async function sendInvitation() {
     expect(await inviteStaffService(input, ADMIN_ACTOR_ID)).toEqual({
         success: true,
     })
+    return lastInvitationToken()
+}
+
+function lastInvitationToken() {
     const payload = adminAuditExternal.enqueueInvitation.mock.lastCall?.[0]
     if (!payload) throw new Error('Expected a queued invitation')
-    const token = new URLSearchParams(
-        new URL(payload.resetLink).hash.slice(1),
-    ).get('invite')
+    return invitationToken(payload.resetLink)
+}
+
+function invitationToken(resetLink: string) {
+    const token = new URLSearchParams(new URL(resetLink).hash.slice(1)).get(
+        'invite',
+    )
     if (!token) throw new Error('Expected a fragment-only invitation token')
     return token
 }
@@ -41,6 +50,7 @@ beforeEach(() => {
     vi.clearAllMocks()
     adminAuditDb.reset()
     adminAuditExternal.enqueueInvitation.mockResolvedValue(undefined)
+    adminAuditExternal.enqueueInvitationResend.mockResolvedValue(undefined)
 })
 
 describe('staff invitation lifecycle', () => {
@@ -53,6 +63,8 @@ describe('staff invitation lifecycle', () => {
             username: input.username,
             email: input.email,
             expiresAt: expect.any(String),
+            status: 'active',
+            permissionKeys: input.permissionKeys,
         })
         expect(adminAuditDb.state.rows.staffInvitations[0].tokenHash).toBe(
             await createTokenHash(token),
@@ -101,6 +113,12 @@ describe('staff invitation lifecycle', () => {
             { success: false },
         )
         expect(adminAuditDb.state.rows.users).toHaveLength(2)
+        expect(adminAuditDb.state.rows.staffInvitations).toMatchObject([
+            { isActive: false },
+        ])
+        expect(adminAuditDb.state.rows.auditLogs.at(-1)?.action).toBe(
+            'auth.staff_invitation_deactivated',
+        )
     })
 
     it('rejects account collisions and invalid initial permissions without queuing mail', async () => {
@@ -142,7 +160,10 @@ describe('staff invitation lifecycle', () => {
         expect(adminAuditDb.state.rows.staffInvitations).toEqual([])
         const token = await sendInvitation()
         const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
-        await revokeStaffInvitationService(invitation.id, ADMIN_ACTOR_ID)
+        await manageStaffInvitationService(
+            { id: invitation.id, action: 'revoke' },
+            ADMIN_ACTOR_ID,
+        )
         expect(await acceptStaffInvitationService({ token, password })).toEqual(
             { success: false },
         )
@@ -154,5 +175,241 @@ describe('staff invitation lifecycle', () => {
             'admin.staff.invitation_created',
             'admin.staff.invitation_revoked',
         ])
+    })
+
+    it('pauses acceptance, then applies edited permissions when the invitation is enabled again', async () => {
+        const token = await sendInvitation()
+        const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const id = invitation.id
+        await expect(
+            manageStaffInvitationService(
+                { id, action: 'setActive', isActive: false },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'disabled' }])
+        await expect(
+            acceptStaffInvitationService({ token, password }),
+        ).resolves.toEqual({ success: false })
+
+        const permissionKeys = [PERMISSIONS.USER_DASHBOARD]
+        await expect(
+            manageStaffInvitationService(
+                {
+                    id,
+                    action: 'permissions',
+                    expectedPermissionKeys: invitation.permissionKeys,
+                    permissionKeys: [PERMISSIONS.ADMIN_SUPER_USER],
+                },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: false, error: 'invalidPermissions' })
+        await expect(
+            manageStaffInvitationService(
+                {
+                    id,
+                    action: 'permissions',
+                    permissionKeys,
+                    expectedPermissionKeys: invitation.permissionKeys,
+                },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            manageStaffInvitationService(
+                {
+                    id,
+                    action: 'permissions',
+                    permissionKeys: input.permissionKeys,
+                    expectedPermissionKeys: invitation.permissionKeys,
+                },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({
+            success: false,
+            error: 'permissionConflict',
+            currentPermissionKeys: permissionKeys,
+        })
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'disabled', permissionKeys }])
+        await expect(
+            manageStaffInvitationService(
+                { id, action: 'setActive', isActive: true },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            acceptStaffInvitationService({ token, password }),
+        ).resolves.toEqual({ success: true })
+        const user = adminAuditDb.state.rows.users.find(
+            ({ email }) => email === input.email,
+        )
+        expect(
+            adminAuditDb.state.rows.staffUserPermissions.filter(
+                ({ userId }) => userId === user?.id,
+            ),
+        ).toMatchObject([
+            { permissionId: 'permission:' + PERMISSIONS.USER_DASHBOARD },
+        ])
+    })
+
+    it('queues replacement intent without a database lock, then rotates only on a worker commit and reuses the link on retry', async () => {
+        const oldToken = await sendInvitation()
+        const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const data = { id: invitation.id, action: 'resend' as const }
+        adminAuditExternal.enqueueInvitationResend.mockRejectedValueOnce(
+            new Error('isolated queue failure'),
+        )
+        await expect(
+            manageStaffInvitationService(data, ADMIN_ACTOR_ID),
+        ).resolves.toEqual({ success: false, error: 'deliveryFailed' })
+        expect(adminAuditDb.state.rows.staffInvitations[0].tokenHash).toBe(
+            await createTokenHash(oldToken),
+        )
+        expect(
+            adminAuditDb.state.rows.auditLogs.map(({ action }) => action),
+        ).toEqual(['admin.staff.invitation_created'])
+
+        adminAuditDb.state.rows.staffInvitations[0].expiresAt = new Date(0)
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'expired' }])
+        await expect(
+            manageStaffInvitationService(
+                { id: invitation.id, action: 'setActive', isActive: true },
+                ADMIN_ACTOR_ID,
+            ),
+        ).resolves.toEqual({ success: false, error: 'expired' })
+        adminAuditExternal.enqueueInvitationResend.mockImplementationOnce(
+            async () => {
+                expect(adminAuditDb.state.activeTransaction).toBe(0)
+            },
+        )
+        await expect(
+            manageStaffInvitationService(data, ADMIN_ACTOR_ID),
+        ).resolves.toEqual({ success: true })
+        const job =
+            adminAuditExternal.enqueueInvitationResend.mock.lastCall?.[0]
+        if (!job) throw new Error('Expected a queued resend')
+        const newToken = invitationToken(job.resetLink)
+        expect(newToken).not.toBe(oldToken)
+        const oldHash = await createTokenHash(oldToken)
+        expect(adminAuditDb.state.rows.staffInvitations[0].tokenHash).toBe(
+            oldHash,
+        )
+
+        adminAuditDb.state.failCommitTransaction =
+            adminAuditDb.state.nextTransaction + 1
+        await expect(
+            prepareStaffInvitationResendMailService(job),
+        ).rejects.toThrow('Injected transaction commit failure')
+        expect(adminAuditDb.state.rows.staffInvitations[0].tokenHash).toBe(
+            oldHash,
+        )
+        const mail = await prepareStaffInvitationResendMailService(job)
+        expect(mail).toEqual({
+            to: input.email,
+            username: input.username,
+            resetLink: job.resetLink,
+        })
+        const expiresAt = adminAuditDb.state.rows.staffInvitations[0].expiresAt
+        await expect(
+            prepareStaffInvitationResendMailService(job),
+        ).resolves.toEqual(mail)
+        expect(adminAuditDb.state.rows.staffInvitations[0].expiresAt).toEqual(
+            expiresAt,
+        )
+        expect(
+            adminAuditDb.state.rows.auditLogs.filter(
+                ({ action }) => action === 'admin.staff.invitation_resent',
+            ),
+        ).toHaveLength(1)
+        const statusAction = { id: invitation.id, action: 'setActive' as const }
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: false },
+            ADMIN_ACTOR_ID,
+        )
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: true },
+            ADMIN_ACTOR_ID,
+        )
+        await expect(
+            prepareStaffInvitationResendMailService(job),
+        ).resolves.toBeNull()
+        await expect(
+            acceptStaffInvitationService({ token: oldToken, password }),
+        ).resolves.toEqual({ success: false })
+        await expect(
+            acceptStaffInvitationService({ token: newToken, password }),
+        ).resolves.toEqual({ success: true })
+    })
+
+    it('drops a queued resend when intervening changes restore the previous status', async () => {
+        await sendInvitation()
+        const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const statusAction = { id: invitation.id, action: 'setActive' as const }
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: false },
+            ADMIN_ACTOR_ID,
+        )
+        await manageStaffInvitationService(
+            { id: invitation.id, action: 'resend' },
+            ADMIN_ACTOR_ID,
+        )
+        const job =
+            adminAuditExternal.enqueueInvitationResend.mock.lastCall?.[0]
+        if (!job) throw new Error('Expected a queued resend')
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: true },
+            ADMIN_ACTOR_ID,
+        )
+        await manageStaffInvitationService(
+            { ...statusAction, isActive: false },
+            ADMIN_ACTOR_ID,
+        )
+        await expect(
+            prepareStaffInvitationResendMailService(job),
+        ).resolves.toBeNull()
+        expect(adminAuditDb.state.rows.staffInvitations[0].isActive).toBe(false)
+    })
+
+    it('cancels a queued resend when an already disabled invitation is explicitly disabled again', async () => {
+        await sendInvitation()
+        const [invitation] = await getStaffInvitationsService(ADMIN_ACTOR_ID)
+        const disable = {
+            id: invitation.id,
+            action: 'setActive',
+            isActive: false,
+        } as const
+        const resend = { id: invitation.id, action: 'resend' } as const
+        await manageStaffInvitationService(disable, ADMIN_ACTOR_ID)
+        await manageStaffInvitationService(resend, ADMIN_ACTOR_ID)
+        const canceledJob =
+            adminAuditExternal.enqueueInvitationResend.mock.lastCall?.[0]
+        if (!canceledJob) throw new Error('Expected a queued resend')
+
+        await expect(
+            manageStaffInvitationService(disable, ADMIN_ACTOR_ID),
+        ).resolves.toEqual({ success: true })
+        await expect(
+            prepareStaffInvitationResendMailService(canceledJob),
+        ).resolves.toBeNull()
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'disabled' }])
+
+        await manageStaffInvitationService(resend, ADMIN_ACTOR_ID)
+        const newJob =
+            adminAuditExternal.enqueueInvitationResend.mock.lastCall?.[0]
+        if (!newJob) throw new Error('Expected a new queued resend')
+        await expect(
+            prepareStaffInvitationResendMailService(newJob),
+        ).resolves.toMatchObject({ to: input.email })
+        await expect(
+            getStaffInvitationsService(ADMIN_ACTOR_ID),
+        ).resolves.toMatchObject([{ status: 'active' }])
     })
 })

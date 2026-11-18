@@ -3,7 +3,6 @@ import { PERMISSIONS } from '@/config/permissions.config.ts'
 import {
     createPermissionPresetInputSchema,
     deletePermissionPresetInputSchema,
-    replaceDefaultPermissionsInputSchema,
     replaceManagedUserPermissionsInputSchema,
     updatePermissionPresetInputSchema,
 } from '@/features/Admin/PermissionManagement/validation.ts'
@@ -12,13 +11,7 @@ const presetId = '01941f29-7c00-7000-8000-000000000001'
 const userId = '01941f29-7c00-7000-8000-000000000002'
 
 describe('PermissionManagement Validierung', function () {
-    it('normalisiert gültige Default-, Preset- und User-Rechte-Eingaben', function () {
-        expect(
-            replaceDefaultPermissionsInputSchema.parse({
-                permissionKeys: [` ${PERMISSIONS.USER_DASHBOARD} `],
-            }),
-        ).toEqual({ permissionKeys: [PERMISSIONS.USER_DASHBOARD] })
-
+    it('normalisiert gültige Preset- und User-Rechte-Eingaben', function () {
         expect(
             createPermissionPresetInputSchema.parse({
                 name: ' Standardbenutzer ',
@@ -62,11 +55,6 @@ describe('PermissionManagement Validierung', function () {
 
     it('lehnt unbekannte und doppelte Permission-Keys ab', function () {
         expect(
-            replaceDefaultPermissionsInputSchema.safeParse({
-                permissionKeys: ['admin.unbekannt'],
-            }).success,
-        ).toBe(false)
-        expect(
             createPermissionPresetInputSchema.safeParse({
                 name: 'Preset',
                 description: '',
@@ -94,11 +82,6 @@ describe('PermissionManagement Validierung', function () {
     })
 
     it('verbietet automatische Superuser-Rechte und erlaubt sie bei einzelnen Benutzern', function () {
-        expect(
-            replaceDefaultPermissionsInputSchema.safeParse({
-                permissionKeys: [PERMISSIONS.ADMIN_SUPER_USER],
-            }).success,
-        ).toBe(false)
         expect(
             createPermissionPresetInputSchema.safeParse({
                 name: 'Superuser',

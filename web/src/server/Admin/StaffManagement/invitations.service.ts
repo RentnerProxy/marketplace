@@ -1,12 +1,16 @@
 import { randomBytes } from 'node:crypto'
-import { and, asc, eq, gt, lte } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { staffInvitations, users } from '@/db/schema.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { userInvitationConfig } from '@/config/session.config.ts'
-import type { InviteStaffInput } from '@/features/Admin/StaffManagement/Types/staff-invitation.types.ts'
+import type {
+    InviteStaffInput,
+    StaffInvitationSummary,
+} from '@/features/Admin/StaffManagement/Types/staff-invitation.types.ts'
 import { STAFF_INVITATION_PATH } from '@/lib/Auth/staffInvitationToken.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
+import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 import {
     prepareAuditContextService,
     publishCommittedAuditLogService,
@@ -19,14 +23,18 @@ import {
 } from '@/server/Admin/PermissionManagement/permission-management-policy.service.ts'
 import {
     accountIdentityMatchesService,
-    hasStaffIdentityReservationInTransactionService,
     lockAccountUniquenessInTransactionService,
+    staffInvitationIdentityMatchesService,
 } from '@/server/Auth/accountUniqueness.service.ts'
 import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import { logError } from '@/server/Logging/logger.ts'
 import { enqueuePasswordSetupMail } from '@/server/Queues/mail.queue.ts'
+import { runBestEffortSideEffectService } from '@/server/Logging/side-effect.service.ts'
+import { publishPermissionManagementUpdatedService } from '@/server/Realtime/publish.service.ts'
 
-export async function getStaffInvitationsService(actorUserId: string) {
+export async function getStaffInvitationsService(
+    actorUserId: string,
+): Promise<Array<StaffInvitationSummary>> {
     await requireSuperUserReadAccessService(actorUserId)
     const rows = await db
         .select({
@@ -34,23 +42,116 @@ export async function getStaffInvitationsService(actorUserId: string) {
             username: staffInvitations.username,
             email: staffInvitations.email,
             expiresAt: staffInvitations.expiresAt,
+            isActive: staffInvitations.isActive,
+            permissionKeys: staffInvitations.permissionKeys,
         })
         .from(staffInvitations)
-        .where(gt(staffInvitations.expiresAt, new Date()))
-        .orderBy(asc(staffInvitations.expiresAt))
+        .orderBy(desc(staffInvitations.expiresAt), desc(staffInvitations.id))
+    const now = Date.now()
 
-    return rows.map(({ id, username, email, expiresAt }) => ({
-        id,
-        username,
-        email,
-        expiresAt: expiresAt.toISOString(),
-    }))
+    return rows.map(
+        ({ id, username, email, permissionKeys, isActive, expiresAt }) => ({
+            id,
+            username,
+            email,
+            permissionKeys,
+            expiresAt: expiresAt.toISOString(),
+            status: !isActive
+                ? 'disabled'
+                : expiresAt.getTime() <= now
+                  ? 'expired'
+                  : 'active',
+        }),
+    )
 }
 
-export async function inviteStaffService(
-    input: InviteStaffInput,
+export async function lockStaffInvitationByIdService(
+    transaction: DatabaseTransaction,
+    id: string,
+) {
+    const [invitation] = await transaction
+        .select()
+        .from(staffInvitations)
+        .where(eq(staffInvitations.id, id))
+        .limit(1)
+        .for('update')
+    return invitation
+}
+
+export async function lockStaffInvitationMutationService(
+    transaction: DatabaseTransaction,
     actorUserId: string,
 ) {
+    await lockAccountUniquenessInTransactionService(transaction)
+    await requireMutationPermissionService(
+        transaction,
+        actorUserId,
+        PERMISSIONS.ADMIN_SUPER_USER,
+    )
+}
+
+export async function hasAccountForStaffInvitationService(
+    transaction: DatabaseTransaction,
+    input: Pick<InviteStaffInput, 'email' | 'username'>,
+) {
+    const existingUsers = await transaction
+        .select({ id: users.id })
+        .from(users)
+        .where(
+            and(
+                eq(users.isDeleted, false),
+                accountIdentityMatchesService(input),
+            ),
+        )
+        .limit(1)
+    return existingUsers.length > 0
+}
+
+export async function resolveStaffInvitationPermissionKeysService(
+    transaction: DatabaseTransaction,
+    permissionKeys: Array<string>,
+) {
+    const selection = await resolvePermissionSelectionInTransaction(
+        transaction,
+        permissionKeys,
+        { allowSuperUser: false },
+    )
+    return selection.success &&
+        getDefaultRouteForPermissions(selection.permissionKeys) !== '/login'
+        ? selection.permissionKeys
+        : null
+}
+
+export async function validateStaffInvitationAccessService(
+    transaction: DatabaseTransaction,
+    invitation: Pick<InviteStaffInput, 'username' | 'email' | 'permissionKeys'>,
+) {
+    if (await hasAccountForStaffInvitationService(transaction, invitation)) {
+        return { success: false as const, error: 'identityInUse' as const }
+    }
+    const permissionKeys = await resolveStaffInvitationPermissionKeysService(
+        transaction,
+        invitation.permissionKeys,
+    )
+    if (!permissionKeys) {
+        return { success: false as const, error: 'invalidPermissions' as const }
+    }
+    return { success: true as const, permissionKeys }
+}
+
+export function getStaffInvitationAuditValues(
+    invitation: typeof staffInvitations.$inferSelect,
+) {
+    return {
+        invitationId: invitation.id,
+        expiresAt: invitation.expiresAt,
+        permissionKeys: invitation.permissionKeys,
+        isActive: invitation.isActive,
+        invitedByUserId: invitation.invitedByUserId,
+    }
+}
+
+export async function createStaffInvitationLinkService() {
     const token = randomBytes(32).toString('base64url')
     const tokenHash = await createTokenHash(token)
     const url = new URL(
@@ -58,48 +159,52 @@ export async function inviteStaffService(
         process.env.ORIGIN ?? 'http://localhost:3000',
     )
     url.hash = `invite=${token}`
+    return { tokenHash, resetLink: url.toString() }
+}
+
+export function getStaffInvitationExpiryService() {
+    return new Date(Date.now() + userInvitationConfig.durationMs)
+}
+
+export async function publishStaffInvitationsChangedService() {
+    await runBestEffortSideEffectService(
+        'admin.staff.invitation_publish_failed',
+        () =>
+            publishPermissionManagementUpdatedService({
+                scope: 'staff-invitations',
+                updatedAt: new Date().toISOString(),
+            }),
+    )
+}
+
+export async function inviteStaffService(
+    input: InviteStaffInput,
+    actorUserId: string,
+) {
+    const { tokenHash, resetLink } = await createStaffInvitationLinkService()
     const auditContext = prepareAuditContextService(actorUserId)
     const staged = await db.transaction(async (transaction) => {
-        await lockAccountUniquenessInTransactionService(transaction)
-        await requireMutationPermissionService(
-            transaction,
-            actorUserId,
-            PERMISSIONS.ADMIN_SUPER_USER,
-        )
-        const now = new Date()
-        await transaction
-            .delete(staffInvitations)
-            .where(lte(staffInvitations.expiresAt, now))
-
-        const existingUsers = await transaction
-            .select({ id: users.id })
-            .from(users)
-            .where(
-                and(
-                    eq(users.isDeleted, false),
-                    accountIdentityMatchesService(input),
-                ),
-            )
-            .limit(1)
-        if (
-            existingUsers.length > 0 ||
-            (await hasStaffIdentityReservationInTransactionService(
-                transaction,
-                input,
-                now,
-            ))
-        )
+        await lockStaffInvitationMutationService(transaction, actorUserId)
+        if (await hasAccountForStaffInvitationService(transaction, input))
             return { success: false as const, error: 'identityInUse' as const }
 
-        const selection = await resolvePermissionSelectionInTransaction(
-            transaction,
-            input.permissionKeys,
-            { allowSuperUser: false },
-        )
-        if (
-            !selection.success ||
-            getDefaultRouteForPermissions(selection.permissionKeys) === '/login'
-        )
+        const existingInvitations = await transaction
+            .select({ id: staffInvitations.id })
+            .from(staffInvitations)
+            .where(staffInvitationIdentityMatchesService(input))
+            .limit(1)
+        if (existingInvitations.length > 0)
+            return {
+                success: false as const,
+                error: 'invitationExists' as const,
+            }
+
+        const permissionKeys =
+            await resolveStaffInvitationPermissionKeysService(
+                transaction,
+                input.permissionKeys,
+            )
+        if (!permissionKeys)
             return {
                 success: false as const,
                 error: 'invalidPermissions' as const,
@@ -111,11 +216,10 @@ export async function inviteStaffService(
             username: input.username,
             email: input.email,
             invitedByUserId: actorUserId,
-            expiresAt: new Date(
-                now.getTime() + userInvitationConfig.durationMs,
-            ),
+            statusRevision: Bun.randomUUIDv7(),
+            expiresAt: getStaffInvitationExpiryService(),
             tokenHash,
-            permissionKeys: selection.permissionKeys,
+            permissionKeys,
         })
         const audit = await writeAuditLogInTransactionService(transaction, {
             ...auditContext,
@@ -124,7 +228,7 @@ export async function inviteStaffService(
             newValues: {
                 invitationId,
                 email: input.email,
-                permissionKeys: selection.permissionKeys,
+                permissionKeys,
             },
         })
         return { success: true as const, invitationId, audit }
@@ -136,53 +240,50 @@ export async function inviteStaffService(
         await enqueuePasswordSetupMail({
             to: input.email,
             username: input.username,
-            resetLink: url.toString(),
+            resetLink,
         })
     } catch (error) {
         logError('admin.staff.invitation_enqueue_failed', error)
-        await removeStaffInvitationService(
+        await cleanUpFailedStaffInvitationService(
             staged.invitationId,
+            tokenHash,
             actorUserId,
-            'delivery_failed',
         )
         return { success: false as const, error: 'deliveryFailed' as const }
     }
 
+    await publishStaffInvitationsChangedService()
     return { success: true as const }
 }
 
-async function removeStaffInvitationService(
+async function cleanUpFailedStaffInvitationService(
     id: string,
+    tokenHash: string,
     actorUserId: string,
-    reason: 'revoked' | 'delivery_failed',
 ) {
     const auditContext = prepareAuditContextService(actorUserId)
     const audit = await db.transaction(async (transaction) => {
         await lockAccountUniquenessInTransactionService(transaction)
-        if (reason === 'revoked')
-            await requireMutationPermissionService(
-                transaction,
-                actorUserId,
-                PERMISSIONS.ADMIN_SUPER_USER,
-            )
         const deleted = await transaction
             .delete(staffInvitations)
-            .where(eq(staffInvitations.id, id))
+            .where(
+                and(
+                    eq(staffInvitations.id, id),
+                    eq(staffInvitations.tokenHash, tokenHash),
+                ),
+            )
             .returning({ id: staffInvitations.id })
         if (deleted.length === 0) return null
         return writeAuditLogInTransactionService(transaction, {
             ...auditContext,
-            action: `admin.staff.invitation_${reason}`,
-            message: 'Eine offene Teameinladung wurde entfernt.',
+            action: 'admin.staff.invitation_delivery_failed',
+            message:
+                'Eine Teameinladung konnte nicht zum Versand eingeplant werden.',
             oldValues: { invitationId: id },
         })
     })
-    if (audit) await publishCommittedAuditLogService(audit)
-}
-
-export async function revokeStaffInvitationService(
-    id: string,
-    actorUserId: string,
-) {
-    await removeStaffInvitationService(id, actorUserId, 'revoked')
+    if (audit) {
+        await publishCommittedAuditLogService(audit)
+        await publishStaffInvitationsChangedService()
+    }
 }

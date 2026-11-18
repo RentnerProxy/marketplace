@@ -11,15 +11,19 @@ import type { UsersTableProps } from '../Types/user-management-table.types.ts'
 import type { UserManagementUser } from '../../../Types/user-management-domain.types.ts'
 
 export default function useUsersTableColumns({
+    accountType,
     availablePermissions,
     isDeletingUser,
     isTogglingUserActive,
     isResendingPasswordReset,
+    isConvertingAccount,
     canManageSuperUsers,
+    canConvertAccounts,
     onEditUser,
     onDeleteUser,
     onToggleUserActive,
     onPasswordReset,
+    onConvertAccount,
 }: UsersTableProps) {
     const { language, t } = useTranslationStore()
 
@@ -157,34 +161,42 @@ export default function useUsersTableColumns({
             {
                 id: 'actions',
                 header: t('common.actions'),
-                size: 200,
-                minSize: 200,
+                size: canConvertAccounts ? 240 : 200,
+                minSize: canConvertAccounts ? 240 : 200,
                 enableHiding: false,
                 enableResizing: false,
                 enableSorting: false,
                 enableColumnFilter: false,
                 cell: ({ row }) => (
                     <UserTableActions
+                        accountType={accountType}
                         user={row.original}
                         isDeletingUser={isDeletingUser}
                         isTogglingUserActive={isTogglingUserActive}
                         isResendingPasswordReset={isResendingPasswordReset}
+                        isConvertingAccount={isConvertingAccount}
                         canManageSuperUsers={canManageSuperUsers}
+                        canConvertAccounts={canConvertAccounts}
                         onEditUser={onEditUser}
                         onDeleteUser={onDeleteUser}
                         onToggleUserActive={onToggleUserActive}
                         onPasswordReset={onPasswordReset}
+                        onConvertAccount={onConvertAccount}
                     />
                 ),
             },
         ],
         [
+            accountType,
             availablePermissions,
+            canConvertAccounts,
             canManageSuperUsers,
+            isConvertingAccount,
             isDeletingUser,
             isResendingPasswordReset,
             isTogglingUserActive,
             language,
+            onConvertAccount,
             onDeleteUser,
             onEditUser,
             onPasswordReset,

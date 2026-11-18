@@ -8,7 +8,7 @@ import {
 import type { Boundary } from '../UserManagement/management-middleware.test.helpers.ts'
 
 const send = vi.fn()
-const revoke = vi.fn()
+const manage = vi.fn()
 const list = vi.fn()
 const accept = vi.fn()
 const rateLimit = vi.fn()
@@ -17,7 +17,9 @@ vi.mock('@tanstack/react-start', () => ({ createServerFn: createServerFnStub }))
 vi.mock('@/server/Admin/StaffManagement/invitations.service.ts', () => ({
     getStaffInvitationsService: list,
     inviteStaffService: send,
-    revokeStaffInvitationService: revoke,
+}))
+vi.mock('@/server/Admin/StaffManagement/manageInvitation.service.ts', () => ({
+    manageStaffInvitationService: manage,
 }))
 vi.mock('@/server/Auth/StaffInvitation/accept.service.ts', () => ({
     acceptStaffInvitationService: accept,
@@ -30,7 +32,7 @@ vi.mock('@/server/Logging/logger.ts', () => ({ logError: vi.fn() }))
 const {
     getStaffInvitationsHandler,
     inviteStaffHandler,
-    revokeStaffInvitationHandler,
+    manageStaffInvitationHandler,
 } = await import('@/features/Admin/StaffManagement/middleware.ts')
 const { acceptStaffInvitationHandler } =
     await import('@/features/Auth/StaffInvitation/middleware.ts')
@@ -51,13 +53,14 @@ beforeEach(() => {
 })
 
 describe('staff invitation server boundaries', () => {
-    it('requires superuser permission for listing, sending, and revocation', async () => {
+    it('requires superuser permission for listing, sending, and managing invitations', async () => {
         await getStaffInvitationsHandler()
         await inviteStaffHandler({ data: input })
-        await revokeStaffInvitationHandler({ data: { id } })
+        await manageStaffInvitationHandler({ data: { id, action: 'revoke' } })
+        await manageStaffInvitationHandler({ data: { id, action: 'resend' } })
 
         expect(authorize.mock.calls).toEqual(
-            Array.from({ length: 3 }, () => [PERMISSIONS.ADMIN_SUPER_USER]),
+            Array.from({ length: 4 }, () => [PERMISSIONS.ADMIN_SUPER_USER]),
         )
         expect(list).toHaveBeenCalledWith(id)
         expect(send).toHaveBeenCalledWith(
@@ -68,13 +71,25 @@ describe('staff invitation server boundaries', () => {
             },
             id,
         )
-        expect(revoke).toHaveBeenCalledWith(id, id)
+        expect(manage.mock.calls).toEqual([
+            [{ id, action: 'revoke' }, id],
+            [{ id, action: 'resend' }, id],
+        ])
+        expect(rateLimit).toHaveBeenCalledTimes(2)
         expect(rateLimit).toHaveBeenCalledWith({
             ...RATE_LIMITS.staffInvitationSend,
             scope: 'staff-invitation-send',
             identifiers: [id],
             includeClientIp: false,
         })
+    })
+
+    it('blocks resend when it reaches the shared send rate limit', async () => {
+        rateLimit.mockRejectedValueOnce(new Error('Rate limited'))
+        await expect(
+            manageStaffInvitationHandler({ data: { id, action: 'resend' } }),
+        ).rejects.toThrow('Rate limited')
+        expect(manage).not.toHaveBeenCalled()
     })
 
     it('rejects automatic superuser rights before sending invitations', async () => {

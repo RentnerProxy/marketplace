@@ -5,10 +5,12 @@ import { AppError } from '@/lib/Errors/appError.ts'
 import { toastAppError } from '@/shared/Errors/toastAppError.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import {
+    convertAccountTypeHandler,
     deleteUserHandler,
     resetUserPasswordHandler,
     setUserActiveHandler,
 } from '../middleware.ts'
+import { PERMISSION_MANAGEMENT_USERS_QUERY_KEY } from '@/lib/Permissions/permissionManagementCache.ts'
 import type { UserManagementUser } from '../Types/user-management-domain.types.ts'
 import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import { ADMIN_USERS_QUERY_KEY } from '@/lib/UserManagement/userCache.ts'
@@ -17,11 +19,57 @@ import { updateUserActiveStateInList } from '@/lib/UserManagement/userCache.ts'
 export default function useUserAccountActions(
     accountType: AccountType,
     canManageSuperUsers: boolean,
+    canConvertAccounts: boolean,
 ) {
     const { t } = useTranslationStore()
     const queryClient = useQueryClient()
     const [deleteTargetUser, setDeleteTargetUser] =
         useState<UserManagementUser | null>(null)
+    const [conversionTarget, setConversionTarget] =
+        useState<UserManagementUser | null>(null)
+
+    const { mutate: convertAccount, isPending: isConvertingAccount } =
+        useMutation({
+            mutationFn: (user: UserManagementUser) =>
+                convertAccountTypeHandler({
+                    data: { id: user.id, accountType },
+                }),
+            async onSuccess(result) {
+                const title = t('admin.users.conversion.title')
+                if (!result.success) {
+                    toast.error(
+                        t(`admin.users.conversion.errors.${result.error}`),
+                        { title },
+                    )
+                    return
+                }
+
+                setConversionTarget(null)
+                toast.success(t('admin.users.conversion.converted'), { title })
+                await Promise.all([
+                    queryClient.invalidateQueries({
+                        queryKey: ADMIN_USERS_QUERY_KEY,
+                    }),
+                    queryClient.invalidateQueries({
+                        queryKey: PERMISSION_MANAGEMENT_USERS_QUERY_KEY,
+                    }),
+                ])
+            },
+            onError: (error) => toastAppError(error),
+        })
+
+    const handleAskConvertAccount = useCallback(
+        (user: UserManagementUser) => {
+            if (
+                canConvertAccounts &&
+                !user.isCurrentUser &&
+                (!user.isSuperUser || canManageSuperUsers)
+            ) {
+                setConversionTarget(user)
+            }
+        },
+        [canConvertAccounts, canManageSuperUsers],
+    )
 
     const { mutate: deleteUserMutation, isPending: isDeletingUser } =
         useMutation({
@@ -206,11 +254,23 @@ export default function useUserAccountActions(
     return {
         state: {
             deleteTargetUser,
+            conversionTarget,
+            isConvertingAccount,
             isDeletingUser,
             isTogglingUserActive,
             isResendingPasswordReset,
         },
         handler: {
+            handleAskConvertAccount,
+            handleCloseConversion: () => setConversionTarget(null),
+            handleConfirmConversion: () => {
+                if (
+                    conversionTarget &&
+                    canConvertAccounts &&
+                    !isConvertingAccount
+                )
+                    convertAccount(conversionTarget)
+            },
             handleDeleteUser,
             handleCloseDeleteModal,
             handleConfirmDeleteUser,

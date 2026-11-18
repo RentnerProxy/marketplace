@@ -138,7 +138,6 @@ vi.mock('@/lib/Queries/appQueries.ts', () => ({
 vi.mock('@/features/Admin/PermissionManagement/middleware.ts', () => ({
     getPermissionManagementOverviewHandler: vi.fn(),
     getPermissionManagementUsersHandler: vi.fn(),
-    replaceDefaultPermissionsHandler: vi.fn(),
     createPermissionPresetHandler: vi.fn(),
     updatePermissionPresetHandler: vi.fn(),
     deletePermissionPresetHandler: vi.fn(),

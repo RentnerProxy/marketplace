@@ -5,6 +5,7 @@ import {
     Users,
     HardDriveDownload,
     KeyRound,
+    Mail,
     ShieldCheck,
     ContactRound,
     PackagePlus,
@@ -24,25 +25,11 @@ export const NAVBAR_ITEMS = [
     },
     {
         labelKey: 'nav.publicAccounts',
+        to: '/admin/users',
         icon: Users,
-        children: [
-            {
-                labelKey: 'nav.accounts',
-                to: '/admin/users',
-                icon: Users,
-                permission: PERMISSIONS.ADMIN_USER_MANAGEMENT,
-                title: 'admin.users.title',
-                description: 'admin.users.description',
-            },
-            {
-                labelKey: 'nav.registrationDefaults',
-                to: '/admin/user-defaults',
-                icon: ShieldCheck,
-                permission: PERMISSIONS.ADMIN_SUPER_USER,
-                title: 'admin.permissions.defaults.title',
-                description: 'admin.permissions.defaults.description',
-            },
-        ],
+        permission: PERMISSIONS.ADMIN_USER_MANAGEMENT,
+        title: 'admin.users.title',
+        description: 'admin.users.description',
     },
     {
         labelKey: 'nav.staff',
@@ -55,6 +42,14 @@ export const NAVBAR_ITEMS = [
                 permission: PERMISSIONS.ADMIN_SUPER_USER,
                 title: 'admin.staff.title',
                 description: 'admin.staff.description',
+            },
+            {
+                labelKey: 'nav.staffInvitations',
+                to: '/admin/staff-invitations',
+                icon: Mail,
+                permission: PERMISSIONS.ADMIN_SUPER_USER,
+                title: 'admin.staff.invitations.title',
+                description: 'admin.staff.invitations.description',
             },
             {
                 labelKey: 'nav.permissions',

@@ -17,6 +17,7 @@ import { publicUserPermissions } from '@/db/Schema/permissions.ts'
 import { user_profiles, users } from '@/db/Schema/users.ts'
 import { socialAccounts } from '@/db/Schema/socialAuth.ts'
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
+import { DEFAULT_PUBLIC_PERMISSION_KEYS } from '@/config/permissions.config.ts'
 
 vi.mock('@/lib/AuditLogs/auditLogs.ts', () => ({
     prepareAuditContextService: () => ({ actorUserId: null }),
@@ -39,13 +40,13 @@ function transactionFixture(selections: Array<Array<{ id: string }>>) {
         select: () => {
             const queryChain = {
                 from: () => queryChain,
-                innerJoin: () => queryChain,
                 where: (query: SQL) => {
                     queries.push(query)
                     order.push('select')
                     const queryChainResult = selections.shift() ?? []
                     return Object.assign(Promise.resolve(queryChainResult), {
                         limit: () => Promise.resolve(queryChainResult),
+                        for: () => Promise.resolve(queryChainResult),
                     })
                 },
             }
@@ -188,9 +189,15 @@ describe('Public registration', () => {
                 permissionId: 'dashboard-permission',
             },
         ])
+        const defaultsQuery = fixture.queries.at(-1)
+        if (!defaultsQuery)
+            throw new Error('Expected a public permission lookup')
+        const query = new PgDialect().sqlToQuery(defaultsQuery)
+        expect(query.sql).toContain('"permissions"."key"')
+        expect(query.params).toEqual([...DEFAULT_PUBLIC_PERMISSION_KEYS])
     })
 
-    it('does not grant permissions when public defaults are empty', async () => {
+    it('does not create an inaccessible account when configured permissions are missing', async () => {
         const fixture = transactionFixture([[{ id: 'admin' }], [], [], []])
         await expect(
             createPublicAccountInTransactionService(fixture.transaction, {
@@ -198,11 +205,7 @@ describe('Public registration', () => {
                 email: 'person@example.test',
                 passwordHash: 'hashed',
             }),
-        ).resolves.toMatchObject({ userId: 'new-user' })
-        expect(fixture.inserts.map(({ table }) => table)).toEqual([
-            users,
-            publicAccounts,
-            user_profiles,
-        ])
+        ).rejects.toThrow('configured public account permissions')
+        expect(fixture.inserts).toEqual([])
     })
 })

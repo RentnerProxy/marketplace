@@ -37,8 +37,8 @@ import { Route as AuthenticatedAdminBackupsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminPermissionsRouteImport } from './routes/_authenticated/admin/permissions'
 import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authenticated/admin/staff'
+import { Route as AuthenticatedAdminStaffInvitationsRouteImport } from './routes/_authenticated/admin/staff-invitations'
 import { Route as AuthenticatedAdminSystemSettingsRouteImport } from './routes/_authenticated/admin/system-settings'
-import { Route as AuthenticatedAdminUserDefaultsRouteImport } from './routes/_authenticated/admin/user-defaults'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedUserAppSubmissionsRouteImport } from './routes/_authenticated/user/app-submissions'
 import { Route as AuthenticatedUserDashboardRouteImport } from './routes/_authenticated/user/dashboard'
@@ -194,16 +194,16 @@ const AuthenticatedAdminStaffRoute = AuthenticatedAdminStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminStaffInvitationsRoute =
+  AuthenticatedAdminStaffInvitationsRouteImport.update({
+    id: '/staff-invitations',
+    path: '/staff-invitations',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminSystemSettingsRoute =
   AuthenticatedAdminSystemSettingsRouteImport.update({
     id: '/system-settings',
     path: '/system-settings',
-    getParentRoute: () => AuthenticatedAdminRouteRoute,
-  } as any)
-const AuthenticatedAdminUserDefaultsRoute =
-  AuthenticatedAdminUserDefaultsRouteImport.update({
-    id: '/user-defaults',
-    path: '/user-defaults',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
@@ -286,8 +286,8 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/permissions': typeof AuthenticatedAdminPermissionsRoute
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
+  '/admin/staff-invitations': typeof AuthenticatedAdminStaffInvitationsRoute
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
-  '/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
@@ -326,8 +326,8 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/permissions': typeof AuthenticatedAdminPermissionsRoute
   '/admin/staff': typeof AuthenticatedAdminStaffRoute
+  '/admin/staff-invitations': typeof AuthenticatedAdminStaffInvitationsRoute
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
-  '/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
@@ -369,8 +369,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/permissions': typeof AuthenticatedAdminPermissionsRoute
   '/_authenticated/admin/staff': typeof AuthenticatedAdminStaffRoute
+  '/_authenticated/admin/staff-invitations': typeof AuthenticatedAdminStaffInvitationsRoute
   '/_authenticated/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
-  '/_authenticated/admin/user-defaults': typeof AuthenticatedAdminUserDefaultsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
   '/_authenticated/user/dashboard': typeof AuthenticatedUserDashboardRoute
@@ -411,8 +411,8 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/permissions'
     | '/admin/staff'
+    | '/admin/staff-invitations'
     | '/admin/system-settings'
-    | '/admin/user-defaults'
     | '/admin/users'
     | '/user/app-submissions'
     | '/user/dashboard'
@@ -451,8 +451,8 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/permissions'
     | '/admin/staff'
+    | '/admin/staff-invitations'
     | '/admin/system-settings'
-    | '/admin/user-defaults'
     | '/admin/users'
     | '/user/app-submissions'
     | '/user/dashboard'
@@ -493,8 +493,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/permissions'
     | '/_authenticated/admin/staff'
+    | '/_authenticated/admin/staff-invitations'
     | '/_authenticated/admin/system-settings'
-    | '/_authenticated/admin/user-defaults'
     | '/_authenticated/admin/users'
     | '/_authenticated/user/app-submissions'
     | '/_authenticated/user/dashboard'
@@ -729,18 +729,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminStaffRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/staff-invitations': {
+      id: '/_authenticated/admin/staff-invitations'
+      path: '/staff-invitations'
+      fullPath: '/admin/staff-invitations'
+      preLoaderRoute: typeof AuthenticatedAdminStaffInvitationsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/system-settings': {
       id: '/_authenticated/admin/system-settings'
       path: '/system-settings'
       fullPath: '/admin/system-settings'
       preLoaderRoute: typeof AuthenticatedAdminSystemSettingsRouteImport
-      parentRoute: typeof AuthenticatedAdminRouteRoute
-    }
-    '/_authenticated/admin/user-defaults': {
-      id: '/_authenticated/admin/user-defaults'
-      path: '/user-defaults'
-      fullPath: '/admin/user-defaults'
-      preLoaderRoute: typeof AuthenticatedAdminUserDefaultsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/users': {
@@ -824,8 +824,8 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminPermissionsRoute: typeof AuthenticatedAdminPermissionsRoute
   AuthenticatedAdminStaffRoute: typeof AuthenticatedAdminStaffRoute
+  AuthenticatedAdminStaffInvitationsRoute: typeof AuthenticatedAdminStaffInvitationsRoute
   AuthenticatedAdminSystemSettingsRoute: typeof AuthenticatedAdminSystemSettingsRoute
-  AuthenticatedAdminUserDefaultsRoute: typeof AuthenticatedAdminUserDefaultsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
 }
 
@@ -838,9 +838,10 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
     AuthenticatedAdminPermissionsRoute: AuthenticatedAdminPermissionsRoute,
     AuthenticatedAdminStaffRoute: AuthenticatedAdminStaffRoute,
+    AuthenticatedAdminStaffInvitationsRoute:
+      AuthenticatedAdminStaffInvitationsRoute,
     AuthenticatedAdminSystemSettingsRoute:
       AuthenticatedAdminSystemSettingsRoute,
-    AuthenticatedAdminUserDefaultsRoute: AuthenticatedAdminUserDefaultsRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   }
 

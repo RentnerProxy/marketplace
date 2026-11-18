@@ -10,7 +10,11 @@ import {
     securityChangeMailInputSchema,
 } from './mail-job.schema.ts'
 import { createMailJobEnvelope } from './mail-payload.ts'
-import type { MailJobData, MailJobEnvelope } from './Types/mail-job.types.ts'
+import type {
+    MailJobData,
+    MailJobEnvelope,
+    StaffInvitationResendMailInput,
+} from './Types/mail-job.types.ts'
 
 export const MAIL_QUEUE_NAME = 'rentnerproxy-marketplace-mail-v2'
 
@@ -70,6 +74,12 @@ export async function enqueuePasswordSetupMail(input: AuthMailInput) {
         ...input,
         kind: 'password-setup',
     })
+}
+
+export async function enqueueStaffInvitationResendMail(
+    input: StaffInvitationResendMailInput,
+) {
+    await enqueueMailJob({ ...input, kind: 'staff-invitation-resend' })
 }
 
 export async function enqueueFailedLoginAlertMail(

@@ -1,8 +1,5 @@
 import { z } from 'zod'
-import {
-    PERMISSIONS,
-    PUBLIC_PERMISSION_KEYS,
-} from '@/config/permissions.config.ts'
+import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { permissionKeysSchema } from '@/lib/Permissions/permissionSchemas.ts'
 
 const automaticPermissionKeysSchema = permissionKeysSchema.refine(
@@ -13,13 +10,6 @@ const presetValuesSchema = z.object({
     name: z.string().trim().min(2).max(100),
     description: z.string().trim().max(500),
     permissionKeys: automaticPermissionKeysSchema,
-})
-
-export const replaceDefaultPermissionsInputSchema = z.object({
-    permissionKeys: permissionKeysSchema.refine(
-        (keys) => keys.every((key) => PUBLIC_PERMISSION_KEYS.includes(key)),
-        'Als Standardrechte sind nur Berechtigungen für öffentliche Konten zulässig.',
-    ),
 })
 
 export const createPermissionPresetInputSchema = presetValuesSchema

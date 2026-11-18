@@ -7,6 +7,8 @@ const permissionTranslationKeyByPermissionKey: Record<string, string> = {
     [PERMISSIONS.ADMIN_DASHBOARD]: 'admin.permissions.catalog.adminDashboard',
     [PERMISSIONS.ADMIN_USER_MANAGEMENT]:
         'admin.permissions.catalog.userManagement',
+    [PERMISSIONS.ADMIN_ACCOUNT_CONVERSION]:
+        'admin.permissions.catalog.accountConversion',
     [PERMISSIONS.ADMIN_SYSTEM_SETTINGS]:
         'admin.permissions.catalog.systemSettings',
     [PERMISSIONS.ADMIN_MAINTENANCE_BYPASS]:

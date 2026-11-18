@@ -6,12 +6,21 @@ import { enforceRateLimit } from '@/server/RateLimit/rateLimit.service.ts'
 import {
     getStaffInvitationsService,
     inviteStaffService,
-    revokeStaffInvitationService,
 } from '@/server/Admin/StaffManagement/invitations.service.ts'
+import { manageStaffInvitationService } from '@/server/Admin/StaffManagement/manageInvitation.service.ts'
 import {
     inviteStaffInputSchema,
-    revokeStaffInvitationInputSchema,
+    manageStaffInvitationInputSchema,
 } from './validation.ts'
+
+async function enforceStaffInvitationSendRateLimit(userId: string) {
+    await enforceRateLimit({
+        ...RATE_LIMITS.staffInvitationSend,
+        scope: 'staff-invitation-send',
+        identifiers: [userId],
+        includeClientIp: false,
+    })
+}
 
 export const getStaffInvitationsHandler = createServerFn({
     method: 'GET',
@@ -28,21 +37,17 @@ export const inviteStaffHandler = createServerFn({ method: 'POST' })
         const { userId } = await requirePermissionService(
             PERMISSIONS.ADMIN_SUPER_USER,
         )
-        await enforceRateLimit({
-            ...RATE_LIMITS.staffInvitationSend,
-            scope: 'staff-invitation-send',
-            identifiers: [userId],
-            includeClientIp: false,
-        })
+        await enforceStaffInvitationSendRateLimit(userId)
         return inviteStaffService(data, userId)
     })
 
-export const revokeStaffInvitationHandler = createServerFn({ method: 'POST' })
-    .validator((data: unknown) => revokeStaffInvitationInputSchema.parse(data))
+export const manageStaffInvitationHandler = createServerFn({ method: 'POST' })
+    .validator((data: unknown) => manageStaffInvitationInputSchema.parse(data))
     .handler(async ({ data }) => {
         const { userId } = await requirePermissionService(
             PERMISSIONS.ADMIN_SUPER_USER,
         )
-        await revokeStaffInvitationService(data.id, userId)
-        return { success: true as const }
+        if (data.action === 'resend')
+            await enforceStaffInvitationSendRateLimit(userId)
+        return manageStaffInvitationService(data, userId)
     })

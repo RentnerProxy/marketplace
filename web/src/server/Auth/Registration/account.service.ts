@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import {
     accountIdentityMatchesService,
     hasStaffIdentityReservationInTransactionService,
@@ -6,13 +6,9 @@ import {
 } from '@/server/Auth/accountUniqueness.service.ts'
 import { users, user_profiles } from '@/db/Schema/users.ts'
 import { publicAccounts } from '@/db/Schema/accounts.ts'
-import {
-    defaultUserPermissions,
-    permissions,
-    publicUserPermissions,
-} from '@/db/Schema/permissions.ts'
+import { publicUserPermissions } from '@/db/Schema/permissions.ts'
 import { socialAccounts } from '@/db/Schema/socialAuth.ts'
-import { PUBLIC_PERMISSION_KEYS } from '@/config/permissions.config.ts'
+import { getDefaultPublicPermissionsInTransactionService } from '@/server/Auth/publicAccountPermissions.service.ts'
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 import type { SocialProviderId } from '@/lib/Auth/Types/social-auth.types.ts'
 import {
@@ -71,14 +67,8 @@ export async function createPublicAccountInTransactionService(
             .limit(1)
         if (existingIdentity.at(0)) return null
     }
-    const defaults = await transaction
-        .select({ id: permissions.id })
-        .from(defaultUserPermissions)
-        .innerJoin(
-            permissions,
-            eq(permissions.id, defaultUserPermissions.permissionId),
-        )
-        .where(inArray(permissions.key, PUBLIC_PERMISSION_KEYS))
+    const defaults =
+        await getDefaultPublicPermissionsInTransactionService(transaction)
     const rows = await transaction
         .insert(users)
         .values({

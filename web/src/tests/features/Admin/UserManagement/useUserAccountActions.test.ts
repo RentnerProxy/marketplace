@@ -12,11 +12,13 @@ import type { UserManagementUser } from '@/features/Admin/UserManagement/Types/u
 import { ADMIN_USERS_QUERY_KEY } from '@/lib/UserManagement/userCache.ts'
 
 const deleteUser = vi.fn()
+const convertAccount = vi.fn()
 const setActive = vi.fn()
 const resetPassword = vi.fn()
 const updateProfile = vi.fn()
 vi.mock('@rentnerkev/toasts', () => ({ toast: { success, error } }))
 vi.mock('@/features/Admin/UserManagement/middleware.ts', () => ({
+    convertAccountTypeHandler: convertAccount,
     deleteUserHandler: deleteUser,
     setUserActiveHandler: setActive,
     resetUserPasswordHandler: resetPassword,
@@ -43,10 +45,14 @@ const user: UserManagementUser = {
     permissions: [],
 }
 
+const useConvertiblePublicAccounts = () =>
+    useUserAccountActions('public', false, true)
+
 beforeEach(() => {
     reset()
     for (const handler of [
         deleteUser,
+        convertAccount,
         setActive,
         resetPassword,
         updateProfile,
@@ -56,8 +62,32 @@ beforeEach(() => {
 })
 
 describe('account actions', () => {
+    it('requires confirmation before converting and blocks self and protected targets', async () => {
+        const first = render(useConvertiblePublicAccounts)
+        first.handler.handleAskConvertAccount({ ...user, isCurrentUser: true })
+        first.handler.handleAskConvertAccount({ ...user, isSuperUser: true })
+        expect(
+            render(useConvertiblePublicAccounts).state.conversionTarget,
+        ).toBeNull()
+        first.handler.handleAskConvertAccount(user)
+        let hook = render(useConvertiblePublicAccounts)
+        expect(hook.state.conversionTarget).toEqual(user)
+        expect(convertAccount).not.toHaveBeenCalled()
+        hook.handler.handleCloseConversion()
+        first.handler.handleAskConvertAccount(user)
+        hook = render(useConvertiblePublicAccounts)
+        hook.handler.handleConfirmConversion()
+        await settle()
+        expect(convertAccount).toHaveBeenCalledWith({
+            data: { id: user.id, accountType: 'public' },
+        })
+        expect(
+            render(useConvertiblePublicAccounts).state.conversionTarget,
+        ).toBeNull()
+    })
+
     it('blocks self deletion/deactivation and unauthorized super-user actions', async () => {
-        const hook = render(() => useUserAccountActions('public', false))
+        const hook = render(() => useUserAccountActions('public', false, false))
         hook.handler.handleDeleteUser({ ...user, isCurrentUser: true })
         hook.handler.handleToggleUserActive({ ...user, isCurrentUser: true })
         const superUser = { ...user, isSuperUser: true }
@@ -77,26 +107,26 @@ describe('account actions', () => {
         expect(setActive).not.toHaveBeenCalled()
         expect(resetPassword).not.toHaveBeenCalled()
         expect(
-            render(() => useUserAccountActions('public', false)).state
+            render(() => useUserAccountActions('public', false, false)).state
                 .deleteTargetUser,
         ).toBeNull()
     })
 
     it('cancels deletion, then confirms an authorized deletion and invalidates lists', async () => {
         const invalidate = vi.spyOn(client, 'invalidateQueries')
-        let hook = render(() => useUserAccountActions('public', true))
+        let hook = render(() => useUserAccountActions('public', true, false))
         hook.handler.handleDeleteUser({ ...user, isSuperUser: true })
-        hook = render(() => useUserAccountActions('public', true))
+        hook = render(() => useUserAccountActions('public', true, false))
         expect(hook.state.deleteTargetUser?.id).toBe(user.id)
         hook.handler.handleCloseDeleteModal()
-        hook = render(() => useUserAccountActions('public', true))
+        hook = render(() => useUserAccountActions('public', true, false))
         hook.handler.handleConfirmDeleteUser()
         expect(deleteUser).not.toHaveBeenCalled()
         hook.handler.handleDeleteUser(user)
         render(() =>
-            useUserAccountActions('public', true),
+            useUserAccountActions('public', true, false),
         ).handler.handleConfirmDeleteUser()
-        hook = render(() => useUserAccountActions('public', true))
+        hook = render(() => useUserAccountActions('public', true, false))
         expect(hook.state.deleteTargetUser).toBeNull()
         expect(hook.state.isDeletingUser).toBe(true)
         await settle()
@@ -121,10 +151,10 @@ describe('account actions', () => {
             [...ADMIN_USERS_QUERY_KEY, 'public', 'full'],
             [user],
         )
-        const hook = render(() => useUserAccountActions('public', true))
+        const hook = render(() => useUserAccountActions('public', true, false))
         hook.handler.handleToggleUserActive(user)
         expect(
-            render(() => useUserAccountActions('public', true)).state
+            render(() => useUserAccountActions('public', true, false)).state
                 .isTogglingUserActive,
         ).toBe(true)
         await settle()
@@ -162,13 +192,15 @@ describe('account actions', () => {
         const pendingRequest = Promise.withResolvers<unknown>()
         resetPassword.mockImplementation(() => pendingRequest.promise)
         render(() =>
-            useUserAccountActions('public', true),
+            useUserAccountActions('public', true, false),
         ).handler.onPasswordReset({
             ...user,
             isSuperUser: true,
         })
         await Promise.resolve()
-        const pending = render(() => useUserAccountActions('public', true))
+        const pending = render(() =>
+            useUserAccountActions('public', true, false),
+        )
         expect(pending.state.isResendingPasswordReset).toBe(true)
         pending.handler.onPasswordReset(user)
         pendingRequest.resolve({ success: true })
@@ -195,10 +227,14 @@ describe('account actions', () => {
                 success: false,
                 error: { code: 'FORBIDDEN', message: 'Denied' },
             })
-            let hook = render(() => useUserAccountActions('public', true))
+            let hook = render(() =>
+                useUserAccountActions('public', true, false),
+            )
             if (action === 'delete') {
                 hook.handler.handleDeleteUser(user)
-                hook = render(() => useUserAccountActions('public', true))
+                hook = render(() =>
+                    useUserAccountActions('public', true, false),
+                )
                 hook.handler.handleConfirmDeleteUser()
             } else if (action === 'status')
                 hook.handler.handleToggleUserActive(user)
@@ -226,10 +262,14 @@ describe('account actions', () => {
                       ? setActive
                       : resetPassword
             adapter.mockRejectedValue(reason)
-            let hook = render(() => useUserAccountActions('public', false))
+            let hook = render(() =>
+                useUserAccountActions('public', false, false),
+            )
             if (action === 'delete') {
                 hook.handler.handleDeleteUser(user)
-                hook = render(() => useUserAccountActions('public', false))
+                hook = render(() =>
+                    useUserAccountActions('public', false, false),
+                )
                 hook.handler.handleConfirmDeleteUser()
             } else if (action === 'status')
                 hook.handler.handleToggleUserActive(user)

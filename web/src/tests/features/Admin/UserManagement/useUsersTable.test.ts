@@ -53,11 +53,14 @@ const props: UsersTableProps = {
     isDeletingUser: false,
     isTogglingUserActive: false,
     isResendingPasswordReset: false,
+    isConvertingAccount: false,
     canManageSuperUsers: false,
+    canConvertAccounts: false,
     onEditUser: vi.fn(),
     onDeleteUser: vi.fn(),
     onToggleUserActive: vi.fn(),
     onPasswordReset: vi.fn(),
+    onConvertAccount: vi.fn(),
 }
 function renderTable() {
     const element = render(() => UsersTable(props))
@@ -249,6 +252,37 @@ describe('users table view', () => {
 })
 
 describe('user row actions', () => {
+    it('offers conversion to permitted actors, including superusers managing other superusers', () => {
+        const staffProps = {
+            ...props,
+            accountType: 'staff' as const,
+            canConvertAccounts: true,
+            canManageSuperUsers: true,
+        }
+        const superUserTarget = { ...user, isSuperUser: true }
+        expect(
+            render(() => useUserTableActionsLogic({ ...props, user })).state
+                .showConvertAccount,
+        ).toBe(false)
+        expect(
+            render(() =>
+                useUserTableActionsLogic({
+                    ...staffProps,
+                    user: { ...superUserTarget, isCurrentUser: true },
+                }),
+            ).state.showConvertAccount,
+        ).toBe(false)
+        const { state, handler } = render(() =>
+            useUserTableActionsLogic({ ...staffProps, user: superUserTarget }),
+        )
+        expect(state.showConvertAccount).toBe(true)
+        expect(state.convertAccountLabel).toBe(
+            'admin.users.conversion.toPublic',
+        )
+        handler.handleConvertAccount()
+        expect(props.onConvertAccount).toHaveBeenCalledWith(superUserTarget)
+    })
+
     it('forwards each allowed action with the correct user', () => {
         const hook = render(() => useUserTableActionsLogic({ ...props, user }))
         hook.handler.handleEditUser()

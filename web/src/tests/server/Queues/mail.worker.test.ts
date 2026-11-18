@@ -14,6 +14,7 @@ import { processMailJob } from '@/server/Queues/mail.worker.ts'
 import { mailJobDataSchema } from '@/server/Queues/mail-job.schema.ts'
 import { encryptAuthSecret } from '@/lib/Auth/secretEncryption.ts'
 import { SECURITY_CHANGE_TYPES } from '@/lib/Mail/Templates/securityChangeMailTemplate.ts'
+import type { AuthMailInput } from '@/lib/Mail/Types/mail-domain.types.ts'
 
 const restoreStateMocks = (function () {
     return {
@@ -22,6 +23,10 @@ const restoreStateMocks = (function () {
         }),
     }
 })()
+const prepareResend = vi.fn<() => Promise<AuthMailInput | null>>()
+vi.mock('@/server/Admin/StaffManagement/resendInvitation.service.ts', () => ({
+    prepareStaffInvitationResendMailService: prepareResend,
+}))
 
 vi.mock('@/lib/Mail/mail.ts', function () {
     return {
@@ -167,6 +172,34 @@ describe('Mail-Worker-Dispatch', function () {
         expect(mockedSendPasswordSetupMail).toHaveBeenCalledTimes(1)
         expect(mockedSendPasswordResetMail).not.toHaveBeenCalled()
         expect(mockedSendFailedLoginAlertMail).not.toHaveBeenCalled()
+    })
+
+    it('sends a committed resend and skips stale jobs through the encrypted queue', async () => {
+        const data = {
+            kind: 'staff-invitation-resend' as const,
+            invitationId: '01941f29-7c00-7000-8000-000000000011',
+            actorUserId: '01941f29-7c00-7000-8000-000000000012',
+            previousStatusRevision: '01941f29-7c00-7000-8000-000000000013',
+            statusRevision: '01941f29-7c00-7000-8000-000000000014',
+            tokenHash: 'b'.repeat(64),
+            resetLink:
+                'https://app.example.test/staff-invitation#invite=synthetic',
+        }
+        const mail = { ...authMailData, resetLink: data.resetLink }
+        const job = { name: data.kind, data: await createMailJobEnvelope(data) }
+        prepareResend
+            .mockRejectedValueOnce(new Error('commit failed'))
+            .mockResolvedValueOnce(mail)
+            .mockResolvedValueOnce(null)
+        await expect(processMailJob(job)).rejects.toThrow(
+            'Mail-Job konnte nicht verarbeitet werden.',
+        )
+        expect(mockedSendPasswordSetupMail).not.toHaveBeenCalled()
+        await processMailJob(job)
+        await processMailJob(job)
+        expect(prepareResend).toHaveBeenCalledWith(data)
+        expect(mockedSendPasswordSetupMail).toHaveBeenCalledTimes(1)
+        expect(mockedSendPasswordSetupMail).toHaveBeenCalledWith(mail)
     })
 
     it('sendet einen Lockout-Job ausschließlich als Sicherheitswarnung', async function () {
