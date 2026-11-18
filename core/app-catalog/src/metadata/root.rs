@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use time::OffsetDateTime;
 
-use super::{Envelope, Role, canonical, hex_bytes, is_lower_hex};
+use super::{Envelope, Role, canonical, digest, hex_bytes, is_lower_hex};
 use crate::{CatalogError, Result};
 
 #[derive(Debug, Deserialize)]
@@ -134,6 +134,11 @@ fn read_role_keys(signed: &Value) -> Result<BTreeMap<Role, DelegatedKeys>> {
             if public.is_weak() || public.to_edwards().compress().to_bytes() != raw {
                 return Err(CatalogError::new("Weak or noncanonical Ed25519 public key"));
             }
+            if digest(&canonical(&signed["keys"][&id])?) != id {
+                return Err(CatalogError::new(
+                    "Key ID differs from canonical descriptor SHA-256",
+                ));
+            }
             if !seen_keys.insert(raw) {
                 return Err(CatalogError::new("Invalid or reused Ed25519 role key"));
             }
@@ -153,7 +158,7 @@ fn read_role_keys(signed: &Value) -> Result<BTreeMap<Role, DelegatedKeys>> {
     Ok(roles)
 }
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub(crate) struct KeyHistory {
     roles_by_public_key: BTreeMap<[u8; 32], Role>,
     public_keys_by_id: BTreeMap<String, [u8; 32]>,
@@ -220,7 +225,18 @@ impl SigningKeys {
         })
     }
 
-    pub(super) fn sign(&self, root: &Root, role: Role, message: &[u8]) -> Result<Value> {
+    pub(crate) fn validate(&self, root: &Root) -> Result<()> {
+        for role in [Role::Targets, Role::Snapshot, Role::Timestamp] {
+            self.authorized_key(root, role)?;
+        }
+        Ok(())
+    }
+
+    fn authorized_key<'a, 'r>(
+        &'a self,
+        root: &'r Root,
+        role: Role,
+    ) -> Result<(&'a SigningKey, &'r String)> {
         let key = match role {
             Role::Targets => &self.targets,
             Role::Snapshot => &self.snapshot,
@@ -228,6 +244,12 @@ impl SigningKeys {
             Role::Root => return Err(CatalogError::new("Root keys must remain offline")),
         };
         let authorized = &root.roles[&role];
+        if authorized.threshold != 1 {
+            return Err(CatalogError::new(format!(
+                "Publisher requires a threshold of one for {}",
+                role.as_str()
+            )));
+        }
         let public = key.verifying_key();
         let (id, _) = authorized
             .by_id
@@ -239,6 +261,11 @@ impl SigningKeys {
                     role.as_str()
                 ))
             })?;
+        Ok((key, id))
+    }
+
+    pub(super) fn sign(&self, root: &Root, role: Role, message: &[u8]) -> Result<Value> {
+        let (key, id) = self.authorized_key(root, role)?;
         let signature = key.sign(message);
         root.verify(role, message, &BTreeMap::from([(id.clone(), signature)]))?;
         Ok(json!({"keyid": id, "sig": hex::encode(signature.to_bytes())}))

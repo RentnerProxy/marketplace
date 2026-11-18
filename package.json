@@ -36,6 +36,7 @@
         "format": "bun fmt .",
         "format:check": "bun fmt --check .",
         "core:build": "bun run --no-env-file web/src/scripts/core-tooling.ts build",
+        "core:catalog:build": "bun run --no-env-file web/src/scripts/core-tooling.ts catalog-build",
         "core:check": "bun run --no-env-file web/src/scripts/core-tooling.ts check",
         "core:test": "bun run --no-env-file web/src/scripts/core-tooling.ts test",
         "core:coverage": "bun run --no-env-file web/src/scripts/core-tooling.ts coverage",

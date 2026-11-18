@@ -27,6 +27,7 @@ import {
     metadataLimit,
     packageLimit,
 } from '../../ci/app-candidates/evidence-files.ts'
+import { extractCandidateZip } from './catalog-core.ts'
 
 type Handoff = z.output<typeof publicationHandoff>
 const zipLimit =
@@ -139,51 +140,6 @@ async function downloadVerifiedZip(
     if (total !== artifact.sizeBytes || digest !== artifact.sha256)
         throw new Error('Candidate ZIP differs from the approved artifact')
     return { id: artifact.id, sha256: digest }
-}
-
-export function findCandidatePython() {
-    return Bun.which(
-        process.env.APP_CATALOG_PYTHON?.trim() ||
-            (process.platform === 'win32' ? 'python' : 'python3'),
-    )
-}
-
-async function extractCandidateZip(
-    zip: string,
-    directory: string,
-    limits: Readonly<Record<string, number>>,
-) {
-    // The runner supplies Python's standard-library ZIP reader. The child gets
-    // no Actions, GitHub App or signing credentials.
-    const python = findCandidatePython()
-    if (!python)
-        throw new Error('Python 3 is required to verify the candidate ZIP')
-    const child = Bun.spawn(
-        [
-            python,
-            '-I',
-            '-B',
-            join(import.meta.dir, 'extract-candidate.py'),
-            zip,
-            directory,
-            JSON.stringify(limits),
-        ],
-        {
-            stdin: 'ignore',
-            stdout: 'ignore',
-            stderr: 'ignore',
-            env:
-                process.platform === 'win32'
-                    ? {
-                          PATH: process.env.PATH ?? '',
-                          SystemRoot: process.env.SystemRoot ?? '',
-                      }
-                    : {},
-            signal: AbortSignal.timeout(45_000),
-        },
-    )
-    if ((await child.exited) !== 0)
-        throw new Error('Invalid candidate ZIP contents')
 }
 
 export async function withCandidateBundle<T>(

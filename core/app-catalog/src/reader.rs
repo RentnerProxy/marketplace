@@ -132,7 +132,11 @@ fn read_root_chain(
             "Repository root differs from pinned root",
         ));
     }
-    let mut history = KeyHistory::default();
+    // A newer pin can omit older roots that were authenticated by the checkpoint.
+    let mut history = options
+        .previous
+        .map(|state| state.history.clone())
+        .unwrap_or_default();
     history.record(&root)?;
     for count in 0..=MAX_ROOT_ROTATIONS {
         if options.previous.is_some_and(|state| {

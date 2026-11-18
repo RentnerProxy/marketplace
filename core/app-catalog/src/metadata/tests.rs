@@ -13,6 +13,36 @@ fn parse_root(value: &Value) -> Result<Root> {
     Root::parse(&serde_json::to_vec(value).unwrap(), None)
 }
 
+fn sign_fixture_root(root: &mut Value) {
+    let message = canonical(&root["signed"]).unwrap();
+    let ids = root["signed"]["roles"]["root"]["keyids"]
+        .as_array()
+        .unwrap();
+    root["signatures"] = [1u8, 2]
+        .iter()
+        .zip(ids)
+        .map(|(seed, id)| {
+            let key = SigningKey::from_bytes(&[*seed; 32]);
+            json!({"keyid": id, "sig": hex::encode(key.sign(&message).to_bytes())})
+        })
+        .collect();
+}
+
+fn replace_role_key(root: &mut Value, role: &str, index: usize, new_id: &str, descriptor: Value) {
+    let signed = &mut root["signed"];
+    let previous = signed["roles"][role]["keyids"][index]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    signed["keys"]
+        .as_object_mut()
+        .unwrap()
+        .remove(&previous)
+        .unwrap();
+    signed["keys"][new_id] = descriptor;
+    signed["roles"][role]["keyids"][index] = new_id.into();
+}
+
 #[test]
 fn decodes_unambiguous_wire_json_before_canonicalizing() {
     let all_types = br#"{"null":null,"bool":true,"list":[-2,3,1.25,"text"],"empty":{}}"#;
@@ -60,10 +90,15 @@ fn requires_unique_authorized_signatures_and_valid_thresholds() {
             .contains("duplicate")
     );
 
-    for threshold in [json!(0), json!(3), json!(1.5), json!("2")] {
+    for (threshold, reason) in [
+        (json!(0), "Invalid role threshold"),
+        (json!(3), "Invalid role threshold"),
+        (json!(1.5), "Invalid canonical TUF metadata"),
+        (json!("2"), "Invalid root roles"),
+    ] {
         let mut invalid = valid.clone();
         invalid["signed"]["roles"]["root"]["threshold"] = threshold;
-        assert!(parse_root(&invalid).is_err());
+        assert_eq!(parse_root(&invalid).unwrap_err().to_string(), reason);
     }
 }
 
@@ -71,34 +106,19 @@ fn requires_unique_authorized_signatures_and_valid_thresholds() {
 fn authenticates_legacy_key_id_hash_algorithms_and_compatible_spec_versions() {
     let mut root = legacy_root();
     root["signed"]["spec_version"] = "1.0.31".into();
-    for key in root["signed"]["keys"].as_object_mut().unwrap().values_mut() {
-        key["keyid_hash_algorithms"] = json!(["sha256", "sha512"]);
-    }
-    let message = canonical(&root["signed"]).unwrap();
-    let ids = root["signed"]["roles"]["root"]["keyids"]
-        .as_array()
-        .unwrap();
-    let signatures: Vec<Value> = [1u8, 2]
-        .iter()
-        .zip(ids)
-        .map(|(seed, id)| {
-            let key = SigningKey::from_bytes(&[*seed; 32]);
-            json!({"keyid": id, "sig": hex::encode(key.sign(&message).to_bytes())})
-        })
-        .collect();
-    root["signatures"] = signatures.into();
-    assert!(parse_root(&root).is_ok());
-
-    let id = root["signed"]["roles"]["root"]["keyids"][0]
+    let previous = root["signed"]["roles"]["root"]["keyids"][0]
         .as_str()
-        .unwrap()
-        .to_owned();
+        .unwrap();
+    let mut descriptor = root["signed"]["keys"][previous].clone();
+    descriptor["keyid_hash_algorithms"] = json!(["sha256", "sha512"]);
+    let id = digest(&canonical(&descriptor).unwrap());
+    replace_role_key(&mut root, "root", 0, &id, descriptor);
+    sign_fixture_root(&mut root);
+    assert!(parse_root(&root).is_ok());
     root["signed"]["keys"][&id]["keyid_hash_algorithms"] = json!(["sha256"]);
-    assert!(
-        parse_root(&root)
-            .unwrap_err()
-            .to_string()
-            .contains("signed by 0")
+    assert_eq!(
+        parse_root(&root).unwrap_err().to_string(),
+        "Key ID differs from canonical descriptor SHA-256"
     );
     root["signed"]["keys"][&id]["keyid_hash_algorithms"] = json!(["sha2\u{301}"]);
     assert!(
@@ -106,6 +126,21 @@ fn authenticates_legacy_key_id_hash_algorithms_and_compatible_spec_versions() {
             .unwrap_err()
             .to_string()
             .contains("algorithm name")
+    );
+}
+
+#[test]
+fn rejects_a_threshold_signed_root_with_an_incorrect_key_id() {
+    let mut root = legacy_root();
+    let id = root["signed"]["roles"]["targets"]["keyids"][0]
+        .as_str()
+        .unwrap();
+    let descriptor = root["signed"]["keys"][id].clone();
+    replace_role_key(&mut root, "targets", 0, &"0".repeat(64), descriptor);
+    sign_fixture_root(&mut root);
+    assert_eq!(
+        parse_root(&root).unwrap_err().to_string(),
+        "Key ID differs from canonical descriptor SHA-256"
     );
 }
 
@@ -129,7 +164,10 @@ fn rejects_unusable_or_reused_root_keys() {
         assert!(parse_root(&invalid).is_err());
     }
     let mut reused = root.clone();
-    reused["signed"]["keys"][first] = reused["signed"]["keys"][second].clone();
+    let mut alias = reused["signed"]["keys"][second].clone();
+    alias["keyid_hash_algorithms"] = json!(["sha256"]);
+    let alias_id = digest(&canonical(&alias).unwrap());
+    replace_role_key(&mut reused, "root", 0, &alias_id, alias);
     assert!(
         parse_root(&reused)
             .unwrap_err()

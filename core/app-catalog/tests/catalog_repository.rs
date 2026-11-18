@@ -69,18 +69,22 @@ impl Credentials {
             "expires": (at + Duration::days(365)).format(&Rfc3339).unwrap(),
             "consistent_snapshot": true, "keys": keys, "roles": roles,
         });
-        let message = canonical(&signed);
-        let signatures: Vec<_> = signers
-            .iter()
-            .map(|key| {
-                json!({
-                    "keyid": sha256(&canonical(&descriptor(key))),
-                    "sig": hex::encode(key.sign(&message).to_bytes()),
-                })
-            })
-            .collect();
-        serde_json::to_vec(&json!({"signed": signed, "signatures": signatures})).unwrap()
+        signed_metadata(&signed, signers)
     }
+}
+
+fn signed_metadata(signed: &Value, signers: &[&SigningKey]) -> Vec<u8> {
+    let message = canonical(signed);
+    let signatures: Vec<_> = signers
+        .iter()
+        .map(|key| {
+            json!({
+                "keyid": sha256(&canonical(&descriptor(key))),
+                "sig": hex::encode(key.sign(&message).to_bytes()),
+            })
+        })
+        .collect();
+    serde_json::to_vec(&json!({"signed": signed, "signatures": signatures})).unwrap()
 }
 
 fn descriptor(key: &SigningKey) -> Value {
@@ -169,6 +173,144 @@ fn update(
             icons,
         },
     )
+}
+
+#[test]
+fn repinning_preserves_retired_key_assignments_across_later_rotations() {
+    let (first, root1, mut files, initial) = repository();
+    let second = Credentials::new(21);
+    let mut signers = first.root.each_ref().to_vec();
+    signers.extend(second.root.each_ref());
+    let root2 = second.root(now(), 2, &signers);
+    files.extend(
+        update_catalog(
+            &initial,
+            initial.catalog_bytes(),
+            &second.online(),
+            UpdateOptions {
+                now: now(),
+                next_root: Some(&root2),
+                icons: &Files::new(),
+            },
+        )
+        .unwrap(),
+    );
+    let rotated = read(&files, &root1, options(now())).unwrap();
+    let repinned = read(
+        &files,
+        &root2,
+        ReadOptions {
+            previous: Some(&rotated),
+            ..options(now())
+        },
+    )
+    .unwrap();
+
+    let mut third = Credentials::new(41);
+    third.online[0] = first.online[2].clone();
+    let mut signers = second.root.each_ref().to_vec();
+    signers.extend(third.root.each_ref());
+    let root3 = third.root(now(), 3, &signers);
+    let reason = "reassigns a key across roles";
+    reject(
+        update_catalog(
+            &repinned,
+            repinned.catalog_bytes(),
+            &third.online(),
+            UpdateOptions {
+                now: now(),
+                next_root: Some(&root3),
+                icons: &Files::new(),
+            },
+        ),
+        reason,
+    );
+    files.insert("metadata/3.root.json".into(), root3);
+    reject(
+        read(
+            &files,
+            &root2,
+            ReadOptions {
+                previous: Some(&repinned),
+                ..options(now())
+            },
+        ),
+        reason,
+    );
+}
+
+#[test]
+fn publisher_checks_every_online_credential_even_when_nothing_is_due() {
+    let (mut keys, _, _, state) = repository();
+    for (index, name) in ["targets", "snapshot", "timestamp"].iter().enumerate() {
+        let replacement = SigningKey::from_bytes(&[99; 32]);
+        let original = std::mem::replace(&mut keys.online[index], replacement);
+        reject(
+            update_catalog(
+                &state,
+                state.catalog_bytes(),
+                &keys.online(),
+                UpdateOptions {
+                    now: now(),
+                    next_root: None,
+                    icons: &Files::new(),
+                },
+            ),
+            &format!("Signing key is not authorized for {name}"),
+        );
+        keys.online[index] = original;
+    }
+}
+
+#[test]
+fn readers_accept_multisigned_online_roles_that_the_publisher_cannot_renew() {
+    let (keys, root1, mut files, initial) = repository();
+    let second_timestamp = SigningKey::from_bytes(&[92; 32]);
+    let extra = descriptor(&second_timestamp);
+    let extra_id = sha256(&canonical(&extra));
+    let mut root: Value = serde_json::from_slice(&root1).unwrap();
+    let signed = &mut root["signed"];
+    signed["version"] = 2.into();
+    signed["roles"]["timestamp"]["keyids"]
+        .as_array_mut()
+        .unwrap()
+        .push(extra_id.clone().into());
+    signed["roles"]["timestamp"]["threshold"] = 2.into();
+    signed["keys"][&extra_id] = extra;
+    let root2 = signed_metadata(signed, &keys.root.each_ref());
+    let reason = "Publisher requires a threshold of one for timestamp";
+    reject(
+        update_catalog(
+            &initial,
+            initial.catalog_bytes(),
+            &keys.online(),
+            UpdateOptions {
+                now: now(),
+                next_root: Some(&root2),
+                icons: &Files::new(),
+            },
+        ),
+        reason,
+    );
+
+    let timestamp: Value = serde_json::from_slice(&files[TIMESTAMP]).unwrap();
+    let timestamp = signed_metadata(&timestamp["signed"], &[&keys.online[2], &second_timestamp]);
+    files.insert(TIMESTAMP.into(), timestamp);
+    files.insert("metadata/2.root.json".into(), root2);
+    let verified = read(&files, &root1, options(now())).unwrap();
+    reject(
+        update_catalog(
+            &verified,
+            verified.catalog_bytes(),
+            &keys.online(),
+            UpdateOptions {
+                now: now(),
+                next_root: None,
+                icons: &Files::new(),
+            },
+        ),
+        reason,
+    );
 }
 
 #[test]

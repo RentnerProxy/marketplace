@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
@@ -9,7 +10,7 @@ export type SigningKeys = {
     snapshot: string
     timestamp: string
 }
-export type TrustedCatalog = { generation: number; catalog: Catalog }
+export type TrustedCatalog = { catalog: Catalog }
 
 type CatalogRead = (
     path: string,
@@ -108,14 +109,40 @@ function staticFileLimit(path: string) {
 
 function binaryPath() {
     const configured = process.env.APP_CATALOG_CORE_BIN
-    if (configured) return resolve(configured)
     const extension = process.platform === 'win32' ? '.exe' : ''
-    return fileURLToPath(
-        new URL(
-            `../../../../core/target/release/marketplace-app-catalog${extension}`,
-            import.meta.url,
-        ),
+    const path = configured
+        ? resolve(configured)
+        : fileURLToPath(
+              new URL(
+                  `../../../../core/target/release/marketplace-app-catalog${extension}`,
+                  import.meta.url,
+              ),
+          )
+    if (!existsSync(path))
+        throw new Error(
+            'Catalog core binary is missing. Run bun --no-env-file run core:catalog:build or set APP_CATALOG_CORE_BIN to a built binary.',
+        )
+    return path
+}
+
+export async function extractCandidateZip(
+    archive: string,
+    destination: string,
+    limits: Readonly<Record<string, number>>,
+) {
+    const child = Bun.spawn(
+        [binaryPath(), 'extract-candidate', archive, destination],
+        {
+            stdin: Buffer.from(JSON.stringify(limits)),
+            stdout: 'ignore',
+            stderr: 'ignore',
+            env: {},
+            windowsHide: true,
+            signal: AbortSignal.timeout(45_000),
+        },
     )
+    if ((await child.exited) !== 0)
+        throw new Error('Invalid candidate ZIP contents')
 }
 
 class CatalogRejection extends Error {}
@@ -202,6 +229,7 @@ export function openCatalogCore(keys?: SigningKeys): CatalogCore {
         windowsHide: true,
     })
     const reader = new FrameReader(child.stdout)
+    let checkpoint: { state: TrustedCatalog; generation: number } | undefined
     let interrupted: ((error: Error) => void) | undefined
     let activity: (() => void) | undefined
     let unavailable = false
@@ -364,8 +392,9 @@ export function openCatalogCore(keys?: SigningKeys): CatalogCore {
                     if (reply.type === 'catalog') {
                         // oxlint-disable-next-line no-await-in-loop -- the catalog bytes follow the result
                         const bytes = await receiveFrame(maxCatalogBytes)
-                        const catalog = catalogFromBytes(bytes)
-                        return { generation: reply.generation, catalog }
+                        const state = { catalog: catalogFromBytes(bytes) }
+                        checkpoint = { state, generation: reply.generation }
+                        return state
                     }
                     if (
                         reply.type !== 'request' ||
@@ -399,7 +428,9 @@ export function openCatalogCore(keys?: SigningKeys): CatalogCore {
             })
         },
         async update(state, next, options = {}) {
-            const generation = generationSchema.parse(state.generation)
+            if (state !== checkpoint?.state)
+                throw new Error('Stale or foreign trusted catalog state')
+            const { generation } = checkpoint
             const now = options.now?.toISOString()
             const catalog =
                 next === undefined

@@ -1,3 +1,4 @@
+mod candidate_zip;
 mod ipc;
 
 use ipc::{
@@ -12,6 +13,7 @@ use marketplace_app_catalog::{
 use std::collections::BTreeMap;
 use std::env;
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
+use std::path::Path;
 use std::process::ExitCode;
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use zeroize::Zeroizing;
@@ -257,6 +259,29 @@ fn load_keys() -> Result<SigningKeys, CatalogError> {
 }
 
 fn main() -> ExitCode {
+    let mut args = env::args_os().skip(1);
+    let result = match args.next() {
+        None => run_worker(),
+        Some(command) if command == "extract-candidate" => {
+            let (Some(archive), Some(destination), None) = (args.next(), args.next(), args.next())
+            else {
+                return ExitCode::FAILURE;
+            };
+            candidate_zip::extract(
+                Path::new(&archive),
+                Path::new(&destination),
+                io::stdin().lock(),
+            )
+        }
+        Some(_) => return ExitCode::FAILURE,
+    };
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(_) => ExitCode::FAILURE,
+    }
+}
+
+fn run_worker() -> io::Result<()> {
     let mut worker = Worker {
         pipe: Pipe::new(
             BufReader::new(io::stdin().lock()),
@@ -265,8 +290,5 @@ fn main() -> ExitCode {
         keys: load_keys(),
         trusted: None,
     };
-    match worker.run() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(_) => ExitCode::FAILURE,
-    }
+    worker.run()
 }

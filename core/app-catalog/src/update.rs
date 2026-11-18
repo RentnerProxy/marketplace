@@ -186,6 +186,7 @@ fn build_update(
     if root.expires <= now {
         return Err(CatalogError::new("Expired root"));
     }
+    keys.validate(root)?;
 
     let targets = state.map(|state| &state.targets);
     let snapshot = state.map(|state| &state.snapshot);

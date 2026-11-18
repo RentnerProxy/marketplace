@@ -1,16 +1,23 @@
-import { afterEach, expect, test } from 'bun:test'
+import { afterEach, expect, spyOn, test } from 'bun:test'
 import { createHash, generateKeyPairSync, sign, verify } from 'node:crypto'
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { deflateRawSync } from 'node:zlib'
 import type { z } from 'zod'
 import fixtures from '../../../../../contracts/v1/fixtures.json'
 import {
     parseApproval,
     parseCatalog,
 } from '../../../../../contracts/v1/index.ts'
+import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
 import { assetNames } from '@/lib/Marketplace/candidateEvidence.ts'
 import type {
     catalogPublicationRequest,
     catalogPublicationWork,
 } from '@/lib/Marketplace/catalogPublication.ts'
+import { sealCandidate } from '../../../../../.github/scripts/ci/app-candidates/evidence.ts'
+import { withCandidateBundle } from '../../../../../.github/scripts/release/app-catalog/artifact.ts'
 import {
     type CatalogCore,
     openCatalogCore,
@@ -21,6 +28,10 @@ import {
     publishCatalogQueue,
     refreshDistributionCatalog,
 } from '../../../../../.github/scripts/release/app-catalog/publisher.ts'
+import {
+    candidateBuild,
+    candidateEvidenceFixture,
+} from './app-candidate-evidence.fixture.ts'
 
 const day = 86_400_000
 const sha = (bytes: Buffer | string) =>
@@ -31,8 +42,14 @@ const expires = (now: Date, days: number) =>
         .replace(/\.\d{3}Z$/u, 'Z')
 
 const processes: CatalogCore[] = []
+const directories: string[] = []
 afterEach(async () => {
-    await Promise.all(processes.splice(0).map((core) => core.close()))
+    await Promise.all([
+        ...processes.splice(0).map((core) => core.close()),
+        ...directories
+            .splice(0)
+            .map((path) => rm(path, { recursive: true, force: true })),
+    ])
 })
 
 function nativeCore(keys: SigningKeys) {
@@ -47,6 +64,189 @@ async function expectFailure(operation: Promise<unknown>, message: string) {
     expect(result).toHaveProperty('message', expect.stringContaining(message))
 }
 
+// Emit the DEFLATE ZIP records used by streamed GitHub uploads.
+function deflatedZip(entries: readonly (readonly [string, Buffer])[]) {
+    const localRecords: Buffer[] = []
+    const directoryRecords: Buffer[] = []
+    let fileOffset = 0
+    let directorySize = 0
+    for (const [name, bytes] of entries) {
+        const filename = Buffer.from(name)
+        const compressed = deflateRawSync(bytes)
+        const local = Buffer.alloc(30)
+        local.writeUInt32LE(0x04034b50, 0)
+        local.writeUInt16LE(20, 4)
+        local.writeUInt16LE(0x0808, 6) // UTF-8 name and trailing data descriptor.
+        local.writeUInt16LE(8, 8) // DEFLATE.
+        local.writeUInt16LE(0x21, 12) // DOS date for 1980-01-01.
+        local.writeUInt16LE(filename.length, 26)
+
+        const descriptor = Buffer.alloc(16)
+        descriptor.writeUInt32LE(0x08074b50, 0)
+        descriptor.writeUInt32LE(Bun.hash.crc32(bytes), 4)
+        descriptor.writeUInt32LE(compressed.length, 8)
+        descriptor.writeUInt32LE(bytes.length, 12)
+
+        const directory = Buffer.alloc(46)
+        directory.writeUInt32LE(0x02014b50, 0)
+        directory.writeUInt16LE(0x0314, 4) // ZIP 2.0, made on UNIX.
+        local.copy(directory, 6, 4, 14) // Version, flags, compression and time.
+        descriptor.copy(directory, 16, 4) // CRC and sizes.
+        directory.writeUInt16LE(filename.length, 28)
+        directory.writeUInt32LE(0o100644 * 65536, 38)
+        directory.writeUInt32LE(fileOffset, 42)
+
+        localRecords.push(local, filename, compressed, descriptor)
+        directoryRecords.push(directory, filename)
+        fileOffset +=
+            local.length +
+            filename.length +
+            compressed.length +
+            descriptor.length
+        directorySize += directory.length + filename.length
+    }
+    const end = Buffer.alloc(22)
+    end.writeUInt32LE(0x06054b50, 0)
+    end.writeUInt16LE(entries.length, 8)
+    end.writeUInt16LE(entries.length, 10)
+    end.writeUInt32LE(directorySize, 12)
+    end.writeUInt32LE(fileOffset, 16)
+    return Buffer.concat([...localRecords, ...directoryRecords, end])
+}
+
+test('publisher verifies the admitted GitHub ZIP and exact unpacked approved bytes', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'app-catalog-candidate-'))
+    directories.push(directory)
+    const trustedBuild = {
+        ...candidateBuild,
+        repositoryId: pipeline.repositoryId,
+        workflowPath: pipeline.builder,
+    }
+    const fixture = await candidateEvidenceFixture(
+        directory,
+        'candidate',
+        trustedBuild,
+    )
+    const candidate = await sealCandidate(fixture.options)
+    const approval = parseApproval({ ...fixtures.records.approval, candidate })
+    const names = await readdir(fixture.outputDirectory)
+    const bytes = deflatedZip(
+        await Promise.all(
+            names
+                .toSorted()
+                .map(
+                    async (name) =>
+                        [
+                            name,
+                            await readFile(join(fixture.outputDirectory, name)),
+                        ] as const,
+                ),
+        ),
+    )
+    const bundle = {
+        id: '8700',
+        sha256: sha(bytes),
+        sizeBytes: bytes.length,
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    }
+    const artifactUrl = 'https://fixture.blob.core.windows.net/data'
+    const repo = { id: Number(pipeline.repositoryId) }
+    const runId = Number(trustedBuild.runId)
+    const token = 'catalog-fixture-credential'
+    const now = new Date().toISOString()
+    let corrupt = false
+    const simulateFetch: typeof fetch = Object.assign(
+        async (...[input, init]: Parameters<typeof fetch>) => {
+            const url = new URL(String(input))
+            const headers = new Headers(init?.headers)
+            if (url.href === artifactUrl) {
+                expect(headers.get('authorization')).toBeNull()
+                const data = Buffer.from(bytes)
+                if (corrupt) data[0] ^= 0xff
+                return new Response(Uint8Array.from(data))
+            }
+            expect(url.origin).toBe('https://api.github.com')
+            expect(headers.get('authorization')).toBe('Bearer ' + token)
+            if (url.pathname.endsWith(`/runs/${runId}/attempts/1`))
+                return Response.json({
+                    id: runId,
+                    workflow_id: Number(pipeline.workflowId),
+                    run_attempt: 1,
+                    path: pipeline.workflow,
+                    head_branch: pipeline.branch,
+                    head_sha: trustedBuild.workflowCommit,
+                    event: 'workflow_dispatch',
+                    display_title: 'Marketplace submission fixture',
+                    status: 'completed',
+                    conclusion: 'success',
+                    created_at: now,
+                    updated_at: now,
+                    repository: repo,
+                    head_repository: repo,
+                })
+            if (url.pathname.endsWith('/artifacts/' + bundle.id))
+                return Response.json({
+                    id: Number(bundle.id),
+                    name: `fixture-${runId}-1-bundle`,
+                    size_in_bytes: bundle.sizeBytes,
+                    digest: 'sha256:' + bundle.sha256,
+                    expired: false,
+                    expires_at: bundle.expiresAt,
+                    workflow_run: {
+                        id: runId,
+                        repository_id: repo.id,
+                        head_repository_id: repo.id,
+                        head_branch: pipeline.branch,
+                        head_sha: trustedBuild.workflowCommit,
+                    },
+                })
+            if (url.pathname.endsWith(`/artifacts/${bundle.id}/zip`))
+                return new Response(null, {
+                    status: 302,
+                    headers: { location: artifactUrl },
+                })
+            throw new Error('Unexpected candidate network request')
+        },
+        { preconnect: fetch.preconnect },
+    )
+    const fetcher = spyOn(globalThis, 'fetch').mockImplementation(simulateFetch)
+    try {
+        const handoff = { approval, bundle, evidence: bundle }
+        const candidateFiles = await readdir(directory)
+        const count = await withCandidateBundle(
+            handoff,
+            token,
+            directory,
+            async (files) => {
+                await Promise.all(
+                    [...files].map(async ([name, local]) => {
+                        expect(await readFile(local)).toEqual(
+                            await readFile(join(fixture.outputDirectory, name)),
+                        )
+                    }),
+                )
+                return files.size
+            },
+        )
+        expect(count).toBe(6)
+        expect((await readdir(directory)).toSorted()).toEqual(
+            candidateFiles.toSorted(),
+        )
+
+        corrupt = true
+        await expect(
+            withCandidateBundle(handoff, token, directory, async () => {
+                throw new Error('A changed ZIP must not reach the publisher')
+            }),
+        ).rejects.toThrow('differs from the approved artifact')
+        expect((await readdir(directory)).toSorted()).toEqual(
+            candidateFiles.toSorted(),
+        )
+    } finally {
+        fetcher.mockRestore()
+    }
+})
+
 function key() {
     const { privateKey, publicKey } = generateKeyPairSync('ed25519')
     const raw = Buffer.from(
@@ -59,7 +259,7 @@ function key() {
         scheme: 'ed25519',
     }
     return {
-        id: sha(JSON.stringify(object)),
+        id: sha(canonicalBytes(object)),
         object,
         publicKey,
         pem: privateKey.export({ type: 'pkcs8', format: 'pem' }),
@@ -238,6 +438,24 @@ test('Rust metadata verifies with independent Ed25519 checks and consistent targ
     }
     expect(files.get(consistentIconPath)).toEqual(bytes)
     expect((await core.read(reader(files), root)).catalog).toEqual(next)
+})
+
+test('binds update checkpoints to the current catalog worker', async () => {
+    const { c, core, files, root } = await repository()
+    const other = nativeCore(online(c))
+    const read = reader(files)
+    const current = await core.read(read, root)
+    const foreign = await other.read(read, root)
+    await expectFailure(
+        core.update(foreign, undefined),
+        'Stale or foreign trusted catalog state',
+    )
+    const later = await core.read(read, root)
+    await expectFailure(
+        core.update(current, undefined),
+        'Stale or foreign trusted catalog state',
+    )
+    expect((await core.update(later, undefined)).size).toBe(0)
 })
 type Work = z.output<typeof catalogPublicationWork>
 type Request = z.output<typeof catalogPublicationRequest>

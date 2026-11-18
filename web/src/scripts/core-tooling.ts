@@ -11,6 +11,14 @@ const channel = toolchain.toolchain.channel
 const manifest = ['--manifest-path', 'core/Cargo.toml']
 const commands: Record<string, string[]> = {
     build: ['build', ...manifest, '--locked', '--bins'],
+    'catalog-build': [
+        'build',
+        ...manifest,
+        '--locked',
+        '--release',
+        '-p',
+        'marketplace-app-catalog',
+    ],
     check: [
         'check',
         ...manifest,
