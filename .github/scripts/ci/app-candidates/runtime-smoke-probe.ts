@@ -9,6 +9,7 @@ import {
     type AppManifest,
     type ProtocolDocument,
 } from '../../../../contracts/v1/index.ts'
+import { decodeWireJson } from './wire-json.ts'
 
 type Bootstrap = ProtocolDocument<'BootstrapDescriptor'>
 type ProbeOperation = 'getAppHealth' | 'getAppReadiness'
@@ -72,11 +73,7 @@ async function readJson(response: Response): Promise<unknown> {
         buffer.set(chunk, length)
         length += chunk.byteLength
     }
-    return JSON.parse(
-        new TextDecoder('utf-8', { fatal: true }).decode(
-            buffer.subarray(0, length),
-        ),
-    )
+    return decodeWireJson(buffer.subarray(0, length))
 }
 
 async function pollApp<Operation extends ProbeOperation>(

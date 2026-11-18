@@ -9,6 +9,13 @@ const bomShape = z
         specVersion: z.string(),
         version: z.number().int().positive(),
         components: z.array(z.unknown()).optional(),
+        dependencies: z.array(z.unknown()).optional(),
+        metadata: z
+            .object({
+                component: z.object({}).passthrough().optional(),
+            })
+            .passthrough()
+            .optional(),
     })
     .passthrough()
 
@@ -34,6 +41,33 @@ const vulnerabilityPolicy = [
     '--db-repository',
     'ghcr.io/aquasecurity/trivy-db:2',
 ]
+
+export function candidateSbom(
+    input: unknown,
+    manifest: Pick<AppManifest, 'id' | 'version' | 'display'>,
+    hasDependencies: boolean,
+) {
+    const bom = bomShape.parse(input)
+    if (hasDependencies && !bom.components?.length)
+        throw new Error('Candidate dependency inventory is empty')
+
+    // Keep Trivy's root bom-ref and dependency graph while replacing its
+    // filesystem-derived root label with the admitted app identity.
+    return {
+        ...bom,
+        components: bom.components ?? [],
+        metadata: {
+            ...bom.metadata,
+            component: {
+                ...bom.metadata?.component,
+                type: 'application',
+                name: manifest.id,
+                version: manifest.version,
+                licenses: [{ license: { name: manifest.display.license } }],
+            },
+        },
+    }
+}
 
 export async function scanCandidate(options: {
     trivyBinary: string
@@ -97,30 +131,12 @@ export async function scanCandidate(options: {
     if (!info.isFile() || info.size < 1 || info.size > 16_777_216) {
         throw new Error('Candidate SBOM violates its size limit')
     }
-    const bom = bomShape.parse(
+    const bom = candidateSbom(
         JSON.parse(await readFile(sbomPath, 'utf8')) as unknown,
+        options.manifest,
+        hasDependencies,
     )
-    if (hasDependencies && !bom.components?.length)
-        throw new Error('Candidate dependency inventory is empty')
-    // Retain inventory data and reviewed license metadata. Secret-scan output
-    // is never attached to the candidate or printed to the job log.
-    await writeFile(
-        sbomPath,
-        JSON.stringify({
-            ...bom,
-            components: bom.components ?? [],
-            metadata: {
-                component: {
-                    type: 'application',
-                    name: options.manifest.id,
-                    version: options.manifest.version,
-                    licenses: [
-                        { license: { name: options.manifest.display.license } },
-                    ],
-                },
-            },
-        }) + '\n',
-    )
+    await writeFile(sbomPath, JSON.stringify(bom) + '\n')
     await scan('packaged dependency vulnerability scan', [
         ...vulnerabilityPolicy,
         '--skip-db-update',

@@ -25,6 +25,16 @@ const directRun = {
 describe('app candidate workflow identity', () => {
     test('admits a review candidate from the direct Marketplace main run', () => {
         expect(classifyRun(directRun)).toBe('candidate')
+        expect(
+            classifyRun({
+                ...directRun,
+                source: {
+                    repository,
+                    commit,
+                    path: '.github/scripts/ci/fixtures/app-candidate/v1',
+                },
+            }),
+        ).toBe('reference')
     })
 
     test('limits other workflows, repositories or branches to development', () => {
@@ -134,16 +144,33 @@ describe('app candidate workflow identity', () => {
         const tree = {
             sha: commit,
             truncated: false,
-            tree: [{ type: 'blob', size: 300 }],
+            tree: [{ type: 'blob', sha: 'b'.repeat(40), size: 300 }],
         }
-        expect(() => checkSourceTree(tree, commit)).not.toThrow()
+        expect(checkSourceTree(tree, commit)).toEqual(['b'.repeat(40)])
         for (const candidate of [
             { ...tree, sha: 'b'.repeat(40) },
             { ...tree, truncated: true },
-            { ...tree, tree: [{ type: 'blob' }] },
-            { ...tree, tree: [{ type: 'blob', size: 64 * 1024 * 1024 }] },
-            { ...tree, tree: [{ type: 'commit' }] },
+            { ...tree, tree: [{ type: 'blob', sha: commit }] },
+            {
+                ...tree,
+                tree: [{ type: 'blob', sha: commit, size: 64 * 1024 * 1024 }],
+            },
+            { ...tree, tree: [{ type: 'commit', sha: commit }] },
         ])
             expect(() => checkSourceTree(candidate, commit)).toThrow()
+    })
+
+    test('selects unique admitted blob IDs even when thousands of paths share an object', () => {
+        const blobs = Array.from({ length: 2000 }, (_, index) => ({
+            type: 'blob',
+            sha: index.toString(16).padStart(40, '0'),
+            size: 120,
+        }))
+        expect(
+            checkSourceTree(
+                { sha: commit, truncated: false, tree: [...blobs, ...blobs] },
+                commit,
+            ),
+        ).toEqual(blobs.map(({ sha }) => sha))
     })
 })

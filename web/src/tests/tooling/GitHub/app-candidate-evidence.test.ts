@@ -18,6 +18,7 @@ import {
     type CandidateHandoffExpectation,
     type Purpose,
 } from '../../../../../.github/scripts/ci/app-candidates/evidence.ts'
+import { candidateSbom } from '../../../../../.github/scripts/ci/app-candidates/scan.ts'
 import fixtures from '../../../../../contracts/v1/fixtures.json'
 import { parseAppManifest } from '../../../../../contracts/v1/index.ts'
 
@@ -37,6 +38,48 @@ const checks = {
     applianceSmoke: 'passed',
 }
 const directories: string[] = []
+
+test('keeps the CycloneDX root reference linked to its dependency graph', () => {
+    const graph = [{ ref: 'trivy-root', dependsOn: ['locked-child'] }]
+    const original = {
+        bomFormat: 'CycloneDX',
+        specVersion: '1.6',
+        version: 1,
+        metadata: {
+            component: {
+                type: 'application',
+                name: '/tmp/fixture',
+                'bom-ref': 'trivy-root',
+            },
+        },
+        components: [
+            {
+                type: 'library',
+                name: 'locked-child',
+                'bom-ref': 'locked-child',
+            },
+        ],
+        dependencies: graph,
+    }
+    const result = candidateSbom(
+        original,
+        parseAppManifest(fixtures.manifest),
+        true,
+    )
+    expect(result.metadata.component).toMatchObject({
+        'bom-ref': 'trivy-root',
+        name: fixtures.manifest.id,
+        version: fixtures.manifest.version,
+    })
+    expect(result.dependencies).toEqual(graph)
+    expect(() =>
+        candidateSbom(
+            { ...original, components: [] },
+            parseAppManifest(fixtures.manifest),
+            true,
+        ),
+    ).toThrow()
+})
 
 afterEach(async () => {
     await Promise.all(

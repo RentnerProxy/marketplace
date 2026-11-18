@@ -1,9 +1,8 @@
-import { isWireJson } from '../../../../contracts/v1/wire.ts'
 import { safePackagePath, type ArchiveEntry } from './archive-ustar.ts'
+import { decodeWireJson } from './wire-json.ts'
 
 const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
 const documentLimit = 4 * 1024 * 1024
-const tokenPattern = /("(?:\\.|[^"\\])*")\s*:|"(?:\\.|[^"\\])*"|[{}[\]]/g
 
 export function requiredFile(entries: Map<string, ArchiveEntry>, path: string) {
     const entry = entries.get(path)
@@ -31,27 +30,11 @@ export function packageJson(
     entries: Map<string, ArchiveEntry>,
     path: string,
 ): unknown {
-    const text = packageText(entries, path)
+    const bytes = requiredFile(entries, path)
+    if (bytes.length > documentLimit)
+        throw new Error('Candidate document exceeds its size limit')
     try {
-        const value: unknown = JSON.parse(text)
-        // JSON.parse validates the grammar but silently replaces duplicate members.
-        const scopes: (Set<string> | null)[] = []
-        for (const [token, key] of text.matchAll(tokenPattern)) {
-            if (token === '{' || token === '[') {
-                scopes.push(token === '{' ? new Set() : null)
-                if (scopes.length > 64) throw new Error('JSON depth limit')
-            } else if (token === '}' || token === ']') {
-                scopes.pop()
-            } else if (key !== undefined) {
-                const name: string = JSON.parse(key)
-                const members = scopes.at(-1)
-                if (!members || members.has(name))
-                    throw new Error('Duplicate JSON member')
-                members.add(name)
-            }
-        }
-        if (!isWireJson(value)) throw new Error('Invalid wire JSON')
-        return value
+        return decodeWireJson(bytes)
     } catch {
         throw new Error('Invalid or ambiguous candidate JSON: ' + path)
     }
@@ -118,10 +101,22 @@ function referenceTarget(reference: string, path: string) {
     }
 }
 
-function verifyPointer(document: unknown, pointer: string) {
-    if (!pointer) return
+function resolvePointer(
+    document: unknown,
+    pointer: string,
+    schemaTarget: boolean,
+) {
+    if (!pointer) return document
     let target: unknown = document
     for (const component of pointer.slice(1).split('/')) {
+        if (
+            schemaTarget &&
+            isRecord(target) &&
+            Object.hasOwn(target, '$id') &&
+            typeof target.$id === 'string'
+        ) {
+            throw new Error('Unsupported candidate JSON reference or scope')
+        }
         const key = component.replaceAll('~1', '/').replaceAll('~0', '~')
         if (
             Array.isArray(target) &&
@@ -137,6 +132,153 @@ function verifyPointer(document: unknown, pointer: string) {
             )
         }
     }
+    return target
+}
+
+type Node =
+    | 'api'
+    | 'callback'
+    | 'components'
+    | 'content'
+    | 'encoding'
+    | 'example'
+    | 'link'
+    | 'operation'
+    | 'parameter'
+    | 'path'
+    | 'request'
+    | 'response'
+    | 'schema'
+    | 'securityScheme'
+type Child = Node | readonly [Node, 'array' | 'items' | 'map' | 'extendedMap']
+
+// Follow only locations that can contain schemas or Reference Objects. Names
+// in maps and values inside examples, defaults and extensions are application data.
+const children: Record<Node, Readonly<Record<string, Child>>> = {
+    api: {
+        components: 'components',
+        paths: ['path', 'extendedMap'],
+        webhooks: ['path', 'map'],
+    },
+    callback: {},
+    components: {
+        callbacks: ['callback', 'map'],
+        examples: ['example', 'map'],
+        headers: ['parameter', 'map'],
+        links: ['link', 'map'],
+        parameters: ['parameter', 'map'],
+        pathItems: ['path', 'map'],
+        requestBodies: ['request', 'map'],
+        responses: ['response', 'map'],
+        schemas: ['schema', 'map'],
+        securitySchemes: ['securityScheme', 'map'],
+    },
+    content: {
+        encoding: ['encoding', 'map'],
+        examples: ['example', 'map'],
+        schema: 'schema',
+    },
+    encoding: { headers: ['parameter', 'map'] },
+    example: {},
+    link: {},
+    operation: {
+        callbacks: ['callback', 'map'],
+        parameters: ['parameter', 'array'],
+        requestBody: 'request',
+        responses: ['response', 'extendedMap'],
+    },
+    parameter: {
+        content: ['content', 'map'],
+        examples: ['example', 'map'],
+        schema: 'schema',
+    },
+    path: {
+        delete: 'operation',
+        get: 'operation',
+        head: 'operation',
+        options: 'operation',
+        parameters: ['parameter', 'array'],
+        patch: 'operation',
+        post: 'operation',
+        put: 'operation',
+        trace: 'operation',
+    },
+    request: { content: ['content', 'map'] },
+    response: {
+        content: ['content', 'map'],
+        headers: ['parameter', 'map'],
+        links: ['link', 'map'],
+    },
+    schema: {
+        $defs: ['schema', 'map'],
+        additionalItems: 'schema',
+        additionalProperties: 'schema',
+        allOf: ['schema', 'array'],
+        anyOf: ['schema', 'array'],
+        contains: 'schema',
+        contentSchema: 'schema',
+        definitions: ['schema', 'map'],
+        dependencies: ['schema', 'map'],
+        dependentSchemas: ['schema', 'map'],
+        else: 'schema',
+        if: 'schema',
+        items: ['schema', 'items'],
+        not: 'schema',
+        oneOf: ['schema', 'array'],
+        patternProperties: ['schema', 'map'],
+        prefixItems: ['schema', 'array'],
+        properties: ['schema', 'map'],
+        propertyNames: 'schema',
+        // oxlint-disable-next-line unicorn/no-thenable -- JSON Schema applicator with a string traversal rule.
+        then: 'schema',
+        unevaluatedItems: 'schema',
+        unevaluatedProperties: 'schema',
+    },
+    securityScheme: {},
+}
+
+const referenceNodes = new Set<Node>([
+    'callback',
+    'example',
+    'link',
+    'parameter',
+    'path',
+    'request',
+    'response',
+    'schema',
+    'securityScheme',
+])
+
+interface Visit {
+    path: string
+    value: unknown
+    node: Node
+}
+
+function queueChildren(
+    pending: Visit[],
+    path: string,
+    value: unknown,
+    rule: Child,
+) {
+    if (typeof rule === 'string') {
+        pending.push({ path, value, node: rule })
+        return
+    }
+    const [node, collection] = rule
+    if (collection === 'array' || collection === 'items') {
+        if (Array.isArray(value)) {
+            for (const item of value) pending.push({ path, value: item, node })
+        } else if (collection === 'items') {
+            pending.push({ path, value, node })
+        }
+    } else if (isRecord(value)) {
+        for (const [name, item] of Object.entries(value)) {
+            if (collection !== 'extendedMap' || !name.startsWith('x-')) {
+                pending.push({ path, value: item, node })
+            }
+        }
+    }
 }
 
 export function verifyDocumentReferences(
@@ -145,57 +287,78 @@ export function verifyDocumentReferences(
 ) {
     let references = 0
     let documentBytes = 0
-    for (const path of documents.keys()) {
+    const pending: Visit[] = []
+    for (const [path, value] of documents) {
         documentBytes += requiredFile(entries, path).length
+        pending.push({
+            path,
+            value,
+            node: path === 'api/openapi.json' ? 'api' : 'schema',
+        })
     }
-    // Map iterators visit package-local JSON documents loaded via references.
-    for (const [path, document] of documents) {
-        const pending = [document]
-        while (pending.length) {
-            const value = pending.pop()
-            if (Array.isArray(value)) {
-                for (const item of value) pending.push(item)
-                continue
+    const seen = new WeakMap<object, Set<Node>>()
+    const follow = (member: unknown, path: string, node: Node) => {
+        if (
+            typeof member !== 'string' ||
+            ++references > 4096 ||
+            member.length > 1024
+        ) {
+            throw new Error('Invalid candidate JSON reference')
+        }
+        const { target, pointer } = referenceTarget(member, path)
+        if (!documents.has(target)) {
+            documentBytes += requiredFile(entries, target).length
+            if (documents.size >= 64 || documentBytes > 16 * 1024 * 1024) {
+                throw new Error(
+                    'Referenced candidate JSON documents exceed their budget',
+                )
             }
-            if (!isRecord(value)) continue
-            for (const [key, member] of Object.entries(value)) {
-                if (
-                    key === '$id' ||
-                    key === '$dynamicRef' ||
-                    key === '$recursiveRef' ||
-                    key === 'externalValue' ||
-                    key === 'operationRef'
-                ) {
-                    throw new Error(
-                        'Unsupported candidate JSON reference or scope',
-                    )
-                }
-                if (key !== '$ref') {
-                    pending.push(member)
-                    continue
-                }
-                if (
-                    typeof member !== 'string' ||
-                    ++references > 4096 ||
-                    member.length > 1024
-                ) {
-                    throw new Error('Invalid candidate JSON reference')
-                }
-                const { target, pointer } = referenceTarget(member, path)
-                if (!documents.has(target)) {
-                    documentBytes += requiredFile(entries, target).length
-                    if (
-                        documents.size >= 64 ||
-                        documentBytes > 16 * 1024 * 1024
-                    ) {
-                        throw new Error(
-                            'Referenced candidate JSON documents exceed their budget',
-                        )
-                    }
-                    documents.set(target, packageJson(entries, target))
-                }
-                verifyPointer(documents.get(target), pointer)
-            }
+            documents.set(target, packageJson(entries, target))
+        }
+        const value = resolvePointer(
+            documents.get(target),
+            pointer,
+            node === 'schema',
+        )
+        if (
+            !isRecord(value) &&
+            !(node === 'schema' && typeof value === 'boolean')
+        ) {
+            throw new Error(
+                'Candidate JSON reference must target an object or schema',
+            )
+        }
+        pending.push({ path: target, value, node })
+    }
+    for (let visit = pending.pop(); visit; visit = pending.pop()) {
+        const { path, value, node } = visit
+        if (!isRecord(value)) continue
+        const contexts = seen.get(value) ?? new Set<Node>()
+        if (contexts.has(node)) continue
+        contexts.add(node)
+        seen.set(value, contexts)
+
+        if (
+            (node === 'schema' &&
+                ['$id', '$dynamicRef', '$recursiveRef'].some((key) =>
+                    Object.hasOwn(value, key),
+                )) ||
+            (node === 'example' && Object.hasOwn(value, 'externalValue'))
+        ) {
+            throw new Error('Unsupported candidate JSON reference or scope')
+        }
+        const hasReference =
+            referenceNodes.has(node) && Object.hasOwn(value, '$ref')
+        if (hasReference) follow(value.$ref, path, node)
+        if (node === 'link' && Object.hasOwn(value, 'operationRef')) {
+            follow(value.operationRef, path, 'operation')
+        }
+        if (node === 'callback' && !hasReference) {
+            queueChildren(pending, path, value, ['path', 'extendedMap'])
+        }
+        for (const [key, rule] of Object.entries(children[node])) {
+            if (Object.hasOwn(value, key))
+                queueChildren(pending, path, value[key], rule)
         }
     }
 }

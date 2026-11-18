@@ -47,7 +47,14 @@ const targetContext = z.strictObject({
     applianceImage: appliance,
     checks: passedChecks,
 })
-export const targetRecord = targetContext.extend({ package: packageArtifact })
+export const targetRecord = targetContext
+    .extend({ package: packageArtifact })
+    .refine(
+        ({ purpose: candidatePurpose, package: { manifest } }) =>
+            candidatePurpose !== 'candidate' ||
+            manifest.id !== 'rentnerproxy.candidate-reference',
+        'Reference packages must retain their non-publication purpose',
+    )
 export type TargetRecord = z.infer<typeof targetRecord>
 
 export function checkedTargetContext(options: {

@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { validateCandidatePackage } from '../../../../../.github/scripts/ci/app-candidates/archive.ts'
 import { inspectCandidateElf } from '../../../../../.github/scripts/ci/app-candidates/elf.ts'
+import { decodeWireJson } from '../../../../../.github/scripts/ci/app-candidates/wire-json.ts'
 import type { AppManifest } from '../../../../../contracts/v1/index.ts'
 
 interface FixtureEntry {
@@ -352,6 +353,109 @@ describe('candidate package admission', () => {
         await verifyRejection(tar(entries), 'JSON reference')
     })
 
+    test('treats schema property names and example values as data', async () => {
+        const declared: AppManifest = {
+            ...manifest,
+            configSchema: 'schemas/config.json',
+        }
+        const entries = fixtureEntries(JSON.stringify(declared))
+        const example = {
+            $ref: 'https://outside.invalid/a.json',
+            $id: 'data',
+            operationRef: 'data',
+        }
+        const schema = {
+            type: 'object',
+            properties: {
+                $ref: { type: 'string' },
+                $id: { type: 'string' },
+                examples: { $ref: '#/properties/$ref' },
+            },
+            examples: [example],
+            default: example,
+        }
+        entries[4].data = JSON.stringify({
+            ...api,
+            paths: {
+                '/test': {
+                    get: {
+                        responses: {
+                            200: {
+                                description: 'Reference',
+                                content: {
+                                    'application/json': {
+                                        schema: {
+                                            $ref: '#/components/schemas/Fixture',
+                                        },
+                                        examples: { $ref: { value: example } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            components: {
+                schemas: {
+                    Fixture: {
+                        ...schema,
+                        properties: { $ref: { type: 'string' } },
+                    },
+                },
+                examples: { $ref: { value: example } },
+            },
+        })
+        entries.push({
+            path: './schemas/config.json',
+            data: JSON.stringify(schema),
+        })
+        await withCandidateArchive(tar(entries), async (input, output) => {
+            expect(
+                (await validateCandidatePackage(input, output, manifest))
+                    .manifest,
+            ).toEqual(declared)
+        })
+    })
+
+    test('checks nested OpenAPI Reference Objects and referenced external schemas', async () => {
+        const entries = fixtureEntries()
+        const remote = 'https://outside.invalid/a.json'
+        entries[4].data = JSON.stringify({
+            ...api,
+            paths: {
+                '/test': { get: { responses: { 200: { $ref: remote } } } },
+            },
+        })
+        await verifyRejection(
+            tar(entries),
+            'JSON references must be package-local',
+        )
+        entries[4].data = JSON.stringify({
+            ...api,
+            components: {
+                schemas: { Item: { $ref: 'schema.json#/$defs/item' } },
+            },
+        })
+        entries.push({
+            path: './api/schema.json',
+            data: JSON.stringify({
+                $defs: { item: { properties: { $ref: { $ref: remote } } } },
+            }),
+        })
+        await verifyRejection(
+            tar(entries),
+            'JSON references must be package-local',
+        )
+        entries[entries.length - 1].data = JSON.stringify({
+            $id: 'https://outside.invalid/root',
+            $defs: { item: { type: 'object' } },
+        })
+        await verifyRejection(
+            tar(entries),
+            'Unsupported candidate JSON reference or scope',
+        )
+    })
+
     test('resolves package-local JSON references and validates declared assets', async () => {
         const declared: AppManifest = {
             ...manifest,
@@ -398,6 +502,32 @@ describe('candidate package admission', () => {
         })
         entries.pop()
         await verifyRejection(tar(entries), 'migrations/initialize.sql')
+    })
+})
+
+describe('candidate wire JSON', () => {
+    const encoder = new TextEncoder()
+
+    test('rejects repeated response names including equivalent escapes', () => {
+        expect(() =>
+            decodeWireJson(encoder.encode('{"healthy":false,"healthy":true}')),
+        ).toThrow('Duplicate JSON member')
+        expect(() =>
+            decodeWireJson(
+                encoder.encode('{"healthy":false,"\\u0068ealthy":true}'),
+            ),
+        ).toThrow('Duplicate JSON member')
+    })
+
+    test('accepts the same member name in different objects and rejects malformed UTF-8', () => {
+        expect(
+            decodeWireJson(
+                encoder.encode('{"healthy":true,"nested":{"healthy":true}}'),
+            ),
+        ).toEqual({ healthy: true, nested: { healthy: true } })
+        expect(() =>
+            decodeWireJson(Uint8Array.of(0x22, 0xc0, 0xaf, 0x22)),
+        ).toThrow()
     })
 })
 

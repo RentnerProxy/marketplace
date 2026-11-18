@@ -3,9 +3,17 @@ import { promisify } from 'node:util'
 import type { AppManifest } from '../../../../contracts/v1/index.ts'
 
 const exec = promisify(execFile)
-const targets = {
-    'linux-amd64': { machine: 62, interpreter: '/lib64/ld-linux-x86-64.so.2' },
-    'linux-arm64': { machine: 183, interpreter: '/lib/ld-linux-aarch64.so.1' },
+export const targets = {
+    'linux-amd64': {
+        machine: 62,
+        interpreter: '/lib64/ld-linux-x86-64.so.2',
+        libraries: '/lib/x86_64-linux-gnu',
+    },
+    'linux-arm64': {
+        machine: 183,
+        interpreter: '/lib/ld-linux-aarch64.so.1',
+        libraries: '/lib/aarch64-linux-gnu',
+    },
 } as const
 const approvedLibraries = new Set([
     'libc.so.6',
@@ -132,11 +140,97 @@ function mappedFileOffset(segments: Segment[], address: bigint, size: bigint) {
     return loads[0].offset + Number(address - loads[0].address)
 }
 
-function dynamicLibraries(
+export interface ElfLinkage {
+    needed: string[]
+    interpreter?: (typeof targets)[AppManifest['target']]['interpreter']
+    versions: Map<string, Set<string>>
+}
+
+function metadataString(strings: Buffer, start: number) {
+    const end = strings.indexOf(0, start)
+    if (start >= strings.length || end <= start || end - start > 128)
+        throw new Error('Invalid ELF dependency or version name')
+    return strings.toString('latin1', start, end)
+}
+
+function elfHash(name: string) {
+    let hash = 0
+    for (let index = 0; index < name.length; index++) {
+        hash = (hash << 4) + name.charCodeAt(index)
+        const high = hash & 0xf0000000
+        hash = (hash ^ (high >>> 24)) & ~high
+    }
+    return hash
+}
+
+function versionNeeds(
     binary: Buffer,
-    dynamic: Segment,
     segments: Segment[],
+    strings: Buffer,
+    needed: string[],
+    address: bigint,
+    count: number,
 ) {
+    const versions = new Map<string, Set<string>>()
+    const indices = new Set<number>()
+    const occupied = new Set<bigint>()
+    function recordAt(location: bigint) {
+        if (location % 4n !== 0n)
+            throw new Error('Unaligned ELF version dependency record')
+        for (let word = location; word < location + 16n; word += 4n) {
+            if (occupied.has(word))
+                throw new Error('Overlapping ELF version dependency records')
+            occupied.add(word)
+        }
+        return mappedFileOffset(segments, location, 16n)
+    }
+    for (let index = 0; index < count; index++) {
+        const offset = recordAt(address)
+        const version = binary.readUInt16LE(offset)
+        const size = binary.readUInt16LE(offset + 2)
+        const library = metadataString(strings, binary.readUInt32LE(offset + 4))
+        const auxiliaryOffset = binary.readUInt32LE(offset + 8)
+        const next = binary.readUInt32LE(offset + 12)
+        if (
+            version !== 1 ||
+            size < 1 ||
+            indices.size + size > 512 ||
+            auxiliaryOffset < 16 ||
+            !needed.includes(library) ||
+            versions.has(library) ||
+            (index + 1 === count ? next !== 0 : next < 16)
+        ) {
+            throw new Error('Invalid ELF version dependency record')
+        }
+
+        const names = new Set<string>()
+        let auxiliary = address + BigInt(auxiliaryOffset)
+        for (let item = 0; item < size; item++) {
+            const entry = recordAt(auxiliary)
+            const name = metadataString(strings, binary.readUInt32LE(entry + 8))
+            const versionIndex = binary.readUInt16LE(entry + 6) & 0x7fff
+            const nextAuxiliary = binary.readUInt32LE(entry + 12)
+            if (
+                !/^[A-Za-z0-9_.-]+$/u.test(name) ||
+                elfHash(name) !== binary.readUInt32LE(entry) ||
+                versionIndex < 2 ||
+                indices.has(versionIndex) ||
+                names.has(name) ||
+                (item + 1 === size ? nextAuxiliary !== 0 : nextAuxiliary < 16)
+            ) {
+                throw new Error('Invalid ELF required symbol version')
+            }
+            indices.add(versionIndex)
+            names.add(name)
+            auxiliary += BigInt(nextAuxiliary)
+        }
+        versions.set(library, names)
+        address += BigInt(next)
+    }
+    return versions
+}
+
+function dynamicLinkage(binary: Buffer, dynamic: Segment, segments: Segment[]) {
     if (
         dynamic.length < 16 ||
         dynamic.length % 16 !== 0 ||
@@ -148,6 +242,8 @@ function dynamicLibraries(
     }
     let tableAddress: bigint | undefined
     let tableSize: bigint | undefined
+    let versionAddress: bigint | undefined
+    let versionCount: bigint | undefined
     let terminated = false
     const needed: bigint[] = []
     for (
@@ -174,9 +270,27 @@ function dynamicLibraries(
                 throw new Error('Duplicate ELF DT_STRSZ')
             tableSize = value
         }
+        if (tag === 0x6ffffffen) {
+            if (versionAddress !== undefined)
+                throw new Error('Duplicate ELF DT_VERNEED')
+            versionAddress = value
+        }
+        if (tag === 0x6fffffffn) {
+            if (versionCount !== undefined)
+                throw new Error('Duplicate ELF DT_VERNEEDNUM')
+            versionCount = value
+        }
     }
     if (!terminated) throw new Error('Unterminated ELF dynamic section')
-    if (needed.length === 0) return []
+    if (
+        (versionAddress === undefined) !== (versionCount === undefined) ||
+        (versionCount !== undefined &&
+            (versionCount < 1n || versionCount > BigInt(needed.length)))
+    ) {
+        throw new Error('Invalid ELF version dependency table')
+    }
+    if (needed.length === 0)
+        return { needed: [], versions: new Map<string, Set<string>>() }
     if (
         tableAddress === undefined ||
         tableSize === undefined ||
@@ -186,20 +300,27 @@ function dynamicLibraries(
     }
     const tableStart = mappedFileOffset(segments, tableAddress, tableSize)
     const strings = binary.subarray(tableStart, tableStart + Number(tableSize))
-    return needed.map((index) => {
-        const start = Number(index)
-        const end = strings.indexOf(0, start)
-        if (start >= strings.length || end < 0 || end - start > 64) {
-            throw new Error('Invalid ELF dependency name')
-        }
-        return strings.toString('latin1', start, end)
-    })
+    const libraries = needed.map((index) =>
+        metadataString(strings, Number(index)),
+    )
+    const versions =
+        versionAddress === undefined
+            ? new Map<string, Set<string>>()
+            : versionNeeds(
+                  binary,
+                  segments,
+                  strings,
+                  libraries,
+                  versionAddress,
+                  Number(versionCount),
+              )
+    return { needed: libraries, versions }
 }
 
-export function inspectCandidateElf(
+export function inspectCandidateLinkage(
     binary: Buffer,
     target: AppManifest['target'],
-) {
+): ElfLinkage | null {
     const profile = targets[target]
     const segments = programHeaders(binary, profile.machine)
     const dynamic = uniqueSegment(segments, 2)
@@ -220,22 +341,32 @@ export function inspectCandidateElf(
         )
     }
     if (!dynamic) return null
-    const needed = dynamicLibraries(binary, dynamic, segments)
+    const linkage = dynamicLinkage(binary, dynamic, segments)
     const loader = profile.interpreter.split('/').at(-1)
     if (
-        needed.some(
+        linkage.needed.some(
             (library) => !approvedLibraries.has(library) && library !== loader,
         ) ||
-        (needed.length !== 0 && !interpreter)
+        (linkage.needed.length !== 0 && !interpreter)
     ) {
         throw new Error(
             'ELF requires a library outside the Debian 13 appliance profile',
         )
     }
-    return needed
+    return {
+        ...linkage,
+        interpreter: interpreter ? profile.interpreter : undefined,
+    }
 }
 
-export async function verifyReadelf(path: string, needed: readonly string[]) {
+export function inspectCandidateElf(
+    binary: Buffer,
+    target: AppManifest['target'],
+) {
+    return inspectCandidateLinkage(binary, target)?.needed ?? null
+}
+
+export async function readelf(path: string) {
     let report: string
     try {
         const result = await exec(
@@ -261,6 +392,11 @@ export async function verifyReadelf(path: string, needed: readonly string[]) {
         throw new Error('Linux readelf could not verify the candidate binary')
     }
 
+    return report
+}
+
+export async function verifyReadelf(path: string, needed: readonly string[]) {
+    const report = await readelf(path)
     const reported = [
         ...report.matchAll(/\(NEEDED\)\s+Shared library: \[([^\]\r\n]+)\]/g),
     ].map((match) => match[1])
@@ -271,16 +407,5 @@ export async function verifyReadelf(path: string, needed: readonly string[]) {
         throw new Error(
             'ELF dynamic program headers and readelf dependencies disagree',
         )
-    }
-    for (const [, version] of report.matchAll(
-        /\bName: GLIBC_([a-zA-Z0-9_.]+)/g,
-    )) {
-        if (version === 'ABI_DT_RELR') continue
-        const match = /^2\.(\d+)(?:\.\d+)?$/.exec(version)
-        if (!match || Number(match[1]) > 41) {
-            throw new Error(
-                'ELF requires glibc symbols outside the Debian 13 appliance profile',
-            )
-        }
     }
 }

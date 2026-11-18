@@ -25,17 +25,15 @@ export function classifyRun(context: {
     workflowSha: string
     source: z.output<typeof sourceRequest>
 }): Purpose {
+    const fixtureSource =
+        context.source.repository.toLowerCase() === marketplace &&
+        ['v1', 'v2'].some(
+            (version) => context.source.path === referencePath + version,
+        )
     if (context.callerRepository.toLowerCase() === marketplace) {
         const caller = context.callerWorkflow.toLowerCase()
         if (caller.startsWith(marketplace + '/' + referenceWorkflow + '@')) {
-            if (
-                context.source.repository.toLowerCase() !== marketplace ||
-                context.source.commit !== context.callerSha ||
-                !['v1', 'v2'].some(
-                    (version) =>
-                        context.source.path === referencePath + version,
-                )
-            ) {
+            if (!fixtureSource || context.source.commit !== context.callerSha) {
                 throw new Error('Invalid internal reference candidate source')
             }
             return 'reference'
@@ -47,7 +45,7 @@ export function classifyRun(context: {
                 marketplace + '/' + reviewWorkflow + '@refs/heads/main' &&
             context.callerSha === context.workflowSha
         )
-            return 'candidate'
+            return fixtureSource ? 'reference' : 'candidate'
     }
     return 'development'
 }

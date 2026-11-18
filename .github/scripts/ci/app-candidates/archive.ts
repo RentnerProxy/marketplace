@@ -22,7 +22,15 @@ import {
     verifyDocumentReferences,
 } from './archive-documents.ts'
 import { readCandidateArchive, type ArchiveEntry } from './archive-ustar.ts'
-import { inspectCandidateElf, verifyReadelf } from './elf.ts'
+import {
+    applianceLibraryVersions,
+    verifyApplianceLinkage,
+} from './elf-appliance.ts'
+import {
+    inspectCandidateLinkage,
+    verifyReadelf,
+    type ElfLinkage,
+} from './elf.ts'
 
 interface CandidateExpectation {
     source: AppManifest['source']
@@ -85,7 +93,8 @@ async function assertUnused(path: string) {
 
 async function stagePackage(
     entries: Map<string, ArchiveEntry>,
-    neededByExecutable: Map<string, string[]>,
+    linkageByExecutable: Map<string, ElfLinkage>,
+    target: AppManifest['target'],
     packageDirectory: string,
 ) {
     const destination = resolve(packageDirectory)
@@ -94,6 +103,10 @@ async function stagePackage(
         join(dirname(destination), '.candidate-package-'),
     )
     try {
+        const versions = await applianceLibraryVersions(
+            target,
+            linkageByExecutable.values(),
+        )
         // Stage only verified paths in a private directory. One-at-a-time writes
         // keep open descriptors bounded even for the largest admitted archive.
         for (const entry of entries.values()) {
@@ -109,9 +122,12 @@ async function stagePackage(
                 flag: 'wx',
                 mode: entry.executable ? 0o755 : 0o644,
             })
-            const needed = neededByExecutable.get(entry.path)
-            // oxlint-disable-next-line no-await-in-loop
-            if (needed) await verifyReadelf(path, needed)
+            const linkage = linkageByExecutable.get(entry.path)
+            if (linkage) {
+                verifyApplianceLinkage(linkage, versions)
+                // oxlint-disable-next-line no-await-in-loop
+                await verifyReadelf(path, linkage.needed)
+            }
         }
         await chmod(staging, 0o755)
         await rename(staging, destination)
@@ -151,18 +167,23 @@ export async function validateCandidatePackage(
     }
     validatePackageFiles(entries, manifest)
 
-    const neededByExecutable = new Map<string, string[]>()
+    const linkageByExecutable = new Map<string, ElfLinkage>()
     let executables = 0
     for (const entry of entries.values()) {
         if (!entry.executable || entry.directory) continue
         if (++executables > 16)
             throw new Error('Candidate package has too many executables')
-        const needed = inspectCandidateElf(entry.bytes, manifest.target)
-        if (needed) neededByExecutable.set(entry.path, needed)
+        const linkage = inspectCandidateLinkage(entry.bytes, manifest.target)
+        if (linkage) linkageByExecutable.set(entry.path, linkage)
     }
     const manifestSha256 = createHash('sha256')
         .update(requiredFile(entries, 'app.json'))
         .digest('hex')
-    await stagePackage(entries, neededByExecutable, packageDirectory)
+    await stagePackage(
+        entries,
+        linkageByExecutable,
+        manifest.target,
+        packageDirectory,
+    )
     return { manifest, manifestSha256 }
 }

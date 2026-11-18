@@ -54,6 +54,7 @@ const sourceTree = z.object({
     tree: z
         .array(
             z.object({
+                sha: commitSha,
                 type: z.enum(['tree', 'blob']),
                 size: z
                     .number()
@@ -77,6 +78,13 @@ export function checkSourceTree(value: unknown, expectedTree: string) {
     }, 1024)
     if (bytes > sourceArchiveBytesLimit)
         throw new Error('Submitted source tree exceeds its byte budget')
+    return Array.from(
+        new Set(
+            tree.tree
+                .filter(({ type }) => type === 'blob')
+                .map(({ sha }) => sha),
+        ),
+    )
 }
 
 async function githubJson(path: string, token?: string): Promise<unknown> {
@@ -134,12 +142,14 @@ async function capture(
         cwd: string
         env: Record<string, string | undefined>
         limit: number
+        input?: string
     },
 ) {
     const process = Bun.spawn(args, {
         cwd: options.cwd,
         env: options.env,
-        stdin: 'ignore',
+        stdin:
+            options.input === undefined ? 'ignore' : Buffer.from(options.input),
         stdout: 'pipe',
         stderr: 'ignore',
         signal: AbortSignal.timeout(120_000),
@@ -176,7 +186,7 @@ export async function stageSource(
     const home = join(cwd, 'git-home')
     const dependencies = join(cwd, 'dependencies')
     await Promise.all([mkdir(home), mkdir(dependencies)])
-    const captureGit = (args: string[], limit = 4096) =>
+    const captureGit = (args: string[], limit = 4096, input?: string) =>
         capture(
             [
                 'git',
@@ -193,6 +203,7 @@ export async function stageSource(
             {
                 cwd,
                 limit,
+                input,
                 env: {
                     PATH: process.env.PATH,
                     SystemRoot: process.env.SystemRoot,
@@ -265,7 +276,7 @@ export async function stageSource(
     }
     // Admit the scoped tree's size before any blob reads hydrate the shallow
     // partial fetch. GitHub reports truncation explicitly and we fail closed.
-    checkSourceTree(
+    const blobs = checkSourceTree(
         await githubJson(
             '/repos/' +
                 rechecked.repository +
@@ -276,6 +287,22 @@ export async function stageSource(
         ),
         tree,
     )
+    if (blobs.length > 0) {
+        // Git can request the admitted object IDs in one conversation. This
+        // keeps large trees from causing a separate lazy fetch for each file.
+        await captureGit(
+            [
+                'fetch',
+                '--no-tags',
+                '--no-write-fetch-head',
+                '--filter=blob:none',
+                '--stdin',
+                'origin',
+            ],
+            4096,
+            blobs.join('\n') + '\n',
+        )
+    }
     const stagedFiles = [
         { name: 'package.json', limit: manifestBytesLimit, required: true },
         { name: 'bun.lock', limit: lockBytesLimit, required: false },
