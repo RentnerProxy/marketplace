@@ -10,7 +10,7 @@ export default function AuthenticatedMain({
     return (
         <main className="mx-auto flex w-full min-w-0 max-w-360 flex-1 flex-col p-[clamp(1.25rem,4vw,3.5rem)]">
             {children}
-            <header className="mb-8">
+            <header className="marketplace-content-header mb-8">
                 {eyebrow && (
                     <p className="m-0 font-(family-name:--marketplace-mono) text-[0.68rem] font-bold tracking-[0.16em] text-primary-text uppercase">
                         {eyebrow}

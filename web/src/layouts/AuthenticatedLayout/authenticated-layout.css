@@ -1,3 +1,7 @@
+.marketplace-signed-in {
+    --marketplace-banner: url('/brand/marketplace-modules-640.webp');
+}
+
 .marketplace-sidebar-mask {
     mask-image:
         linear-gradient(#fff, #fff),
@@ -10,14 +14,43 @@
 }
 
 .marketplace-sidebar-trim {
-    background: color-mix(in srgb, var(--color-primary) 73%, #020a0b);
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 89%, #fff),
+        color-mix(in srgb, var(--color-primary) 57%, #020a0b)
+    );
 }
 
 .marketplace-sidebar-texture {
     background:
-        linear-gradient(180deg, rgb(2 10 11 / 78%), rgb(2 10 11 / 93%)),
-        url('/brand/authenticated-sidebar-texture.webp') 72% center / cover
-            no-repeat #020a0b;
+        linear-gradient(
+            180deg,
+            rgb(2 10 11 / 88%),
+            rgb(2 10 11 / 74%) 45%,
+            rgb(2 10 11 / 88%)
+        ),
+        var(--marketplace-banner) left 62% / auto clamp(22rem, 72dvh, 46rem)
+            no-repeat var(--color-marketplace-void);
+}
+
+@media (min-width: 90rem) {
+    .marketplace-content-header {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .marketplace-content-header::before {
+        position: absolute;
+        z-index: -1;
+        inset-block: -1.25rem;
+        inset-inline-end: 0;
+        width: min(38%, 24rem);
+        background: var(--marketplace-banner) right 44% / auto 160% no-repeat;
+        content: '';
+        mask-image: linear-gradient(90deg, transparent, #000 50%);
+        opacity: 0.18;
+        pointer-events: none;
+    }
 }
 
 .marketplace-sidebar-scroll {
