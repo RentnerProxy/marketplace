@@ -6,6 +6,7 @@ import {
     type AppManifest,
 } from '../../../../contracts/v1/index.ts'
 import { target } from '../../../../contracts/v1/primitives.ts'
+import { runAppPipeline } from '../../native-tools.ts'
 import { validateCandidatePackage } from './archive.ts'
 import {
     readCandidateContext,
@@ -45,17 +46,6 @@ async function resolveRequest(
             '-' +
             context.build.attempt,
     })
-}
-
-async function runZstd(args: string[]) {
-    const child = Bun.spawn(['zstd', '-q', ...args], {
-        stdin: 'ignore',
-        stdout: 'ignore',
-        stderr: 'ignore',
-        signal: AbortSignal.timeout(60_000),
-    })
-    if ((await child.exited) !== 0)
-        throw new Error('Candidate archive compression or checksum failed')
 }
 
 function sourceForRun(context: ReturnType<typeof readCandidateContext>) {
@@ -137,8 +127,10 @@ async function buildTarget(
         )
         await smokeInSandbox({ packageDirectory, manifest })
         const archivePath = join(directory, 'package.tar.zst')
-        await runZstd(['-T1', '--check', '-o', archivePath, tarPath])
-        await runZstd(['--test', archivePath])
+        await runAppPipeline('compress-package', {
+            inputPath: tarPath,
+            outputPath: archivePath,
+        })
         await sealTarget({
             outputDirectory,
             archivePath,

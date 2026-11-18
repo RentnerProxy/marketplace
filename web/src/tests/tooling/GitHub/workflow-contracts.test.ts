@@ -87,11 +87,14 @@ test('CI preserves language, coverage and native contract checks without prepare
         'run build',
         'cargo fmt',
         'cargo clippy --locked --workspace --all-targets --all-features',
-        'cargo llvm-cov --locked --workspace --all-targets --all-features --fail-under-lines 90 --fail-under-functions 90',
+        'bun --no-env-file run core:coverage',
         'cargo build --locked --release --workspace --bins',
         'run test:catalog-integration',
     ])
         expect(commands).toContain(command)
+    const coverage = await read('web/src/scripts/core-tooling.ts')
+    expect(coverage).toMatch(/'--fail-under-lines',\s*'90'/)
+    expect(coverage).toMatch(/'--fail-under-functions',\s*'90'/)
     expect(commands).not.toMatch(
         /test:db|db:prepare|db:push|db:pull|permissions:sync|\.env(?:\s|$)/,
     )
@@ -334,7 +337,7 @@ test('image publisher resolves the validated tag through the authoritative chann
     expect(source).toContain('docker tag "$IMAGE_ID" "$channel_image"')
     expect(source).not.toContain('channel=beta')
     expect(source).toContain(
-        'Version image already exists with different content; refusing overwrite.',
+        'release-identity.ts existing-image "$auth_directory/manifest.json"',
     )
     expect(source).toContain('trap ')
     expect(source).toContain('imagetools inspect "$channel_image"')

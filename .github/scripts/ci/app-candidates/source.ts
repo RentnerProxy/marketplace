@@ -10,6 +10,7 @@ import {
     repositoryName,
     sourceRequest,
 } from '../../../../web/src/lib/Marketplace/sourceRequest.ts'
+import { runAppPipeline, runAppPipelineSync } from '../../native-tools.ts'
 
 export { sourceRequest }
 
@@ -25,46 +26,13 @@ const githubRepository = z.object({
 })
 
 const githubCommit = z.object({ sha: commitSha })
-const manifestBytesLimit = 1024 * 1024
-const lockBytesLimit = 8 * 1024 * 1024
 const sourceArchiveBytesLimit = 64 * 1024 * 1024
-const sourceTree = z.object({
-    sha: commitSha,
-    truncated: z.literal(false),
-    tree: z
-        .array(
-            z.object({
-                sha: commitSha,
-                type: z.enum(['tree', 'blob']),
-                size: z
-                    .number()
-                    .int()
-                    .min(0)
-                    .max(sourceArchiveBytesLimit)
-                    .optional(),
-            }),
-        )
-        .max(10_000),
-})
 
 export function checkSourceTree(value: unknown, expectedTree: string) {
-    const tree = sourceTree.parse(value)
-    if (tree.sha !== expectedTree)
-        throw new Error('Submitted source tree identity changed')
-    const bytes = tree.tree.reduce((size, entry) => {
-        if (entry.type === 'blob' && entry.size === undefined)
-            throw new Error('GitHub did not report the submitted blob size')
-        return size + 512 + Math.ceil((entry.size ?? 0) / 512) * 512
-    }, 1024)
-    if (bytes > sourceArchiveBytesLimit)
-        throw new Error('Submitted source tree exceeds its byte budget')
-    return Array.from(
-        new Set(
-            tree.tree
-                .filter(({ type }) => type === 'blob')
-                .map(({ sha }) => sha),
-        ),
-    )
+    return runAppPipelineSync<string[]>('source-tree', {
+        tree: value,
+        expectedTree,
+    })
 }
 
 async function githubJson(path: string, token?: string): Promise<unknown> {
@@ -276,10 +244,10 @@ export async function stageGitSource(
             : await findCommittedDirectory(captureGit, fetched, request.path)
     // Admit the scoped tree's size before any blob reads hydrate the shallow
     // partial fetch. GitHub reports truncation explicitly and we fail closed.
-    const blobs = checkSourceTree(
-        await transport.readTree(rechecked.repository, tree),
-        tree,
-    )
+    const blobs = await runAppPipeline<string[]>('source-tree', {
+        tree: await transport.readTree(rechecked.repository, tree),
+        expectedTree: tree,
+    })
     if (blobs.length > 0) {
         // Git can request the admitted object IDs in one conversation. This
         // keeps large trees from causing a separate lazy fetch for each file.
@@ -296,21 +264,16 @@ export async function stageGitSource(
             blobs.join('\n') + '\n',
         )
     }
-    const stagedFiles = [
-        { name: 'package.json', limit: manifestBytesLimit, required: true },
-        { name: 'bun.lock', limit: lockBytesLimit, required: false },
-    ]
     await Promise.all(
-        stagedFiles.map(async ({ name, limit, required }) => {
-            const entry = (await captureGit(['ls-tree', tree, '--', name]))
-                .toString()
-                .trimEnd()
-            if (!required && entry === '') return
-            if (!/^100(?:644|755) blob [a-f0-9]{40}\t/.test(entry)) {
-                throw new Error(
-                    'Submitted ' + name + ' must be a committed regular file',
-                )
-            }
+        ['package.json', 'bun.lock'].map(async (name) => {
+            const entry = (
+                await captureGit(['ls-tree', tree, '--', name])
+            ).toString()
+            const { present, limit } = await runAppPipeline<{
+                present: boolean
+                limit: number
+            }>('source-staged-file', { name, entry })
+            if (!present) return
             await writeFile(
                 join(dependencies, name),
                 await captureGit(
@@ -340,9 +303,5 @@ async function findCommittedDirectory(
     const entry = (
         await git(['ls-tree', '-d', '-z', commit, '--', path])
     ).toString()
-    const match = /^040000 tree ([a-f0-9]{40})\t([^\0]+)\0$/.exec(entry)
-    if (match?.[2] !== path) {
-        throw new Error('Submitted source path must be a committed directory')
-    }
-    return match[1]
+    return runAppPipeline<string>('source-directory', { entry, path })
 }

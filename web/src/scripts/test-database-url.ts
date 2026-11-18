@@ -1,10 +1,14 @@
+import { runNativeToolSync } from '@/lib/Core/native-tool.ts'
 import type { Environment } from '@/server/Runtime/Types/environment.types.ts'
-const TEST_DATABASE_NAME_PATTERN = /(?:^|[_-])test(?:[_-]|$)/i
-const LOOPBACK_HOSTS = new Set(['127.0.0.1', '::1', 'localhost'])
-const CI_POSTGRES_SERVICE_HOST = 'postgres'
 
 export function isTestDatabaseName(databaseName: string) {
-    return TEST_DATABASE_NAME_PATTERN.test(databaseName)
+    return runNativeToolSync<boolean>(
+        'marketplace-tooling',
+        'verification-db-name',
+        {
+            name: databaseName,
+        },
+    )
 }
 
 export function getTestDatabaseUrl(environment: Environment = process.env) {
@@ -16,31 +20,26 @@ export function getTestDatabaseUrl(environment: Environment = process.env) {
         )
     }
 
-    const databaseUrl = new URL(value)
-    const databaseName = decodeURIComponent(databaseUrl.pathname).replace(
-        /^\/+/,
-        '',
+    let databaseUrl: URL
+    try {
+        databaseUrl = new URL(value)
+    } catch {
+        throw new Error('TEST_DATABASE_URL ist keine gültige URL.')
+    }
+    const { protocol, hostname, pathname } = databaseUrl
+    const databaseName = runNativeToolSync<string>(
+        'marketplace-tooling',
+        'verification-db-target',
+        { protocol, hostname, pathname, ci: environment.CI === 'true' },
     )
 
-    if (
-        !['postgres:', 'postgresql:'].includes(databaseUrl.protocol) ||
-        !isTestDatabaseName(databaseName)
-    ) {
-        throw new Error(
-            'TEST_DATABASE_URL muss auf eine eindeutig benannte PostgreSQL-Testdatenbank zeigen.',
-        )
-    }
-
-    const isLoopbackHost = LOOPBACK_HOSTS.has(databaseUrl.hostname)
-    const isIsolatedCiService =
-        environment.CI === 'true' &&
-        databaseUrl.hostname === CI_POSTGRES_SERVICE_HOST
-
-    if (!isLoopbackHost && !isIsolatedCiService) {
-        throw new Error(
-            'Die automatische Vorbereitung ist ausschließlich für eine lokale oder isolierte CI-Testdatenbank erlaubt.',
-        )
-    }
-
     return { databaseName, value }
+}
+
+export function verifyTestDatabaseTarget(databaseUrl: URL) {
+    const { protocol, pathname } = databaseUrl
+    runNativeToolSync('marketplace-tooling', 'verification-db-test-target', {
+        protocol,
+        pathname,
+    })
 }

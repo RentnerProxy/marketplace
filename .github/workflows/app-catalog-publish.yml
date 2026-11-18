@@ -37,7 +37,7 @@ jobs:
               working-directory: core
               run: |
                   rustup toolchain install 1.100.0 --profile minimal
-                  cargo build --locked --release -p marketplace-app-catalog
+                  cargo build --locked --release -p marketplace-app-catalog -p marketplace-app-pipeline
             - name: Issue a short-lived distribution-only token
               id: distribution
               uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0

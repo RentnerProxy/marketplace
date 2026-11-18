@@ -1,10 +1,22 @@
+import { runNativeTool } from '@/lib/Core/native-tool.ts'
 import type { RuntimeImageReferenceOptions } from './Types/runtime-image-reference.types.ts'
 
 export async function createLocalRuntimeImageReferenceService(
     options: RuntimeImageReferenceOptions,
 ) {
-    if (!/^[a-z0-9][a-z0-9._-]*:[a-z0-9][a-z0-9._-]*$/.test(options.tag)) {
-        throw new Error('Invalid isolated runtime image tag.')
+    await runNativeTool(
+        'marketplace-tooling',
+        'verification-runtime-image-tag',
+        { tag: options.tag },
+    )
+    if (
+        !(await runNativeTool<boolean>(
+            'marketplace-tooling',
+            'verification-runtime-image-ref',
+            { reference: options.source },
+        ))
+    ) {
+        throw new Error('Invalid isolated runtime image identity.')
     }
     const source = await options.docker([
         'image',
@@ -13,10 +25,13 @@ export async function createLocalRuntimeImageReferenceService(
         '{{.Id}}',
         options.source,
     ])
-    const imageId = source.stdout.trim()
-    if (!/^sha256:[a-f0-9]{64}$/.test(imageId)) {
-        throw new Error('Invalid local runtime image identity.')
-    }
+    const imageId = await runNativeTool<string>(
+        'marketplace-tooling',
+        'verification-runtime-image-id',
+        {
+            output: source.stdout,
+        },
+    )
     const existing = await options.docker(
         ['image', 'inspect', '--format', '{{.Id}}', options.tag],
         true,
@@ -35,11 +50,14 @@ export async function createLocalRuntimeImageReferenceService(
                 true,
             )
             if (current.code !== 0) return
-            if (current.stdout.trim() !== imageId) {
-                throw new Error(
-                    'Refusing cleanup of a changed runtime image tag.',
-                )
-            }
+            await runNativeTool(
+                'marketplace-tooling',
+                'verification-runtime-image-owner',
+                {
+                    expectedId: imageId,
+                    output: current.stdout,
+                },
+            )
             // Nur den eigenen Alias entfernen, niemals die übergebene Image-ID.
             await options.docker(['image', 'rm', options.tag])
         },

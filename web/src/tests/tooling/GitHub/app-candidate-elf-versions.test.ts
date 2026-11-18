@@ -1,30 +1,29 @@
 import { describe, expect, test } from 'bun:test'
-import {
-    libraryDefinitions,
-    verifyApplianceLinkage,
-} from '../../../../../.github/scripts/ci/app-candidates/elf-appliance.ts'
-import {
-    inspectCandidateLinkage,
-    type ElfLinkage,
-} from '../../../../../.github/scripts/ci/app-candidates/elf.ts'
+import type { ElfLinkage } from '../../../../../.github/scripts/ci/app-candidates/elf-appliance.ts'
+import { runAppPipelineSync } from '../../../../../.github/scripts/native-tools.ts'
+import { inspectCandidateLinkage } from './app-candidate-elf.test.helpers.ts'
 
 const loader = 'ld-linux-x86-64.so.2'
 const interpreter = `/lib64/${loader}` as const
-const available = new Map([
-    [loader, new Set(['GLIBC_2.41'])],
-    [
-        'libc.so.6',
-        new Set(['GLIBC_2.41', 'GLIBC_ABI_DT_RELR', 'GLIBC_PRIVATE']),
-    ],
-    ['libstdc++.so.6', new Set(['GLIBCXX_3.4.33', 'CXXABI_1.3.15'])],
-    ['libgcc_s.so.1', new Set(['GCC_13.0.0'])],
-])
+const available = {
+    [loader]: ['GLIBC_2.41'],
+    'libc.so.6': ['GLIBC_2.41', 'GLIBC_ABI_DT_RELR', 'GLIBC_PRIVATE'],
+    'libstdc++.so.6': ['GLIBCXX_3.4.33', 'CXXABI_1.3.15'],
+    'libgcc_s.so.1': ['GCC_13.0.0'],
+}
+
+function verifyApplianceLinkage(linkage: ElfLinkage) {
+    runAppPipelineSync('verify-package-abi', {
+        linkage: [{ path: 'bin/app', ...linkage }],
+        applianceLibraryVersions: available,
+    })
+}
 
 function versionedLinkage(library: string, ...versions: string[]): ElfLinkage {
     return {
         interpreter,
         needed: [library],
-        versions: new Map([[library, new Set(versions)]]),
+        versions: { [library]: versions },
     }
 }
 
@@ -86,7 +85,6 @@ describe('ELF versions in the pinned appliance', () => {
     test('accepts available glibc, C++, GCC and loader ABI names', () => {
         verifyApplianceLinkage(
             versionedLinkage('libc.so.6', 'GLIBC_2.41', 'GLIBC_ABI_DT_RELR'),
-            available,
         )
         verifyApplianceLinkage(
             versionedLinkage(
@@ -94,12 +92,8 @@ describe('ELF versions in the pinned appliance', () => {
                 'GLIBCXX_3.4.33',
                 'CXXABI_1.3.15',
             ),
-            available,
         )
-        verifyApplianceLinkage(
-            versionedLinkage('libgcc_s.so.1', 'GCC_13.0.0'),
-            available,
-        )
+        verifyApplianceLinkage(versionedLinkage('libgcc_s.so.1', 'GCC_13.0.0'))
     })
 
     test.each([
@@ -112,19 +106,13 @@ describe('ELF versions in the pinned appliance', () => {
         ['libc.so.6', 'UNRECOGNIZED_ABI_1'],
     ])('rejects unavailable %s versions', (library, version) => {
         expect(() =>
-            verifyApplianceLinkage(
-                versionedLinkage(library, version),
-                available,
-            ),
+            verifyApplianceLinkage(versionedLinkage(library, version)),
         ).toThrow('version is unavailable')
     })
 
     test('rejects a missing library even without a named symbol version', () => {
         expect(() =>
-            verifyApplianceLinkage(
-                versionedLinkage('libpthread.so.0'),
-                available,
-            ),
+            verifyApplianceLinkage(versionedLinkage('libpthread.so.0')),
         ).toThrow('library is missing')
     })
 
@@ -153,9 +141,7 @@ describe('ELF versions in the pinned appliance', () => {
         binary.writeUInt16LE(3, 0x1f6)
         const linkage = inspectCandidateLinkage(binary, 'linux-amd64')
         expect(linkage?.needed).toEqual(['libstdc++.so.6', 'libgcc_s.so.1'])
-        expect(linkage?.versions.get('libgcc_s.so.1')).toEqual(
-            new Set(['GLIBCXX_3.4.33']),
-        )
+        expect(linkage?.versions['libgcc_s.so.1']).toEqual(['GLIBCXX_3.4.33'])
     })
 
     test('rejects version metadata inconsistent with dynamic dependencies', () => {
@@ -163,26 +149,6 @@ describe('ELF versions in the pinned appliance', () => {
         binary.writeUInt32LE(30, 0x1c4)
         expect(() => inspectCandidateLinkage(binary, 'linux-amd64')).toThrow(
             'Invalid ELF version dependency record',
-        )
-    })
-
-    test('matches the provider SONAME and reads definitions independently from its dependencies', () => {
-        const sections = ` 0x000000000000000e (SONAME) Library soname: [libstdc++.so.6]
-Version definition section '.gnu.version_d' contains 3 entries:
- Addr: 0x0000000000000050  Offset: 0x00000050  Link: 5 (.dynstr)
-  000000: Rev: 1  Flags: BASE  Index: 1  Cnt: 1  Name: libstdc++.so.6
-  0x001c: Rev: 1  Flags: none  Index: 2  Cnt: 1  Name: GLIBCXX_3.4.33
-  0x0038: Rev: 1  Flags: none  Index: 3  Cnt: 1  Name: CXXABI_1.3.15
-
-Version needs section '.gnu.version_r' contains 1 entry:
-  000000: Version: 1  File: libc.so.6  Cnt: 1
-  0x0010:   Name: GLIBC_2.41  Flags: none  Version: 4
-`
-        expect(libraryDefinitions(sections, 'libstdc++.so.6')).toEqual(
-            new Set(['GLIBCXX_3.4.33', 'CXXABI_1.3.15']),
-        )
-        expect(() => libraryDefinitions(sections, 'libc.so.6')).toThrow(
-            'version definitions',
         )
     })
 })

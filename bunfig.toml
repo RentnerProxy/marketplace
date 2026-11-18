@@ -43,5 +43,6 @@ ignorePatterns = [
     "web/src/routeTree.gen.ts",
     "contracts/v1/contracts.schema.json",
     "contracts/v1/openapi.json",
+    "contracts/v1/http-operations.generated.ts",
     "bun.lock",
 ]

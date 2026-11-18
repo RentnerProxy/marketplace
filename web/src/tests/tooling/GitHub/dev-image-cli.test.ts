@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
+import { nativeToolPath } from '../../../lib/Core/native-tool.ts'
 
 const script = new URL(
     '../../../../../.github/scripts/deploy/dev-image.ts',
@@ -10,6 +11,25 @@ const script = new URL(
 ).pathname.replace(/^\/([A-Za-z]:)/, '$1')
 const revision = 'a'.repeat(40)
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
+
+function archiveEntry(path: string, content: string) {
+    const body = Buffer.from(content)
+    const header = Buffer.alloc(512)
+    header.write(path)
+    header.write('0000600\0', 100)
+    header.write(body.length.toString(8).padStart(11, '0') + '\0', 124)
+    header.fill(' ', 148, 156)
+    header.write('0', 156)
+    header.write('ustar\0', 257)
+    header.write('00', 263)
+    const checksum = header.reduce((total, byte) => total + byte, 0)
+    header.write(checksum.toString(8).padStart(6, '0') + '\0 ', 148)
+    return Buffer.concat([
+        header,
+        body,
+        Buffer.alloc((512 - (body.length % 512)) % 512),
+    ])
+}
 
 async function fixture(
     run: (state: {
@@ -49,19 +69,38 @@ async function fixture(
             },
         },
     })
-    const imageId = 'sha256:' + hash(config)
+    const layer = 'fixture-layer'
+    const imageType = 'application/vnd.oci.image.manifest.v1+json'
+    const descriptor = (content: string) => ({
+        digest: 'sha256:' + hash(content),
+        size: Buffer.byteLength(content),
+    })
+    const imageId = descriptor(config).digest
     const manifest = JSON.stringify({
         schemaVersion: 2,
-        mediaType: 'application/vnd.oci.image.manifest.v1+json',
-        config: { digest: imageId },
-        layers: [{ digest: 'sha256:' + hash('fixture-layer') }],
+        mediaType: imageType,
+        config: descriptor(config),
+        layers: [descriptor(layer)],
     })
-    await writeFile(
-        join(directory, 'candidate-image.tar'),
-        'synthetic archive bytes; never passed to container tools',
-    )
-    await writeFile(join(directory, 'manifest.json'), manifest)
-    await writeFile(join(directory, 'config.json'), config)
+    const archive = Buffer.concat([
+        archiveEntry(
+            'oci-layout',
+            JSON.stringify({ imageLayoutVersion: '1.0.0' }),
+        ),
+        archiveEntry(
+            'index.json',
+            JSON.stringify({
+                schemaVersion: 2,
+                manifests: [{ ...descriptor(manifest), mediaType: imageType }],
+            }),
+        ),
+        ...[config, layer, manifest].map((content) =>
+            archiveEntry('blobs/sha256/' + hash(content), content),
+        ),
+        Buffer.alloc(1024),
+    ])
+    const archiveHash = createHash('sha256').update(archive).digest('hex')
+    await writeFile(join(directory, 'candidate-image.tar'), archive)
     await writeFile(
         join(directory, 'runtime-inspect.json'),
         JSON.stringify([
@@ -79,6 +118,7 @@ async function fixture(
     )
     const env: Record<string, string> = {
         SystemRoot: process.env.SystemRoot ?? '',
+        MARKETPLACE_TOOLING_BIN: nativeToolPath('marketplace-tooling'),
         GITHUB_REPOSITORY: 'RentnerProxy/marketplace',
         GITHUB_EVENT_NAME: 'workflow_dispatch',
         GITHUB_REF: 'refs/heads/main',
@@ -92,9 +132,8 @@ async function fixture(
         CANDIDATE_DIRECTORY: directory,
         GITHUB_OUTPUT: join(temporary, 'outputs'),
         IMAGE_ID: imageId,
-        TESTED_ARCHIVE_SHA256: hash(
-            'synthetic archive bytes; never passed to container tools',
-        ),
+        PREFLIGHT_ARCHIVE_SHA256: archiveHash,
+        TESTED_ARCHIVE_SHA256: archiveHash,
     }
     const execute = async (
         command: string,
@@ -223,15 +262,19 @@ test('CLI rejects external directories, a different workflow SHA, forged assessm
     })
 })
 
-test('CLI rejects a normalized configuration that drops raw Docker healthcheck data', async () => {
+test('CLI rejects OCI configuration bytes changed inside the archive', async () => {
     await fixture(async ({ directory, execute }) => {
-        const path = join(directory, 'config.json')
-        const config = JSON.parse(await readFile(path, 'utf8'))
-        delete config.config.Healthcheck
-        await writeFile(path, JSON.stringify(config))
+        const path = join(directory, 'candidate-image.tar')
+        const archive = await readFile(path)
+        const offset = archive.indexOf('Healthcheck')
+        expect(offset).toBeGreaterThan(0)
+        archive[offset] = 'h'.charCodeAt(0)
+        await writeFile(path, archive)
         const result = await execute('loaded')
         expect(result.code).not.toBe(0)
-        expect(result.stderr).toContain('Raw OCI config digest mismatch')
+        expect(result.stderr).toContain(
+            'blob content does not match its SHA-256 path',
+        )
         expect((await execute('verify')).code).not.toBe(0)
         expect(await Bun.file(join(directory, 'identity.json')).exists()).toBe(
             false,

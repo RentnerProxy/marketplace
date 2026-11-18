@@ -14,6 +14,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { contractVersion } from '../../../contracts/v1/primitives.ts'
 import { buildContractDocuments } from '../../../contracts/v1/schemas.ts'
+import { runToolingSync } from '../native-tools.ts'
 
 const root = fileURLToPath(new URL('../../../', import.meta.url))
 const tsSource = 'contracts/v1'
@@ -185,19 +186,14 @@ function buildBundle(directory: string, expectedCommit: string) {
     }
     packageTypeScript(directory, bundle)
     packageRust(directory, bundle)
-    writeJson(join(bundle, 'manifest.json'), {
-        version,
-        sourceCommit: expectedCommit,
-        packages: { npm: npmName, cargo: crateName },
-        sha256: Object.fromEntries(
-            bundleFiles.map((file) => [
-                file,
-                new Bun.CryptoHasher('sha256')
-                    .update(readFileSync(join(bundle, file)))
-                    .digest('hex'),
-            ]),
-        ),
-    })
+    writeJson(
+        join(bundle, 'manifest.json'),
+        runToolingSync<unknown>('contracts-bundle', {
+            version,
+            sourceCommit: expectedCommit,
+            directory: bundle,
+        }),
+    )
     return bundle
 }
 
