@@ -50,6 +50,7 @@ const registerState = {
     acceptTerms: false,
     isSocial: false,
     isPending: false,
+    canVerify: false,
     error: '',
     phase: 'form',
 }
@@ -59,6 +60,7 @@ vi.mock('@/features/Auth/Register/Hooks/useRegisterLogic.ts', () => ({
         handler: {
             handleSubmit: submit,
             handleVerify: submit,
+            handleRetry: submit,
             handleCancelSocial: submit,
         },
         setter: {
@@ -185,6 +187,7 @@ beforeEach(function () {
     Object.assign(registerState, {
         isSocial: false,
         isPending: false,
+        canVerify: false,
         phase: 'form',
         error: '',
     })
@@ -276,18 +279,21 @@ describe('authentication page states', function () {
         expect(html).toContain('name="acceptTerms"')
     })
 
-    it.each(['verify', 'inbox', 'complete'])(
-        'renders the registration %s state without credential inputs',
-        (phase) => {
+    it.each([
+        ['verify', true, 'auth.register.verifyDescription'],
+        ['verify', false, 'auth.register.invalidVerification'],
+        ['inbox', false, 'auth.register.checkInbox'],
+        ['complete', false, 'auth.register.complete'],
+    ] as const)(
+        'renders the registration %s state with canVerify=%s and no credential inputs',
+        (phase, canVerify, copy) => {
             registerState.phase = phase
+            registerState.canVerify = canVerify
             const html = renderToStaticMarkup(createElement(Register))
             expect(html).not.toContain('name="password"')
-            expect(html).toContain(
-                phase === 'verify'
-                    ? 'auth.register.verifyDescription'
-                    : phase === 'inbox'
-                      ? 'auth.register.checkInbox'
-                      : 'auth.register.complete',
+            expect(html).toContain(copy)
+            expect(html.includes('auth.register.retryRegistration')).toBe(
+                phase !== 'complete',
             )
             expect(html).toContain('href="/login"')
         },

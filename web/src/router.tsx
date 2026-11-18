@@ -18,12 +18,17 @@ import {
     isStaffInvitationPath,
     staffInvitationTokenHandoff,
 } from '@/lib/Auth/staffInvitationToken.ts'
+import {
+    isRegistrationPath,
+    registrationTokenHandoff,
+} from '@/lib/Auth/registrationToken.ts'
 
 export function getRouter() {
     if (!import.meta.env.SSR && typeof window !== 'undefined') {
         captureResetToken(window)
         captureFirstSetupToken(window)
         staffInvitationTokenHandoff.capture(window)
+        registrationTokenHandoff.capture(window)
     }
     const context = getContext()
 
@@ -45,6 +50,8 @@ export function getRouter() {
                 discardFirstSetupToken(window)
             if (!isStaffInvitationPath(toLocation.pathname))
                 staffInvitationTokenHandoff.discard(window)
+            if (!isRegistrationPath(toLocation.pathname))
+                registrationTokenHandoff.discard(window)
         })
     }
 

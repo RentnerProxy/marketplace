@@ -76,6 +76,7 @@ function initialTables(): PasswordResetTestTables {
                 id,
                 username: id + '-name',
                 email: id + '@example.test',
+                emailVerifiedAt: null,
                 passwordHash: 'previous-password-hash',
                 isActive: true,
                 isDeleted: false,
@@ -534,7 +535,11 @@ describe('password reset completion transaction', function () {
         })
         expect(Bun.password.hash).toHaveBeenCalledWith(INPUT.password)
         expect(database.state.tables.users).toEqual([
-            { ...initialTables().users[0], passwordHash: 'hashed:new' },
+            {
+                ...initialTables().users[0],
+                passwordHash: 'hashed:new',
+                emailVerifiedAt: NOW,
+            },
             initialTables().users[1],
         ])
         expectOnlyOtherUserAuthState()

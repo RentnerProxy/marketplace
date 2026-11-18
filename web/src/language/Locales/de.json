@@ -162,7 +162,8 @@
             "verify": "E-Mail bestätigen",
             "verifyDescription": "Bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.",
             "invalidVerification": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte registriere dich erneut.",
-            "verificationFailed": "Deine E-Mail-Adresse konnte nicht bestätigt werden. Bitte versuche es erneut."
+            "verificationFailed": "Deine E-Mail-Adresse konnte nicht bestätigt werden. Bitte versuche es erneut.",
+            "retryRegistration": "Registrierung erneut starten"
         },
         "passwordReset": {
             "validating": "Reset-Link wird geprüft …",

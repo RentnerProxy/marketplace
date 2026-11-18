@@ -20,6 +20,8 @@ function createSession() {
         sessionHash: 'a'.repeat(64),
         username: 'kevin',
         email: 'kevin@example.test',
+        accountType: 'staff' as const,
+        emailVerifiedAt: null,
         isActive: true,
         isDeleted: false,
         expiresAt: new Date(Date.now() + 300_000),

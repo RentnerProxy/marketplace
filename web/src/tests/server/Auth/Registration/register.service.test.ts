@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
+import type { SQL } from 'drizzle-orm'
+import { PgDialect } from 'drizzle-orm/pg-core'
 import { registerService } from '@/server/Auth/Registration/register.service.ts'
 import { pendingRegistrations } from '@/db/Schema/registration.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
@@ -9,7 +11,6 @@ const state = {
     duplicate: false,
     consumed: true,
     inserts: [] as Array<{ table: unknown; values: Record<string, unknown> }>,
-    cleanup: [] as unknown[],
     order: [] as string[],
 }
 const queue = vi.fn(async (_input: unknown) => {
@@ -42,6 +43,9 @@ const consume = vi.fn(async (_tx: unknown, _requestId: string) => {
     return state.consumed
 })
 const clearCookie = vi.fn(() => undefined)
+const cleanup = vi.fn(async (_table: unknown, _predicate: SQL) => {
+    state.order.push('cleanup')
+})
 vi.mock('@/db', () => ({
     db: {
         transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
@@ -79,10 +83,7 @@ vi.mock('@/db', () => ({
             return result
         },
         delete: (table: unknown) => ({
-            where: async (predicate: unknown) => {
-                state.cleanup.push({ table, predicate })
-                state.order.push('cleanup')
-            },
+            where: (predicate: SQL) => cleanup(table, predicate),
         }),
     },
 }))
@@ -103,7 +104,8 @@ vi.mock('@/server/Queues/mail.queue.ts', () => ({
 vi.mock('@/lib/AuditLogs/auditLogs.ts', () => ({
     publishCommittedAuditLogService: publish,
 }))
-vi.mock('@/server/Logging/logger.ts', () => ({ logError: vi.fn() }))
+const log = vi.fn()
+vi.mock('@/server/Logging/logger.ts', () => ({ logError: log }))
 
 const input = {
     username: 'new-person',
@@ -126,7 +128,6 @@ describe('Registration requests', () => {
         state.duplicate = false
         state.consumed = true
         state.inserts = []
-        state.cleanup = []
         state.order = []
     })
 
@@ -231,7 +232,7 @@ describe('Registration requests', () => {
             redirectTo: '/login',
         })
         expect(publish).toHaveBeenCalledTimes(1)
-        expect(state.cleanup).toEqual([])
+        expect(cleanup).not.toHaveBeenCalled()
     })
 
     it('does not sign in a duplicate social registration and preserves its generic response', async () => {
@@ -278,14 +279,52 @@ describe('Registration requests', () => {
         expect(state.order).not.toContain('commit')
     })
 
-    it('removes the unsent pending token and reports failure when enqueueing fails', async () => {
-        queue.mockRejectedValueOnce(new Error('Synthetic queue failure'))
+    it('removes only the unsent pending token and returns the same result as a duplicate', async () => {
+        const queueError = new Error('Synthetic queue failure')
+        queue.mockRejectedValueOnce(queueError)
         expect(await registerService(input)).toEqual({
-            success: false,
-            error: 'registration.failed',
+            success: true,
+            requiresEmailVerification: true,
         })
-        expect(state.cleanup).toHaveLength(1)
+        expect(cleanup).toHaveBeenCalledTimes(1)
+        const [table, predicate] = cleanup.mock.calls[0]!
+        expect(table).toBe(pendingRegistrations)
+        expect(new PgDialect().sqlToQuery(predicate)).toEqual({
+            sql: '"marketplace"."pending_registrations"."tokenHash" = $1',
+            params: [state.inserts[0]!.values.tokenHash],
+            typings: ['none'],
+        })
         expect(state.order.slice(-2)).toEqual(['commit', 'cleanup'])
+        expect(createAccount).not.toHaveBeenCalled()
+        expect(log).toHaveBeenCalledWith(
+            'auth.registration.enqueue_failed',
+            queueError,
+        )
+    })
+
+    it('keeps the generic response if cleanup also fails', async () => {
+        const cleanupError = new Error('Synthetic cleanup failure')
+        queue.mockRejectedValueOnce(new Error('Synthetic queue failure'))
+        cleanup.mockRejectedValueOnce(cleanupError)
+        expect(await registerService(input)).toEqual({
+            success: true,
+            requiresEmailVerification: true,
+        })
+        expect(log).toHaveBeenCalledWith(
+            'auth.registration.cleanup_failed',
+            cleanupError,
+        )
+    })
+
+    it('stages a separate verification token when the full form is submitted again', async () => {
+        await registerService(input)
+        await registerService(input)
+        expect(state.inserts).toHaveLength(2)
+        expect(state.inserts[0]!.values.tokenHash).not.toBe(
+            state.inserts[1]!.values.tokenHash,
+        )
+        expect(queue).toHaveBeenCalledTimes(2)
+        expect(cleanup).not.toHaveBeenCalled()
         expect(createAccount).not.toHaveBeenCalled()
     })
 

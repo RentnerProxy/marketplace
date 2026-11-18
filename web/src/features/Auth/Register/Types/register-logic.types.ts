@@ -24,6 +24,7 @@ export type RegisterLogicReturn = {
     handler: {
         handleSubmit: (event: SubmitEvent<HTMLFormElement>) => void
         handleVerify: () => void
+        handleRetry: () => void
         handleCancelSocial: () => void
     }
 }

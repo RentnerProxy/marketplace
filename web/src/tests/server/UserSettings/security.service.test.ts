@@ -468,6 +468,8 @@ async function setAuthenticatedUser(enabled = false) {
         sessionHash: 'a'.repeat(64),
         username: 'kevin',
         email: 'kevin@example.test',
+        accountType: 'staff' as const,
+        emailVerifiedAt: null,
         customBackgroundDarkness: null,
         fontFamily: 'inter',
         fontSize: 16,

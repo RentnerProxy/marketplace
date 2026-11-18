@@ -11,6 +11,8 @@ export const PERMISSIONS = {
     USER_DASHBOARD: 'user.dashboard',
     ADMIN_AUDIT_LOGS: 'admin.auditLogs',
     ADMIN_BACKUPS: 'admin.backups',
+    ADMIN_MARKETPLACE_REVIEW: 'admin.marketplaceReview',
+    ADMIN_MARKETPLACE_NAMESPACE: 'admin.marketplaceNamespace',
 } as const
 
 export const PUBLIC_PERMISSION_KEYS: ReadonlyArray<string> = [
@@ -59,6 +61,16 @@ export const DEFAULT_PERMISSIONS = [
         name: 'Backups',
         description:
             'Darf Backups konfigurieren, exportieren und wiederherstellen.',
+    },
+    {
+        key: PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
+        name: 'Marketplace-Prüfung',
+        description: 'Darf App-Kandidaten prüfen, freigeben und ablehnen.',
+    },
+    {
+        key: PERMISSIONS.ADMIN_MARKETPLACE_NAMESPACE,
+        name: 'Marketplace-Namensräume',
+        description: 'Darf offizielle App-Namensräume zuweisen.',
     },
 ] satisfies Array<PermissionDefinition>
 

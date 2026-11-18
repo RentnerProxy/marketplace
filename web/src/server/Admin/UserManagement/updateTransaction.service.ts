@@ -105,9 +105,11 @@ export async function updateUserInTransaction(
         }
     }
 
+    const emailChanged = previousUser.email.toLowerCase() !== input.email
     const updatedState = await writeUserAndProfileInTransaction(
         transaction,
         input,
+        emailChanged,
     )
 
     if (!updatedState) {
@@ -117,7 +119,7 @@ export async function updateUserInTransaction(
         }
     }
 
-    if (previousUser.email.toLowerCase() !== input.email) {
+    if (emailChanged) {
         await revokeUserAuthenticationStateInTransaction(transaction, input.id)
     }
 

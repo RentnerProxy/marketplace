@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { REGISTRATION_POLICY } from '@/config/security.config.ts'
+import { registrationTokenPattern } from '@/lib/Auth/registrationToken.ts'
 
 export const registrationInputSchema = z.object({
     username: z
@@ -18,8 +19,5 @@ export const registrationInputSchema = z.object({
 })
 
 export const verifyRegistrationInputSchema = z.object({
-    token: z
-        .string()
-        .length(43)
-        .regex(/^[A-Za-z0-9_-]+$/u),
+    token: z.string().length(43).regex(registrationTokenPattern),
 })
