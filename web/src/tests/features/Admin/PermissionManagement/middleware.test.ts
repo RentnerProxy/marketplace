@@ -21,6 +21,7 @@ vi.mock('@/server/Admin/PermissionManagement/users.service.ts', () => ({
     getPermissionManagementUsersService: users,
 }))
 vi.mock('@/server/Admin/PermissionManagement/defaults.service.ts', () => ({
+    getPublicAccountDefaultsService: vi.fn(),
     replaceDefaultPermissionsService: defaults,
 }))
 vi.mock('@/server/Admin/PermissionManagement/presets.service.ts', () => ({

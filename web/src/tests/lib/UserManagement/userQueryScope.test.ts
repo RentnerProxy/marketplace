@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'bun:test'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 
 vi.mock('@/lib/Queries/appQueries.ts', () => ({
@@ -13,9 +14,6 @@ vi.mock('@/lib/Queries/appQueries.ts', () => ({
 vi.mock('@/features/Admin/UserManagement/middleware.ts', () => ({
     getUsersHandler: vi.fn(),
     getPermissionsHandler: vi.fn(),
-}))
-vi.mock('@/features/Admin/UserManagement/Hooks/useCreateUserForm.ts', () => ({
-    default: () => ({ state: {}, handler: {}, form: {} }),
 }))
 vi.mock('@/features/Admin/UserManagement/Hooks/useUserEditor.ts', () => ({
     default: () => ({ state: {}, handler: {} }),
@@ -38,26 +36,32 @@ const { default: useUsersTableQuery } =
 const { default: useUserManagementLogic } =
     await import('@/features/Admin/UserManagement/Hooks/useUserManagementLogic.ts')
 
-function QueryOwners() {
-    useUsersTableQuery()
-    useUserManagementLogic()
+function QueryOwners({ accountType }: { accountType: AccountType }) {
+    useUsersTableQuery(accountType)
+    useUserManagementLogic(accountType)
     return null
 }
 
-function readOwnerQueries(actorUserId: string | undefined, full: boolean) {
+function readOwnerQueries(
+    actorUserId: string | undefined,
+    accountType: AccountType,
+    isSuperUser: boolean,
+) {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, gcTime: Infinity } },
     })
     queryClient.setQueryData(['session'], {
         user: actorUserId ? { id: actorUserId } : null,
-        permissions: full ? [PERMISSIONS.ADMIN_SUPER_USER] : [],
+        permissions: isSuperUser
+            ? [PERMISSIONS.ADMIN_SUPER_USER, PERMISSIONS.ADMIN_USER_MANAGEMENT]
+            : [PERMISSIONS.ADMIN_USER_MANAGEMENT],
     })
     try {
         renderToStaticMarkup(
             createElement(
                 QueryClientProvider,
                 { client: queryClient },
-                createElement(QueryOwners),
+                createElement(QueryOwners, { accountType }),
             ),
         )
         return ['admin-users', 'admin-permissions'].map((baseKey) => {
@@ -77,49 +81,33 @@ function readOwnerQueries(actorUserId: string | undefined, full: boolean) {
     }
 }
 
-describe('UserManagement Query-Keys an ihren Ownern', function () {
-    it('trennt vollständige und eingeschränkte Akteurssichten', function () {
-        const full = readOwnerQueries('actor-a', true)
-        const restricted = readOwnerQueries('actor-a', false)
-        const otherActor = readOwnerQueries('actor-b', true)
-        expect(full).toEqual([
-            { queryKey: ['admin-users', 'actor-a', 'full'], enabled: true },
+describe('account administration query scope', () => {
+    it('separates public and staff caches by account type and actor', () => {
+        expect(readOwnerQueries('actor-a', 'staff', true)).toEqual([
+            { queryKey: ['admin-users', 'staff', 'actor-a'], enabled: true },
             {
-                queryKey: ['admin-permissions', 'actor-a', 'full'],
+                queryKey: ['admin-permissions', 'actor-a', 'staff'],
                 enabled: true,
             },
         ])
-        expect(restricted).toEqual([
+        expect(readOwnerQueries('actor-b', 'public', false)).toEqual([
+            { queryKey: ['admin-users', 'public', 'actor-b'], enabled: true },
             {
-                queryKey: ['admin-users', 'actor-a', 'restricted'],
-                enabled: true,
-            },
-            {
-                queryKey: ['admin-permissions', 'actor-a', 'restricted'],
+                queryKey: ['admin-permissions', 'actor-b', 'public'],
                 enabled: true,
             },
         ])
-        expect(otherActor).toEqual([
-            { queryKey: ['admin-users', 'actor-b', 'full'], enabled: true },
-            {
-                queryKey: ['admin-permissions', 'actor-b', 'full'],
-                enabled: true,
-            },
-        ])
-        expect(full).not.toEqual(restricted)
-        expect(full).not.toEqual(otherActor)
     })
 
-    it('führt ohne aktuellen Akteur keine geschützte Listenabfrage aus', function () {
-        expect(readOwnerQueries(undefined, false)).toEqual([
-            {
-                queryKey: ['admin-users', 'anonymous', 'restricted'],
-                enabled: false,
-            },
-            {
-                queryKey: ['admin-permissions', 'anonymous', 'restricted'],
-                enabled: false,
-            },
-        ])
+    it('disables protected queries for missing actors and ordinary public-account managers on the staff page', () => {
+        for (const queries of [
+            readOwnerQueries(undefined, 'public', false),
+            readOwnerQueries('actor-a', 'staff', false),
+        ]) {
+            expect(queries.map(({ enabled }) => enabled)).toEqual([
+                false,
+                false,
+            ])
+        }
     })
 })

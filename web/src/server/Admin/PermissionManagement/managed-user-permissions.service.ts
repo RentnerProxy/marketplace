@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { users } from '@/db/schema.ts'
 import type { ReplaceManagedUserPermissionsInput } from '@/features/Admin/PermissionManagement/Types/permission-management-server-input.types.ts'
@@ -45,7 +45,12 @@ export async function replaceManagedUserPermissionsService(
                     isDeleted: users.isDeleted,
                 })
                 .from(users)
-                .where(eq(users.id, input.userId))
+                .where(
+                    and(
+                        eq(users.id, input.userId),
+                        eq(users.accountType, 'staff'),
+                    ),
+                )
                 .limit(1)
                 .for('update')
             const targetUser = targetUserRows.at(0)
@@ -168,17 +173,21 @@ export async function replaceManagedUserPermissionsService(
     await runBestEffortSideEffectService(
         'permission_management.user_publish_failed',
         function () {
-            return publishUserUpdatedService({
-                userId: input.userId,
-                username: transactionResult.username,
-                previousUsername: transactionResult.username,
-                permissionKeys: transactionResult.permissionKeys,
-                previousPermissionKeys:
-                    transactionResult.previousPermissionKeys,
-                addedPermissionKeys: transactionResult.addedPermissionKeys,
-                removedPermissionKeys: transactionResult.removedPermissionKeys,
-                updatedAt: new Date().toISOString(),
-            })
+            return publishUserUpdatedService(
+                {
+                    userId: input.userId,
+                    username: transactionResult.username,
+                    previousUsername: transactionResult.username,
+                    permissionKeys: transactionResult.permissionKeys,
+                    previousPermissionKeys:
+                        transactionResult.previousPermissionKeys,
+                    addedPermissionKeys: transactionResult.addedPermissionKeys,
+                    removedPermissionKeys:
+                        transactionResult.removedPermissionKeys,
+                    updatedAt: new Date().toISOString(),
+                },
+                'staff',
+            )
         },
         { actorUserId, targetUserId: input.userId },
     )

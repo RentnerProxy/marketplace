@@ -164,16 +164,19 @@ describe('Realtime publish service', function () {
                 user: { id: userId, username: 'test-user' },
             },
         })
-        await publishUserUpdatedService({
-            userId,
-            username: 'new-name',
-            previousUsername: 'old-name',
-            permissionKeys: ['admin.user_management'],
-            previousPermissionKeys: [],
-            addedPermissionKeys: ['admin.user_management'],
-            removedPermissionKeys: [],
-            updatedAt: timestamp,
-        })
+        await publishUserUpdatedService(
+            {
+                userId,
+                username: 'new-name',
+                previousUsername: 'old-name',
+                permissionKeys: ['admin.user_management'],
+                previousPermissionKeys: [],
+                addedPermissionKeys: ['admin.user_management'],
+                removedPermissionKeys: [],
+                updatedAt: timestamp,
+            },
+            'staff',
+        )
         await publishNotificationCreatedService({
             userId,
             notification: {
@@ -187,11 +190,14 @@ describe('Realtime publish service', function () {
                 createdAt: timestamp,
             },
         })
-        await publishUserAccessRevokedService({
-            userId,
-            reason: 'deactivated',
-            updatedAt: timestamp,
-        })
+        await publishUserAccessRevokedService(
+            {
+                userId,
+                reason: 'deactivated',
+                updatedAt: timestamp,
+            },
+            'public',
+        )
         await publishSessionRevokedService({
             userId,
             sessionHash: 'a'.repeat(64),
@@ -225,7 +231,9 @@ describe('Realtime publish service', function () {
                 ]),
                 expect.arrayContaining([
                     expect.any(String),
-                    expect.stringContaining('admin-user.updated'),
+                    expect.stringContaining(
+                        '"topic":"admin-staff","event":{"type":"admin-user.updated"',
+                    ),
                 ]),
                 expect.arrayContaining([
                     expect.any(String),

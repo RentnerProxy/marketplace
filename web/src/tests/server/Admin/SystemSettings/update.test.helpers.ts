@@ -127,7 +127,7 @@ export function maintenanceRequest() {
 export function resetSystemSettingsTestState() {
     vi.clearAllMocks()
     systemSettingsDb.reset()
-    systemSettingsDb.state.rows.userPermissions.push({
+    systemSettingsDb.state.rows.staffUserPermissions.push({
         userId: SYSTEM_SETTINGS_ACTOR_ID,
         permissionId: 'permission:' + PERMISSIONS.ADMIN_SYSTEM_SETTINGS,
     })
@@ -217,8 +217,8 @@ export function revokeSystemSettingsActor(
     )
     if (!actor) throw new Error('Synthetic actor is unavailable')
     if (revocation === 'permission') {
-        systemSettingsDb.state.rows.userPermissions =
-            systemSettingsDb.state.rows.userPermissions.filter(
+        systemSettingsDb.state.rows.staffUserPermissions =
+            systemSettingsDb.state.rows.staffUserPermissions.filter(
                 (permission) =>
                     permission.userId !== SYSTEM_SETTINGS_ACTOR_ID ||
                     permission.permissionId !==

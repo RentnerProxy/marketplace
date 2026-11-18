@@ -10,10 +10,14 @@ import {
     setUserActiveHandler,
 } from '../middleware.ts'
 import type { UserManagementUser } from '../Types/user-management-domain.types.ts'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import { ADMIN_USERS_QUERY_KEY } from '@/lib/UserManagement/userCache.ts'
 import { updateUserActiveStateInList } from '@/lib/UserManagement/userCache.ts'
 
-export default function useUserAccountActions(canManageSuperUsers: boolean) {
+export default function useUserAccountActions(
+    accountType: AccountType,
+    canManageSuperUsers: boolean,
+) {
     const { t } = useTranslationStore()
     const queryClient = useQueryClient()
     const [deleteTargetUser, setDeleteTargetUser] =
@@ -22,7 +26,9 @@ export default function useUserAccountActions(canManageSuperUsers: boolean) {
     const { mutate: deleteUserMutation, isPending: isDeletingUser } =
         useMutation({
             mutationFn: async function (user: UserManagementUser) {
-                return await deleteUserHandler({ data: { id: user.id } })
+                return await deleteUserHandler({
+                    data: { id: user.id, accountType },
+                })
             },
             onSuccess: async function (result) {
                 if (!result.success) {
@@ -34,7 +40,7 @@ export default function useUserAccountActions(canManageSuperUsers: boolean) {
                     title: t('admin.users.title'),
                 })
                 await queryClient.invalidateQueries({
-                    queryKey: ADMIN_USERS_QUERY_KEY,
+                    queryKey: [...ADMIN_USERS_QUERY_KEY, accountType],
                 })
             },
             onError: function (error) {
@@ -56,6 +62,7 @@ export default function useUserAccountActions(canManageSuperUsers: boolean) {
             return await setUserActiveHandler({
                 data: {
                     id: user.id,
+                    accountType,
                     isActive: !user.isActive,
                 },
             })
@@ -67,7 +74,7 @@ export default function useUserAccountActions(canManageSuperUsers: boolean) {
             }
 
             queryClient.setQueriesData<Array<UserManagementUser>>(
-                { queryKey: ADMIN_USERS_QUERY_KEY },
+                { queryKey: [...ADMIN_USERS_QUERY_KEY, accountType] },
                 (users) =>
                     updateUserActiveStateInList(users, user.id, !user.isActive),
             )
@@ -90,7 +97,9 @@ export default function useUserAccountActions(canManageSuperUsers: boolean) {
         isPending: isResendingPasswordReset,
     } = useMutation({
         mutationFn: async function (user: UserManagementUser) {
-            return await resetUserPasswordHandler({ data: { id: user.id } })
+            return await resetUserPasswordHandler({
+                data: { id: user.id, accountType },
+            })
         },
         onSuccess: async function (result) {
             if (!result.success) {

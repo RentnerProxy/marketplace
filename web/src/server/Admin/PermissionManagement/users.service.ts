@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import {
     permissions,
-    userPermissions,
+    staffUserPermissions,
     user_profiles,
     users,
 } from '@/db/schema.ts'
@@ -29,27 +29,28 @@ export async function getPermissionManagementUsersService(
         })
         .from(users)
         .leftJoin(user_profiles, eq(user_profiles.userId, users.id))
-        .where(eq(users.isDeleted, false))
+        .where(and(eq(users.isDeleted, false), eq(users.accountType, 'staff')))
         .orderBy(desc(users.createdAt), asc(users.id))
     const permissionRows = userRows.length
         ? await db
               .select({
-                  userId: userPermissions.userId,
+                  userId: staffUserPermissions.userId,
                   key: permissions.key,
               })
-              .from(userPermissions)
+              .from(staffUserPermissions)
               .innerJoin(
                   permissions,
-                  eq(permissions.id, userPermissions.permissionId),
+                  eq(permissions.id, staffUserPermissions.permissionId),
               )
-              .innerJoin(users, eq(users.id, userPermissions.userId))
+              .innerJoin(users, eq(users.id, staffUserPermissions.userId))
               .where(
                   and(
                       eq(users.isDeleted, false),
+                      eq(users.accountType, 'staff'),
                       inArray(permissions.key, configuredPermissionKeys),
                   ),
               )
-              .orderBy(asc(userPermissions.userId), asc(permissions.key))
+              .orderBy(asc(staffUserPermissions.userId), asc(permissions.key))
         : []
     const permissionKeysByUserId = new Map<string, Array<string>>()
 

@@ -1,7 +1,8 @@
 import { haveSamePermissionKeys } from '@/lib/Permissions/permissionCollections.ts'
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import { defaultUserPermissions, permissions } from '@/db/schema.ts'
+import { PUBLIC_PERMISSION_KEYS } from '@/config/permissions.config.ts'
 import type { ReplaceDefaultPermissionsInput } from '@/features/Admin/PermissionManagement/Types/permission-management-server-input.types.ts'
 import {
     prepareAuditContextService,
@@ -12,10 +13,42 @@ import { publishPermissionManagementUpdatedService } from '@/server/Realtime/pub
 import {
     hasSuperUserMutationAccessInTransaction,
     PERMISSION_MANAGEMENT_PERMISSION_ERROR,
+    requireSuperUserReadAccessService,
     resolvePermissionSelectionInTransaction,
 } from './permission-management-policy.service.ts'
 
 import { runBestEffortSideEffectService } from '@/server/Logging/side-effect.service.ts'
+
+export async function getPublicAccountDefaultsService(actorUserId: string) {
+    await requireSuperUserReadAccessService(actorUserId)
+
+    const [availablePermissions, defaultRows] = await Promise.all([
+        db
+            .select({
+                id: permissions.id,
+                key: permissions.key,
+                name: permissions.name,
+                description: permissions.description,
+            })
+            .from(permissions)
+            .where(inArray(permissions.key, PUBLIC_PERMISSION_KEYS))
+            .orderBy(asc(permissions.key)),
+        db
+            .select({ key: permissions.key })
+            .from(defaultUserPermissions)
+            .innerJoin(
+                permissions,
+                eq(permissions.id, defaultUserPermissions.permissionId),
+            )
+            .where(inArray(permissions.key, PUBLIC_PERMISSION_KEYS))
+            .orderBy(asc(permissions.key)),
+    ])
+
+    return {
+        permissions: availablePermissions,
+        defaultPermissionKeys: defaultRows.map(({ key }) => key),
+    }
+}
 
 export async function replaceDefaultPermissionsService(
     input: ReplaceDefaultPermissionsInput,
@@ -33,6 +66,17 @@ export async function replaceDefaultPermissionsService(
                 return {
                     success: false as const,
                     error: PERMISSION_MANAGEMENT_PERMISSION_ERROR,
+                }
+            }
+
+            if (
+                input.permissionKeys.some(
+                    (key) => !PUBLIC_PERMISSION_KEYS.includes(key),
+                )
+            ) {
+                return {
+                    success: false as const,
+                    error: 'Als Standardrechte sind nur Berechtigungen für öffentliche Konten zulässig.',
                 }
             }
 
@@ -86,7 +130,7 @@ export async function replaceDefaultPermissionsService(
                 ...auditContext,
                 action: 'admin.permissions.defaults.updated',
                 message:
-                    'Standardrechte für neue Benutzer wurden aktualisiert.',
+                    'Standardrechte für neue öffentliche Konten wurden aktualisiert.',
                 oldValues: { permissionKeys: previousPermissionKeys },
                 newValues: {
                     permissionKeys: permissionSelection.permissionKeys,

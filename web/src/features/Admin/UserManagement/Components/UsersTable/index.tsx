@@ -20,7 +20,7 @@ const getUserSearchValues = (user: UserManagementUser) => [
 
 export default function UsersTable(props: UsersTableProps) {
     const { language, t } = useTranslationStore()
-    const { state } = useUsersTableQuery()
+    const { state } = useUsersTableQuery(props.accountType)
     const columns = useUsersTableColumns(props)
     const searchLabel = t('admin.users.searchPlaceholder')
 
@@ -29,8 +29,16 @@ export default function UsersTable(props: UsersTableProps) {
             data={state.users}
             columns={columns}
             getRowId={(user) => user.id}
-            title={t('admin.users.tableTitle')}
-            description={t('admin.users.tableDescription')}
+            title={t(
+                props.accountType === 'staff'
+                    ? 'admin.staff.tableTitle'
+                    : 'admin.users.tableTitle',
+            )}
+            description={t(
+                props.accountType === 'staff'
+                    ? 'admin.staff.tableDescription'
+                    : 'admin.users.tableDescription',
+            )}
             icon={<UsersRound className="size-5" />}
             locale={getMarketplaceTableLocale(
                 language,

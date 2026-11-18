@@ -11,9 +11,9 @@ export const transactionAuthorizationSchema = {
         isDeleted: 'users.isDeleted',
     },
     permissions: { id: 'permissions.id', key: 'permissions.key' },
-    userPermissions: {
-        userId: 'userPermissions.userId',
-        permissionId: 'userPermissions.permissionId',
+    accountPermissions: {
+        userId: 'accountPermissions.userId',
+        permissionId: 'accountPermissions.permissionId',
     },
 }
 
@@ -27,7 +27,7 @@ export function createTransactionAuthorizationHarness() {
         events: [],
         beforeLock: async function () {},
     }
-    const { users, permissions, userPermissions } =
+    const { users, permissions, accountPermissions } =
         transactionAuthorizationSchema
     const transaction = {
         select(selection: Record<string, unknown>) {
@@ -90,7 +90,7 @@ export function createTransactionAuthorizationHarness() {
                         }
                     }
                     if (
-                        table !== userPermissions ||
+                        table !== accountPermissions ||
                         selection.key !== permissions.key
                     )
                         throw new Error('Unexpected permission source')
@@ -102,7 +102,8 @@ export function createTransactionAuthorizationHarness() {
                             if (
                                 joined !== permissions ||
                                 condition.column !== permissions.id ||
-                                condition.value !== userPermissions.permissionId
+                                condition.value !==
+                                    accountPermissions.permissionId
                             )
                                 throw new Error('Unexpected permission join')
                             return {
@@ -111,7 +112,7 @@ export function createTransactionAuthorizationHarness() {
                                 ) {
                                     if (
                                         predicate.column !==
-                                        userPermissions.userId
+                                        accountPermissions.userId
                                     )
                                         throw new Error(
                                             'Missing actor permission predicate',

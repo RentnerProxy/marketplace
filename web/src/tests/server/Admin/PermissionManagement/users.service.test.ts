@@ -68,9 +68,9 @@ vi.mock('@/db/schema.ts', function () {
             id: 'permissions.id',
             key: 'permissions.key',
         },
-        userPermissions: {
-            permissionId: 'userPermissions.permissionId',
-            userId: 'userPermissions.userId',
+        staffUserPermissions: {
+            permissionId: 'staffUserPermissions.permissionId',
+            userId: 'staffUserPermissions.userId',
         },
         user_profiles: {
             firstName: 'user_profiles.firstName',

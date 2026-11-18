@@ -9,8 +9,6 @@ export type UserManagementUser = {
     postalCode: string | null
     city: string | null
     isActive: boolean
-    createdByUserId: string | null
-    isDefaultUser: boolean
     isSuperUser: boolean
     isCurrentUser: boolean
     createdAt: string

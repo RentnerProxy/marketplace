@@ -1,6 +1,5 @@
 import { RefreshCw } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import DefaultPermissionsPanel from './Components/DefaultPermissionsPanel.tsx'
 import PermissionManagementTabs from './Components/PermissionManagementTabs.tsx'
 import PermissionPresetsPanel from './Components/PermissionPresetsPanel.tsx'
 import UserPermissionsPanel from './Components/UserPermissionsPanel.tsx'
@@ -34,13 +33,6 @@ export default function PermissionManagement() {
                             {t('admin.permissions.retry')}
                         </button>
                     </section>
-                ) : state.activeTab === 'defaults' ? (
-                    <DefaultPermissionsPanel
-                        permissions={state.assignablePermissions}
-                        isLoading={state.isLoadingOverview}
-                        state={state.defaults}
-                        handler={handler.defaults}
-                    />
                 ) : state.activeTab === 'presets' ? (
                     <PermissionPresetsPanel
                         permissions={state.assignablePermissions}

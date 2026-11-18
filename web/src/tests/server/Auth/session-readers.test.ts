@@ -16,9 +16,9 @@ const schema = {
     sessions: { id: 'sessions.id', userId: 'sessions.userId' },
     user_profiles: { userId: 'user_profiles.userId' },
     user_settings: { userId: 'user_settings.userId' },
-    userPermissions: {
-        userId: 'userPermissions.userId',
-        permissionId: 'userPermissions.permissionId',
+    accountPermissions: {
+        userId: 'accountPermissions.userId',
+        permissionId: 'accountPermissions.permissionId',
     },
     permissions: { id: 'permissions.id', key: 'permissions.key' },
 }
@@ -74,7 +74,7 @@ const database = {
             leftJoin: () => chain,
             where: vi.fn((condition: unknown) => {
                 state.conditions.push(condition)
-                if (selectedTable === schema.userPermissions) {
+                if (selectedTable === schema.accountPermissions) {
                     return services
                         .permissions()
                         .then((keys) => keys.map((key) => ({ key })))

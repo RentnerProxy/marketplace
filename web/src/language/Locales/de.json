@@ -55,7 +55,12 @@
         "user": "User",
         "userManagement": "Userverwaltung",
         "auditLogs": "Audit Logs",
-        "backups": "Backups"
+        "backups": "Backups",
+        "publicAccounts": "Öffentliche Konten",
+        "accounts": "Konten",
+        "registrationDefaults": "Standardrechte",
+        "staff": "Team",
+        "staffAccounts": "Teamkonten"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "Dieses Konto ist inaktiv. Wende dich an den Support.",
             "expired": "Deine Anmeldung ist abgelaufen. Bitte starte erneut.",
             "link_failed": "Der Anbieter konnte nicht verknüpft werden. Melde dich an und versuche es in den Sicherheitseinstellungen erneut."
+        },
+        "staffInvitation": {
+            "title": "Teameinladung",
+            "description": "Lege dein Passwort fest, um dein Teamkonto einzurichten.",
+            "accept": "Einladung annehmen",
+            "checking": "Einladung wird geladen …",
+            "invalid": "Der Einladungslink ist ungültig, abgelaufen oder wurde bereits verwendet. Bitte fordere im Team eine neue Einladung an.",
+            "complete": "Dein Teamkonto ist eingerichtet. Du kannst dich jetzt anmelden.",
+            "failed": "Die Einladung konnte gerade nicht angenommen werden. Versuche es erneut."
         }
     },
     "safeDelete": {
@@ -622,14 +636,14 @@
             "restoreWarningPrivateBackgroundCoverage": "Historische Archive mit Manifest v2 setzen private Hintergrundbilder nicht auf den Sicherungszeitpunkt zurück: vorhandene Bilder bleiben erhalten, nur fehlende werden ergänzt. Archive mit Manifest v3 stellen den vollständigen Bildbestand wieder her, auch wenn er leer war."
         },
         "permissions": {
-            "title": "Rechteverwaltung",
-            "description": "Standardrechte, Rechte-Presets und individuelle Benutzerrechte zentral verwalten.",
+            "title": "Teamrechte",
+            "description": "Verwalte individuelle Teamrechte und wiederverwendbare Presets.",
             "overviewLoadError": "Die Rechteverwaltung konnte nicht geladen werden.",
             "retry": "Erneut versuchen",
             "tabs": {
                 "defaults": "Standardrechte",
                 "presets": "Presets",
-                "users": "Benutzerrechte"
+                "users": "Teamrechte"
             },
             "catalog": {
                 "adminDashboard": {
@@ -637,8 +651,8 @@
                     "description": "Darf das Admin Dashboard öffnen."
                 },
                 "userManagement": {
-                    "name": "Userverwaltung",
-                    "description": "Darf Benutzerkonten verwalten."
+                    "name": "Öffentliche Konten",
+                    "description": "Darf öffentlich registrierte Konten verwalten."
                 },
                 "systemSettings": {
                     "name": "Systemeinstellungen",
@@ -671,12 +685,13 @@
                 "superUser": "Kritisches Recht"
             },
             "defaults": {
-                "title": "Standardrechte für neue Benutzer",
-                "description": "Diese Rechte werden automatisch zugewiesen, sobald ein neuer Benutzer angelegt wird.",
-                "hint": "Änderungen gelten nur für künftig angelegte Benutzer. Bestehende Benutzerrechte bleiben unverändert; das Superuser-Recht kann nie automatisch vergeben werden.",
+                "title": "Standardrechte für öffentliche Konten",
+                "description": "Diese Rechte werden bei Abschluss einer öffentlichen Registrierung vergeben.",
+                "hint": "Wenn du alle Standardrechte entfernst, können sich neu registrierte Konten ohne Zugriffsrecht nicht anmelden.",
                 "save": "Standardrechte speichern",
                 "saved": "Standardrechte wurden gespeichert.",
-                "saveError": "Standardrechte konnten nicht gespeichert werden."
+                "saveError": "Standardrechte konnten nicht gespeichert werden.",
+                "loadError": "Die Standardrechte konnten nicht geladen werden."
             },
             "presets": {
                 "createTitle": "Preset anlegen",
@@ -738,10 +753,10 @@
         },
         "users": {
             "deleteQuestion": "Bist du sicher, dass du den Benutzer \"{{username}}\" löschen willst?",
-            "description": "Benutzer anlegen und bestehende Accounts verwalten.",
-            "title": "Userverwaltung",
-            "tableTitle": "Benutzer",
-            "tableDescription": "Alle angelegten Accounts im System.",
+            "description": "Verwalte öffentlich registrierte Marketplace-Konten.",
+            "title": "Öffentliche Konten",
+            "tableTitle": "Registrierte Konten",
+            "tableDescription": "Konten aus der öffentlichen Registrierung.",
             "createTitle": "Benutzer anlegen",
             "createDescription": "Username und E-Mail erfassen, Einladungs-E-Mail wird versendet.",
             "editTitle": "Benutzer bearbeiten",
@@ -796,6 +811,30 @@
             "passwordResetAriaLabel": "Passwort für Benutzer zurücksetzen",
             "deleteAriaLabel": "Benutzer löschen",
             "closeModalAriaLabel": "Modal schließen"
+        },
+        "staff": {
+            "title": "Teamkonten",
+            "description": "Lade dein Team ein und verwalte interne Konten.",
+            "tableTitle": "Teammitglieder",
+            "tableDescription": "Aktive und deaktivierte Teamkonten.",
+            "inviteTitle": "Teammitglied einladen",
+            "inviteDescription": "Lege die Startrechte fest. Die eingeladene Person richtet ihr Konto über den Link in der E-Mail ein.",
+            "invitePermissions": "Startrechte",
+            "invite": "Einladung senden",
+            "inviteSent": "Die Einladungs-E-Mail wurde zum Versand eingeplant.",
+            "pendingTitle": "Offene Einladungen",
+            "noInvitations": "Es gibt keine offenen Einladungen.",
+            "expires": "Gültig bis {{date}}",
+            "revoke": "Widerrufen",
+            "revokeQuestion": "Einladung für {{email}} widerrufen?",
+            "revoked": "Die Einladung wurde widerrufen.",
+            "revokeError": "Die Einladung konnte nicht widerrufen werden.",
+            "loadError": "Die Einladungen oder Teamrechte konnten nicht geladen werden.",
+            "inviteErrors": {
+                "identityInUse": "Der Benutzername oder die E-Mail-Adresse ist bereits vergeben oder für eine offene Einladung reserviert.",
+                "invalidPermissions": "Wähle mindestens ein Recht, das den Zugriff auf eine Seite erlaubt.",
+                "deliveryFailed": "Die Einladung konnte nicht zum Versand eingeplant werden."
+            }
         }
     },
     "maintenance": {

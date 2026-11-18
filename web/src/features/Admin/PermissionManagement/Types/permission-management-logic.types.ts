@@ -76,7 +76,6 @@ type PermissionManagementState = {
     presets: Array<PermissionPreset>
     isLoadingOverview: boolean
     isOverviewError: boolean
-    defaults: DefaultPermissionsState
     permissionPresets: PermissionPresetsState
     managedUsers: ManagedUserPermissionsState
 }
@@ -84,7 +83,6 @@ type PermissionManagementState = {
 type PermissionManagementHandler = {
     handleTabChange: (tab: PermissionManagementTab) => void
     handleRetryOverview: () => void
-    defaults: DefaultPermissionsHandler
     permissionPresets: PermissionPresetsHandler
     managedUsers: ManagedUserPermissionsHandler
 }

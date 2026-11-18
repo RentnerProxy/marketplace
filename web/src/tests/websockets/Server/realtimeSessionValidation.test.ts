@@ -56,9 +56,9 @@ const schema = {
         isDeleted: 'users.isDeleted',
     },
     permissions: { id: 'permissions.id', key: 'permissions.key' },
-    userPermissions: {
-        permissionId: 'userPermissions.permissionId',
-        userId: 'userPermissions.userId',
+    accountPermissions: {
+        permissionId: 'accountPermissions.permissionId',
+        userId: 'accountPermissions.userId',
     },
 }
 const row = {
@@ -92,7 +92,7 @@ const select = vi.fn(function () {
 
         ...createLazyTestQuery(() =>
             (async function () {
-                if (table !== schema.userPermissions)
+                if (table !== schema.accountPermissions)
                     throw new Error(
                         'Unexpected unbounded synthetic session query',
                     )
@@ -106,7 +106,7 @@ const select = vi.fn(function () {
                     ? [{ ...row }]
                     : []
             }
-            if (table === schema.userPermissions) {
+            if (table === schema.accountPermissions) {
                 await beforePermissions()
                 return state.permissions.map((key) => ({ key }))
             }

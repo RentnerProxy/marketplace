@@ -23,14 +23,14 @@ describe('Required audit for default permission changes', function () {
         )
         await expect(
             replaceDefaultPermissionsService(
-                { permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD] },
+                { permissionKeys: [] },
                 ADMIN_ACTOR_ID,
             ),
         ).resolves.toEqual({
             success: true,
             changed: true,
             previousPermissionKeys: [PERMISSIONS.USER_DASHBOARD],
-            permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD],
+            permissionKeys: [],
         })
         expect(adminAuditDb.state.events[1]).toMatchObject({
             table: 'users',
@@ -46,12 +46,12 @@ describe('Required audit for default permission changes', function () {
         )
         expect(adminAuditExternal.publishPermissions).toHaveBeenCalledTimes(1)
     })
-    it('rolls default deletion and insertion back on audit failure', async function () {
+    it('rolls default deletion back on audit failure', async function () {
         const before = structuredClone(adminAuditDb.state.rows)
         adminAuditDb.state.failTable = 'auditLogs'
         await expect(
             replaceDefaultPermissionsService(
-                { permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD] },
+                { permissionKeys: [] },
                 ADMIN_ACTOR_ID,
             ),
         ).rejects.toThrow('Injected persistence failure')
@@ -61,6 +61,7 @@ describe('Required audit for default permission changes', function () {
     it.each([
         { permissionKeys: [PERMISSIONS.USER_DASHBOARD] },
         { permissionKeys: [PERMISSIONS.ADMIN_SUPER_USER] },
+        { permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD] },
         { permissionKeys: ['unknown.permission'] },
     ])(
         'keeps the no-op or rejected selection %j without audit writes',

@@ -19,13 +19,21 @@ export function createBrowserTokenHandoff(options: BrowserTokenHandoffOptions) {
             for (const listener of listeners) listener()
         }
 
-        function captureLocation() {
-            if (!options.isActivePath(browser.location.pathname)) {
+        function captureLocation(source: 'initial' | 'navigation') {
+            const { pathname, hash, search } = browser.location
+            if (!options.isActivePath(pathname)) {
                 publish({ status: 'inactive' })
                 return
             }
-            const next = options.parseFragment(browser.location.hash)
-            if (browser.location.hash || browser.location.search) {
+            if (
+                source === 'navigation' &&
+                !search &&
+                options.shouldCaptureFragmentChange?.(hash) === false
+            )
+                return
+
+            const next = options.parseFragment(hash)
+            if (hash || search) {
                 try {
                     replaceState(
                         browser.history.state,
@@ -60,13 +68,17 @@ export function createBrowserTokenHandoff(options: BrowserTokenHandoffOptions) {
                 }
             },
         }
-        captureLocation()
+        captureLocation('initial')
         handoffs.set(browser, handoff)
-        browser.addEventListener('popstate', captureLocation, { capture: true })
+        browser.addEventListener(
+            'popstate',
+            () => captureLocation('navigation'),
+            { capture: true },
+        )
         browser.addEventListener(
             'hashchange',
             function () {
-                if (browser.location.hash) captureLocation()
+                if (browser.location.hash) captureLocation('navigation')
             },
             { capture: true },
         )

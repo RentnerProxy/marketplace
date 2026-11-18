@@ -30,7 +30,7 @@ const adminAuditSchema = {
         'isActive',
         'isDeleted',
         'isTwoFactorEnabled',
-        'createdByUserId',
+        'accountType',
         'createdAt',
     ]),
     user_profiles: createTestTable('user_profiles', [
@@ -44,9 +44,30 @@ const adminAuditSchema = {
         'profileImageUpdatedAt',
     ]),
     permissions: createTestTable('permissions', ['id', 'key']),
-    userPermissions: createTestTable('userPermissions', [
+    staffUserPermissions: createTestTable('staffUserPermissions', [
         'userId',
         'permissionId',
+    ]),
+    accountPermissions: createTestTable('accountPermissions', [
+        'userId',
+        'permissionId',
+    ]),
+    publicUserPermissions: createTestTable('publicUserPermissions', [
+        'userId',
+        'permissionId',
+    ]),
+    staffInvitations: createTestTable('staffInvitations', [
+        'id',
+        'email',
+        'username',
+        'expiresAt',
+        'invitedByUserId',
+        'permissionKeys',
+        'tokenHash',
+    ]),
+    staffAccounts: createTestTable('staffAccounts', [
+        'userId',
+        'invitedByUserId',
     ]),
     defaultUserPermissions: createTestTable('defaultUserPermissions', [
         'permissionId',
@@ -124,6 +145,18 @@ function matches(
         return typeof left === 'string' && left.toLowerCase() === right
     if (condition.kind === 'eq') return left === right
     if (condition.kind === 'ne') return left !== right
+    if (
+        condition.kind === 'gt' &&
+        left instanceof Date &&
+        right instanceof Date
+    )
+        return left > right
+    if (
+        condition.kind === 'lte' &&
+        left instanceof Date &&
+        right instanceof Date
+    )
+        return left <= right
     if (condition.kind === 'inArray' && Array.isArray(right))
         return right.includes(left)
     throw new Error('Unsupported test condition')
@@ -182,7 +215,14 @@ function createAdminAuditTestDatabase() {
                 if (!source) throw new Error('Missing test table')
                 const name = source.tableName
                 if (mode === 'select') {
-                    let contexts = rows[name].map((row) => ({ [name]: row }))
+                    const selectedRows =
+                        name === 'accountPermissions'
+                            ? [
+                                  ...rows.staffUserPermissions,
+                                  ...rows.publicUserPermissions,
+                              ]
+                            : rows[name]
+                    let contexts = selectedRows.map((row) => ({ [name]: row }))
                     for (const join of joins) {
                         contexts = contexts.flatMap((context) =>
                             rows[join.table.tableName]
@@ -294,7 +334,7 @@ function createAdminAuditTestDatabase() {
                         if (name === 'users') {
                             for (const child of [
                                 'user_profiles',
-                                'userPermissions',
+                                'staffUserPermissions',
                                 'passwordResetTokens',
                                 'sessions',
                                 'trustedDevices',
@@ -428,7 +468,7 @@ function createAdminAuditTestDatabase() {
                 passwordHash: 'original-target-password-hash',
                 isActive: true,
                 isDeleted: false,
-                createdByUserId: ADMIN_ACTOR_ID,
+                accountType: 'staff',
                 createdAt: new Date('2026-01-01T00:00:00.000Z'),
             },
             {
@@ -438,7 +478,7 @@ function createAdminAuditTestDatabase() {
                 passwordHash: 'original-actor-password-hash',
                 isActive: true,
                 isDeleted: false,
-                createdByUserId: null,
+                accountType: 'staff',
                 createdAt: new Date('2026-01-01T00:00:00.000Z'),
             },
         ]
@@ -456,7 +496,7 @@ function createAdminAuditTestDatabase() {
             id: 'permission:' + key,
             key,
         }))
-        state.rows.userPermissions = [
+        state.rows.staffUserPermissions = [
             {
                 userId: ADMIN_ACTOR_ID,
                 permissionId: 'permission:' + PERMISSIONS.ADMIN_SUPER_USER,
@@ -537,6 +577,9 @@ export const adminAuditExternal = {
 export function installAdminAuditTestMocks() {
     vi.mock('@/db', () => ({ db: adminAuditDb.db }))
     vi.mock('@/db/schema.ts', () => adminAuditSchema)
+    vi.mock('@/db/Schema/accounts.ts', () => ({
+        staffInvitations: adminAuditSchema.staffInvitations,
+    }))
     vi.mock('@/db/Schema/users.ts', () => ({
         users: adminAuditSchema.users,
         user_profiles: adminAuditSchema.user_profiles,
@@ -548,6 +591,8 @@ export function installAdminAuditTestMocks() {
         and: (...values: unknown[]) => ({ kind: 'and', values }),
         or: (...values: unknown[]) => ({ kind: 'or', values }),
         eq: (...values: unknown[]) => ({ kind: 'eq', values }),
+        gt: (...values: unknown[]) => ({ kind: 'gt', values }),
+        lte: (...values: unknown[]) => ({ kind: 'lte', values }),
         ne: (...values: unknown[]) => ({ kind: 'ne', values }),
         inArray: (...values: unknown[]) => ({ kind: 'inArray', values }),
         asc: (value: unknown) => value,

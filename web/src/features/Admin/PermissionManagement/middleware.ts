@@ -1,7 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { requirePermissionService } from '@/server/Auth/authorization.service.ts'
-import { replaceDefaultPermissionsService } from '@/server/Admin/PermissionManagement/defaults.service.ts'
+import {
+    getPublicAccountDefaultsService,
+    replaceDefaultPermissionsService,
+} from '@/server/Admin/PermissionManagement/defaults.service.ts'
 import { getPermissionManagementOverviewService } from '@/server/Admin/PermissionManagement/overview.service.ts'
 import {
     createPermissionPresetService,
@@ -30,6 +33,15 @@ export const getPermissionManagementUsersHandler = createServerFn({
 }).handler(async function () {
     const access = await requirePermissionService(PERMISSIONS.ADMIN_SUPER_USER)
     return getPermissionManagementUsersService(access.userId)
+})
+
+export const getPublicAccountDefaultsHandler = createServerFn({
+    method: 'GET',
+}).handler(async () => {
+    const { userId } = await requirePermissionService(
+        PERMISSIONS.ADMIN_SUPER_USER,
+    )
+    return getPublicAccountDefaultsService(userId)
 })
 
 export const replaceDefaultPermissionsHandler = createServerFn({

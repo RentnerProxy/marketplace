@@ -12,7 +12,8 @@ import {
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 import { pendingRegistrations } from '@/db/Schema/registration.ts'
 import { createPublicAccountInTransactionService } from '@/server/Auth/Registration/account.service.ts'
-import { userPermissions } from '@/db/Schema/permissions.ts'
+import { publicAccounts } from '@/db/Schema/accounts.ts'
+import { publicUserPermissions } from '@/db/Schema/permissions.ts'
 import { user_profiles, users } from '@/db/Schema/users.ts'
 import { socialAccounts } from '@/db/Schema/socialAuth.ts'
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
@@ -35,17 +36,21 @@ function transactionFixture(selections: Array<Array<{ id: string }>>) {
     })
     const transaction = {
         execute,
-        select: () => ({
-            from: () => ({
-                where: (query: SQL) => ({
-                    limit: async () => {
-                        queries.push(query)
-                        order.push('select')
-                        return selections.shift() ?? []
-                    },
-                }),
-            }),
-        }),
+        select: () => {
+            const queryChain = {
+                from: () => queryChain,
+                innerJoin: () => queryChain,
+                where: (query: SQL) => {
+                    queries.push(query)
+                    order.push('select')
+                    const queryChainResult = selections.shift() ?? []
+                    return Object.assign(Promise.resolve(queryChainResult), {
+                        limit: () => Promise.resolve(queryChainResult),
+                    })
+                },
+            }
+            return queryChain
+        },
         insert: (table: unknown) => ({
             values: (values: unknown) => {
                 inserts.push({ table, values })
@@ -147,9 +152,10 @@ describe('Public registration', () => {
         ])
     })
 
-    it('grants only the dashboard permission and adds profile and verified identity atomically', async () => {
+    it('grants the configured public defaults and adds profile and verified identity atomically', async () => {
         const fixture = transactionFixture([
             [{ id: 'admin' }],
+            [],
             [],
             [],
             [{ id: 'dashboard-permission' }],
@@ -167,25 +173,35 @@ describe('Public registration', () => {
         expect(result?.userId).toBe('new-user')
         expect(fixture.inserts.map((entry) => entry.table)).toEqual([
             users,
+            publicAccounts,
             user_profiles,
-            userPermissions,
+            publicUserPermissions,
             socialAccounts,
         ])
-        expect(fixture.inserts[2]?.values).toEqual({
-            userId: 'new-user',
-            permissionId: 'dashboard-permission',
+        expect(fixture.inserts[0]?.values).toMatchObject({
+            accountType: 'public',
         })
+        expect(fixture.inserts[3]?.values).toEqual([
+            {
+                userId: 'new-user',
+                permissionId: 'dashboard-permission',
+            },
+        ])
     })
 
-    it('refuses registration when least-privilege permission is unavailable', async () => {
-        const fixture = transactionFixture([[{ id: 'admin' }], [], []])
+    it('does not grant permissions when public defaults are empty', async () => {
+        const fixture = transactionFixture([[{ id: 'admin' }], [], [], []])
         await expect(
             createPublicAccountInTransactionService(fixture.transaction, {
                 username: 'person',
                 email: 'person@example.test',
                 passwordHash: 'hashed',
             }),
-        ).rejects.toThrow('permission')
-        expect(fixture.inserts).toHaveLength(0)
+        ).resolves.toMatchObject({ userId: 'new-user' })
+        expect(fixture.inserts.map(({ table }) => table)).toEqual([
+            users,
+            publicAccounts,
+            user_profiles,
+        ])
     })
 })

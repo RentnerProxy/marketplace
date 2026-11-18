@@ -9,7 +9,6 @@ import {
     stubTestGlobal,
 } from '@/tests/shared/bunTestStubs.ts'
 import type { UpdateUserFormValues } from '@/features/Admin/UserManagement/Types/user-management-form.types.ts'
-import type { CreateUserPanelProps } from '@/features/Admin/UserManagement/Types/user-management-component-props.types.ts'
 
 const input = ({
     value,
@@ -36,7 +35,6 @@ vi.mock('@/shared/Images/Hooks/useResolvedImageSrc.ts', () => ({
         handler: { handleImageError: imageError },
     }),
 }))
-import CreateUserPanel from '@/features/Admin/UserManagement/Components/CreateUserPanel.tsx'
 import GeneralUserInfo from '@/features/Admin/UserManagement/Components/UserEditModal/Components/GeneralUserInfo.tsx'
 import Header from '@/features/Admin/UserManagement/Components/UserEditModal/Components/Header.tsx'
 import Footer from '@/features/Admin/UserManagement/Components/UserEditModal/Components/Footer.tsx'
@@ -192,73 +190,6 @@ describe('user management components', () => {
         expect(onClose).toHaveBeenCalledTimes(2)
     })
 
-    it('renders creation fields and delegates changes and submission to the hook', () => {
-        const handleSubmit = vi.fn()
-        const changes = vi.fn()
-        const form = {
-            handleSubmit,
-            Field({
-                name,
-                children,
-            }: {
-                name: string
-                children: (field: unknown) => ReactNode
-            }) {
-                return children({
-                    name,
-                    state: {
-                        value:
-                            name === 'username' ? 'Ada' : 'ada@example.invalid',
-                    },
-                    handleChange: changes,
-                })
-            },
-        } as unknown as CreateUserPanelProps['form']
-        const tree = CreateUserPanel({
-            form,
-            isCreatingUser: false,
-            onSubmit: handleSubmit,
-        })
-        expect(renderToStaticMarkup(tree)).toContain('admin.users.create')
-        const html = renderToStaticMarkup(
-            CreateUserPanel({
-                form,
-                isCreatingUser: true,
-                onSubmit: handleSubmit,
-            }),
-        )
-        expect(html).toContain('common.saving')
-        expect(html).toContain('disabled=""')
-        const formNode = elements(tree).find(
-            (element) => element.type === 'form',
-        )
-        const preventDefault = vi.fn()
-        const stopPropagation = vi.fn()
-        invoke(formNode, 'onSubmit', {
-            preventDefault,
-            stopPropagation,
-        })
-        expect(handleSubmit).toHaveBeenCalledWith({
-            preventDefault,
-            stopPropagation,
-        })
-        for (const field of elements(tree).filter(
-            (element) => typeof element.props.children === 'function',
-        )) {
-            const child = (
-                field.props.children as (
-                    value: unknown,
-                ) => ReactElement<Record<string, unknown>>
-            )({
-                name: field.props.name,
-                state: { value: '' },
-                handleChange: changes,
-            })
-            invoke(child, 'onValueChange', 'updated')
-        }
-        expect(changes).toHaveBeenCalledTimes(2)
-    })
-
     it('renders resolved avatar images with an accessible label and image recovery callback', () => {
         const tree = UserAvatar({
             userId: 'member',
@@ -285,8 +216,6 @@ describe('user management components', () => {
             isCurrentUser: false,
             isSuperUser: false,
             permissions: [],
-            createdByUserId: null,
-            isDefaultUser: false,
             createdAt: '2026-01-01T00:00:00Z',
             profileImageVersion: null,
         }

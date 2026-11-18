@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
 import type {
     UserManagementPermission,
     UserManagementUser,
@@ -12,6 +13,7 @@ export type UsersTableQueryReturn = {
 }
 
 export type UsersTableProps = {
+    accountType: AccountType
     availablePermissions: Array<UserManagementPermission>
     isDeletingUser: boolean
     isTogglingUserActive: boolean
@@ -25,7 +27,7 @@ export type UsersTableProps = {
 
 export type UserTableActionsProps = Omit<
     UsersTableProps,
-    'availablePermissions'
+    'availablePermissions' | 'accountType'
 > & {
     user: UserManagementUser
 }

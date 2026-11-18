@@ -1,8 +1,4 @@
-import type {
-    CreateUserForm,
-    UpdateUserFormValues,
-} from './user-management-form.types.ts'
-import type { SubmitEvent } from 'react'
+import type { UpdateUserFormValues } from './user-management-form.types.ts'
 
 import type {
     UserManagementPermission,
@@ -11,20 +7,17 @@ import type {
 
 type UserManagementState = {
     availablePermissions: Array<UserManagementPermission>
-    isCreatingUser: boolean
     editForm: UpdateUserFormValues
     isEditModalOpen: boolean
     deleteTargetUser: UserManagementUser | null
     isUpdatingUser: boolean
     isDeletingUser: boolean
     isTogglingUserActive: boolean
-    isLoadingPermissions: boolean
     isResendingPasswordReset: boolean
     canManageSuperUsers: boolean
 }
 
 type UserManagementHandler = {
-    handleCreateUserSubmit: (event: SubmitEvent<HTMLFormElement>) => void
     handleOpenEditModal: (user: UserManagementUser) => void
     handleCloseEditModal: () => void
     handleUpdateUser: (values: UpdateUserFormValues) => void
@@ -38,9 +31,4 @@ type UserManagementHandler = {
 export type UserManagementLogicReturn = {
     state: UserManagementState
     handler: UserManagementHandler
-    form: CreateUserForm
-}
-
-export type UseCreateUserFormParams = {
-    onCreateResponse: () => void
 }

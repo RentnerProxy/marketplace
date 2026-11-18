@@ -1,4 +1,4 @@
-export type PermissionManagementTab = 'defaults' | 'presets' | 'users'
+export type PermissionManagementTab = 'presets' | 'users'
 
 export type PermissionManagementPermission = {
     id: string
@@ -16,9 +16,13 @@ export type PermissionPreset = {
     updatedAt: string
 }
 
-export type PermissionManagementOverview = {
+export type PublicAccountDefaults = {
     permissions: Array<PermissionManagementPermission>
     defaultPermissionKeys: Array<string>
+}
+
+export type PermissionManagementOverview = {
+    permissions: Array<PermissionManagementPermission>
     presets: Array<PermissionPreset>
 }
 

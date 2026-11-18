@@ -16,6 +16,7 @@ export function normalizeUserProfileUpdate(data: UpdateUserProfileInput) {
         success: true as const,
         input: {
             id: data.id,
+            accountType: data.accountType,
             username,
             email,
             profile: {

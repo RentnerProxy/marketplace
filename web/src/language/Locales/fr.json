@@ -55,7 +55,12 @@
         "navigation": "Navigation",
         "systemSettings": "Paramètres système",
         "userManagement": "Gestion des utilisateurs",
-        "auditLogs": "Journaux d’audit"
+        "auditLogs": "Journaux d’audit",
+        "publicAccounts": "Comptes publics",
+        "accounts": "Comptes",
+        "registrationDefaults": "Autorisations à l’inscription",
+        "staff": "Équipe",
+        "staffAccounts": "Comptes de l’équipe"
     },
     "auth": {
         "experience": {
@@ -212,6 +217,15 @@
             "inactive": "Ce compte est inactif. Contactez l’assistance.",
             "expired": "La connexion a expiré. Recommencez.",
             "link_failed": "L’association a échoué. Connectez-vous et réessayez dans les paramètres de sécurité."
+        },
+        "staffInvitation": {
+            "title": "Invitation à rejoindre l’équipe",
+            "description": "Choisissez un mot de passe pour activer votre compte d’équipe.",
+            "accept": "Accepter l’invitation",
+            "checking": "Chargement de l’invitation…",
+            "invalid": "Ce lien est invalide, a expiré ou a déjà été utilisé. Demandez une nouvelle invitation à votre équipe.",
+            "complete": "Votre compte d’équipe est prêt. Vous pouvez vous connecter.",
+            "failed": "Impossible d’accepter l’invitation pour le moment. Réessayez."
         }
     },
     "safeDelete": {

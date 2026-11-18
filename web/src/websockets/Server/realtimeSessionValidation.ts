@@ -1,6 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { permissions, sessions, userPermissions, users } from '@/db/schema.ts'
+import {
+    permissions,
+    sessions,
+    accountPermissions,
+    users,
+} from '@/db/schema.ts'
 import { SESSION_COOKIE_NAME } from '@/config/session.config.ts'
 import { getSessionTokenCandidateService } from '@/server/Auth/session-token.service.ts'
 import type { RealtimeValidationState } from '@/websockets/Types/realtime-validation.types.ts'
@@ -88,12 +93,12 @@ async function getRealtimeSessionData(
 
     const permissionRows = await db
         .select({ key: permissions.key })
-        .from(userPermissions)
+        .from(accountPermissions)
         .innerJoin(
             permissions,
-            eq(permissions.id, userPermissions.permissionId),
+            eq(permissions.id, accountPermissions.permissionId),
         )
-        .where(eq(userPermissions.userId, session.userId))
+        .where(eq(accountPermissions.userId, session.userId))
 
     const expiresAt = Math.min(session.expiresAt.getTime(), absoluteDeadline)
     if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) return null

@@ -2,7 +2,7 @@ import { createPasswordResetLinkService } from '@/server/Auth/PasswordReset/link
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { passwordResetTokens, users } from '@/db/schema.ts'
-import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { getAccountManagementPermission } from '@/lib/UserManagement/accountManagementPermission.ts'
 import {
     prepareAuditContextService,
     publishCommittedAuditLogService,
@@ -41,7 +41,12 @@ export async function resetUserPasswordService(data: ResetUserPasswordInput) {
                     isDeleted: users.isDeleted,
                 })
                 .from(users)
-                .where(eq(users.id, data.id))
+                .where(
+                    and(
+                        eq(users.id, data.id),
+                        eq(users.accountType, data.accountType),
+                    ),
+                )
                 .limit(1)
                 .for('update')
             const user = foundUsers.at(0)
@@ -70,7 +75,7 @@ export async function resetUserPasswordService(data: ResetUserPasswordInput) {
                 !currentUserPermissionKeys ||
                 !hasPermission(
                     currentUserPermissionKeys,
-                    PERMISSIONS.ADMIN_USER_MANAGEMENT,
+                    getAccountManagementPermission(data.accountType),
                 )
             ) {
                 return {
