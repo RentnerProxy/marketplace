@@ -278,7 +278,25 @@ test('Bun and Docker toolchain pins agree and actions are maintained through Dep
         .parse(Bun.YAML.parse(await read('.github/dependabot.yml')))
     expect(
         config.updates.map((entry) => entry['package-ecosystem']).toSorted(),
-    ).toEqual(['bun', 'cargo', 'docker', 'docker-compose', 'github-actions'])
+    ).toEqual([
+        'bun',
+        'cargo',
+        'docker',
+        'docker-compose',
+        'github-actions',
+        'rust-toolchain',
+    ])
+    const bun = config.updates.find(
+        (entry) => entry['package-ecosystem'] === 'bun',
+    )
+    expect(bun?.directories).toEqual([
+        '/',
+        '/.github/scripts/ci/fixtures/app-candidate/*',
+    ])
+    const rustToolchain = config.updates.find(
+        (entry) => entry['package-ecosystem'] === 'rust-toolchain',
+    )
+    expect(rustToolchain?.directories).toEqual(['/', '/core'])
     const docker = config.updates.find(
         (entry) => entry['package-ecosystem'] === 'docker',
     )
@@ -301,6 +319,7 @@ test('Bun and Docker toolchain pins agree and actions are maintained through Dep
     const actions = config.updates.find(
         (entry) => entry['package-ecosystem'] === 'github-actions',
     )
+    expect(actions?.directories).toEqual(['/', '/.github/actions/*'])
     expect(actions?.groups).toEqual({
         'github-actions-minor-and-patch': {
             'applies-to': 'version-updates',
