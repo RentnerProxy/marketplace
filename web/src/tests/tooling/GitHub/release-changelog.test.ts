@@ -10,6 +10,15 @@ import {
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { nativeToolPath } from '../../../lib/Core/native-tool.ts'
+
+const validator = fileURLToPath(
+    new URL(
+        '../../../../../.github/scripts/release/release-identity.ts',
+        import.meta.url,
+    ),
+)
 
 test
     .skipIf(process.platform === 'win32')
@@ -52,12 +61,22 @@ fi
 `,
             )
             await chmod(join(bin, 'gh'), 0o755)
+            await writeFile(
+                join(bin, 'bun'),
+                '#!/bin/sh\nshift 2\nexec "$FIXTURE_BUN" --no-env-file "$FIXTURE_VALIDATOR" "$@"\n',
+                { mode: 0o700 },
+            )
             const child = Bun.spawn(
                 ['bash', '.github/scripts/release/publish-changelog.sh'],
                 {
                     cwd: directory,
                     env: {
                         ...process.env,
+                        MARKETPLACE_TOOLING_BIN: nativeToolPath(
+                            'marketplace-tooling',
+                        ),
+                        FIXTURE_BUN: process.execPath,
+                        FIXTURE_VALIDATOR: validator,
                         RUNNER_TEMP: directory,
                         RELEASE_TAG: 'v1.0.0-alpha.1',
                         GITHUB_REPOSITORY: 'RentnerProxy/marketplace',

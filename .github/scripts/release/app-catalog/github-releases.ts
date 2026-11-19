@@ -1,10 +1,10 @@
-import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import {
     packageReleaseAssets,
     parseCatalog,
     type CatalogRelease,
 } from '../../../../contracts/v1/index.ts'
+import { verifyNativeArtifactStream } from '../../../../web/src/lib/Core/native-tool.ts'
 import {
     evidenceLimit,
     fileIdentity,
@@ -14,7 +14,6 @@ import {
     catalogBranch,
     type GitHubHttp,
     oid,
-    readResponse,
     repositoryPath,
 } from './github-http.ts'
 
@@ -117,17 +116,16 @@ async function verifyPublicBytes(http: GitHubHttp, expected: Asset) {
         // eslint-disable-next-line no-await-in-loop -- check each redirect before making the next request
         const response = await http.send(url, { credentials: 'omit' }, 90_000)
         if (response.status === 200) {
-            const hash = createHash('sha256')
+            if (!response.body)
+                throw new Error('GitHub response is missing its body')
             // eslint-disable-next-line no-await-in-loop -- stream the single final response
-            const size = await readResponse(
-                response,
-                expected.sizeBytes,
-                (chunk) => hash.update(chunk),
+            const result = await verifyNativeArtifactStream(
+                response.body,
+                expected,
             )
-            if (
-                size !== expected.sizeBytes ||
-                hash.digest('hex') !== expected.sha256
-            )
+            if (result === 'length-exceeded')
+                throw new Error('GitHub response exceeds the permitted length')
+            if (result !== 'verified')
                 throw new Error(
                     'Public GitHub release asset bytes differ from the catalog',
                 )

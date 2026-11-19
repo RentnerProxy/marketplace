@@ -3,10 +3,10 @@ import { mkdtemp, rm, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { promisify } from 'node:util'
 import { afterAll, mock } from 'bun:test'
+import { verifyTestDatabaseTarget } from '@/scripts/test-database-url.ts'
 
 const mkdtempAsync = promisify(mkdtemp)
 const rmAsync = promisify(rm)
-const TEST_DATABASE_NAME_PATTERN = /(?:^|[_-])test(?:[_-]|$)/i
 
 function getRequiredTestDatabaseUrl() {
     const value = process.env.TEST_DATABASE_URL?.trim()
@@ -25,27 +25,7 @@ function getRequiredTestDatabaseUrl() {
         throw new Error('TEST_DATABASE_URL ist keine gültige URL.')
     }
 
-    if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
-        throw new Error(
-            'TEST_DATABASE_URL muss eine PostgreSQL-Verbindungs-URL sein.',
-        )
-    }
-
-    const databaseName = decodeURIComponent(databaseUrl.pathname).replace(
-        /^\/+/,
-        '',
-    )
-
-    if (
-        !databaseName ||
-        databaseName.includes('/') ||
-        !TEST_DATABASE_NAME_PATTERN.test(databaseName)
-    ) {
-        throw new Error(
-            'Der Datenbankname in TEST_DATABASE_URL muss "test" als klar abgegrenzten Bestandteil enthalten, z. B. app_test.',
-        )
-    }
-
+    verifyTestDatabaseTarget(databaseUrl)
     return value
 }
 

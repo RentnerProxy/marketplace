@@ -129,7 +129,12 @@ test('publisher verifies and rescans data before exposing the token and always r
     const handoff = await read('.github/scripts/deploy/verify-dev-image.sh')
     expect(handoff.indexOf('dev-image.ts hashes')).toBeGreaterThanOrEqual(0)
     expect(handoff.indexOf('dev-image.ts hashes')).toBeLessThan(
-        handoff.indexOf('skopeo inspect'),
+        handoff.indexOf('dev-image.ts verify'),
+    )
+    const load = await read('.github/scripts/deploy/load-dev-image.sh')
+    expect(load.indexOf('dev-image.ts preflight')).toBeGreaterThanOrEqual(0)
+    expect(load.indexOf('dev-image.ts preflight')).toBeLessThan(
+        load.indexOf('skopeo copy'),
     )
     const shell = await read('.github/scripts/deploy/publish-dev-image.sh')
     expect(shell).toContain('copy --all --preserve-digests')

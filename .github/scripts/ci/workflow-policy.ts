@@ -1,42 +1,57 @@
 import { Glob, YAML } from 'bun'
-import { record } from '../automation/github.ts'
+import { runTooling, runToolingSync } from '../native-tools.ts'
+
+function workflowInput(file: string, source: string) {
+    return {
+        file,
+        source,
+        workflow: YAML.parse(source),
+    }
+}
 
 export function workflowPolicyErrors(file: string, source: string): string[] {
-    const errors: string[] = []
-    const workflow = record(YAML.parse(source))
-    if (
-        !workflow.permissions ||
-        (!workflow.concurrency && !/[\\/]image\.yml$/.test(file))
-    )
-        errors.push(`${file}: missing default permissions or concurrency`)
-    for (const action of source.matchAll(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/gm)) {
+    return runToolingSync('policy-workflow', workflowInput(file, source))
+}
+
+async function workflowBatchErrors(
+    workflows: ReturnType<typeof workflowInput>[],
+): Promise<string[]> {
+    if (workflows.length === 1)
+        return runToolingSync('policy-workflow', workflows[0])
+
+    try {
+        return await runTooling('policy-workflows', workflows)
+    } catch (error) {
         if (
-            !action[1]?.startsWith('./') &&
-            !/@[a-f0-9]{40}$/.test(action[1] ?? '')
+            !(error instanceof Error) ||
+            (error.message !== 'Native tool input exceeds its byte limit' &&
+                error.message !== 'Native tool output exceeds its byte limit' &&
+                error.message !== 'Invalid or ambiguous JSON')
         )
-            errors.push(`${file}: action must use a full commit SHA`)
+            throw error
+
+        // Keep the same byte and nesting limits for individual workflows.
+        const midpoint = Math.floor(workflows.length / 2)
+        return (await workflowBatchErrors(workflows.slice(0, midpoint))).concat(
+            await workflowBatchErrors(workflows.slice(midpoint)),
+        )
     }
-    if (/persist-credentials:\s*true/.test(source))
-        errors.push(`${file}: persisted checkout credentials`)
-    for (const [name, value] of Object.entries(record(workflow.jobs))) {
-        const job = record(value)
-        if (!job.uses && !job['timeout-minutes'])
-            errors.push(`${file}/${name}: missing timeout`)
-    }
-    if (
-        'pull_request_target' in record(workflow.on) &&
-        /github\.event\.pull_request\.head/.test(source)
-    )
-        errors.push(`${file}: privileged workflow must not execute PR source`)
-    return errors
 }
 
 if (import.meta.main) {
-    const errors: string[] = []
-    for await (const file of new Glob('.github/workflows/*.{yml,yaml}').scan(
-        '.',
-    ))
-        errors.push(...workflowPolicyErrors(file, await Bun.file(file).text()))
+    const workflows: ReturnType<typeof workflowInput>[] = []
+    let errors: string[] = []
+    try {
+        for await (const file of new Glob(
+            '.github/workflows/*.{yml,yaml}',
+        ).scan('.')) {
+            const source = await Bun.file(file).text()
+            workflows.push(workflowInput(file, source))
+        }
+    } finally {
+        // Validate any preceding inputs even if reading or parsing a later file failed.
+        if (workflows.length) errors = await workflowBatchErrors(workflows)
+    }
     if (errors.length) throw new Error(errors.join('\n'))
     console.log('Workflow security policy passed.')
 }
