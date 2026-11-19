@@ -1,7 +1,9 @@
 version: 2
 updates:
     - package-ecosystem: 'bun'
-      directory: '/'
+      directories:
+          - '/'
+          - '/.github/scripts/ci/fixtures/app-candidate/*'
       schedule:
           interval: 'cron'
           cronjob: '0 3 * * *'
@@ -36,6 +38,21 @@ updates:
               applies-to: 'version-updates'
               patterns: ['*']
               update-types: ['minor', 'patch']
+    - package-ecosystem: 'rust-toolchain'
+      directories:
+          - '/'
+          - '/core'
+      schedule:
+          interval: 'cron'
+          cronjob: '0 3 * * *'
+          timezone: 'Europe/Berlin'
+      cooldown:
+          default-days: 1
+      commit-message:
+          prefix: 'chore'
+          include: 'scope'
+      labels: ['dependencies', 'rust-toolchain']
+      open-pull-requests-limit: 10
     - package-ecosystem: 'docker'
       directory: '/'
       schedule:
@@ -70,7 +87,9 @@ updates:
           # Do not recursively update Marketplace's own release channel.
           - dependency-name: 'rentnerproxy/marketplace'
     - package-ecosystem: 'github-actions'
-      directory: '/'
+      directories:
+          - '/'
+          - '/.github/actions/*'
       schedule:
           interval: 'cron'
           cronjob: '0 3 * * *'

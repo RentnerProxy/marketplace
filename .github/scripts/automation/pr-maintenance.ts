@@ -1,6 +1,7 @@
 import { appendFile } from 'node:fs/promises'
 import { runTooling } from '../native-tools.ts'
 import { evaluateDependabotEligibility } from './dependabot-policy.ts'
+import { closeDigestOnlyDockerUpdate } from './docker-digest-update.ts'
 import {
     arrayPages,
     commitSha,
@@ -64,6 +65,14 @@ async function maintainPullRequest(
         reason,
     })
     const pull = record(await request('GET', path))
+    const closed = await closeDigestOnlyDockerUpdate(
+        request,
+        options,
+        number,
+        path,
+        pull,
+    )
+    if (closed) return closed
     const reason = await runTooling<string | null>('policy-pr-initial', {
         pull,
         repository: options.repository,
