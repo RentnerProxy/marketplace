@@ -93,21 +93,28 @@ async function downloadEvidence(artifact: SubmissionArtifact, token: string) {
     }
 }
 
-export function verifySubmissionReceipt(
+export async function verifySubmissionReceipt(
     value: unknown,
     submission: Submission,
     claim: Claim,
     run: CandidateRun,
     bundle: SubmissionArtifact,
     evidence: SubmissionArtifact,
-): ValidatedSubmission {
+): Promise<ValidatedSubmission> {
     if (run.status !== 'completed' || run.conclusion !== 'success') {
         throw new InvalidCandidateError('invalidEvidence')
     }
     try {
         const receipt = submissionReceipt.parse(value)
         const { request } = submission
-        const { sealed } = assembleCandidate(
+        if (
+            receipt.submissionId !== submission.buildKey ||
+            receipt.sourcePath !== request.path ||
+            receipt.bundleId !== bundle.id ||
+            receipt.bundleSha256 !== bundle.sha256
+        )
+            throw new InvalidCandidateError('invalidEvidence')
+        const { sealed } = await assembleCandidate(
             receipt.report.targets,
             {
                 source: {
@@ -126,10 +133,6 @@ export function verifySubmissionReceipt(
             request.publisherName,
         )
         if (
-            receipt.submissionId !== submission.buildKey ||
-            receipt.sourcePath !== request.path ||
-            receipt.bundleId !== bundle.id ||
-            receipt.bundleSha256 !== bundle.sha256 ||
             !isDeepStrictEqual(receipt.candidate, sealed) ||
             sealed.release.appId !== request.appId ||
             sealed.release.version !== request.version ||

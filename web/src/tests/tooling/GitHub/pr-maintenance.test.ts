@@ -387,6 +387,10 @@ test('the privileged workflow executes only trusted main with a repository-scope
         ref: 'refs/heads/main',
         'persist-credentials': false,
     })
+    expect(steps[2]).toEqual({
+        uses: './.github/actions/native-tools',
+        with: { 'package-set': 'tooling' },
+    })
     expect(steps.flatMap((step) => (step.run ? [step.run] : []))).toEqual([
         'bun --no-env-file .github/scripts/automation/pr-maintenance.ts',
     ])
@@ -400,7 +404,8 @@ test('the privileged workflow executes only trusted main with a repository-scope
     expect(token?.with?.['permission-statuses']).toBe('read')
     expect(token?.with?.['permission-administration']).toBeUndefined()
     for (const step of steps) {
-        if (step.uses) expect(step.uses).toMatch(/@[a-f0-9]{40}$/)
+        if (step.uses && step !== steps[2])
+            expect(step.uses).toMatch(/@[a-f0-9]{40}$/)
     }
 })
 

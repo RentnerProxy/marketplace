@@ -6,6 +6,7 @@ import type {
     catalogPublicationWork,
     publicationHandoff,
 } from '../../../../web/src/lib/Marketplace/catalogPublication.ts'
+import { runAppPipeline } from '../../native-tools.ts'
 import type { CatalogCore, TrustedCatalog } from './catalog-core.ts'
 import type { createDistribution } from './distribution.ts'
 import {
@@ -34,17 +35,9 @@ interface PublisherOptions {
     ) => Promise<T>
 }
 
-function catalogEntry(
-    catalog: Catalog,
-    release: Work['approval']['candidate']['release'],
-) {
-    const matches = (item: { appId: string; version: string }) =>
-        item.appId === release.appId && item.version === release.version
-    return {
-        release: catalog.releases.find(matches),
-        revocation: catalog.revocations.find(matches),
-    }
-}
+type PublicationAction =
+    'idle' | 'publish' | 'revoke' | 'revokePrior' | 'recordPrior' | 'inspect'
+type RecoveryAction = 'revoke' | 'discardDraft' | 'reset' | 'publish'
 
 function isConflict(error: unknown) {
     return error instanceof PublicationResponseError && error.status === 409
@@ -145,33 +138,30 @@ export async function publishCatalogQueue(options: PublisherOptions) {
             head,
         )
         const release = work.approval.candidate.release
-        const existing = catalogEntry(trusted.catalog, release)
-
-        if (existing.release && !isDeepStrictEqual(existing.release, release))
-            throw new Error(
-                'Published app version conflicts with the Marketplace approval',
-            )
-
-        if (work.publication) {
-            if (work.revocation) await revoke(identity, work, trusted, head)
+        const action = await runAppPipeline<PublicationAction>(
+            'publication-plan',
+            { catalog: trusted.catalog, work },
+        )
+        if (action === 'idle') return
+        if (action === 'publish') {
+            await publish(identity, work, trusted, head, observe)
             return
         }
-        const previousRun = work.run
-            ? { runId: work.run.runId, attempt: work.run.attempt }
-            : undefined
-        if (
-            previousRun &&
-            work.revocation &&
-            (existing.release || existing.revocation)
-        ) {
+        if (action === 'revoke') {
+            await revoke(identity, work, trusted, head)
+            return
+        }
+        if (!work.run) throw new Error('Catalog action requires a prior run')
+        const previousRun = { runId: work.run.runId, attempt: work.run.attempt }
+        if (action === 'revokePrior') {
             await revoke(identity, work, trusted, head, previousRun)
             return
         }
-        if (previousRun && existing.release) {
+        if (action === 'recordPrior') {
             await distribution.verifyRelease(release)
             await recordPublication(
                 identity,
-                existing.release,
+                release,
                 trusted,
                 head,
                 observe,
@@ -179,42 +169,38 @@ export async function publishCatalogQueue(options: PublisherOptions) {
             )
             return
         }
-        if (existing.release || existing.revocation)
-            throw new Error('App version already used in the signed catalog')
-        if (previousRun) {
-            const releaseState = await distribution.inspectRelease(release)
-            if (work.revocation && releaseState === 'published') {
-                await revoke(identity, work, trusted, head, previousRun)
-                return
-            }
-            if (releaseState === 'absent' || work.revocation) {
-                if (releaseState === 'draft') {
-                    await distribution.discardUnpublishedDraft(
-                        release,
-                        async () => {
-                            await marketplace({
-                                operation: 'authorizeDraftCleanup',
-                                ...identity,
-                                previousRun,
-                            })
-                        },
-                    )
-                }
+        const releaseState = await distribution.inspectRelease(release)
+        const recovery = await runAppPipeline<RecoveryAction>(
+            'publication-recovery',
+            { state: releaseState, stopped: work.revocation !== null },
+        )
+        if (recovery === 'revoke') {
+            await revoke(identity, work, trusted, head, previousRun)
+            return
+        }
+        if (recovery === 'discardDraft') {
+            await distribution.discardUnpublishedDraft(release, async () => {
                 await marketplace({
-                    operation: 'neverPromoted',
+                    operation: 'authorizeDraftCleanup',
                     ...identity,
                     previousRun,
                 })
-                return
-            }
-            await publish(identity, work, trusted, head, observe, {
+            })
+        }
+        if (recovery === 'discardDraft' || recovery === 'reset') {
+            await marketplace({
+                operation: 'neverPromoted',
+                ...identity,
                 previousRun,
-                releaseState,
             })
             return
         }
-        if (work.status === 'approved')
-            await publish(identity, work, trusted, head, observe)
+        if (releaseState === 'absent')
+            throw new Error('Catalog recovery requires an existing release')
+        await publish(identity, work, trusted, head, observe, {
+            previousRun,
+            releaseState,
+        })
     }
 
     async function publish(
@@ -231,11 +217,10 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         const { approval, bundle, evidence } = work
         const { release } = approval.candidate
         const handoff = { approval, bundle, evidence }
-        const next: Catalog = {
-            ...trusted.catalog,
-            revision: trusted.catalog.revision + 1,
-            releases: [...trusted.catalog.releases, release],
-        }
+        const next = await runAppPipeline<Catalog>('publication-publish', {
+            catalog: trusted.catalog,
+            release,
+        })
         // Check signability before committing to an immutable release.
         const files = await core.update(trusted, next)
 
@@ -318,33 +303,16 @@ export async function publishCatalogQueue(options: PublisherOptions) {
         head: string,
         previousRun?: PriorRun,
     ) {
-        if ((!work.publication && !previousRun) || !work.revocation)
-            throw new Error('Revocation has no matching publication and stop')
+        const next = await runAppPipeline<Catalog | null>('publication-stop', {
+            catalog: trusted.catalog,
+            work,
+            previousRun: previousRun !== undefined,
+        })
         const { revocation } = work
-        const { release } = work.approval.candidate
-        if (
-            revocation.appId !== release.appId ||
-            revocation.version !== release.version
-        )
-            throw new Error('Revocation names a different app version')
-        const existing = catalogEntry(trusted.catalog, release)
+        if (!revocation)
+            throw new Error('Revocation has no matching publication and stop')
         let verified = trusted
-        if (existing.revocation) {
-            if (!isDeepStrictEqual(existing.revocation, revocation))
-                throw new Error(
-                    'Signed revocation differs from the recorded stop',
-                )
-        } else {
-            if (!previousRun && !isDeepStrictEqual(existing.release, release))
-                throw new Error('Revocation has no matching signed app version')
-            const next: Catalog = {
-                ...trusted.catalog,
-                revision: trusted.catalog.revision + 1,
-                releases: trusted.catalog.releases.filter(
-                    (listed) => listed !== existing.release,
-                ),
-                revocations: [...trusted.catalog.revocations, revocation],
-            }
+        if (next) {
             const files = await core.update(trusted, next)
             verified = (await promote(next, head, files)).verified
         }
