@@ -75,6 +75,21 @@ function objects(directory: string) {
     )
 }
 
+function treeInfo(repository: string, tree: string) {
+    const entries = git(repository, 'ls-tree', '-r', '-t', '-l', '-z', tree)
+        .split('\0')
+        .filter(Boolean)
+        .map((line) => {
+            const match = /^\d+ (blob|tree) ([a-f0-9]{40}) +(\d+|-)\t/.exec(
+                line,
+            )
+            if (!match) throw new Error('Invalid Git fixture tree entry')
+            const [, type, sha, size] = match
+            return { type, sha, size: size === '-' ? undefined : Number(size) }
+        })
+    return { sha: tree, truncated: false, tree: entries }
+}
+
 function localTransport(overrides: Partial<Transport> = {}): Transport {
     return {
         origin: () => pathToFileURL(origin),
@@ -83,22 +98,7 @@ function localTransport(overrides: Partial<Transport> = {}): Transport {
         },
         async readTree(repository, tree) {
             expect(repository).toBe(repoName)
-            const entries = git(origin, 'ls-tree', '-r', '-t', '-l', '-z', tree)
-                .split('\0')
-                .filter(Boolean)
-                .map((line) => {
-                    const match =
-                        /^\d+ (blob|tree) ([a-f0-9]{40}) +(\d+|-)\t/.exec(line)
-                    if (!match)
-                        throw new Error('Invalid Git fixture tree entry')
-                    const [, type, sha, size] = match
-                    return {
-                        type,
-                        sha,
-                        size: size === '-' ? undefined : Number(size),
-                    }
-                })
-            return { sha: tree, truncated: false, tree: entries }
+            return treeInfo(origin, tree)
         },
         ...overrides,
     }
@@ -173,6 +173,72 @@ afterAll(async () => {
 })
 
 describe('candidate Git source staging', () => {
+    test('preserves an existing archive and removes the temporary copy', async () => {
+        const stage = await destination('occupied-archive')
+        const archive = join(stage, 'source.tar')
+        await writeFile(archive, 'an existing source archive')
+        await expect(
+            stageGitSource(stage, wanted('apps/candidate'), localTransport()),
+        ).rejects.toMatchObject({ code: 'EEXIST' })
+        expect(await readFile(archive, 'utf8')).toBe(
+            'an existing source archive',
+        )
+        expect(
+            (await readdir(stage)).filter((name) =>
+                name.startsWith('.source-archive-'),
+            ),
+        ).toEqual([])
+    }, 15_000)
+
+    test('removes partial output when TAR overhead exceeds the archive limit', async () => {
+        const largeOrigin = await destination('archive-limit-origin')
+        const stage = await destination('archive-limit-stage')
+        git(largeOrigin, 'init', '--initial-branch=main', '--template=')
+        git(largeOrigin, 'config', 'uploadpack.allowFilter', 'true')
+        git(largeOrigin, 'config', 'uploadpack.allowAnySHA1InWant', 'true')
+        const chunk = Buffer.alloc(4 * 1024 * 1024, 97)
+        await Promise.all(
+            Array.from({ length: 16 }, (_, index) =>
+                writeFile(
+                    join(largeOrigin, 'asset-' + index),
+                    // Git pads the final TAR record to 10 KiB.
+                    index === 15 ? chunk.subarray(12 * 1024) : chunk,
+                ),
+            ).concat(writeFile(join(largeOrigin, 'package.json'), oldManifest)),
+        )
+        git(largeOrigin, 'add', '-f', '--', '.')
+        git(
+            largeOrigin,
+            'commit',
+            '-m',
+            'Fixture with bounded tree and larger TAR',
+        )
+        const admittedCommit = git(largeOrigin, 'rev-parse', 'HEAD').trim()
+        const source = { repositoryId: repoId, commit: admittedCommit }
+        await expect(
+            stageGitSource(
+                stage,
+                {
+                    repository: repoName,
+                    path: '.',
+                    commit: admittedCommit,
+                    source,
+                },
+                {
+                    origin: () => pathToFileURL(largeOrigin),
+                    resolve: async (request) => ({ ...request, source }),
+                    readTree: async (_repository, tree) =>
+                        treeInfo(largeOrigin, tree),
+                },
+            ),
+        ).rejects.toThrow('Submitted Git object exceeds its size limit')
+        const outputs = await readdir(stage)
+        expect(outputs).not.toContain('source.tar')
+        expect(
+            outputs.some((name) => name.startsWith('.source-archive-')),
+        ).toBe(false)
+    }, 15_000)
+
     test('hydrates only scoped blobs at the requested commit after the branch advances', async () => {
         const stage = await destination('scoped')
         const requestedPath = 'apps/candidate'

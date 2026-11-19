@@ -1,4 +1,5 @@
 import { appendFile } from 'node:fs/promises'
+import { runTooling } from '../native-tools.ts'
 import { evaluateDependabotEligibility } from './dependabot-policy.ts'
 import {
     arrayPages,
@@ -43,35 +44,11 @@ async function successfulChecks(
             variables: { owner, name, number },
         }),
     )
-    if (response.errors !== undefined) throw new Error('GitHub CI query failed')
-    const pull = record(record(record(response.data).repository).pullRequest)
-    if (
-        pull.headRefOid !== headSha ||
-        pull.baseRefOid !== baseSha ||
-        pull.state !== 'OPEN' ||
-        pull.isDraft !== false ||
-        pull.reviewDecision === 'CHANGES_REQUESTED'
-    ) {
-        return false
-    }
-    const threads = record(pull.reviewThreads)
-    if (
-        record(threads.pageInfo).hasNextPage !== false ||
-        !Array.isArray(threads.nodes) ||
-        threads.nodes.some(
-            (thread: unknown) => record(thread).isResolved !== true,
-        )
-    ) {
-        return false
-    }
-    const nodes = record(pull.commits).nodes
-    if (!Array.isArray(nodes) || nodes.length !== 1) return false
-    const commit = record(record(nodes[0]).commit)
-    return (
-        commit.oid === headSha &&
-        commit.statusCheckRollup !== null &&
-        record(commit.statusCheckRollup).state === 'SUCCESS'
-    )
+    return runTooling('policy-pr-successful-checks', {
+        response,
+        headSha,
+        baseSha,
+    })
 }
 
 async function maintainPullRequest(
@@ -87,44 +64,27 @@ async function maintainPullRequest(
         reason,
     })
     const pull = record(await request('GET', path))
-    const base = record(pull.base)
-    const head = record(pull.head)
-    if (
-        pull.state !== 'open' ||
-        base.ref !== 'main' ||
-        record(base.repo).full_name?.toString().toLowerCase() !==
-            options.repository ||
-        head.repo === null
-    ) {
-        return skipped(
-            'Pull request is no longer open against this repository’s main branch',
-        )
-    }
-    if (pull.mergeable === false)
-        return skipped('Merge conflict requires manual resolution')
-
-    const headSha = commitSha(head.sha)
+    const reason = await runTooling<string | null>('policy-pr-initial', {
+        pull,
+        repository: options.repository,
+    })
+    if (reason) return skipped(reason)
+    const headSha = commitSha(record(pull.head).sha)
     const main = record(await request('GET', `${prefix}/git/ref/heads/main`))
     const baseSha = commitSha(record(main.object).sha)
     const comparison = record(
         await request('GET', `${prefix}/compare/${headSha}...${baseSha}`),
     )
-    if (
-        !Number.isSafeInteger(comparison.ahead_by) ||
-        Number(comparison.ahead_by) < 0
-    ) {
-        throw new Error('Invalid branch comparison')
-    }
-    if (Number(comparison.ahead_by) > 0) {
-        if (
-            record(head.repo).full_name?.toString().toLowerCase() !==
-                options.repository &&
-            pull.maintainer_can_modify !== true
-        ) {
-            return skipped(
-                'Fork owner has not allowed maintainer branch updates',
-            )
-        }
+    const outcome = await runTooling<
+        | { decision: 'skip'; reason: string }
+        | { decision: 'update' | 'eligible' }
+    >('policy-pr-comparison', {
+        pull,
+        repository: options.repository,
+        ahead: comparison.ahead_by,
+    })
+    if (outcome.decision === 'skip') return skipped(outcome.reason)
+    if (outcome.decision === 'update') {
         if (!options.dryRun) {
             await request('PUT', `${path}/update-branch`, {
                 expected_head_sha: headSha,
@@ -137,13 +97,6 @@ async function maintainPullRequest(
         }
     }
 
-    if (pull.draft !== false || record(pull.user).login !== 'dependabot[bot]') {
-        return skipped(
-            'Branch is current; automatic merging is limited to Dependabot updates',
-        )
-    }
-    if (pull.mergeable !== true)
-        return skipped('GitHub is still calculating mergeability')
     const [commits, files] = await Promise.all([
         arrayPages(request, `${path}/commits`),
         arrayPages(request, `${path}/files`),
@@ -172,9 +125,11 @@ async function maintainPullRequest(
 
     const latest = record(await request('GET', path))
     if (
-        record(latest.head).sha !== headSha ||
-        record(latest.base).sha !== baseSha ||
-        latest.mergeable !== true
+        !(await runTooling<boolean>('policy-pr-current', {
+            pull: latest,
+            headSha,
+            baseSha,
+        }))
     ) {
         return skipped(
             'Pull request changed during validation; retry on the next event',

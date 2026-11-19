@@ -2,10 +2,7 @@ import { unlink } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
 import { TEST_COVERAGE_THRESHOLDS } from './Coverage/coverage.config.ts'
-import {
-    assertCoverageThresholds,
-    parseCoverageReport,
-} from './Coverage/coverage-report.ts'
+import { verifyCoverageFile } from './Coverage/coverage-report.ts'
 
 async function main() {
     const root = process.cwd()
@@ -51,9 +48,8 @@ async function main() {
         process.exitCode = exitCode
         return
     }
-    const summary = parseCoverageReport(await Bun.file(report).text())
-    const percentages = assertCoverageThresholds(
-        summary,
+    const { summary, percentages } = await verifyCoverageFile(
+        report,
         TEST_COVERAGE_THRESHOLDS,
     )
     console.log(

@@ -12,9 +12,8 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { validateCandidatePackage } from '../../../../../.github/scripts/ci/app-candidates/archive.ts'
-import { inspectCandidateElf } from '../../../../../.github/scripts/ci/app-candidates/elf.ts'
-import { decodeWireJson } from '../../../../../.github/scripts/ci/app-candidates/wire-json.ts'
 import type { AppManifest } from '../../../../../contracts/v1/index.ts'
+import { inspectCandidateLinkage } from './app-candidate-elf.test.helpers.ts'
 
 interface FixtureEntry {
     path: string
@@ -505,43 +504,17 @@ describe('candidate package admission', () => {
     })
 })
 
-describe('candidate wire JSON', () => {
-    const encoder = new TextEncoder()
-
-    test('rejects repeated response names including equivalent escapes', () => {
-        expect(() =>
-            decodeWireJson(encoder.encode('{"healthy":false,"healthy":true}')),
-        ).toThrow('Duplicate JSON member')
-        expect(() =>
-            decodeWireJson(
-                encoder.encode('{"healthy":false,"\\u0068ealthy":true}'),
-            ),
-        ).toThrow('Duplicate JSON member')
-    })
-
-    test('accepts the same member name in different objects and rejects malformed UTF-8', () => {
-        expect(
-            decodeWireJson(
-                encoder.encode('{"healthy":true,"nested":{"healthy":true}}'),
-            ),
-        ).toEqual({ healthy: true, nested: { healthy: true } })
-        expect(() =>
-            decodeWireJson(Uint8Array.of(0x22, 0xc0, 0xaf, 0x22)),
-        ).toThrow()
-    })
-})
-
 describe('ELF appliance compatibility', () => {
     const interpreter = '/lib64/ld-linux-x86-64.so.2'
     test('checks native architecture and signed-off glibc dependencies without execution', () => {
-        expect(inspectCandidateElf(elf(183), 'linux-arm64')).toBeNull()
+        expect(inspectCandidateLinkage(elf(183), 'linux-arm64')).toBeNull()
         expect(
-            inspectCandidateElf(
+            inspectCandidateLinkage(
                 elf(62, { library: 'libc.so.6', interpreter }),
                 'linux-amd64',
-            ),
+            )?.needed,
         ).toEqual(['libc.so.6'])
-        expect(() => inspectCandidateElf(elf(183), 'linux-amd64')).toThrow(
+        expect(() => inspectCandidateLinkage(elf(183), 'linux-amd64')).toThrow(
             'native Linux ELF64',
         )
     })
@@ -549,7 +522,7 @@ describe('ELF appliance compatibility', () => {
     test('rejects a dynamic segment whose loaded bytes differ from its file metadata', () => {
         const binary = elf(62, { library: 'libc.so.6', interpreter })
         binary.writeBigUInt64LE(0x400100n, 64 + 2 * 56 + 16)
-        expect(() => inspectCandidateElf(binary, 'linux-amd64')).toThrow(
+        expect(() => inspectCandidateLinkage(binary, 'linux-amd64')).toThrow(
             'dynamic segment',
         )
     })
@@ -569,7 +542,7 @@ describe('ELF appliance compatibility', () => {
         'rejects incompatible ELF loader policy',
         (settings, message) => {
             expect(() =>
-                inspectCandidateElf(elf(62, settings), 'linux-amd64'),
+                inspectCandidateLinkage(elf(62, settings), 'linux-amd64'),
             ).toThrow(message)
         },
     )

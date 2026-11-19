@@ -1,4 +1,12 @@
-import { mkdir, realpath, writeFile } from 'node:fs/promises'
+import {
+    link,
+    mkdir,
+    mkdtemp,
+    open,
+    realpath,
+    rm,
+    writeFile,
+} from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
 import type { AppManifest } from '../../../../contracts/v1/index.ts'
@@ -10,6 +18,7 @@ import {
     repositoryName,
     sourceRequest,
 } from '../../../../web/src/lib/Marketplace/sourceRequest.ts'
+import { runAppPipeline, runAppPipelineSync } from '../../native-tools.ts'
 
 export { sourceRequest }
 
@@ -25,46 +34,13 @@ const githubRepository = z.object({
 })
 
 const githubCommit = z.object({ sha: commitSha })
-const manifestBytesLimit = 1024 * 1024
-const lockBytesLimit = 8 * 1024 * 1024
 const sourceArchiveBytesLimit = 64 * 1024 * 1024
-const sourceTree = z.object({
-    sha: commitSha,
-    truncated: z.literal(false),
-    tree: z
-        .array(
-            z.object({
-                sha: commitSha,
-                type: z.enum(['tree', 'blob']),
-                size: z
-                    .number()
-                    .int()
-                    .min(0)
-                    .max(sourceArchiveBytesLimit)
-                    .optional(),
-            }),
-        )
-        .max(10_000),
-})
 
 export function checkSourceTree(value: unknown, expectedTree: string) {
-    const tree = sourceTree.parse(value)
-    if (tree.sha !== expectedTree)
-        throw new Error('Submitted source tree identity changed')
-    const bytes = tree.tree.reduce((size, entry) => {
-        if (entry.type === 'blob' && entry.size === undefined)
-            throw new Error('GitHub did not report the submitted blob size')
-        return size + 512 + Math.ceil((entry.size ?? 0) / 512) * 512
-    }, 1024)
-    if (bytes > sourceArchiveBytesLimit)
-        throw new Error('Submitted source tree exceeds its byte budget')
-    return Array.from(
-        new Set(
-            tree.tree
-                .filter(({ type }) => type === 'blob')
-                .map(({ sha }) => sha),
-        ),
-    )
+    return runAppPipelineSync<string[]>('source-tree', {
+        tree: value,
+        expectedTree,
+    })
 }
 
 async function githubJson(path: string, token?: string): Promise<unknown> {
@@ -124,8 +100,9 @@ async function capture(
         limit: number
         input?: string
     },
+    consume: (chunk: Uint8Array) => void | Promise<void>,
 ) {
-    const process = Bun.spawn(args, {
+    const child = Bun.spawn(args, {
         cwd: options.cwd,
         env: options.env,
         stdin:
@@ -135,20 +112,22 @@ async function capture(
         signal: AbortSignal.timeout(120_000),
         windowsHide: true,
     })
-    const chunks: Uint8Array[] = []
     let bytes = 0
-    for await (const chunk of process.stdout) {
-        bytes += chunk.byteLength
-        if (bytes > options.limit) {
-            process.kill()
-            await process.exited
-            throw new Error('Submitted Git object exceeds its size limit')
+    try {
+        for await (const chunk of child.stdout) {
+            bytes += chunk.byteLength
+            if (bytes > options.limit)
+                throw new Error('Submitted Git object exceeds its size limit')
+            // oxlint-disable-next-line no-await-in-loop -- Backpressure bounds pending archive writes.
+            await consume(chunk)
         }
-        chunks.push(chunk)
+        if ((await child.exited) !== 0)
+            throw new Error('Could not read the exact submitted Git tree')
+        return bytes
+    } finally {
+        if (child.exitCode === null && child.signalCode === null) child.kill()
+        await child.exited
     }
-    if ((await process.exited) !== 0)
-        throw new Error('Could not read the exact submitted Git tree')
-    return Buffer.concat(chunks, bytes)
 }
 
 /** Keep submitted Git objects inert on the host and admit only a scoped source tar to the sandbox. */
@@ -195,7 +174,12 @@ export async function stageGitSource(
     const home = join(cwd, 'git-home')
     const dependencies = join(cwd, 'dependencies')
     await Promise.all([mkdir(home), mkdir(dependencies)])
-    const captureGit = (args: string[], limit = 4096, input?: string) =>
+    const readGit = (
+        args: string[],
+        limit: number,
+        input: string | undefined,
+        consume: (chunk: Uint8Array) => void | Promise<void>,
+    ) =>
         capture(
             [
                 'git',
@@ -225,7 +209,15 @@ export async function stageGitSource(
                     GIT_TERMINAL_PROMPT: '0',
                 },
             },
+            consume,
         )
+    const captureGit = async (args: string[], limit = 4096, input?: string) => {
+        const chunks: Uint8Array[] = []
+        const bytes = await readGit(args, limit, input, (chunk) => {
+            chunks.push(chunk)
+        })
+        return Buffer.concat(chunks, bytes)
+    }
     await captureGit(['init', '--bare', '--template=', '.'])
     await captureGit(['remote', 'add', 'origin', origin.href])
     await captureGit(['config', 'remote.origin.promisor', 'true'])
@@ -276,10 +268,10 @@ export async function stageGitSource(
             : await findCommittedDirectory(captureGit, fetched, request.path)
     // Admit the scoped tree's size before any blob reads hydrate the shallow
     // partial fetch. GitHub reports truncation explicitly and we fail closed.
-    const blobs = checkSourceTree(
-        await transport.readTree(rechecked.repository, tree),
-        tree,
-    )
+    const blobs = await runAppPipeline<string[]>('source-tree', {
+        tree: await transport.readTree(rechecked.repository, tree),
+        expectedTree: tree,
+    })
     if (blobs.length > 0) {
         // Git can request the admitted object IDs in one conversation. This
         // keeps large trees from causing a separate lazy fetch for each file.
@@ -296,21 +288,16 @@ export async function stageGitSource(
             blobs.join('\n') + '\n',
         )
     }
-    const stagedFiles = [
-        { name: 'package.json', limit: manifestBytesLimit, required: true },
-        { name: 'bun.lock', limit: lockBytesLimit, required: false },
-    ]
     await Promise.all(
-        stagedFiles.map(async ({ name, limit, required }) => {
-            const entry = (await captureGit(['ls-tree', tree, '--', name]))
-                .toString()
-                .trimEnd()
-            if (!required && entry === '') return
-            if (!/^100(?:644|755) blob [a-f0-9]{40}\t/.test(entry)) {
-                throw new Error(
-                    'Submitted ' + name + ' must be a committed regular file',
-                )
-            }
+        ['package.json', 'bun.lock'].map(async (name) => {
+            const entry = (
+                await captureGit(['ls-tree', tree, '--', name])
+            ).toString()
+            const { present, limit } = await runAppPipeline<{
+                present: boolean
+                limit: number
+            }>('source-staged-file', { name, entry })
+            if (!present) return
             await writeFile(
                 join(dependencies, name),
                 await captureGit(
@@ -322,11 +309,24 @@ export async function stageGitSource(
         }),
     )
     const sourceArchive = join(cwd, 'source.tar')
-    const tar = await captureGit(
-        ['archive', '--format=tar', tree],
-        sourceArchiveBytesLimit,
-    )
-    await writeFile(sourceArchive, tar, { mode: 0o644, flag: 'wx' })
+    const temporary = await mkdtemp(join(cwd, '.source-archive-'))
+    try {
+        const stagedPath = join(temporary, 'source.tar')
+        const file = await open(stagedPath, 'wx', 0o644)
+        try {
+            await readGit(
+                ['archive', '--format=tar', tree],
+                sourceArchiveBytesLimit,
+                undefined,
+                (chunk) => file.writeFile(chunk),
+            )
+        } finally {
+            await file.close()
+        }
+        await link(stagedPath, sourceArchive)
+    } finally {
+        await rm(temporary, { recursive: true, force: true })
+    }
     return { sourceArchive, dependencies }
 }
 
@@ -340,9 +340,5 @@ async function findCommittedDirectory(
     const entry = (
         await git(['ls-tree', '-d', '-z', commit, '--', path])
     ).toString()
-    const match = /^040000 tree ([a-f0-9]{40})\t([^\0]+)\0$/.exec(entry)
-    if (match?.[2] !== path) {
-        throw new Error('Submitted source path must be a committed directory')
-    }
-    return match[1]
+    return runAppPipeline<string>('source-directory', { entry, path })
 }

@@ -16,5 +16,5 @@ archive="trivy_${version}_Linux-${platform}.tar.gz"
 archive_path="$RUNNER_TEMP/$archive"
 curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 \
     --output "$archive_path" "https://github.com/aquasecurity/trivy/releases/download/v${version}/$archive"
-printf '%s  %s\n' "$digest" "$archive_path" | sha256sum --check --strict
+bun --no-env-file .github/scripts/security/verify-checksum.ts "$archive_path" "$digest"
 tar -xzf "$archive_path" -C "$RUNNER_TEMP" trivy

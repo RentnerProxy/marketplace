@@ -1,0 +1,25 @@
+name: Build native Marketplace tools
+description: Build the locked Rust tools from the verified workflow checkout
+inputs:
+    package-set:
+        description: Native package set to build
+        required: true
+runs:
+    using: composite
+    steps:
+        - shell: bash
+          working-directory: core
+          env:
+              MARKETPLACE_NATIVE_SET: ${{ inputs.package-set }}
+          run: |
+              set -euo pipefail
+              case "$MARKETPLACE_NATIVE_SET" in
+                  tooling) packages=(-p marketplace-tooling) ;;
+                  pipeline) packages=(-p marketplace-app-pipeline) ;;
+                  all) packages=(-p marketplace-tooling -p marketplace-app-pipeline) ;;
+                  *) exit 1 ;;
+              esac
+              version="$(sed -nE 's/^channel = "([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' rust-toolchain.toml)"
+              test -n "$version"
+              rustup toolchain install "$version" --profile minimal
+              cargo "+$version" build --locked --release "${packages[@]}"

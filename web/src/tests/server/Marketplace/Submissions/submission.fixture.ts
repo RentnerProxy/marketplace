@@ -82,7 +82,7 @@ export function fixtureSubmission(
     }
 }
 
-export function fixtureCandidate(
+export async function fixtureCandidate(
     row: Submission,
     claim: typeof marketplaceRepositoryClaims.$inferSelect,
 ) {
@@ -145,7 +145,7 @@ export function fixtureCandidate(
         result: 'passed',
         targets: targetRecords,
     })
-    const { sealed } = assembleCandidate(
+    const { sealed } = await assembleCandidate(
         report.targets,
         { source, build, purpose: 'candidate' },
         request.publisherName,

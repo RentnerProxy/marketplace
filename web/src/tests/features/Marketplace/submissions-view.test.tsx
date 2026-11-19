@@ -22,7 +22,7 @@ vi.mock('@/language/useTranslationStore.ts', () => ({
 
 const claim = fixtureClaim()
 const row = fixtureSubmission(claim)
-const { receipt, evidence, bundle } = fixtureCandidate(row, claim)
+const { receipt, evidence, bundle } = await fixtureCandidate(row, claim)
 const { candidate, report } = receipt
 
 function render(client: QueryClient, component: ReactNode) {
