@@ -286,8 +286,13 @@ test('Bun and Docker toolchain pins agree and actions are maintained through Dep
         'github-actions',
         'rust-toolchain',
     ])
-    const bun = config.updates.find((entry) => entry['package-ecosystem'] === 'bun')
-    expect(bun?.directories).toEqual(['/', '/.github/scripts/ci/fixtures/app-candidate/*'])
+    const bun = config.updates.find(
+        (entry) => entry['package-ecosystem'] === 'bun',
+    )
+    expect(bun?.directories).toEqual([
+        '/',
+        '/.github/scripts/ci/fixtures/app-candidate/*',
+    ])
     const rustToolchain = config.updates.find(
         (entry) => entry['package-ecosystem'] === 'rust-toolchain',
     )
