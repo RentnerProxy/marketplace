@@ -6,7 +6,7 @@ rust-version = "1.99"
 publish = false
 
 [dependencies]
-ed25519-dalek = { version = "2.2", features = ["pem"] }
+ed25519-dalek = { version = "3.0", features = ["pem"] }
 hex = "0.4.3"
 marketplace-artifacts = { path = "../artifacts" }
 olpc-cjson = "0.1.4"
