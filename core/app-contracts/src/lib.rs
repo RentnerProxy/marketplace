@@ -19,6 +19,7 @@ use validation::{
 };
 
 const SCHEMA: &str = include_str!(concat!(env!("OUT_DIR"), "/contracts.schema.json"));
+pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const RELEASE_DISTRIBUTION: &str = "https://github.com/RentnerProxy/app-catalog/releases/download/";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,6 +82,7 @@ fn compile_schema(schema: &mut Value, name: &str) -> Result<Validator, ContractE
 /// JSON, reject duplicate members at decoding, and authenticate signed input.
 pub struct Contracts {
     manifest: Validator,
+    release: Validator,
     catalog: Validator,
     candidate: Validator,
     approval: Validator,
@@ -94,6 +96,7 @@ impl Contracts {
         let mut compile = |name| compile_schema(&mut schema, name);
         Ok(Self {
             manifest: compile("AppManifest")?,
+            release: compile("CatalogRelease")?,
             catalog: compile("Catalog")?,
             candidate: compile("Candidate")?,
             approval: compile("Approval")?,
@@ -120,6 +123,11 @@ impl Contracts {
         validate_shape(&self.catalog, document)?;
         validate_catalog(document)?;
         Ok(Catalog { document })
+    }
+
+    pub fn validate_release(&self, document: &Value) -> Result<(), ContractError> {
+        validate_shape(&self.release, document)?;
+        validate_release(document)
     }
 
     pub fn validate_candidate(&self, document: &Value) -> Result<(), ContractError> {

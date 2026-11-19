@@ -1,10 +1,10 @@
-import { createHash } from 'node:crypto'
-import { mkdtemp, mkdir, open, realpath, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, realpath, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import type { z } from 'zod'
 import { checkApprovalBinding } from '../../../../contracts/v1/index.ts'
 import { CANDIDATE_PIPELINE as pipeline } from '../../../../web/src/config/submissions.config.ts'
+import { verifyNativeArtifactStream } from '../../../../web/src/lib/Core/native-tool.ts'
 import {
     assetNames,
     candidateName,
@@ -115,31 +115,16 @@ async function downloadVerifiedZip(
         await response.body?.cancel()
         throw new Error('Candidate artifact download failed')
     }
-    const file = await open(path, 'wx', 0o600)
-    const reader = response.body.getReader()
-    const hash = createHash('sha256')
-    let total = 0
-    try {
-        for (;;) {
-            // Each read and write consumes the next part of one stream.
-            // oxlint-disable-next-line no-await-in-loop
-            const { value, done } = await reader.read()
-            if (done) break
-            total += value.length
-            if (total > artifact.sizeBytes)
-                throw new Error('Candidate ZIP exceeds its approved length')
-            hash.update(value)
-            // oxlint-disable-next-line no-await-in-loop
-            await file.writeFile(value)
-        }
-    } finally {
-        await reader.cancel().catch(() => undefined)
-        await file.close()
-    }
-    const digest = hash.digest('hex')
-    if (total !== artifact.sizeBytes || digest !== artifact.sha256)
+    const result = await verifyNativeArtifactStream(
+        response.body,
+        artifact,
+        path,
+    )
+    if (result === 'length-exceeded')
+        throw new Error('Candidate ZIP exceeds its approved length')
+    if (result !== 'verified')
         throw new Error('Candidate ZIP differs from the approved artifact')
-    return { id: artifact.id, sha256: digest }
+    return { id: artifact.id, sha256: artifact.sha256 }
 }
 
 export async function withCandidateBundle<T>(

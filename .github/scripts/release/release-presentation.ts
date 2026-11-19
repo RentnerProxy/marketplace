@@ -3,6 +3,7 @@ import {
     renderReleaseBlogNotes,
 } from './release-blog.ts'
 import { releaseIdentity } from './release-identity.ts'
+import { runToolingSync } from '../native-tools.ts'
 
 const START = '<!-- marketplace:release:start -->'
 const END = '<!-- marketplace:release:end -->'
@@ -20,11 +21,10 @@ function banner(tag: string, revision: string, building = false) {
 }
 
 export function releasePublication(tag: string) {
-    const identity = releaseIdentity(tag)
-    // The first Marketplace alpha is explicitly published as a regular Latest
-    // GitHub release; its version and OCI alpha channel retain their identity.
-    const prerelease = tag === 'v1.0.0-alpha.1' ? false : identity.prerelease
-    return { prerelease, make_latest: prerelease ? 'false' : 'true' }
+    return runToolingSync<{
+        prerelease: boolean
+        make_latest: 'true' | 'false'
+    }>('release-publication', { tag })
 }
 
 export function replaceReleasePresentation(body: string, content: string) {

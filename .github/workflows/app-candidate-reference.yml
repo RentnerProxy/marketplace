@@ -4,12 +4,22 @@ on:
     pull_request:
         paths:
             - '.github/workflows/app-candidate*.yml'
+            - '.github/actions/native-tools/**'
             - '.github/scripts/ci/app-candidates/**'
+            - .github/scripts/native-tools.ts
+            - 'web/src/lib/Core/**'
             - 'web/src/lib/Marketplace/**'
             - web/src/config/submissions.config.ts
             - '.github/scripts/ci/fixtures/app-candidate/**'
             - .github/scripts/security/install-trivy.sh
             - 'contracts/v1/**'
+            - 'core/app-contracts/**'
+            - 'core/app-pipeline/**'
+            - 'core/artifacts/**'
+            - 'core/tooling/**'
+            - 'core/Cargo.*'
+            - core/rust-toolchain.toml
+            - Dockerfile
             - 'web/src/tests/tooling/GitHub/app-candidate-*.test.ts'
             - package.json
             - bun.lock
@@ -18,12 +28,22 @@ on:
         branches: [main]
         paths:
             - '.github/workflows/app-candidate*.yml'
+            - '.github/actions/native-tools/**'
             - '.github/scripts/ci/app-candidates/**'
+            - .github/scripts/native-tools.ts
+            - 'web/src/lib/Core/**'
             - 'web/src/lib/Marketplace/**'
             - web/src/config/submissions.config.ts
             - '.github/scripts/ci/fixtures/app-candidate/**'
             - .github/scripts/security/install-trivy.sh
             - 'contracts/v1/**'
+            - 'core/app-contracts/**'
+            - 'core/app-pipeline/**'
+            - 'core/artifacts/**'
+            - 'core/tooling/**'
+            - 'core/Cargo.*'
+            - core/rust-toolchain.toml
+            - Dockerfile
             - 'web/src/tests/tooling/GitHub/app-candidate-*.test.ts'
             - package.json
             - bun.lock

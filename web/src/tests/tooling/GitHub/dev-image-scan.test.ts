@@ -12,6 +12,15 @@ import {
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { nativeToolPath } from '../../../lib/Core/native-tool.ts'
+
+const validator = fileURLToPath(
+    new URL(
+        '../../../../../.github/scripts/deploy/dev-image.ts',
+        import.meta.url,
+    ),
+)
 
 const source = await readFile(
     new URL(
@@ -66,6 +75,11 @@ async function executeScan(
         await writeFile(join(runner, 'unrelated-sentinel'), 'preserve me')
         const calls = join(directory, 'calls')
         await writeFile(calls, '')
+        await writeFile(
+            join(directory, 'bun'),
+            '#!/bin/sh\nshift 2\nexec "$SYNTHETIC_BUN" --no-env-file "$SYNTHETIC_VALIDATOR" "$@"\n',
+            { mode: 0o700 },
+        )
         await writeFile(
             join(directory, 'skopeo'),
             `#!/bin/sh
@@ -124,6 +138,13 @@ exit "$SYNTHETIC_STATUS"
             {
                 cwd: directory,
                 env: {
+                    SystemRoot: process.env.SystemRoot,
+                    LLVM_PROFILE_FILE: process.env.LLVM_PROFILE_FILE,
+                    MARKETPLACE_TOOLING_BIN: nativeToolPath(
+                        'marketplace-tooling',
+                    ),
+                    SYNTHETIC_BUN: shellPath(process.execPath),
+                    SYNTHETIC_VALIDATOR: shellPath(validator),
                     SYNTHETIC_PATH:
                         shellPath(directory) +
                         ':' +

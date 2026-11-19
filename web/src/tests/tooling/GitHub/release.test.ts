@@ -49,7 +49,7 @@ describe('official release identity', () => {
         ['v0.1.0-alpha.1', 'alpha'],
         ['v1.0.0-beta.2', 'beta'],
         ['v2.0.0-rc.1', 'rc'],
-    ])('prerelease %s selects its own %s channel', (tag, channel) => {
+    ] as const)('prerelease %s selects its own %s channel', (tag, channel) => {
         expect(releaseIdentity(tag)).toEqual({
             tag,
             prerelease: true,

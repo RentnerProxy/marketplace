@@ -4,6 +4,7 @@ import {
     record,
 } from '../automation/github.ts'
 import { releaseIdentity } from './release-identity.ts'
+import { runTooling } from '../native-tools.ts'
 import {
     loadReleaseChangelog,
     requireReleaseChangelog,
@@ -41,10 +42,7 @@ export async function publishRelease(
 ) {
     const identity = releaseIdentity(tag)
     const post = requireReleaseChangelog([changelog], tag)
-    if (
-        !/^ghcr\.io\/rentnerproxy\/marketplace@sha256:[a-f0-9]{64}$/.test(image)
-    )
-        throw new Error('Expected the exact verified Marketplace image digest')
+    await runTooling('release-image-reference', { image })
     const prefix = '/repos/rentnerproxy/marketplace/releases'
     let existing: Record<string, unknown> | undefined
     try {
@@ -56,17 +54,12 @@ export async function publishRelease(
             throw error
     }
     if (existing) {
-        if (
-            existing.tag_name !== tag ||
-            typeof existing.id !== 'number' ||
-            !Number.isSafeInteger(existing.id) ||
-            existing.id <= 0
+        const checked = await runTooling<{ id: number; body: string }>(
+            'release-existing-metadata',
+            { existing, tag },
         )
-            throw new Error('Existing release identity is invalid')
-        if (existing.body !== null && typeof existing.body !== 'string')
-            throw new Error('Existing release body is invalid')
         // Omitting metadata fields preserves the maintainer title and draft/published state.
-        let body = existing.body ?? ''
+        let body = checked.body
         if (
             body.includes('<!-- marketplace:release:start -->') &&
             !body.includes(IMAGE_START)
@@ -90,7 +83,7 @@ export async function publishRelease(
             )
         } else body = imageSection(body, image, identity.channel)
         if (mode === 'publish')
-            await request('PATCH', `${prefix}/${existing.id}`, { body })
+            await request('PATCH', `${prefix}/${checked.id}`, { body })
         return body
     }
     const notes = record(
@@ -137,18 +130,13 @@ export async function publishReleaseStatus(
             throw error
     }
     if (existing) {
-        if (
-            existing.tag_name !== tag ||
-            typeof existing.id !== 'number' ||
-            !Number.isSafeInteger(existing.id) ||
-            existing.id <= 0 ||
-            (existing.body !== null && typeof existing.body !== 'string')
+        const { id, body } = await runTooling<{ id: number; body: string }>(
+            'release-existing-metadata',
+            { existing, tag },
         )
-            throw new Error('Existing release identity is invalid')
-        const body = existing.body ?? ''
         // A successful publication must never regress to a build placeholder.
         if (body.includes(IMAGE_START)) return
-        await request('PATCH', `${prefix}/${existing.id}`, {
+        await request('PATCH', `${prefix}/${id}`, {
             body: replaceReleasePresentation(body, content),
         })
     } else {
