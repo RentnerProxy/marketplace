@@ -9,10 +9,12 @@ export interface MaintenanceResult {
     action:
         | 'update-requested'
         | 'merged'
+        | 'closed'
         | 'skipped'
         | 'failed'
         | 'would-update'
         | 'would-merge'
+        | 'would-close'
     reason: string
 }
 
