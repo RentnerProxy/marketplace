@@ -20,8 +20,9 @@ COPY contracts/v1/contracts.schema.json /app/contracts/v1/contracts.schema.json
 
 FROM core-sources AS candidate-probe-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
-    cargo build --release --locked -p marketplace-app-pipeline \
-    && cp target/release/marketplace-app-pipeline /candidate-smoke
+    --mount=type=cache,id=rentnerproxy-marketplace-cargo-musl-smoke-probe,target=/app/core/target,sharing=locked \
+    cargo build --release --locked -p marketplace-app-pipeline --no-default-features --features smoke-probe --bin candidate-smoke \
+    && cp target/release/candidate-smoke /candidate-smoke
 
 FROM scratch AS candidate-probe
 COPY --from=candidate-probe-builder /candidate-smoke /candidate-smoke

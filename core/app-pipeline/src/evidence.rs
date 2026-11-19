@@ -3,7 +3,7 @@ mod files;
 pub(crate) mod order;
 
 use std::{
-    io,
+    fs, io,
     path::{Path, PathBuf},
     sync::LazyLock,
 };
@@ -13,8 +13,8 @@ use documents::{
     ValidationReport, assemble, github_id, report_identity, sha,
 };
 use files::{
-    assert_directory, check_directory, copy_asset, file_identity, identity, json_bytes,
-    prepare_output, read_bytes, save_metadata,
+    assert_directory, check_directory, copy_asset, file_identity, fresh_output_staging, identity,
+    json_bytes, prepare_output, read_bytes, save_metadata, stage_asset, try_promote_staged_output,
 };
 use marketplace_artifacts::{FileIdentity, invalid, parse_json};
 use regex::Regex;
@@ -156,12 +156,17 @@ fn parse(bytes: &[u8]) -> io::Result<Value> {
 }
 
 fn verify_assets(directory: &Path, record: &TargetRecord) -> io::Result<()> {
-    let [archive, sbom, provenance] = assets_for(&record.package);
+    let [archive, ..] = assets_for(&record.package);
     file_identity(
         &directory.join(archive.name),
         archive.limit,
         Some(archive.identity),
     )?;
+    verify_asset_metadata(directory, record)
+}
+
+fn verify_asset_metadata(directory: &Path, record: &TargetRecord) -> io::Result<()> {
+    let [_, sbom, provenance] = assets_for(&record.package);
     sbom::verify_bytes(&read_bytes(
         &directory.join(sbom.name),
         sbom.limit,
@@ -180,8 +185,49 @@ fn verify_assets(directory: &Path, record: &TargetRecord) -> io::Result<()> {
     Ok(())
 }
 
+fn write_target(
+    output: &Path,
+    record: &TargetRecord,
+    archive_source: Option<&Path>,
+    sbom_source: &Path,
+) -> io::Result<()> {
+    let [archive, sbom, provenance] = assets_for(&record.package);
+    let names = vec![
+        TARGET_NAME.to_owned(),
+        archive.name.clone(),
+        sbom.name.clone(),
+        provenance.name.clone(),
+    ];
+    prepare_output(output, &names)?;
+    if let Some(source) = archive_source {
+        copy_asset(
+            source,
+            &output.join(archive.name),
+            archive.limit,
+            archive.identity,
+        )?;
+    }
+    copy_asset(
+        sbom_source,
+        &output.join(sbom.name),
+        sbom.limit,
+        sbom.identity,
+    )?;
+    save_metadata(output, &provenance.name, &record.provenance_bytes()?)?;
+    save_metadata(output, TARGET_NAME, &json_bytes(record)?)?;
+    check_directory(output, &names, false)
+}
+
 fn seal_target(input: SealTargetInput) -> io::Result<Value> {
-    let archive = file_identity(&input.archive_path, PACKAGE_LIMIT, None)?;
+    let output = &input.output_directory;
+    let staging = fresh_output_staging(output)?;
+    let staged_archive = staging
+        .as_ref()
+        .map(|directory| directory.path().join("archive"));
+    let archive = match &staged_archive {
+        Some(staged) => stage_asset(&input.archive_path, staged, PACKAGE_LIMIT)?,
+        None => file_identity(&input.archive_path, PACKAGE_LIMIT, None)?,
+    };
     let sbom = read_bytes(&input.sbom_path, SBOM_LIMIT, None)?;
     sbom::verify_bytes(&sbom)?;
     let package = Package {
@@ -192,30 +238,25 @@ fn seal_target(input: SealTargetInput) -> io::Result<Value> {
         provenance: identity(&[]),
     };
     let record = TargetRecord::new(input.build, input.purpose, input.appliance_image, package)?;
-    let output = &input.output_directory;
-    let [archive, sbom, provenance] = assets_for(&record.package);
-    let names = vec![
-        TARGET_NAME.to_owned(),
-        archive.name.clone(),
-        sbom.name.clone(),
-        provenance.name.clone(),
-    ];
-    prepare_output(output, &names)?;
-    copy_asset(
-        &input.archive_path,
-        &output.join(archive.name),
-        archive.limit,
-        archive.identity,
-    )?;
-    copy_asset(
-        &input.sbom_path,
-        &output.join(sbom.name),
-        sbom.limit,
-        sbom.identity,
-    )?;
-    save_metadata(output, &provenance.name, &record.provenance_bytes()?)?;
-    save_metadata(output, TARGET_NAME, &json_bytes(&record)?)?;
-    check_directory(output, &names, false)?;
+    if let Some(staged_archive) = staged_archive {
+        // Leave the final directory at ordinary permissions inside the private staging directory.
+        let staged = staged_archive.with_file_name("target");
+        fs::create_dir(&staged)?;
+        let [archive, sbom, _] = assets_for(&record.package);
+        let archive_path = staged.join(archive.name);
+        fs::rename(staged_archive, &archive_path)?;
+        write_target(&staged, &record, None, &input.sbom_path)?;
+        if !try_promote_staged_output(&staged, output)? {
+            write_target(
+                output,
+                &record,
+                Some(&archive_path),
+                &staged.join(sbom.name),
+            )?;
+        }
+    } else {
+        write_target(output, &record, Some(&input.archive_path), &input.sbom_path)?;
+    }
     Ok(serde_json::to_value(record)?)
 }
 
@@ -240,33 +281,12 @@ fn load_target(
     Ok(record)
 }
 
-fn seal_candidate(input: SealCandidateInput) -> io::Result<Value> {
-    let expectation = Expectation {
-        source: input.source,
-        build: input.build,
-        purpose: input.purpose,
-    };
-    expectation.validate()?;
-    let directories = [
-        &input.target_directories.amd64,
-        &input.target_directories.arm64,
-    ];
-    let records = [
-        load_target(directories[0], &expectation, TARGETS[0])?,
-        load_target(directories[1], &expectation, TARGETS[1])?,
-    ];
-    let Assembled {
-        sealed,
-        candidate_bytes,
-        report_bytes,
-    } = assemble(&records, &expectation, &input.publisher_name)?;
-    for (directory, record) in directories.into_iter().zip(&records) {
-        verify_assets(directory, record)?;
-    }
-    let output = &input.output_directory;
-    let names = candidate_names(&records);
-    prepare_output(output, &names)?;
-    for (directory, record) in directories.into_iter().zip(&records) {
+fn copy_candidate_assets(
+    directories: [&Path; 2],
+    records: &[TargetRecord; 2],
+    output: &Path,
+) -> io::Result<()> {
+    for (directory, record) in directories.into_iter().zip(records) {
         for asset in assets_for(&record.package) {
             copy_asset(
                 &directory.join(&asset.name),
@@ -276,10 +296,56 @@ fn seal_candidate(input: SealCandidateInput) -> io::Result<Value> {
             )?;
         }
     }
-    save_metadata(output, REPORT_NAME, &report_bytes)?;
-    save_metadata(output, CANDIDATE_NAME, &candidate_bytes)?;
-    check_directory(output, &names, false)?;
-    Ok(sealed)
+    Ok(())
+}
+
+fn finish_candidate(output: &Path, assembled: &Assembled, names: &[String]) -> io::Result<()> {
+    save_metadata(output, REPORT_NAME, &assembled.report_bytes)?;
+    save_metadata(output, CANDIDATE_NAME, &assembled.candidate_bytes)?;
+    check_directory(output, names, false)
+}
+
+fn seal_candidate(input: SealCandidateInput) -> io::Result<Value> {
+    let expectation = Expectation {
+        source: input.source,
+        build: input.build,
+        purpose: input.purpose,
+    };
+    expectation.validate()?;
+    let directories = [
+        input.target_directories.amd64.as_path(),
+        input.target_directories.arm64.as_path(),
+    ];
+    let records = [
+        load_target(directories[0], &expectation, TARGETS[0])?,
+        load_target(directories[1], &expectation, TARGETS[1])?,
+    ];
+    let assembled = assemble(&records, &expectation, &input.publisher_name)?;
+    let output = &input.output_directory;
+    let names = candidate_names(&records);
+    if let Some(staging) = fresh_output_staging(output)? {
+        // Keep the ordinary output directory mode inside the private staging directory.
+        let staged = staging.path().join("candidate");
+        fs::create_dir(&staged)?;
+        copy_candidate_assets(directories, &records, &staged)?;
+        for record in &records {
+            verify_asset_metadata(&staged, record)?;
+        }
+        finish_candidate(&staged, &assembled, &names)?;
+        if try_promote_staged_output(&staged, output)? {
+            return Ok(assembled.sealed);
+        }
+        prepare_output(output, &names)?;
+        copy_candidate_assets([&staged; 2], &records, output)?;
+    } else {
+        for (directory, record) in directories.into_iter().zip(&records) {
+            verify_assets(directory, record)?;
+        }
+        prepare_output(output, &names)?;
+        copy_candidate_assets(directories, &records, output)?;
+    }
+    finish_candidate(output, &assembled, &names)?;
+    Ok(assembled.sealed)
 }
 
 fn verify_receipt(

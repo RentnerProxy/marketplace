@@ -81,9 +81,6 @@ jobs:
             - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
               with:
                   bun-version: ${{ env.BUN_VERSION }}
-            - uses: ./.github/actions/native-tools
-              with:
-                  package-set: pipeline
             - run: bun --no-env-file ci --linker=isolated --ignore-scripts
             - name: Resolve the public repository and exact commit
               id: source

@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::{fs, path::Path, sync::Barrier, thread};
 
 use marketplace_app_pipeline::evidence::execute;
 use marketplace_artifacts::file_identity;
@@ -221,6 +221,103 @@ fn incomplete_seal_cleans_temporary_files_and_preserves_conflicting_output() {
     let sealed = execute("seal-candidate", seal).unwrap();
     assert_eq!(execute("verify-handoff", handoff).unwrap(), sealed);
     assert_eq!(fs::read_dir(&candidate).unwrap().count(), 8);
+}
+
+#[test]
+fn fresh_seal_leaves_no_output_when_second_archive_is_tampered() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path();
+    let (seal, _, handoff) = create_seals(path);
+    let archive = fs::read_dir(path.join("arm64"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .find(|path| path.to_str().unwrap().ends_with("linux-arm64.tar.zst"))
+        .unwrap();
+    let original = fs::read(&archive).unwrap();
+    let mut modified = original.clone();
+    modified[0] ^= 1;
+    fs::write(&archive, modified).unwrap();
+    let entries_before = fs::read_dir(path).unwrap().count();
+
+    assert!(
+        execute("seal-candidate", seal.clone())
+            .unwrap_err()
+            .to_string()
+            .contains("digest or length mismatch")
+    );
+    assert!(!path.join("candidate").exists());
+    assert_eq!(fs::read_dir(path).unwrap().count(), entries_before);
+
+    fs::write(archive, original).unwrap();
+    let sealed = execute("seal-candidate", seal).unwrap();
+    assert_eq!(execute("verify-handoff", handoff).unwrap(), sealed);
+    assert_eq!(fs::read_dir(path).unwrap().count(), entries_before + 1);
+}
+
+#[test]
+fn fresh_target_seal_leaves_no_output_when_sbom_is_invalid() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path();
+    let (_, assembly, _) = create_seals(path);
+    let record = &assembly["records"][0];
+    let output = path.join("fresh-target");
+    let sbom = path.join("original-sbom.json");
+    let original = fs::read(&sbom).unwrap();
+    fs::write(&sbom, b"{}").unwrap();
+    let input = json!({
+        "outputDirectory": output,
+        "archivePath": path.join("linux-amd64-original.tar.zst"),
+        "sbomPath": sbom,
+        "manifest": record["package"]["manifest"],
+        "manifestSha256": record["package"]["manifestSha256"],
+        "build": record["build"],
+        "purpose": record["purpose"],
+        "applianceImage": record["applianceImage"],
+    });
+    let entries_before = fs::read_dir(path).unwrap().count();
+
+    assert!(execute("seal-target", input.clone()).is_err());
+    assert!(!output.exists());
+    assert_eq!(fs::read_dir(path).unwrap().count(), entries_before);
+
+    fs::write(sbom, original).unwrap();
+    assert_eq!(execute("seal-target", input).unwrap(), *record);
+    assert_eq!(fs::read_dir(output).unwrap().count(), 4);
+}
+
+#[test]
+fn concurrent_fresh_seals_converge_on_the_same_output() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path();
+    let (seal, _, handoff) = create_seals(path);
+    let entries_before = fs::read_dir(path).unwrap().count();
+    let start = Barrier::new(2);
+    let sealed = thread::scope(|scope| {
+        let other = scope.spawn(|| {
+            start.wait();
+            execute("seal-candidate", seal.clone()).unwrap()
+        });
+        start.wait();
+        let result = execute("seal-candidate", seal.clone()).unwrap();
+        assert_eq!(other.join().unwrap(), result);
+        result
+    });
+
+    assert_eq!(execute("verify-handoff", handoff).unwrap(), sealed);
+    assert_eq!(fs::read_dir(path.join("candidate")).unwrap().count(), 8);
+    assert_eq!(fs::read_dir(path).unwrap().count(), entries_before + 1);
+}
+
+#[test]
+fn seal_candidate_creates_missing_output_ancestors() {
+    let directory = tempfile::tempdir().unwrap();
+    let (mut seal, _, mut handoff) = create_seals(directory.path());
+    let output = directory.path().join("new/nested/candidate");
+    seal["outputDirectory"] = json!(output);
+    handoff["directory"] = json!(output);
+
+    let sealed = execute("seal-candidate", seal).unwrap();
+    assert_eq!(execute("verify-handoff", handoff).unwrap(), sealed);
 }
 
 #[test]

@@ -55,7 +55,7 @@ fn step_boolean(value: &Value, expected: bool) -> bool {
         })
 }
 
-fn workflow_errors(input: &Value) -> io::Result<Value> {
+fn workflow_errors(input: &Value) -> io::Result<Vec<String>> {
     static PR_HEAD: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
             r#"(?ix)\bgithub
@@ -157,12 +157,24 @@ fn workflow_errors(input: &Value) -> io::Result<Value> {
             "{file}: privileged workflow must not execute PR source"
         ));
     }
+    Ok(errors)
+}
+
+fn workflows_errors(input: &Value) -> io::Result<Value> {
+    let workflows = input
+        .as_array()
+        .ok_or_else(|| invalid("Expected workflow inputs"))?;
+    let mut errors = Vec::new();
+    for workflow in workflows {
+        errors.extend(workflow_errors(workflow)?);
+    }
     Ok(json!(errors))
 }
 
 pub fn execute(operation: &str, input: Value) -> io::Result<Value> {
     match operation.strip_prefix("policy-").unwrap_or(operation) {
-        "workflow" => workflow_errors(&input),
+        "workflow" => Ok(json!(workflow_errors(&input)?)),
+        "workflows" => workflows_errors(&input),
         "pr-title" => Ok(json!(validate_title(&input["title"]))),
         "pr-labels" => pull_request_labels(&input["files"]),
         "pr-initial" => pr::initial(&input),

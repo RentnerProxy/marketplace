@@ -9,6 +9,7 @@ use marketplace_artifacts::{self as artifacts, FileIdentity};
 use serde::Serialize;
 
 use super::{METADATA_LIMIT, invalid};
+use crate::package::promotion;
 
 pub(super) fn identity(bytes: &[u8]) -> FileIdentity {
     FileIdentity {
@@ -98,6 +99,52 @@ pub(super) fn check_directory(
 pub(super) fn prepare_output(path: &Path, names: &[String]) -> io::Result<()> {
     fs::create_dir_all(path)?;
     check_directory(path, names, true)
+}
+
+pub(super) fn fresh_output_staging(path: &Path) -> io::Result<Option<tempfile::TempDir>> {
+    let Some(parent) = path.parent().filter(|_| path.file_name().is_some()) else {
+        return Ok(None);
+    };
+    match fs::symlink_metadata(path) {
+        Ok(_) => return Ok(None),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error),
+    }
+    let parent = if parent.as_os_str().is_empty() {
+        Path::new(".")
+    } else {
+        parent
+    };
+    match tempfile::tempdir_in(parent) {
+        Ok(staging) => Ok(Some(staging)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+pub(super) fn try_promote_staged_output(staging: &Path, output: &Path) -> io::Result<bool> {
+    match promotion::promote(staging, output) {
+        Ok(()) => Ok(true),
+        // A concurrent seal or unsupported directory rename uses the normal no-clobber writes.
+        Err(error)
+            if matches!(
+                error.kind(),
+                io::ErrorKind::AlreadyExists
+                    | io::ErrorKind::Unsupported
+                    | io::ErrorKind::InvalidInput
+                    | io::ErrorKind::CrossesDevices
+            ) =>
+        {
+            Ok(false)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+pub(super) fn stage_asset(source: &Path, staged: &Path, limit: u64) -> io::Result<FileIdentity> {
+    let actual = artifacts::copy_file(source, staged, limit, None)?;
+    require_nonempty(actual.size_bytes)?;
+    Ok(actual)
 }
 
 fn already_written(path: &Path, limit: u64, expected: &FileIdentity) -> io::Result<bool> {

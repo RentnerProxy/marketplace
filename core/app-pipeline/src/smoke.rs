@@ -1,8 +1,13 @@
+#[cfg(feature = "pipeline")]
 use marketplace_artifacts::invalid;
+#[cfg(feature = "pipeline")]
 use rentnerproxy_app_contracts::{Contracts, ProtocolContracts};
-use serde_json::{Value, json};
+use serde_json::Value;
+#[cfg(feature = "pipeline")]
+use serde_json::json;
 use std::io;
 
+#[cfg(feature = "pipeline")]
 pub fn bootstrap(input: &Value) -> io::Result<Value> {
     let manifest = &input["manifest"];
     let target = manifest["target"]

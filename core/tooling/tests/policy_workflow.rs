@@ -98,6 +98,47 @@ fn workflow_checks_normalized_actions_credentials_and_timeouts() -> io::Result<(
 }
 
 #[test]
+fn workflow_batch_aggregates_single_file_errors_in_input_order() -> io::Result<()> {
+    let mut first = workflow(json!("pull_request"), "fixture");
+    first["file"] = json!(".github/workflows/first.yaml");
+    first["workflow"]["jobs"]["gate"]["timeout-minutes"] = json!(0);
+    let valid = workflow(json!("pull_request"), "fixture");
+    let last = workflow(
+        json!("pull_request_target"),
+        "ref: ${{ github.event.pull_request.head.sha }}",
+    );
+    assert_eq!(
+        execute("policy-workflows", json!([first, valid, last]))?,
+        json!([
+            ".github/workflows/first.yaml/gate: missing timeout",
+            ".github/workflows/pr-fixture.yml: privileged workflow must not execute PR source"
+        ])
+    );
+    assert_eq!(execute("policy-workflows", json!([]))?, json!([]));
+    Ok(())
+}
+
+#[test]
+fn workflow_batch_fails_closed_on_malformed_workflow() {
+    let mut first = workflow(json!("pull_request"), "fixture");
+    first["workflow"]["concurrency"] = Value::Null;
+    let mut malformed = workflow(json!("pull_request"), "fixture");
+    malformed["workflow"]["jobs"] = Value::Null;
+    assert_eq!(
+        execute("policy-workflows", json!([first, malformed]))
+            .unwrap_err()
+            .to_string(),
+        "Invalid workflow jobs"
+    );
+    assert_eq!(
+        execute("policy-workflows", json!({}))
+            .unwrap_err()
+            .to_string(),
+        "Expected workflow inputs"
+    );
+}
+
+#[test]
 fn review_approval_requires_complete_successful_current_snapshot() -> io::Result<()> {
     let pull = json!({
         "headRefOid": "head", "baseRefOid": "base", "state": "OPEN",

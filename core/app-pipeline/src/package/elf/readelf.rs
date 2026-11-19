@@ -11,6 +11,8 @@ use super::invalid;
 
 const REPORT_LIMIT: u64 = 2 * 1024 * 1024;
 const TIMEOUT: Duration = Duration::from_secs(10);
+const INITIAL_POLL: Duration = Duration::from_micros(250);
+const MAX_POLL: Duration = Duration::from_millis(10);
 
 pub(super) fn verify(path: &Path, needed: &[String]) -> io::Result<()> {
     let report = report(path).map_err(|error| {
@@ -102,10 +104,15 @@ fn report(path: &Path) -> io::Result<String> {
         let out = scope.spawn(move || read_bounded(stdout));
         let err = scope.spawn(move || read_bounded(stderr));
         let deadline = Instant::now() + TIMEOUT;
+        let mut interval = INITIAL_POLL;
         let status = loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
             match child.try_wait() {
                 Ok(Some(status)) => break Ok(status),
-                Ok(None) if Instant::now() < deadline => thread::sleep(Duration::from_millis(10)),
+                Ok(None) if !remaining.is_zero() => {
+                    thread::sleep(interval.min(remaining));
+                    interval = (interval * 2).min(MAX_POLL);
+                }
                 result => {
                     let _ = child.kill();
                     child.wait()?;

@@ -1,4 +1,12 @@
-import { mkdir, realpath, writeFile } from 'node:fs/promises'
+import {
+    link,
+    mkdir,
+    mkdtemp,
+    open,
+    realpath,
+    rm,
+    writeFile,
+} from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
 import type { AppManifest } from '../../../../contracts/v1/index.ts'
@@ -92,8 +100,9 @@ async function capture(
         limit: number
         input?: string
     },
+    consume: (chunk: Uint8Array) => void | Promise<void>,
 ) {
-    const process = Bun.spawn(args, {
+    const child = Bun.spawn(args, {
         cwd: options.cwd,
         env: options.env,
         stdin:
@@ -103,20 +112,22 @@ async function capture(
         signal: AbortSignal.timeout(120_000),
         windowsHide: true,
     })
-    const chunks: Uint8Array[] = []
     let bytes = 0
-    for await (const chunk of process.stdout) {
-        bytes += chunk.byteLength
-        if (bytes > options.limit) {
-            process.kill()
-            await process.exited
-            throw new Error('Submitted Git object exceeds its size limit')
+    try {
+        for await (const chunk of child.stdout) {
+            bytes += chunk.byteLength
+            if (bytes > options.limit)
+                throw new Error('Submitted Git object exceeds its size limit')
+            // oxlint-disable-next-line no-await-in-loop -- Backpressure bounds pending archive writes.
+            await consume(chunk)
         }
-        chunks.push(chunk)
+        if ((await child.exited) !== 0)
+            throw new Error('Could not read the exact submitted Git tree')
+        return bytes
+    } finally {
+        if (child.exitCode === null && child.signalCode === null) child.kill()
+        await child.exited
     }
-    if ((await process.exited) !== 0)
-        throw new Error('Could not read the exact submitted Git tree')
-    return Buffer.concat(chunks, bytes)
 }
 
 /** Keep submitted Git objects inert on the host and admit only a scoped source tar to the sandbox. */
@@ -163,7 +174,12 @@ export async function stageGitSource(
     const home = join(cwd, 'git-home')
     const dependencies = join(cwd, 'dependencies')
     await Promise.all([mkdir(home), mkdir(dependencies)])
-    const captureGit = (args: string[], limit = 4096, input?: string) =>
+    const readGit = (
+        args: string[],
+        limit: number,
+        input: string | undefined,
+        consume: (chunk: Uint8Array) => void | Promise<void>,
+    ) =>
         capture(
             [
                 'git',
@@ -193,7 +209,15 @@ export async function stageGitSource(
                     GIT_TERMINAL_PROMPT: '0',
                 },
             },
+            consume,
         )
+    const captureGit = async (args: string[], limit = 4096, input?: string) => {
+        const chunks: Uint8Array[] = []
+        const bytes = await readGit(args, limit, input, (chunk) => {
+            chunks.push(chunk)
+        })
+        return Buffer.concat(chunks, bytes)
+    }
     await captureGit(['init', '--bare', '--template=', '.'])
     await captureGit(['remote', 'add', 'origin', origin.href])
     await captureGit(['config', 'remote.origin.promisor', 'true'])
@@ -285,11 +309,24 @@ export async function stageGitSource(
         }),
     )
     const sourceArchive = join(cwd, 'source.tar')
-    const tar = await captureGit(
-        ['archive', '--format=tar', tree],
-        sourceArchiveBytesLimit,
-    )
-    await writeFile(sourceArchive, tar, { mode: 0o644, flag: 'wx' })
+    const temporary = await mkdtemp(join(cwd, '.source-archive-'))
+    try {
+        const stagedPath = join(temporary, 'source.tar')
+        const file = await open(stagedPath, 'wx', 0o644)
+        try {
+            await readGit(
+                ['archive', '--format=tar', tree],
+                sourceArchiveBytesLimit,
+                undefined,
+                (chunk) => file.writeFile(chunk),
+            )
+        } finally {
+            await file.close()
+        }
+        await link(stagedPath, sourceArchive)
+    } finally {
+        await rm(temporary, { recursive: true, force: true })
+    }
     return { sourceArchive, dependencies }
 }
 

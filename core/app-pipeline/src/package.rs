@@ -1,7 +1,7 @@
 mod compression;
 mod documents;
 mod elf;
-mod promotion;
+pub(crate) mod promotion;
 mod references;
 mod ustar;
 

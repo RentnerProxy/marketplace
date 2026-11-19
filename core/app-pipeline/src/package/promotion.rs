@@ -26,7 +26,7 @@ pub(super) fn fresh_destination(path: &Path) -> io::Result<PathBuf> {
     }
 }
 
-pub(super) fn promote(staging: &Path, output: &Path) -> io::Result<()> {
+pub(crate) fn promote(staging: &Path, output: &Path) -> io::Result<()> {
     let staging = absolute_leaf(staging)?;
     let destination = fresh_destination(output)?;
     let metadata = fs::symlink_metadata(&staging)?;
