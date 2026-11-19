@@ -42,7 +42,7 @@ sha2 = "0.11.1"
 tempfile = "3"
 time = { version = "0.3", features = ["formatting", "parsing"], optional = true }
 uuid = { version = "1", features = ["v4"], optional = true }
-zstd = { version = "0.13.4", default-features = false, optional = true }
+zstd = { version = "0.14.4", default-features = false, optional = true }
 
 [target.'cfg(unix)'.dependencies]
 httparse = "1.10"
