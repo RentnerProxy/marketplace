@@ -38,7 +38,6 @@ fn sandbox_adapters_require_owned_containers_and_read_only_mounts() {
 #[test]
 fn docker_fixture_exercises_native_limits_staging_and_cleanup() {
     use serde_json::Value;
-    use std::env;
     use std::fs;
     use std::os::unix::fs::PermissionsExt;
     use std::process::{Command, Output, Stdio};
@@ -77,14 +76,10 @@ esac
     )
     .unwrap();
     fs::set_permissions(&docker, fs::Permissions::from_mode(0o700)).unwrap();
-    let path_env = env::join_paths(
-        std::iter::once(path.to_path_buf()).chain(env::split_paths(&env::var_os("PATH").unwrap())),
-    )
-    .unwrap();
     let invoke = |operation: &str, input: Value| -> Output {
         let mut child = Command::new(env!("CARGO_BIN_EXE_marketplace-app-pipeline"))
             .arg(format!("sandbox-{operation}"))
-            .env("PATH", &path_env)
+            .env("PATH", path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

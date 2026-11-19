@@ -30,8 +30,15 @@ fn accept_before(listener: &UnixListener, deadline: Instant) -> UnixStream {
     }
 }
 
+fn socket_directory() -> tempfile::TempDir {
+    tempfile::Builder::new()
+        .prefix("marketplace-smoke-")
+        .tempdir_in("/tmp")
+        .unwrap()
+}
+
 fn probe_with_test_app(readiness: &Value) -> io::Result<()> {
-    let directory = tempfile::Builder::new().prefix("smoke-").tempdir().unwrap();
+    let directory = socket_directory();
     let manifest_path = directory.path().join("app.json");
     let app_directory = directory.path().join("app");
     let app_path = app_directory.join("app.sock");
@@ -231,7 +238,7 @@ fn core_context_applies_the_request_body_limit_before_serving() {
 
 #[test]
 fn readiness_checks_socket_ownership_sends_credentials_and_waits_for_a_valid_reply() {
-    let directory = tempfile::tempdir().unwrap();
+    let directory = socket_directory();
     let path = directory.path().join("app.sock");
     let alias = directory.path().join("alias.sock");
     let unix = UnixListener::bind(&path).unwrap();
