@@ -34,7 +34,8 @@ updates:
       ignore:
           # aead-gcm-stream uses the cipher 0.4 traits implemented by AES 0.8.
           - dependency-name: 'aes'
-            update-types: ['version-update:semver-minor', 'version-update:semver-major']
+            update-types:
+                ['version-update:semver-minor', 'version-update:semver-major']
       groups:
           cargo-minor-and-patch:
               applies-to: 'version-updates'
