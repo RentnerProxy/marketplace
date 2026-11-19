@@ -125,6 +125,18 @@ function binaryPath() {
     return path
 }
 
+function catalogEnvironment(keys?: SigningKeys) {
+    const profile = process.env.LLVM_PROFILE_FILE
+    return {
+        ...(profile && { LLVM_PROFILE_FILE: profile }),
+        ...(keys && {
+            APP_CATALOG_TARGETS_KEY: keys.targets,
+            APP_CATALOG_SNAPSHOT_KEY: keys.snapshot,
+            APP_CATALOG_TIMESTAMP_KEY: keys.timestamp,
+        }),
+    }
+}
+
 export async function extractCandidateZip(
     archive: string,
     destination: string,
@@ -136,7 +148,7 @@ export async function extractCandidateZip(
             stdin: Buffer.from(JSON.stringify(limits)),
             stdout: 'ignore',
             stderr: 'ignore',
-            env: {},
+            env: catalogEnvironment(),
             windowsHide: true,
             signal: AbortSignal.timeout(45_000),
         },
@@ -216,13 +228,7 @@ function catalogFromBytes(bytes: Uint8Array): Catalog {
 
 export function openCatalogCore(keys?: SigningKeys): CatalogCore {
     const child = Bun.spawn([binaryPath()], {
-        env: keys
-            ? {
-                  APP_CATALOG_TARGETS_KEY: keys.targets,
-                  APP_CATALOG_SNAPSHOT_KEY: keys.snapshot,
-                  APP_CATALOG_TIMESTAMP_KEY: keys.timestamp,
-              }
-            : {},
+        env: catalogEnvironment(keys),
         stdin: 'pipe',
         stdout: 'pipe',
         stderr: 'ignore',

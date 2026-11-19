@@ -1,8 +1,11 @@
 /* eslint-disable no-await-in-loop -- Owned disposable resources are exercised and cleaned up in lifecycle order. */
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { runNativeTool } from '@/lib/Core/native-tool.ts'
+import { parseComposeConfigOutput } from './Deployment/compose-config.ts'
 import { createLocalRuntimeImageReferenceService } from './Deployment/runtime-image-reference.service.ts'
 
 const nonce = randomUUID()
@@ -106,7 +109,11 @@ async function start(image: string, name: string, command: string[] = []) {
 try {
     const base = process.env.RUNTIME_IMAGE_ID ?? prefix + ':runtime'
     assert(
-        /^(?:sha256:[a-f0-9]{64}|[a-z0-9][a-z0-9./:_-]*)$/.test(base),
+        await runNativeTool<boolean>(
+            'marketplace-tooling',
+            'verification-runtime-image-ref',
+            { reference: base },
+        ),
         'Invalid isolated runtime image identity.',
     )
     if (!process.env.RUNTIME_IMAGE_ID) {
@@ -130,26 +137,38 @@ try {
     await writeFile(join(directory, '.env'), '')
     await writeFile(
         join(directory, 'compose.yml'),
-        await readFile(
-            new URL('../../../docker-compose.yml', import.meta.url),
-            'utf8',
+        await runNativeTool<string>(
+            'marketplace-tooling',
+            'verification-fixture-text',
+            {
+                path: fileURLToPath(
+                    new URL('../../../docker-compose.yml', import.meta.url),
+                ),
+            },
         ),
     )
-    await docker([
+    const compose = await docker([
         'compose',
         '--env-file',
         join(directory, '.env'),
         '-f',
         join(directory, 'compose.yml'),
         'config',
-        '--quiet',
+        '--format',
+        'json',
     ])
-    const runtime = await readFile(
-        new URL(
-            '../tests/Deployment/Fixtures/appliance-runtime.fixture.ts',
-            import.meta.url,
-        ),
-        'utf8',
+    parseComposeConfigOutput(compose.stdout)
+    const runtime = await runNativeTool<string>(
+        'marketplace-tooling',
+        'verification-fixture-text',
+        {
+            path: fileURLToPath(
+                new URL(
+                    '../tests/Deployment/Fixtures/appliance-runtime.fixture.ts',
+                    import.meta.url,
+                ),
+            ),
+        },
     )
     await writeFile(join(directory, 'runtime.ts'), runtime)
     await writeFile(

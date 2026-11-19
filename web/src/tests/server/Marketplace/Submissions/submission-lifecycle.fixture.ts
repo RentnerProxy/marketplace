@@ -101,7 +101,7 @@ export async function exerciseSubmissionLifecycle() {
     const fixturePermissionIds: string[] = []
     let proofRemoved = false
     let publisherRunStatus = 'in_progress'
-    let fixture: ReturnType<typeof fixtureCandidate> | undefined
+    let fixture: Awaited<ReturnType<typeof fixtureCandidate>> | undefined
     let repositoryIdentity = repository
     const officialAppId = 'rentnerproxy.fixture-' + crypto.randomUUID()
     const submissionsCreated: string[] = []
@@ -319,7 +319,7 @@ export async function exerciseSubmissionLifecycle() {
         await reconcileNextSubmissionService(token)
         const lost = await readSubmission(first.id)
         expect(lost).toMatchObject({ status: 'validating', buildRunId: null })
-        fixture = fixtureCandidate(lost, claim)
+        fixture = await fixtureCandidate(lost, claim)
         expect(dispatches).toEqual(
             Array.from({ length: 2 }, () => ({
                 method: 'POST',
@@ -729,7 +729,7 @@ export async function exerciseSubmissionLifecycle() {
             version: stagedRequest.version,
             request: stagedRequest,
         }
-        const stagedBundle = fixtureCandidate(staged, claim)
+        const stagedBundle = await fixtureCandidate(staged, claim)
         const stagedApproval = {
             ...approval,
             id: staged.id,

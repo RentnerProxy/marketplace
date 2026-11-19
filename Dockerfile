@@ -1,6 +1,6 @@
 ARG BUN_VERSION=1.4.4
 
-FROM rust:1.100.0-alpine3.24@sha256:de1e0058543a81ed7b046629167db587c67a94bdf37cce14eb27f0ec83baaffb AS core-builder
+FROM rust:1.100.0-alpine3.24@sha256:de1e0058543a81ed7b046629167db587c67a94bdf37cce14eb27f0ec83baaffb AS core-sources
 
 WORKDIR /app/core
 RUN apk add --no-cache musl-dev
@@ -10,14 +10,32 @@ COPY core/app-catalog/Cargo.toml ./app-catalog/
 COPY core/app-catalog/src ./app-catalog/src
 COPY core/app-contracts/Cargo.toml core/app-contracts/build.rs ./app-contracts/
 COPY core/app-contracts/src ./app-contracts/src
+COPY core/app-pipeline/Cargo.toml ./app-pipeline/
+COPY core/app-pipeline/src ./app-pipeline/src
+COPY core/artifacts/Cargo.toml ./artifacts/
+COPY core/artifacts/src ./artifacts/src
+COPY core/tooling/Cargo.toml ./tooling/
+COPY core/tooling/src ./tooling/src
 COPY contracts/v1/contracts.schema.json /app/contracts/v1/contracts.schema.json
+
+FROM core-sources AS candidate-probe-builder
+RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=rentnerproxy-marketplace-cargo-musl-smoke-probe,target=/app/core/target,sharing=locked \
+    cargo build --release --locked -p marketplace-app-pipeline --no-default-features --features smoke-probe --bin candidate-smoke \
+    && cp target/release/candidate-smoke /candidate-smoke
+
+FROM scratch AS candidate-probe
+COPY --from=candidate-probe-builder /candidate-smoke /candidate-smoke
+
+FROM core-sources AS core-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,id=rentnerproxy-marketplace-cargo-musl-release,target=/app/core/target,sharing=locked \
-    cargo build --release --locked --bins \
+    cargo build --release --locked --bins -p marketplace-core -p marketplace-app-pipeline \
     && mkdir /native \
     && find target/release -maxdepth 1 -type f -name 'marketplace-*' ! -name '*.d' -exec cp '{}' /native/ ';' \
     && test -x /native/marketplace-appliance \
     && test -x /native/marketplace-archive \
+    && test -x /native/marketplace-app-pipeline \
     && test -x /native/marketplace-storage
 
 FROM valkey/valkey:9.1.3-alpine AS valkey-runtime

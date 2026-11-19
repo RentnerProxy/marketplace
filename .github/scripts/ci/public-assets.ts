@@ -1,9 +1,15 @@
 /* eslint-disable no-await-in-loop -- Poll bounded startup and clean up owned resources in lifecycle order. */
 import { randomUUID } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
+import { runTooling } from '../native-tools.ts'
 
 const image = process.env.RUNTIME_IMAGE_ID
-if (!image || !/^(?:sha256:[a-f0-9]{64}|[a-z0-9][a-z0-9./:_-]*)$/.test(image))
+if (
+    !image ||
+    !(await runTooling<boolean>('verification-runtime-image-ref', {
+        reference: image,
+    }))
+)
     throw new Error('An existing isolated runtime image is required')
 const owner = randomUUID()
 const name = 'marketplace-public-assets-' + owner
@@ -108,10 +114,11 @@ try {
     }
     if (!ready)
         throw new Error('Isolated public-assets appliance readiness timed out')
-    const fixture = await readFile(
-        new URL('./public-assets.fixture.ts', import.meta.url),
-        'utf8',
-    )
+    const fixture = await runTooling<string>('verification-fixture-text', {
+        path: fileURLToPath(
+            new URL('./public-assets.fixture.ts', import.meta.url),
+        ),
+    })
     const result = await docker([
         'exec',
         name,
@@ -120,7 +127,12 @@ try {
         '-e',
         fixture,
     ])
-    console.log(result.stdout.trim())
+    const checked = await runTooling<number>('verification-public-assets', {
+        output: result.stdout,
+    })
+    console.log(
+        `Verified ${checked} packaged public assets, image/font MIME types, GET/HEAD bytes and English public pages.`,
+    )
 } finally {
     await cleanup()
 }

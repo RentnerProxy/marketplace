@@ -43,10 +43,10 @@ test('derives a stable namespace from both the GitHub owner and repository IDs',
     )
 })
 
-test('rejects substituted workflow runs, reruns and mismatched correlation', () => {
+test('rejects substituted workflow runs, reruns and mismatched correlation', async () => {
     const claim = fixtureClaim()
     const submission = fixtureSubmission(claim)
-    const { run } = fixtureCandidate(submission, claim)
+    const { run } = await fixtureCandidate(submission, claim)
     expect(() => assertSubmissionRun(run, submission)).not.toThrow()
     for (const spoof of [
         { workflow_id: '9999' },
@@ -63,10 +63,10 @@ test('rejects substituted workflow runs, reruns and mismatched correlation', () 
     }
 })
 
-test('rejects wrong-owner and expired Actions artifacts before review', () => {
+test('rejects wrong-owner and expired Actions artifacts before review', async () => {
     const claim = fixtureClaim()
     const submission = fixtureSubmission(claim)
-    const { run, bundle } = fixtureCandidate(submission, claim)
+    const { run, bundle } = await fixtureCandidate(submission, claim)
     const artifact = {
         id: Number(bundle.id),
         name: 'fixture',
@@ -97,53 +97,35 @@ test('rejects wrong-owner and expired Actions artifacts before review', () => {
     ).toThrow('invalidEvidence')
 })
 
-test('binds the review receipt to exact bytes, source, evidence, permissions and build outcome', () => {
+test('binds the review receipt to exact bytes, source, evidence, permissions and build outcome', async () => {
     const claim = fixtureClaim()
     const submission = fixtureSubmission(claim)
-    const { run, bundle, receipt, evidence } = fixtureCandidate(
+    const { run, bundle, receipt, evidence } = await fixtureCandidate(
         submission,
         claim,
     )
-    expect(
+    const verify = (value: unknown, build = run) =>
         verifySubmissionReceipt(
-            receipt,
+            value,
             submission,
             claim,
-            run,
+            build,
             bundle,
             evidence,
-        ).candidate,
-    ).toEqual(receipt.candidate)
+        )
+    expect((await verify(receipt)).candidate).toEqual(receipt.candidate)
     const tampered = structuredClone(receipt)
     tampered.report.targets[0].package.manifest.permissions.push(
         'new-permission',
     )
-    expect(() =>
-        verifySubmissionReceipt(
-            tampered,
-            submission,
-            claim,
-            run,
-            bundle,
-            evidence,
-        ),
-    ).toThrow('invalidEvidence')
+    await expect(verify(tampered)).rejects.toThrow('invalidEvidence')
     const leaking = structuredClone(receipt)
     Object.assign(leaking.report.targets[0].checks, {
         rawLog: 'arbitrary text',
     })
-    expect(() =>
-        verifySubmissionReceipt(
-            leaking,
-            submission,
-            claim,
-            run,
-            bundle,
-            evidence,
-        ),
-    ).toThrow('invalidEvidence')
+    await expect(verify(leaking)).rejects.toThrow('invalidEvidence')
 
-    for (const change of [
+    const changedReceipts = [
         { bundleSha256: '0'.repeat(64) },
         { sourcePath: 'another-app' },
         { submissionId: submission.id },
@@ -159,26 +141,15 @@ test('binds the review receipt to exact bytes, source, evidence, permissions and
                 source: { ...receipt.candidate.source, commit: '2'.repeat(40) },
             },
         },
-    ]) {
-        expect(() =>
-            verifySubmissionReceipt(
-                { ...receipt, ...change },
-                submission,
-                claim,
-                run,
-                bundle,
-                evidence,
+    ]
+    await Promise.all(
+        changedReceipts.map((change) =>
+            expect(verify({ ...receipt, ...change })).rejects.toThrow(
+                'invalidEvidence',
             ),
-        ).toThrow('invalidEvidence')
-    }
-    expect(() =>
-        verifySubmissionReceipt(
-            receipt,
-            submission,
-            claim,
-            { ...run, conclusion: 'failure' },
-            bundle,
-            evidence,
         ),
-    ).toThrow('invalidEvidence')
+    )
+    await expect(
+        verify(receipt, { ...run, conclusion: 'failure' }),
+    ).rejects.toThrow('invalidEvidence')
 })

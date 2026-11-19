@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { Glob } from 'bun'
+import { fileURLToPath } from 'node:url'
 import { workflowPolicyErrors } from '../../../../../.github/scripts/ci/workflow-policy.ts'
 
 const valid = `name: Fixture
@@ -15,15 +16,22 @@ jobs:
         with: {persist-credentials: false}
 `
 
-test('all active GitHub workflows satisfy their security policy', async () => {
-    let count = 0
-    for await (const file of new Glob('.github/workflows/*.yml').scan('.')) {
-        expect(workflowPolicyErrors(file, await Bun.file(file).text())).toEqual(
-            [],
-        )
-        count++
-    }
-    expect(count).toBeGreaterThan(0)
+test('the workflow policy CLI checks all active GitHub workflows', () => {
+    expect(
+        [...new Glob('.github/workflows/*.{yml,yaml}').scanSync('.')].length,
+    ).toBeGreaterThan(0)
+    const script = fileURLToPath(
+        new URL(
+            '../../../../../.github/scripts/ci/workflow-policy.ts',
+            import.meta.url,
+        ),
+    )
+    const result = Bun.spawnSync([process.execPath, '--no-env-file', script])
+    expect(result.stderr.toString()).toBe('')
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout.toString().trim()).toBe(
+        'Workflow security policy passed.',
+    )
 })
 
 test('GitHub workflow helpers use the project languages', () => {
