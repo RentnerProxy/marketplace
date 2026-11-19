@@ -73,7 +73,7 @@ function changesOnlyDigests(value: unknown): boolean {
         after.length === file.additions &&
         before.length === after.length &&
         before.every((entry, index) => {
-            const next = after[index]!
+            const next = after[index]
             return (
                 entry[1] === next[1] &&
                 entry[2] !== next[2] &&
