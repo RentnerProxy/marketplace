@@ -12,7 +12,9 @@ use serde_json::Value;
 use time::OffsetDateTime;
 
 pub use metadata::SigningKeys;
-pub use reader::{ReadOptions, TrustedCatalog, read_catalog};
+pub use reader::{
+    ReadOptions, TrustedCatalog, TrustedPackageCatalog, read_catalog, read_package_catalog,
+};
 pub use update::{UpdateOptions, bootstrap_catalog, update_catalog};
 
 use metadata::{CATALOG_LIMIT, FileInfo, KeyHistory, MAX_SAFE_VERSION, Role, Root, decode};

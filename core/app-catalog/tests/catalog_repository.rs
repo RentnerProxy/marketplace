@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use ed25519_dalek::{Signer, SigningKey, pkcs8::EncodePrivateKey};
 use marketplace_app_catalog::{
     ReadOptions, Result, SigningKeys, TrustedCatalog, UpdateOptions, bootstrap_catalog,
-    read_catalog, update_catalog,
+    read_catalog, read_package_catalog, update_catalog,
 };
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -396,6 +396,67 @@ fn verifies_consistent_targets_and_preserves_tombstones() {
     reject(
         update(&revoked, &candidate, &keys, &Files::new()),
         "Existing revocation changed",
+    );
+}
+
+#[test]
+fn package_reader_checks_the_signed_chain_without_fetching_icon_contents() {
+    let (credentials, root, mut files, state) = repository();
+    let bootstrap = files.clone();
+    let catalog = release_catalog();
+    let hash = sha256(ICON);
+    let name = format!("assets/{hash}.png");
+    let path = format!("targets/assets/{hash}.{hash}.png");
+    let icons = Files::from([(name.clone(), ICON.to_vec())]);
+    files.extend(update(&state, &catalog, &credentials.online(), &icons).unwrap());
+    files.remove(&path).unwrap();
+    reject(
+        read(&files, &root, options(now())),
+        "Missing or oversized catalog file",
+    );
+
+    let package_reader = |path: &str, _| {
+        assert!(!path.starts_with("targets/assets/"));
+        Ok(files.get(path).cloned())
+    };
+    let trusted = read_package_catalog(package_reader, &root, now(), None).unwrap();
+    assert_eq!(
+        trusted.catalog_bytes(),
+        serde_json::to_vec(&catalog).unwrap()
+    );
+    read_package_catalog(package_reader, &root, now(), Some(&trusted)).unwrap();
+    reject(
+        read_package_catalog(package_reader, &root, now() + Duration::days(2), None),
+        "Invalid or expired timestamp",
+    );
+    reject(
+        read_package_catalog(
+            |path, _| Ok(bootstrap.get(path).cloned()),
+            &root,
+            now(),
+            Some(&trusted),
+        ),
+        "Metadata rollback",
+    );
+
+    let targets_path = "metadata/2.targets.json";
+    let snapshot_path = "metadata/2.snapshot.json";
+    let mut targets: Value = serde_json::from_slice(&files[targets_path]).unwrap();
+    targets["signed"]["targets"][&name]["length"] = (ICON.len() + 1).into();
+    let targets = signed_metadata(&targets["signed"], &[&credentials.online[0]]);
+    let link = |bytes: &[u8]| json!({"version": 2, "length": bytes.len(), "hashes": {"sha256": sha256(bytes)}});
+    let mut snapshot: Value = serde_json::from_slice(&files[snapshot_path]).unwrap();
+    snapshot["signed"]["meta"]["targets.json"] = link(&targets);
+    let snapshot = signed_metadata(&snapshot["signed"], &[&credentials.online[1]]);
+    let mut timestamp: Value = serde_json::from_slice(&files[TIMESTAMP]).unwrap();
+    timestamp["signed"]["meta"]["snapshot.json"] = link(&snapshot);
+    let timestamp = signed_metadata(&timestamp["signed"], &[&credentials.online[2]]);
+    files.insert(targets_path.into(), targets);
+    files.insert(snapshot_path.into(), snapshot);
+    files.insert(TIMESTAMP.into(), timestamp);
+    reject(
+        read_package_catalog(|path, _| Ok(files.get(path).cloned()), &root, now(), None),
+        "Signed icon identity differs",
     );
 }
 
