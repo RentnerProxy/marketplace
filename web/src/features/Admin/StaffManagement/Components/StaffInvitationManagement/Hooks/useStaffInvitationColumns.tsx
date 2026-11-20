@@ -1,6 +1,7 @@
 import type { TableColumn } from '@rentnerkev/table/types'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import { formatDate } from '@/lib/Date/date.ts'
+import { authenticatedTableActionColumn } from '@/lib/Table/authenticatedTableStyles.ts'
 import StatusIndicator from '@/shared/StatusIndicator.tsx'
 import type { StatusIndicatorTone } from '@/shared/Types/status-indicator.types.ts'
 import type { StaffInvitationSummary } from '../../../Types/staff-invitation.types.ts'
@@ -60,14 +61,8 @@ export default function useStaffInvitationColumns(
             cell: ({ row }) => formatDate(row.original.expiresAt),
         },
         {
-            id: 'actions',
+            ...authenticatedTableActionColumn,
             header: t('common.actions'),
-            size: 200,
-            minSize: 200,
-            enableHiding: false,
-            enableResizing: false,
-            enableSorting: false,
-            enableColumnFilter: false,
             cell: ({ row }) => (
                 <StaffInvitationActions
                     invitation={row.original}

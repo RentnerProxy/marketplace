@@ -13,10 +13,10 @@ export default function GeneralUserInfo({
     return (
         <div className="flex flex-col gap-5">
             <div>
-                <h3 className="font-semibold text-white">
+                <h3 className="font-semibold text-foreground">
                     {t('admin.users.accountTitle')}
                 </h3>
-                <p className="text-sm text-secondary-text">
+                <p className="mt-1 text-sm leading-relaxed text-secondary-text">
                     {t('admin.users.accountDescription')}
                 </p>
             </div>
@@ -46,10 +46,10 @@ export default function GeneralUserInfo({
             <div className="h-px w-full bg-border-dark" />
 
             <div>
-                <h3 className="font-semibold text-white">
+                <h3 className="font-semibold text-foreground">
                     {t('admin.users.additionalInfoTitle')}
                 </h3>
-                <p className="text-sm text-secondary-text">
+                <p className="mt-1 text-sm leading-relaxed text-secondary-text">
                     {t('admin.users.additionalInfoDescription')}
                 </p>
             </div>

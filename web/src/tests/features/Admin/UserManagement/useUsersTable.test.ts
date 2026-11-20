@@ -108,6 +108,15 @@ describe('users table view', () => {
         expect(table.columnSettings).toBe(true)
         expect(table.resizableColumns).toBe(true)
         expect(table.columnWidthMode).toBe('scroll')
+        expect(table.portalContainer).toBeNull()
+        expect(
+            table.columns.find((column) => column.id === 'actions'),
+        ).toMatchObject({
+            header: 'common.actions',
+            enableHiding: false,
+            enableResizing: false,
+            meta: { align: 'right' },
+        })
         expect(table.pageSizeOptions).toEqual(
             [5, 10, 20, 50].map((value) => ({
                 value,
@@ -311,14 +320,14 @@ describe('user row actions', () => {
         expect(state.isDeleteDisabled).toBe(true)
         expect(state.isToggleStatusDisabled).toBe(true)
         expect(state.isPasswordResetDisabled).toBe(true)
-        expect(state.editTooltip).toBe('admin.users.editForbiddenShort')
-        expect(state.toggleStatusTooltip).toBe(
+        expect(state.editRestriction).toBe('admin.users.editForbiddenShort')
+        expect(state.toggleStatusRestriction).toBe(
             'admin.users.statusForbiddenShort',
         )
-        expect(state.passwordResetTooltip).toBe(
+        expect(state.passwordResetRestriction).toBe(
             'admin.users.passwordResetForbiddenShort',
         )
-        expect(state.deleteTooltip).toBe('admin.users.deleteForbiddenShort')
+        expect(state.deleteRestriction).toBe('admin.users.deleteForbiddenShort')
     })
 
     it('prevents self deletion/deactivation and offers activation for inactive users', () => {
@@ -329,10 +338,10 @@ describe('user row actions', () => {
             }),
         )
         expect(hook.state.isDeleteDisabled).toBe(true)
-        expect(hook.state.toggleStatusTooltip).toBe(
+        expect(hook.state.toggleStatusRestriction).toBe(
             'admin.users.deactivateSelfForbiddenShort',
         )
-        expect(hook.state.deleteTooltip).toBe(
+        expect(hook.state.deleteRestriction).toBe(
             'admin.users.deleteSelfForbiddenShort',
         )
         hook = render(() =>
@@ -342,9 +351,9 @@ describe('user row actions', () => {
             }),
         )
         expect(hook.state.isToggleStatusDisabled).toBe(false)
-        expect(hook.state.toggleStatusTooltip).toBe('common.activate')
+        expect(hook.state.toggleStatusRestriction).toBeUndefined()
         expect(hook.state.isPasswordResetDisabled).toBe(true)
-        expect(hook.state.passwordResetTooltip).toBe(
+        expect(hook.state.passwordResetRestriction).toBe(
             'admin.users.passwordResetInactiveShort',
         )
     })

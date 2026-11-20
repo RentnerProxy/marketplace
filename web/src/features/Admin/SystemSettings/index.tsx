@@ -7,8 +7,8 @@ export default function SystemSettings() {
     const { state, handler } = useSystemSettingsLogic()
 
     return (
-        <div className="space-y-6">
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.85fr)]">
+        <div className="@container/settings">
+            <div className="grid gap-5 @5xl/settings:grid-cols-[minmax(0,1.45fr)_minmax(22.5rem,0.85fr)]">
                 <CompanyLogoSection
                     state={{
                         logoPreviewSrc: state.logoPreviewSrc,
@@ -27,7 +27,7 @@ export default function SystemSettings() {
                             handler.handleResetSelectedLogo,
                     }}
                 />
-                <div className="flex h-full flex-col gap-6">
+                <div className="flex min-w-0 flex-col gap-5">
                     <CompanyNameSection
                         state={{
                             companyName: state.companyName,
@@ -76,7 +76,7 @@ export default function SystemSettings() {
                         }}
                     />
                 </div>
-            </section>
+            </div>
         </div>
     )
 }

@@ -2,10 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import { FileText, LayoutDashboard, Users } from 'lucide-react'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { NAVBAR_ITEMS } from '@/config/navbar.config.ts'
-import {
-    flattenNavigationRoutes,
-    getVisibleNavigationItems,
-} from '@/lib/Navigation/navigationItems.ts'
+import { getVisibleNavigationItems } from '@/lib/Navigation/navigationItems.ts'
 import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
 
 const nestedNavigation: Array<AuthenticatedNavItem> = [
@@ -51,8 +48,10 @@ describe('Sidebar-Navigation', function () {
         expect(
             getVisibleNavigationItems(NAVBAR_ITEMS, [
                 PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
-            ]).map(({ to }) => to),
-        ).toEqual(['/admin/app-reviews'])
+            ]),
+        ).toMatchObject([
+            { labelKey: 'nav.staff', children: [{ to: '/admin/app-reviews' }] },
+        ])
     })
 
     it('shows separate navigation groups and limits team management to superusers', () => {
@@ -63,24 +62,19 @@ describe('Sidebar-Navigation', function () {
             PERMISSIONS.ADMIN_USER_MANAGEMENT,
             PERMISSIONS.ADMIN_SUPER_USER,
         ])
-        expect(
-            delegated.find((item) => item.labelKey === 'nav.staff'),
-        ).toBeUndefined()
-        expect(flattenNavigationRoutes(delegated).map(({ to }) => to)).toEqual([
-            '/admin/users',
+        expect(delegated).toMatchObject([
+            { labelKey: 'nav.staff', children: [{ to: '/admin/users' }] },
         ])
-        expect(
-            owner.find((item) => item.labelKey === 'nav.publicAccounts')?.to,
-        ).toBe('/admin/users')
         expect(
             owner
                 .find((item) => item.labelKey === 'nav.staff')
                 ?.children?.map(({ to }) => to),
-        ).toEqual([
-            '/admin/staff',
-            '/admin/staff-invitations',
-            '/admin/permissions',
-        ])
+        ).toEqual(['/admin/users', '/admin/staff', '/admin/staff-invitations'])
+        expect(
+            owner.find((item) => item.labelKey === 'nav.admin'),
+        ).toMatchObject({
+            children: [{ to: '/admin/permissions' }],
+        })
     })
 
     it('filtert Berechtigungen über beliebig tiefe Child-Ebenen', function () {
@@ -95,17 +89,35 @@ describe('Sidebar-Navigation', function () {
         )
     })
 
-    it('behält beim Einklappen die Reihenfolge aller erreichbaren Routen', function () {
-        const visibleItems = getVisibleNavigationItems(nestedNavigation, [
-            PERMISSIONS.ADMIN_DASHBOARD,
-            PERMISSIONS.ADMIN_AUDIT_LOGS,
+    it('keeps system administration, staff operations, and personal routes separate', () => {
+        const visibleItems = getVisibleNavigationItems(
+            NAVBAR_ITEMS,
+            Object.values(PERMISSIONS),
+            true,
+        )
+        expect(visibleItems).toMatchObject([
+            {
+                labelKey: 'nav.admin',
+                children: [
+                    { to: '/admin/dashboard' },
+                    { to: '/admin/system-settings' },
+                    { to: '/admin/permissions' },
+                    { to: '/admin/audit-logs' },
+                    { to: '/admin/backups' },
+                    { to: '/admin/app-namespaces' },
+                ],
+            },
+            {
+                labelKey: 'nav.staff',
+                children: [
+                    { to: '/admin/users' },
+                    { to: '/admin/staff' },
+                    { to: '/admin/staff-invitations' },
+                    { to: '/admin/app-reviews' },
+                ],
+            },
+            { to: '/user/dashboard' },
+            { to: '/user/app-submissions' },
         ])
-        const collapsedItems = flattenNavigationRoutes(visibleItems)
-
-        expect(collapsedItems.map((item) => item.to)).toEqual([
-            '/admin/dashboard',
-            '/admin/audit-logs',
-        ])
-        expect(collapsedItems.every((item) => !item.children)).toBe(true)
     })
 })

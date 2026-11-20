@@ -4,10 +4,6 @@ import type {
     AuditLogJsonRecord,
 } from './Types/auditLog.types.ts'
 
-export function hasAuditJsonValue(value: AuditLogJsonRecord | null) {
-    return Boolean(value && Object.keys(value).length > 0)
-}
-
 export function getAuditCompareRows(auditLog: AuditLogEntry) {
     const oldValues: AuditLogJsonRecord = auditLog.oldValues ?? {}
     const newValues: AuditLogJsonRecord = auditLog.newValues ?? {}

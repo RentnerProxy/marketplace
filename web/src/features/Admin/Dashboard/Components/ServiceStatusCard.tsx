@@ -1,5 +1,4 @@
 import {
-    ChevronRight,
     Cpu,
     Database,
     Layers,
@@ -10,8 +9,6 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import HeadingIcon from '@/shared/HeadingIcon.tsx'
-import StatusIndicator from '@/shared/StatusIndicator.tsx'
 import type { ServiceStatusCardProps } from '../Types/dashboard-component-props.types.ts'
 import type {
     DashboardServiceHealth,
@@ -39,9 +36,9 @@ const statusTones = {
     'success' | 'warning' | 'danger'
 >
 const toneClasses = {
-    success: 'border-success/30 bg-success/5 text-success',
-    warning: 'border-warning/30 bg-warning/5 text-warning',
-    danger: 'border-danger/30 bg-danger/5 text-danger',
+    success: { dot: 'bg-success ring-success/15', label: 'text-success' },
+    warning: { dot: 'bg-warning ring-warning/15', label: 'text-warning' },
+    danger: { dot: 'bg-danger ring-danger/15', label: 'text-danger' },
 } as const
 
 export default function ServiceStatusCard({
@@ -51,7 +48,8 @@ export default function ServiceStatusCard({
     onSelect,
 }: ServiceStatusCardProps) {
     const { t } = useTranslationStore()
-    const tone = statusTones[health.status]
+    const tone = toneClasses[statusTones[health.status]]
+    const Icon = serviceIcons[service]
 
     return (
         <button
@@ -64,52 +62,43 @@ export default function ServiceStatusCard({
                 { service: t(`admin.dashboard.services.${service}`) },
             )}
             onClick={() => onSelect(service)}
-            className={`group relative flex w-full min-w-0 cursor-pointer items-center gap-3 overflow-hidden rounded-md border border-border-dark bg-background-dark/40 px-3 py-3 text-left transition-colors before:absolute before:inset-y-0 before:left-0 before:w-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+            className={`group flex min-w-0 cursor-pointer flex-col rounded-[0.9rem] border p-4 text-start transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none ${
                 isSelected
-                    ? 'before:bg-primary'
-                    : 'before:bg-transparent hover:border-secondary-text/40 hover:bg-input-dark/40'
+                    ? 'border-primary/40 bg-primary/8'
+                    : 'border-border-dark bg-input-dark hover:border-(--marketplace-border-strong) hover:bg-(--marketplace-surface-hover)'
             }`}
         >
-            <HeadingIcon icon={serviceIcons[service]} tone={tone} size="sm" />
-            <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-foreground">
-                    {t(`admin.dashboard.services.${service}`)}
-                </span>
-                <span
-                    title={t(`admin.dashboard.details.${health.detail}`)}
-                    className="mt-1 block truncate text-xs leading-5 text-secondary-text"
-                >
-                    {t(`admin.dashboard.details.${health.detail}`)}
-                    {health.status === 'running' &&
-                    health.detail === 'coreResponding' ? (
-                        <span>
-                            {' · '}
-                            {t('admin.dashboard.coreVersion', {
-                                version: health.runtime.version,
-                            })}
-                        </span>
-                    ) : null}
-                </span>
+            <span
+                className="flex items-center justify-between"
+                aria-hidden="true"
+            >
+                <Icon className="size-4 text-secondary-text" />
+                <span className={`size-2 rounded-full ring-4 ${tone.dot}`} />
             </span>
-            <span className="flex shrink-0 flex-col items-end gap-2">
-                <span aria-live="polite" aria-atomic="true">
-                    <StatusIndicator
-                        tone={tone}
-                        className={`whitespace-nowrap rounded border px-2 py-1 text-[11px] ${toneClasses[tone]}`}
-                    >
-                        {t(`admin.dashboard.status.${health.status}`)}
-                    </StatusIndicator>
-                </span>
+            <span className="mt-4 wrap-anywhere text-base text-foreground">
+                {t(`admin.dashboard.services.${service}`)}
+            </span>
+            <span className="mt-1 mb-4 text-xs leading-[1.45] text-secondary-text">
+                {t(`admin.dashboard.details.${health.detail}`)}
+                {health.status === 'running' &&
+                health.detail === 'coreResponding'
+                    ? ` · ${t('admin.dashboard.coreVersion', {
+                          version: health.runtime.version,
+                      })}`
+                    : null}
+            </span>
+            <span className="mt-auto flex items-center justify-between gap-2">
                 <span
-                    className={`flex items-center gap-1.5 text-xs font-medium ${isSelected ? 'text-primary' : 'text-secondary-text group-hover:text-foreground'}`}
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className={`text-xs font-bold ${tone.label}`}
                 >
-                    <Terminal className="h-3 w-3" aria-hidden="true" />
-                    {t('admin.dashboard.console.shortLabel')}
-                    <ChevronRight
-                        className={`h-3.5 w-3.5 transition-transform ${isSelected ? 'rotate-90' : ''}`}
-                        aria-hidden="true"
-                    />
+                    {t(`admin.dashboard.status.${health.status}`)}
                 </span>
+                <Terminal
+                    className={`size-4 shrink-0 ${isSelected ? 'text-primary-text' : 'text-secondary-text group-hover:text-foreground'}`}
+                    aria-hidden="true"
+                />
             </span>
         </button>
     )

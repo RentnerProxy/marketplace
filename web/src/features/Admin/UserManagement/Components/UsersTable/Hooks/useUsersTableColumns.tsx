@@ -2,6 +2,7 @@ import type { TableColumn } from '@rentnerkev/table/types'
 import { ShieldCheck } from 'lucide-react'
 import { useMemo } from 'react'
 import { formatDate } from '@/lib/Date/date.ts'
+import { authenticatedTableActionColumn } from '@/lib/Table/authenticatedTableStyles.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import StatusIndicator from '@/shared/StatusIndicator.tsx'
 
@@ -159,14 +160,8 @@ export default function useUsersTableColumns({
                 ),
             },
             {
-                id: 'actions',
+                ...authenticatedTableActionColumn,
                 header: t('common.actions'),
-                size: canConvertAccounts ? 240 : 200,
-                minSize: canConvertAccounts ? 240 : 200,
-                enableHiding: false,
-                enableResizing: false,
-                enableSorting: false,
-                enableColumnFilter: false,
                 cell: ({ row }) => (
                     <UserTableActions
                         accountType={accountType}

@@ -2,6 +2,9 @@
     "common": {
         "active": "Attivo",
         "actions": "Azioni",
+        "openActions": "Apri azioni",
+        "details": "Dettagli",
+        "close": "Chiudi",
         "all": "Tutti",
         "cancel": "Annulla",
         "delete": "Elimina",
@@ -360,7 +363,7 @@
             "newValue": "+ Nuovo",
             "message": "Messaggio",
             "route": "Percorso",
-            "showDetails": "Mostra dettagli del controllo",
+            "entryId": "ID della voce",
             "searchPlaceholder": "Cerca nei registri di controllo...",
             "userFilterPlaceholder": "Filtra utenti...",
             "messageFilterPlaceholder": "Filtra messaggi...",

@@ -61,7 +61,7 @@ function toggleGroup(labelKey: string) {
     setState((current) => ({
         openGroups: {
             ...current.openGroups,
-            [labelKey]: !current.openGroups[labelKey],
+            [labelKey]: !(current.openGroups[labelKey] ?? true),
         },
     }))
 }

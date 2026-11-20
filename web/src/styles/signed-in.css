@@ -1,0 +1,85 @@
+:root {
+    --marketplace-surface-raised: #121419;
+    --marketplace-surface-subtle: #101216;
+    --marketplace-surface-hover: #171a20;
+    --marketplace-ink-soft: #d7dae0;
+    --marketplace-border-strong: #3b414b;
+    --marketplace-input-border: #3a414c;
+    --marketplace-topbar: rgb(7 8 10 / 92%);
+    --marketplace-shadow: rgb(0 0 0 / 38%);
+    --marketplace-mono:
+        SFMono-Regular, Consolas, 'Liberation Mono', ui-monospace, monospace;
+}
+
+.app-theme-light {
+    --marketplace-surface-raised: #ffffff;
+    --marketplace-surface-subtle: #f4f8f5;
+    --marketplace-surface-hover: #f7fbf8;
+    --marketplace-ink-soft: #1d3328;
+    --marketplace-border-strong: #b9c9c0;
+    --marketplace-input-border: #c6d3cc;
+    --marketplace-topbar: rgb(247 250 248 / 92%);
+    --marketplace-shadow: rgb(2 10 11 / 5%);
+}
+
+:root,
+.app-theme-light {
+    --marketplace-surface-shadow: 0 18px 45px var(--marketplace-shadow);
+    --marketplace-panel-shadow: 0 20px 50px var(--marketplace-shadow);
+}
+
+.marketplace-signed-in {
+    --rentner-control-md: 3rem;
+    --rentner-control-hover: var(--marketplace-surface-hover);
+    --font-mono: var(--marketplace-mono);
+}
+
+.marketplace-signed-in :where(h2, h3, h4, h5, h6):not(.font-display) {
+    font-family: var(--font-sans);
+}
+
+.marketplace-signed-in .marketplace-content-panel {
+    box-shadow: var(--marketplace-surface-shadow);
+}
+
+.marketplace-signed-in.marketplace-dialog-panel,
+.marketplace-signed-in .marketplace-dialog-panel {
+    --rentner-border: var(--marketplace-input-border);
+    --rentner-control: var(--marketplace-surface-raised);
+    border-radius: 1rem;
+    box-shadow: var(--marketplace-panel-shadow);
+}
+
+.marketplace-signed-in .marketplace-dialog-header {
+    border-bottom-color: var(--color-border-dark);
+}
+
+.marketplace-signed-in .marketplace-dialog-footer {
+    background-color: var(--marketplace-surface-subtle);
+}
+
+.marketplace-signed-in :where(button, a).bg-primary {
+    min-height: 3rem;
+    border-radius: 0.75rem;
+    font-weight: 800;
+}
+
+.marketplace-signed-in :where(button, a).border-border-dark:not(.bg-primary) {
+    border-color: var(--marketplace-border-strong);
+    border-radius: 0.75rem;
+}
+
+@media (hover: hover) {
+    .marketplace-signed-in
+        :where(button, a).border-border-dark:not(
+            .bg-primary,
+            :disabled,
+            [aria-disabled='true']
+        ):hover {
+        border-color: color-mix(
+            in srgb,
+            var(--color-primary) 40%,
+            var(--color-border-dark)
+        );
+    }
+}

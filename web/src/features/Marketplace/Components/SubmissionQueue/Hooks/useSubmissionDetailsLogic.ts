@@ -4,50 +4,40 @@ import { CANDIDATE_PIPELINE } from '@/config/submissions.config.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import {
     getDeveloperSubmissionHandler,
-    getDeveloperSubmissionsHandler,
     getReviewSubmissionHandler,
-    getReviewSubmissionsHandler,
     reviewSubmissionHandler,
     revokeSubmissionHandler,
     withdrawSubmissionHandler,
-} from '../middleware.ts'
-import { decisionInput, stopInput } from '../validation.ts'
-import type { SubmissionMode } from '../Types/components.types.ts'
-import { useSubmissionFeedback } from './useSubmissionFeedback.ts'
+} from '../../../middleware.ts'
+import { decisionInput, stopInput } from '../../../validation.ts'
+import type {
+    SubmissionAction,
+    SubmissionMode,
+} from '../../../Types/components.types.ts'
+import { useSubmissionFeedback } from '../../../Hooks/useSubmissionFeedback.ts'
 
-export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
+export function useSubmissionDetailsLogic(
+    mode: SubmissionMode,
+    userId: string,
+    id: string,
+) {
     const { language } = useTranslationStore()
-    const [page, setPage] = useState(0)
-    const [selectedId, setSelectedId] = useState<string>()
     const [reason, setReason] = useState('')
     const client = useQueryClient()
     const feedback = useSubmissionFeedback()
 
-    const list = useQuery({
-        queryKey: ['marketplace-submissions', userId, mode, 'list', page],
-        queryFn: ({ signal }) =>
-            (mode === 'review'
-                ? getReviewSubmissionsHandler
-                : getDeveloperSubmissionsHandler)({
-                data: { page },
-                signal,
-            }),
-        refetchInterval: CANDIDATE_PIPELINE.pollMs,
-    })
-    const id = selectedId ?? list.data?.submissions[0]?.id
     const detail = useQuery({
         queryKey: ['marketplace-submissions', userId, mode, 'detail', id],
         queryFn: ({ signal }) =>
             (mode === 'review'
                 ? getReviewSubmissionHandler
                 : getDeveloperSubmissionHandler)({
-                data: { id: id ?? '' },
+                data: { id },
                 signal,
             }),
-        enabled: Boolean(id),
         refetchInterval: CANDIDATE_PIPELINE.pollMs,
     })
-    const current = detail.data
+    const current = detail.isError ? undefined : detail.data
     const status = current?.status
     const canReview =
         mode === 'review' &&
@@ -67,13 +57,20 @@ export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
         ].includes(status ?? '')
 
     const action = useMutation({
-        mutationFn: async (intent: string) => {
-            if (!current) throw new Error('submissionConflict')
-            const data = { id: current.id, revision: current.revision, reason }
+        mutationFn: async ({
+            intent,
+            submission,
+            reason: submittedReason,
+        }: SubmissionAction) => {
+            const data = {
+                id: submission.id,
+                revision: submission.revision,
+                reason: submittedReason,
+            }
             if (intent === 'approve' || intent === 'reject') {
                 const parsed = decisionInput.safeParse({
                     ...data,
-                    candidateId: current.validation?.candidate.id,
+                    candidateId: submission.validation?.candidate.id,
                     action: intent,
                 })
                 if (!parsed.success) throw new Error('invalidInput')
@@ -87,7 +84,7 @@ export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
                     : revokeSubmissionHandler
             )({ data: parsed.data })
         },
-        onSuccess: async (_, intent) => {
+        onSuccess: async (_, { intent }) => {
             setReason('')
             await client.invalidateQueries({
                 queryKey: ['marketplace-submissions', userId, mode],
@@ -100,32 +97,24 @@ export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
         },
     })
 
-    function select(nextId: string) {
-        setReason('')
-        setSelectedId(nextId)
-    }
-
-    function changePage(delta: number) {
-        setReason('')
-        setSelectedId(undefined)
-        setPage((currentPage) => currentPage + delta)
-    }
-
-    function submit(event: SubmitEvent<HTMLFormElement>) {
+    function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
-        const value = event.nativeEvent.submitter?.getAttribute('value')
-        if (value && id && !action.isPending) {
-            setSelectedId(id)
-            action.mutate(value)
+        const intent = event.nativeEvent.submitter?.getAttribute('value')
+        if (!current || action.isPending) return
+        if (
+            ((intent === 'approve' || intent === 'reject') && canReview) ||
+            (intent === 'revoke' && canRevoke) ||
+            (intent === 'withdraw' && canWithdraw)
+        ) {
+            action.mutate({ intent, submission: current, reason })
         }
     }
 
     return {
         state: {
-            list,
-            detail,
-            id,
-            page,
+            detail: current,
+            isPending: detail.isPending,
+            isError: detail.isError,
             reason,
             canReview,
             canRevoke,
@@ -134,6 +123,6 @@ export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
             actionPending: action.isPending,
         },
         setter: { setReason },
-        handler: { select, changePage, submit },
+        handler: { handleSubmit },
     }
 }

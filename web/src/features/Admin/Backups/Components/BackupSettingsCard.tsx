@@ -12,7 +12,7 @@ export default function BackupSettingsCard({
     const { t } = useTranslationStore()
 
     return (
-        <section className="w-full rounded-lg border border-border-dark bg-surface-dark p-5">
+        <section className="marketplace-content-panel w-full rounded-2xl border border-border-dark bg-surface-dark p-5 sm:p-6">
             <div className="flex flex-col gap-4 border-b border-border-dark pb-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex gap-3">
                     <HeadingIcon icon={DatabaseBackup} />

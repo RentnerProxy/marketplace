@@ -1,31 +1,27 @@
-import { Settings2, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import type { UserSettingsHeaderProps } from '../Types/user-settings-component-props.types.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import HeadingIcon from '@/shared/HeadingIcon.tsx'
 
 export default function Header({ username, onClose }: UserSettingsHeaderProps) {
     const { t } = useTranslationStore()
 
     return (
-        <div className="flex items-center justify-between border-b border-border-dark px-6 py-4">
-            <div className="flex items-start gap-3">
-                <HeadingIcon icon={Settings2} />
-                <div>
-                    <h2 className="text-lg font-bold text-white">
-                        {t('userSettings.header.title')}
-                    </h2>
-                    <p className="text-sm text-secondary-text">
-                        {t('userSettings.header.subtitle', { username })}
-                    </p>
-                </div>
+        <div className="marketplace-dialog-header flex shrink-0 items-center justify-between gap-5 border-b border-border-dark px-5 py-4 sm:px-6">
+            <div className="min-w-0">
+                <h2 className="wrap-anywhere text-lg leading-tight font-extrabold text-(color:--marketplace-ink-soft) sm:text-xl">
+                    {t('userSettings.header.title')}
+                </h2>
+                <p className="mt-1.5 max-w-prose wrap-anywhere text-sm leading-relaxed text-secondary-text">
+                    {t('userSettings.header.subtitle', { username })}
+                </p>
             </div>
             <button
                 type="button"
                 onClick={onClose}
-                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border-dark bg-input-dark text-secondary-text transition-colors hover:text-white"
+                className="inline-flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-transparent text-secondary-text transition-colors hover:border-border-dark hover:bg-input-dark hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none"
                 aria-label={t('userSettings.close')}
             >
-                <X className="h-4 w-4" />
+                <X aria-hidden="true" className="size-5" strokeWidth={1.8} />
             </button>
         </div>
     )

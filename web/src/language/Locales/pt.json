@@ -2,6 +2,9 @@
     "common": {
         "active": "Ativo",
         "actions": "Ações",
+        "openActions": "Abrir ações",
+        "details": "Detalhes",
+        "close": "Fechar",
         "all": "Todos",
         "cancel": "Cancelar",
         "delete": "Eliminar",
@@ -360,7 +363,7 @@
             "newValue": "+ Novo",
             "message": "Mensagem",
             "route": "Rota",
-            "showDetails": "Mostrar detalhes de auditoria",
+            "entryId": "ID da entrada",
             "searchPlaceholder": "Pesquisar registos de auditoria...",
             "userFilterPlaceholder": "Filtrar utilizadores...",
             "messageFilterPlaceholder": "Filtrar mensagens...",

@@ -1,9 +1,10 @@
 import { createPortal } from 'react-dom'
 import { useId } from 'react'
+import { ToastFocusScopeBranch } from '@rentnerkev/toasts'
 import { AlertTriangle, Trash2, X } from 'lucide-react'
 
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import useSafeDeleteModalLogic from '@/shared/SafeDeleteModal/Hooks/useSafeDeleteModalLogic.ts'
+import useModalDialogLogic from '@/shared/Hooks/useModalDialogLogic.ts'
 import type { SafeDeleteModalProps } from '@/shared/SafeDeleteModal/Types/types.ts'
 import HeadingIcon from '@/shared/HeadingIcon.tsx'
 
@@ -24,10 +25,10 @@ export default function SafeDeleteModal({
     const {
         state,
         handler,
-        refs: { dialogRef, cancelButtonRef },
-    } = useSafeDeleteModalLogic({
+        refs: { dialogRef, closeButtonRef: cancelButtonRef },
+    } = useModalDialogLogic({
         isOpen,
-        isConfirming,
+        closeDisabled: isConfirming,
         onClose,
     })
     const titleId = useId()
@@ -49,21 +50,21 @@ export default function SafeDeleteModal({
             aria-labelledby={titleId}
             aria-describedby={questionId}
             onCancel={handler.handleCancel}
-            className="fixed inset-0 m-auto max-h-[calc(100dvh_-_2rem)] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-lg border border-border-dark bg-surface-dark text-foreground shadow-xl shadow-black/30 backdrop:bg-background-dark/80 backdrop:backdrop-blur-sm"
+            className="marketplace-signed-in marketplace-dialog-panel fixed inset-0 m-auto h-fit max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md flex-col overflow-hidden rounded-2xl border border-border-dark bg-surface-dark text-foreground open:flex backdrop:bg-marketplace-void/70 backdrop:backdrop-blur-[2px] sm:max-h-[min(44rem,calc(100dvh-3rem))] sm:w-[calc(100%-3rem)]"
         >
-            <div className="flex items-start justify-between gap-4 border-b border-border-dark px-6 py-4">
-                <div className="flex items-start gap-3">
+            <header className="marketplace-dialog-header flex shrink-0 items-center justify-between gap-5 border-b border-border-dark px-5 py-4 sm:px-6">
+                <div className="flex min-w-0 items-start gap-3">
                     <HeadingIcon icon={AlertTriangle} tone="danger" size="sm" />
 
-                    <div>
+                    <div className="min-w-0">
                         <h2
                             id={titleId}
-                            className="text-lg font-bold text-white"
+                            className="wrap-anywhere text-lg leading-tight font-extrabold text-(color:--marketplace-ink-soft) sm:text-xl"
                         >
                             {resolvedTitle}
                         </h2>
 
-                        <p className="mt-1 text-sm text-secondary-text">
+                        <p className="mt-1.5 max-w-prose wrap-anywhere text-sm leading-relaxed text-secondary-text">
                             {resolvedDescription}
                         </p>
                     </div>
@@ -73,43 +74,54 @@ export default function SafeDeleteModal({
                     type="button"
                     onClick={onClose}
                     disabled={isConfirming}
-                    className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border-dark bg-input-dark text-secondary-text transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-transparent text-secondary-text transition-colors enabled:hover:border-border-dark enabled:hover:bg-input-dark enabled:hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none"
                     aria-label={t('safeDelete.close')}
                 >
-                    <X className="h-4 w-4" />
+                    <X
+                        aria-hidden="true"
+                        className="size-5"
+                        strokeWidth={1.8}
+                    />
                 </button>
-            </div>
+            </header>
 
-            <div className="space-y-5 p-6">
-                <p id={questionId} className="text-sm leading-6 text-white">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
+                <p
+                    id={questionId}
+                    className="text-sm leading-6 text-foreground"
+                >
                     {question}
                 </p>
-
-                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                    <button
-                        ref={cancelButtonRef}
-                        type="button"
-                        onClick={onClose}
-                        disabled={isConfirming}
-                        className="flex h-11 cursor-pointer items-center justify-center rounded-md border border-border-dark bg-input-dark px-4 text-sm font-semibold text-secondary-text transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        {resolvedCancelLabel}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={onConfirm}
-                        disabled={isConfirming}
-                        className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        <ConfirmIcon className="h-4 w-4" />
-
-                        {isConfirming
-                            ? (confirmingLabel ?? t('safeDelete.confirming'))
-                            : resolvedConfirmLabel}
-                    </button>
-                </div>
             </div>
+
+            <footer className="marketplace-dialog-footer flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border-dark px-5 py-4 sm:px-6 [&_button]:max-sm:flex-1">
+                <button
+                    ref={cancelButtonRef}
+                    type="button"
+                    onClick={onClose}
+                    disabled={isConfirming}
+                    className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-rentner-border bg-rentner-control px-4 py-2 text-sm font-extrabold text-(color:--marketplace-ink-soft) transition-colors enabled:hover:border-focus-ring/40 enabled:hover:text-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none"
+                >
+                    {resolvedCancelLabel}
+                </button>
+
+                <button
+                    type="button"
+                    onClick={onConfirm}
+                    disabled={isConfirming}
+                    className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-danger/25 bg-danger/10 px-4 py-2 text-sm font-extrabold text-danger transition-colors enabled:hover:border-danger/45 enabled:hover:bg-danger/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none"
+                >
+                    <ConfirmIcon
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                    />
+
+                    {isConfirming
+                        ? (confirmingLabel ?? t('safeDelete.confirming'))
+                        : resolvedConfirmLabel}
+                </button>
+            </footer>
+            <ToastFocusScopeBranch />
         </dialog>,
         document.body,
     )

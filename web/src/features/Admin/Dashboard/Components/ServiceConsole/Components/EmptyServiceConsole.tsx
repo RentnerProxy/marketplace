@@ -9,14 +9,14 @@ export default function EmptyServiceConsole() {
         <section
             id="dashboard-service-console"
             aria-labelledby="dashboard-console-title"
-            className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border-dark bg-surface-dark"
+            className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border-dark bg-surface-dark"
         >
             <div className="flex items-center gap-3 border-b border-border-dark px-5 py-4">
                 <HeadingIcon icon={Terminal} size="sm" />
                 <div>
                     <h2
                         id="dashboard-console-title"
-                        className="text-sm font-semibold text-foreground"
+                        className="text-base leading-tight font-semibold tracking-tight text-foreground"
                     >
                         {t('admin.dashboard.console.emptyTitle')}
                     </h2>

@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { SubmissionQueue } from '@/features/Marketplace/Components/SubmissionQueue.tsx'
+import { SubmissionQueue } from '@/features/Marketplace/Components/SubmissionQueue/index.tsx'
 import { requireAuthenticatedRoute } from '@/lib/Routes/routeGuards.ts'
 import { RouteErrorComponent } from '@/shared/RouteErrorComponent/RouteErrorComponent.tsx'
 

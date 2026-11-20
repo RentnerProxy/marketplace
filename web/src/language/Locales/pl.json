@@ -2,6 +2,9 @@
     "common": {
         "active": "Aktywne",
         "actions": "Działania",
+        "openActions": "Otwórz akcje",
+        "details": "Szczegóły",
+        "close": "Zamknij",
         "all": "Wszystkie",
         "cancel": "Anuluj",
         "delete": "Usuń",
@@ -360,7 +363,7 @@
             "newValue": "+ Nowe",
             "message": "Wiadomość",
             "route": "Trasa",
-            "showDetails": "Pokaż szczegóły audytu",
+            "entryId": "Identyfikator wpisu",
             "searchPlaceholder": "Szukaj w dziennikach audytu...",
             "userFilterPlaceholder": "Filtruj użytkowników...",
             "messageFilterPlaceholder": "Filtruj wiadomości...",

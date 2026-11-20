@@ -11,14 +11,20 @@ export default function CompanyNameSection({
     const { t } = useTranslationStore()
 
     return (
-        <section className="rounded-lg border border-border-dark bg-surface-dark p-5">
+        <section
+            aria-labelledby="system-company-name-title"
+            className="marketplace-content-panel min-w-0 rounded-2xl border border-border-dark bg-surface-dark p-5 sm:p-6"
+        >
             <div className="flex items-start gap-3">
-                <HeadingIcon icon={Building2} />
+                <HeadingIcon icon={Building2} size="sm" />
                 <div>
-                    <h2 className="text-lg font-bold text-white">
+                    <h2
+                        id="system-company-name-title"
+                        className="text-base leading-tight font-semibold tracking-tight text-foreground"
+                    >
                         {t('admin.systemSettings.companyName')}
                     </h2>
-                    <p className="text-sm text-secondary-text">
+                    <p className="mt-1 text-sm leading-5 text-secondary-text">
                         {t('admin.systemSettings.companyNameDescription')}
                     </p>
                 </div>

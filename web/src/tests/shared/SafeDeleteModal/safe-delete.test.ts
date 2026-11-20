@@ -33,7 +33,7 @@ vi.mock('@/language/useTranslationStore.ts', () => ({
 }))
 const { default: Modal } = await import('@/shared/SafeDeleteModal/index.tsx')
 const { default: useModal } =
-    await import('@/shared/SafeDeleteModal/Hooks/useSafeDeleteModalLogic.ts')
+    await import('@/shared/Hooks/useModalDialogLogic.ts')
 beforeEach(() => {
     resetHooks()
     mounted = true
@@ -56,7 +56,7 @@ afterEach(() => {
 })
 
 it('opens a native modal, moves focus to Cancel, and restores focus and scroll on close', () => {
-    const props = { isOpen: false, isConfirming: false, onClose: vi.fn() }
+    const props = { isOpen: false, closeDisabled: false, onClose: vi.fn() }
     expect(renderHook(() => useModal(props)).state.shouldRender).toBe(false)
     runEffects()()
     expect(document.body.style.overflow).toBe('auto')
@@ -70,7 +70,7 @@ it('opens a native modal, moves focus to Cancel, and restores focus and scroll o
     }
     const cancel = new FocusableElement()
     refs.dialogRef.current = dialog as unknown as HTMLDialogElement
-    refs.cancelButtonRef.current = cancel as unknown as HTMLButtonElement
+    refs.closeButtonRef.current = cancel as unknown as HTMLButtonElement
     expect(state.shouldRender).toBe(true)
     const cleanup = runEffects()
     expect(document.body.style.overflow).toBe('hidden')
@@ -122,7 +122,7 @@ it.each([false, true])(
         const onClose = vi.fn()
         const event = { preventDefault: vi.fn() }
         const { handler } = renderHook(() =>
-            useModal({ isOpen: true, isConfirming, onClose }),
+            useModal({ isOpen: true, closeDisabled: isConfirming, onClose }),
         )
         handler.handleCancel(
             event as unknown as Parameters<typeof handler.handleCancel>[0],
