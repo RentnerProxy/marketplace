@@ -9,7 +9,7 @@ import type {
     LoginRequestValues,
 } from '@/features/Auth/Login/Types/login-form.types.ts'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@rentnerkev/toasts'
 import {
     beginPasskeyLoginHandler,
@@ -26,12 +26,14 @@ import useLoginRedirectToast from './useLoginRedirectToast.ts'
 import useTwoFactorLogin from './useTwoFactorLogin.ts'
 import { consumePermittedRestoreReturnPath } from '@/lib/Restore/restoreReturnPath.ts'
 import { clearAuthenticatedQueryCache } from '@/lib/Queries/authenticatedSessionCache.ts'
+import { systemSettingsQueryOptions } from '@/lib/Queries/appQueries.ts'
 
 export default function useLoginLogic(
     redirectReason?: LoginRedirectReason,
 ): LoginLogicReturn {
     const navigate = useNavigate()
     const queryClient = useQueryClient()
+    const settings = useQuery(systemSettingsQueryOptions())
     const { t } = useTranslationStore()
     useLoginRedirectToast(redirectReason)
 
@@ -202,6 +204,8 @@ export default function useLoginLogic(
         state: {
             isLoading,
             isPasskeyLoading,
+            isPublicRegistrationEnabled:
+                settings.data?.isPublicRegistrationEnabled === true,
             requiresTwoFactor: twoFactor.state.requiresTwoFactor,
             twoFactorCode: twoFactor.state.twoFactorCode,
             trustThisDevice: twoFactor.state.trustThisDevice,

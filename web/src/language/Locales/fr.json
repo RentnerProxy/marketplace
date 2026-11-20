@@ -162,7 +162,8 @@
             "verifyDescription": "Confirmez votre e-mail pour activer votre compte.",
             "invalidVerification": "Ce lien est invalide ou expiré. Inscrivez-vous à nouveau.",
             "verificationFailed": "La confirmation a échoué. Réessayez.",
-            "retryRegistration": "Recommencer l’inscription"
+            "retryRegistration": "Recommencer l’inscription",
+            "disabled": "Les inscriptions publiques sont actuellement fermées."
         },
         "passwordReset": {
             "newPasswordTitle": "Nouveau mot de passe",

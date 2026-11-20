@@ -99,6 +99,13 @@
       "when": 1795034692379,
       "tag": "0013_organic_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795218361461,
+      "tag": "0014_public_registration_switch",
+      "breakpoints": true
     }
   ]
 }

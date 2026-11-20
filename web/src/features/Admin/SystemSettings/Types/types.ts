@@ -10,6 +10,8 @@ export type SystemSettingsState = {
     selectedLogoDataUrl: string | null
     crop: ImageCropPosition
     zoom: number
+    isPublicRegistrationEnabled: boolean
+    isPublicRegistrationSwitchDisabled: boolean
     isMaintenanceModeEnabled: boolean
     isMaintenanceModeActive: boolean
     maintenanceMinDateTime: Date
@@ -32,6 +34,7 @@ export type SystemSettingsHandler = {
     handleCropComplete: (_: unknown, croppedAreaPixels: ImageCropArea) => void
     handleSaveLogo: () => void
     handleResetSelectedLogo: () => void
+    handlePublicRegistrationChange: (isEnabled: boolean) => void
     handleMaintenanceStartsAtChange: (
         value: SerializedSingleCalendarValue,
     ) => void

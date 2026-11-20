@@ -7,15 +7,19 @@ import {
 import type { DatabaseTransaction } from '@/lib/Database/Types/database.types.ts'
 
 const read = createReadDb()
-let inserted: Array<Record<string, unknown>> = []
 const insertChain = {
     values: vi.fn((_value: unknown) => insertChain),
-    returning: vi.fn(async () => inserted),
     onConflictDoNothing: vi.fn(async () => undefined),
 }
 const insert = vi.fn((_table: unknown) => insertChain)
 const database = { ...read.db, insert }
-vi.mock('@/db', () => ({ db: database }))
+vi.mock('@/db', () => ({
+    db: {
+        ...database,
+        transaction: async (run: (tx: typeof database) => Promise<unknown>) =>
+            run(database),
+    },
+}))
 vi.mock('drizzle-orm', () => operators)
 vi.mock('@/db/schema.ts', () => ({ systemSettings: table('settings', ['id']) }))
 const {
@@ -26,6 +30,7 @@ const {
 } = await import('@/server/Admin/SystemSettings/settings.service.ts')
 const base = {
     logoUpdatedAt: null,
+    isPublicRegistrationEnabled: false,
     isMaintenanceModeEnabled: false,
     maintenanceStartsAt: null,
     updatedAt: new Date('2026-01-01T12:00:00Z'),
@@ -35,7 +40,6 @@ beforeEach(() => {
     vi.clearAllMocks()
     read.results.length = 0
     read.queries.length = 0
-    inserted = []
 })
 
 describe('system settings initialization', () => {
@@ -56,13 +60,14 @@ describe('system settings initialization', () => {
             id: SYSTEM_SETTINGS_ID,
             companyName: DEFAULT_COMPANY_NAME,
         }
-        inserted = [created]
+        read.results.push([], [created])
         expect(await getOrCreateSystemSettingsService()).toBe(created)
         expect(insertChain.values).toHaveBeenCalledWith({
             id: SYSTEM_SETTINGS_ID,
             companyName: DEFAULT_COMPANY_NAME,
         })
-        expect(insertChain.returning).toHaveBeenCalledTimes(1)
+        expect(insertChain.onConflictDoNothing).toHaveBeenCalledTimes(1)
+        expect(read.queries[1]?.for).toHaveBeenCalledWith('update')
     })
 
     it('ensures a singleton exists before acquiring its update lock in the supplied transaction', async () => {

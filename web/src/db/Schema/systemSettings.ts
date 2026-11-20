@@ -11,6 +11,10 @@ export const systemSettings = appSchema.table('system_settings', {
         mode: 'date',
     }),
 
+    isPublicRegistrationEnabled: boolean('isPublicRegistrationEnabled')
+        .default(false)
+        .notNull(),
+
     isMaintenanceModeEnabled: boolean('isMaintenanceModeEnabled')
         .default(false)
         .notNull(),

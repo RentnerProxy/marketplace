@@ -1,3 +1,3 @@
 export type PublicHeaderLogicReturn = {
-    state: { isScrolled: boolean }
+    state: { isScrolled: boolean; isPublicRegistrationEnabled: boolean }
 }

@@ -8,6 +8,10 @@ export const updateCompanyNameInputSchema = z.object({
     companyName: z.string().trim().min(1).max(100),
 })
 
+export const updatePublicRegistrationInputSchema = z.object({
+    isEnabled: z.boolean(),
+})
+
 export const updateSystemLogoInputSchema = z.object({
     imageDataUrl: imageDataUrlSchema,
     crop: imageCropAreaSchema,

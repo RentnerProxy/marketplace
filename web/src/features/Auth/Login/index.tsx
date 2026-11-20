@@ -160,15 +160,17 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                         </p>
                     </form>
 
-                    <p className="mt-5 border-t border-[#d7e2d9] pt-4 text-center text-sm text-[#65786c]">
-                        {t('auth.login.newHere')}{' '}
-                        <Link
-                            to="/register"
-                            className="rounded font-bold text-[#176b34] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
-                        >
-                            {t('auth.login.discoverRegistration')}
-                        </Link>
-                    </p>
+                    {state.isPublicRegistrationEnabled && (
+                        <p className="mt-5 border-t border-[#d7e2d9] pt-4 text-center text-sm text-[#65786c]">
+                            {t('auth.login.newHere')}{' '}
+                            <Link
+                                to="/register"
+                                className="rounded font-bold text-[#176b34] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                            >
+                                {t('auth.login.discoverRegistration')}
+                            </Link>
+                        </p>
+                    )}
                 </>
             )}
         </AuthLayout>

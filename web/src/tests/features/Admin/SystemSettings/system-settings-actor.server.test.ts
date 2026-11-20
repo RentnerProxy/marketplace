@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { PermissionDeniedError } from '@/server/Auth/authorization.errors.ts'
+import { forEachSequentially } from '@/lib/Promise/forEachSequentially.ts'
 import {
     SYSTEM_SETTINGS_ACTOR_ID,
     SYSTEM_SETTINGS_REVOCATIONS,
@@ -82,6 +83,13 @@ const mutations = [
             }),
     },
     {
+        name: 'public registration',
+        run: () =>
+            handlers.updatePublicRegistrationHandler({
+                data: { isEnabled: true },
+            }),
+    },
+    {
         name: 'extension',
         run: () =>
             handlers.resolveMaintenanceExtensionRequestHandler({
@@ -101,6 +109,36 @@ describe('system settings handlers recheck their actor at mutation time', functi
         const request = maintenanceRequest()
         systemSettingsExternal.getRequest.mockResolvedValue(request)
         systemSettingsExternal.clearRequest.mockResolvedValue(request)
+    })
+
+    it('persists both registration states and audits only actual changes', async () => {
+        await forEachSequentially([true, true, false], async (isEnabled) => {
+            expect(
+                await handlers.updatePublicRegistrationHandler({
+                    data: { isEnabled },
+                }),
+            ).toEqual({ isPublicRegistrationEnabled: isEnabled })
+            expect(
+                systemSettingsDb.state.rows.systemSettings[0]
+                    .isPublicRegistrationEnabled,
+            ).toBe(isEnabled)
+        })
+        expect(systemSettingsDb.state.rows.auditLogs).toMatchObject([
+            {
+                action: 'admin.system.public_registration_updated',
+                oldValues: { isPublicRegistrationEnabled: false },
+                newValues: { isPublicRegistrationEnabled: true },
+            },
+            {
+                action: 'admin.system.public_registration_updated',
+                oldValues: { isPublicRegistrationEnabled: true },
+                newValues: { isPublicRegistrationEnabled: false },
+            },
+        ])
+        expect(systemSettingsExternal.publishSettings).toHaveBeenCalledTimes(2)
+        expect(systemSettingsExternal.publishSettings).toHaveBeenLastCalledWith(
+            expect.objectContaining({ isPublicRegistrationEnabled: false }),
+        )
     })
 
     it.each(

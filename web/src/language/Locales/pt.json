@@ -162,7 +162,8 @@
             "verifyDescription": "Confirma o e-mail para ativar a conta.",
             "invalidVerification": "Ligação inválida ou expirada. Regista-te novamente.",
             "verificationFailed": "Não foi possível confirmar o e-mail. Tenta novamente.",
-            "retryRegistration": "Recomeçar o registo"
+            "retryRegistration": "Recomeçar o registo",
+            "disabled": "O registo público está atualmente encerrado."
         },
         "passwordReset": {
             "newPasswordTitle": "Nova palavra-passe",
