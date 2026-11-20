@@ -37,12 +37,52 @@ impl TrustedCatalog {
     }
 }
 
+/// The authenticated catalog and its signed target references for package selection.
+pub struct TrustedPackageCatalog(TrustedCatalog);
+
+impl TrustedPackageCatalog {
+    pub fn catalog_bytes(&self) -> &[u8] {
+        self.0.catalog_bytes()
+    }
+}
+
+enum IconTargets {
+    VerifyContents,
+    VerifyReferences,
+}
+
+/// Verify a package reader's catalog checkpoint and authenticate the signed icon references.
+pub fn read_package_catalog(
+    read: impl FnMut(&str, usize) -> Result<Option<Vec<u8>>>,
+    pinned_root: &[u8],
+    now: OffsetDateTime,
+    previous: Option<&TrustedPackageCatalog>,
+) -> Result<TrustedPackageCatalog> {
+    let options = ReadOptions {
+        now,
+        allow_expired_roles: false,
+        next_root: None,
+        previous: previous.map(|catalog| &catalog.0),
+    };
+    read_repository(read, pinned_root, options, IconTargets::VerifyReferences)
+        .map(TrustedPackageCatalog)
+}
+
 /// Read files under the TUF repository root with a byte limit per request.
 /// The callback returns `None` for an absent file.
 pub fn read_catalog(
+    read: impl FnMut(&str, usize) -> Result<Option<Vec<u8>>>,
+    pinned_root: &[u8],
+    options: ReadOptions<'_>,
+) -> Result<TrustedCatalog> {
+    read_repository(read, pinned_root, options, IconTargets::VerifyContents)
+}
+
+fn read_repository(
     mut read: impl FnMut(&str, usize) -> Result<Option<Vec<u8>>>,
     pinned_root: &[u8],
     options: ReadOptions<'_>,
+    icons: IconTargets,
 ) -> Result<TrustedCatalog> {
     let (root, root_bytes, history) = read_root_chain(&mut read, pinned_root, &options)?;
     let timestamp_bytes = require_bytes(&mut read, TIMESTAMP_PATH, Role::Timestamp.limit())?;
@@ -101,8 +141,10 @@ pub fn read_catalog(
         if listed.get(name) != Some(icon) {
             return Err(CatalogError::new("Signed icon identity differs"));
         }
-        // Validate each target separately so the reader retains no icon bytes.
-        read_target(&mut read, name, icon, icon.length)?;
+        if matches!(icons, IconTargets::VerifyContents) {
+            // Validate each target separately so the reader retains no icon bytes.
+            read_target(&mut read, name, icon, icon.length)?;
+        }
     }
 
     Ok(TrustedCatalog {
