@@ -1,3 +1,4 @@
+import { isIPv4 } from 'node:net'
 import type { z } from 'zod'
 import {
     catalogPublicationAuthorization,
@@ -13,7 +14,6 @@ import { readBoundedBytes } from '../../../../web/src/server/Marketplace/Submiss
 type Request = z.output<typeof catalogPublicationRequest>
 type Operation = Request['operation']
 
-const productionEndpoint = 'https://market.rentner.dev' + catalogPublicationPath
 const responses = {
     queue: catalogPublicationQueue,
     get: catalogPublicationWork,
@@ -36,7 +36,26 @@ export class PublicationResponseError extends Error {
     }
 }
 
+function publisherEndpoint(address: string | undefined) {
+    if (!address || !isIPv4(address))
+        throw new Error('Marketplace publisher requires a private IPv4 address')
+
+    const [first, second] = address.split('.').map(Number)
+    if (
+        first !== 10 &&
+        !(first === 172 && second >= 16 && second <= 31) &&
+        !(first === 192 && second === 168)
+    )
+        throw new Error('Marketplace publisher requires a private IPv4 address')
+
+    return `https://${address}:8443${catalogPublicationPath}`
+}
+
 export function marketplacePublisher(environment: NodeJS.ProcessEnv) {
+    const endpoint = publisherEndpoint(environment.APP_CATALOG_PUBLISHER_IP)
+    const ca = environment.APP_CATALOG_PUBLISHER_CA?.trim()
+    if (!ca) throw new Error('Marketplace publisher CA is required')
+
     const requestToken = environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN
     const requestUrl = environment.ACTIONS_ID_TOKEN_REQUEST_URL
     if (!requestToken || !requestUrl)
@@ -79,8 +98,9 @@ export function marketplacePublisher(environment: NodeJS.ProcessEnv) {
         input: Extract<Request, { operation: K }> & { operation: K },
     ): Promise<PublicationResponses[K]> {
         const body = catalogPublicationRequest.parse(input)
-        const response = await fetch(productionEndpoint, {
+        const response = await fetch(endpoint, {
             method: 'POST',
+            tls: { ca, rejectUnauthorized: true },
             headers: {
                 Authorization: 'Bearer ' + (await identity()),
                 'Content-Type': 'application/json',
