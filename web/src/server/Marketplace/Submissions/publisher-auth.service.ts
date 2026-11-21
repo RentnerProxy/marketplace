@@ -8,8 +8,8 @@ import {
 } from '@/lib/Marketplace/catalogPublication.ts'
 import { commit, githubId } from '../../../../../contracts/v1/primitives.ts'
 import type { Publication } from '../../../../../contracts/v1/index.ts'
+import { candidateGitHubToken } from './github-credentials.service.ts'
 import {
-    candidateGitHubToken,
     candidateApiPath,
     githubJson,
     githubNumericId,
@@ -102,7 +102,7 @@ export async function assertTerminalCatalogPublisherRunService(
     run: Publication['run'],
 ) {
     assertCatalogPublisherRun(run)
-    const token = candidateGitHubToken()
+    const token = await candidateGitHubToken()
     if (!token) throw new Error('buildsUnavailable')
     const result = githubRun.safeParse(
         await githubJson(

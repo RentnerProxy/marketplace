@@ -27,7 +27,7 @@ import { assertRuntimeDatabaseRolePolicyService } from '@/server/Runtime/databas
 import { createWorkerShutdownService } from '@/server/Runtime/worker-shutdown.service.ts'
 import { waitForWorkerCleanupService } from '@/server/Runtime/worker-cleanup.service.ts'
 import type { startMailWorker } from '@/server/Queues/mail.worker.ts'
-import { candidateGitHubToken } from '@/server/Marketplace/Submissions/github.service.ts'
+import { candidateBuildsConfigured } from '@/server/Marketplace/Submissions/github-credentials.service.ts'
 
 setRuntimeLogProcessService('worker')
 installStorageMutationBarrierFatalExitHandlerService()
@@ -134,7 +134,7 @@ async function startWorkers() {
     }
     if (shutdown.signal.aborted) return
 
-    if (candidateGitHubToken()) {
+    if (candidateBuildsConfigured()) {
         const { runCandidateValidationWorker } =
             await import('@/server/Marketplace/Submissions/validation.worker.ts')
         if (shutdown.signal.aborted) return
