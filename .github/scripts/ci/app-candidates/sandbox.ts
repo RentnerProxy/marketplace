@@ -47,7 +47,8 @@ export async function buildInSandbox(options: {
                     '--tmpfs',
                     '/tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777',
                     '--tmpfs',
-                    '/work:rw,nosuid,nodev,size=768m,uid=21001,gid=21004,mode=0700',
+                    // Offline build tools load native addons from this volume.
+                    '/work:rw,exec,nosuid,nodev,size=768m,uid=21001,gid=21004,mode=0700',
                 ],
                 command: [
                     'APP_PACKAGE_DIR=/work/package',
