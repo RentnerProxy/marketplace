@@ -50,7 +50,8 @@ export async function prepareDependencies(
                     `test "$(bun --version)" = '${bunVersion}'`,
                     'cd /work',
                     'cp /dependency-input/package.json /dependency-input/bun.lock .',
-                    'bun --no-env-file install --frozen-lockfile --ignore-scripts --no-cache --registry https://registry.npmjs.org >&2',
+                    // Bun uses the cache directory for extraction even with --no-cache.
+                    'BUN_INSTALL_CACHE_DIR=/work/.bun-install-cache bun --no-env-file install --frozen-lockfile --ignore-scripts --no-cache --registry https://registry.npmjs.org >&2',
                     'exec /usr/bin/tar -cf - node_modules',
                 ].join('\n'),
             ],
