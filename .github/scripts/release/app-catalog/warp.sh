@@ -29,6 +29,7 @@ connect() {
         https://pkg.cloudflareclient.com/pool/noble/main/c/cloudflare-warp/cloudflare-warp_2026.8.2115.0_amd64.deb
     printf '%s  %s\n' 0209107860c3c6851a9ab8fd03690121a3dea3199b084f8197620072c671cd68 "$package" \
         | sha256sum --check --status
+    sudo apt-get -o Acquire::Retries=3 update
     sudo apt-get install --yes --no-install-recommends "$package"
 
     sudo install -d -m 0700 "$(dirname -- "$mdm_file")"
@@ -62,6 +63,7 @@ EOF
         fi
         sleep 2
     done
+    sudo warp-cli --accept-tos status >&2 || true
     echo 'Cloudflare publisher network did not connect' >&2
     exit 1
 }
