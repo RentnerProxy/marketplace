@@ -39,8 +39,10 @@ jobs:
                   rustup toolchain install 1.100.0 --profile minimal
                   cargo build --locked --release -p marketplace-app-catalog -p marketplace-app-pipeline
             - name: Connect to the private Marketplace publisher network
+              id: private-network
               env:
                   APP_CATALOG_WARP_TEAM: ${{ vars.APP_CATALOG_WARP_TEAM }}
+                  APP_CATALOG_WARP_VNET: ${{ vars.APP_CATALOG_WARP_VNET }}
                   APP_CATALOG_WARP_CLIENT_ID: ${{ secrets.APP_CATALOG_WARP_CLIENT_ID }}
                   APP_CATALOG_WARP_CLIENT_SECRET: ${{ secrets.APP_CATALOG_WARP_CLIENT_SECRET }}
               run: bash .github/scripts/release/app-catalog/warp.sh connect
@@ -67,5 +69,5 @@ jobs:
                   APP_CATALOG_TIMESTAMP_KEY: ${{ secrets.APP_CATALOG_TIMESTAMP_KEY }}
               run: bun --no-env-file .github/scripts/release/app-catalog/run.ts sync
             - name: Remove the runner from the private publisher network
-              if: always()
+              if: always() && steps.private-network.outcome != 'skipped'
               run: bash .github/scripts/release/app-catalog/warp.sh disconnect
