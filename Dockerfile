@@ -38,7 +38,7 @@ RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/lo
     && test -x /native/marketplace-app-pipeline \
     && test -x /native/marketplace-storage
 
-FROM valkey/valkey:9.1.4-alpine AS valkey-runtime
+FROM valkey/valkey:9.2.0-alpine AS valkey-runtime
 
 FROM oven/bun:${BUN_VERSION}-alpine AS base
 
