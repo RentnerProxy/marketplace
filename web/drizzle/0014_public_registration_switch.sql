@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace"."system_settings" ADD COLUMN "isPublicRegistrationEnabled" boolean DEFAULT false NOT NULL;

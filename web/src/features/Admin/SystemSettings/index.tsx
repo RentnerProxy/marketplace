@@ -1,6 +1,7 @@
 import CompanyNameSection from './Components/CompanyNameSection.tsx'
 import CompanyLogoSection from './Components/CompanyLogoSection.tsx'
 import MaintenanceSection from './Components/MaintenanceSection.tsx'
+import PublicRegistrationSection from './Components/PublicRegistrationSection.tsx'
 import useSystemSettingsLogic from './Hooks/useSystemSettingsLogic.ts'
 
 export default function SystemSettings() {
@@ -39,6 +40,11 @@ export default function SystemSettings() {
                             handleSaveCompanyName:
                                 handler.handleSaveCompanyName,
                         }}
+                    />
+                    <PublicRegistrationSection
+                        enabled={state.isPublicRegistrationEnabled}
+                        disabled={state.isPublicRegistrationSwitchDisabled}
+                        onChange={handler.handlePublicRegistrationChange}
                     />
                     <MaintenanceSection
                         state={{

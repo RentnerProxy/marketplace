@@ -274,7 +274,8 @@
             "verifyDescription": "Confirm your email address to activate your account.",
             "invalidVerification": "This confirmation link is invalid or expired. Please register again.",
             "verificationFailed": "Your email could not be confirmed. Please try again.",
-            "retryRegistration": "Start registration again"
+            "retryRegistration": "Start registration again",
+            "disabled": "Public registration is currently closed."
         },
         "passwordReset": {
             "validating": "Checking reset link …",
@@ -616,6 +617,10 @@
             "maintenanceDisabled": "Maintenance mode was disabled.",
             "maintenancePlanned": "Maintenance mode was scheduled.",
             "maintenanceSaveError": "Maintenance mode could not be saved.",
+            "publicRegistration": "Public registration",
+            "publicRegistrationDescription": "Allow new Marketplace accounts through email or external sign-in providers.",
+            "publicRegistrationSaved": "Registration setting saved.",
+            "publicRegistrationSaveError": "The registration setting could not be saved.",
             "maintenanceStartRequired": "Please choose a valid start time.",
             "maintenanceToastTitle": "Maintenance mode",
             "extensionRequestMissing": "There is no open request.",

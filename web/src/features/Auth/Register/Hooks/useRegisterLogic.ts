@@ -76,6 +76,10 @@ export default function useRegisterLogic(): RegisterLogicReturn {
         },
         onSuccess: async (result) => {
             if (!result.success) {
+                if (result.error === 'registration.disabled') {
+                    reportError('auth.register.disabled')
+                    return
+                }
                 reportError(
                     result.error === 'registration.passwordRequired'
                         ? 'auth.register.passwordPolicy'
@@ -120,7 +124,11 @@ export default function useRegisterLogic(): RegisterLogicReturn {
         onSuccess: (result) => {
             if (token.current !== submittedToken.current) return
             if (!result.success) {
-                reportError('auth.register.invalidVerification')
+                reportError(
+                    result.error === 'registration.disabled'
+                        ? 'auth.register.disabled'
+                        : 'auth.register.invalidVerification',
+                )
                 return
             }
             token.current = null

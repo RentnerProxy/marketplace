@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import type { SQL } from 'drizzle-orm'
 import { PgDialect } from 'drizzle-orm/pg-core'
 import { pendingRegistrations } from '@/db/Schema/registration.ts'
+import { systemSettings } from '@/db/Schema/systemSettings.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 import { verifyRegistrationService } from '@/server/Auth/Registration/verify.service.ts'
 
@@ -30,6 +31,7 @@ const accounts = new Set<string>()
 const order: string[] = []
 const dialect = new PgDialect()
 let accountLock = Promise.resolve()
+let publicRegistrationEnabled = true
 
 const createAccount = vi.fn(
     async (_transaction: unknown, input: { email: string }) => {
@@ -61,6 +63,27 @@ vi.mock('@/db', () => ({
                         await previous
                         releaseLock = lock.resolve
                     },
+                    select: () => ({
+                        from: (table: unknown) => {
+                            expect(table).toBe(systemSettings)
+                            return {
+                                where: () => ({
+                                    limit: () => ({
+                                        for: async (lock: string) => {
+                                            expect(lock).toBe('share')
+                                            expect(releaseLock).toBeFunction()
+                                            return [
+                                                {
+                                                    enabled:
+                                                        publicRegistrationEnabled,
+                                                },
+                                            ]
+                                        },
+                                    }),
+                                }),
+                            }
+                        },
+                    }),
                     delete: (table: unknown) => ({
                         where: (predicate: SQL) => ({
                             returning: async () => {
@@ -101,6 +124,7 @@ describe('Registration verification', () => {
         attempts.set(firstHash, { ...pending, expiresAt })
         attempts.set(secondHash, { ...pending, expiresAt })
         accounts.clear()
+        publicRegistrationEnabled = true
         accountLock = Promise.resolve()
         vi.clearAllMocks()
         order.length = 0
@@ -108,6 +132,22 @@ describe('Registration verification', () => {
 
     afterEach(() => {
         vi.restoreAllMocks()
+    })
+
+    it('keeps pending links from creating an account while registration is disabled', async () => {
+        publicRegistrationEnabled = false
+        expect(await verifyRegistrationService({ token: firstToken })).toEqual({
+            success: false,
+            error: 'registration.disabled',
+        })
+        expect(attempts.has(firstHash)).toBe(true)
+        expect(createAccount).not.toHaveBeenCalled()
+        expect(publish).not.toHaveBeenCalled()
+
+        publicRegistrationEnabled = true
+        expect(await verifyRegistrationService({ token: firstToken })).toEqual({
+            success: true,
+        })
     })
 
     it('consumes the pending token once and publishes after commit', async () => {

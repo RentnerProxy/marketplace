@@ -1,15 +1,42 @@
-import { useQuery } from '@tanstack/react-query'
-import { ADMIN_SYSTEM_SETTINGS_QUERY_KEY } from '@/lib/Queries/appQueries.ts'
-import { getAdminSystemSettingsHandler } from '../middleware.ts'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from '@rentnerkev/toasts'
+import {
+    ADMIN_SYSTEM_SETTINGS_QUERY_KEY,
+    SYSTEM_SETTINGS_QUERY_KEY,
+} from '@/lib/Queries/appQueries.ts'
+import useTranslationStore from '@/language/useTranslationStore.ts'
+import {
+    getAdminSystemSettingsHandler,
+    updatePublicRegistrationHandler,
+} from '../middleware.ts'
 import type { SystemSettingsLogicReturn } from '../Types/types.ts'
 import useCompanyNameForm from './useCompanyNameForm.ts'
 import useMaintenanceSettings from './useMaintenanceSettings.ts'
 import useSystemLogoUpload from './useSystemLogoUpload.ts'
 
 export default function useSystemSettingsLogic(): SystemSettingsLogicReturn {
+    const { t } = useTranslationStore()
+    const queryClient = useQueryClient()
     const settingsQuery = useQuery({
         queryKey: ADMIN_SYSTEM_SETTINGS_QUERY_KEY,
         queryFn: getAdminSystemSettingsHandler,
+    })
+    const publicRegistration = useMutation({
+        mutationFn: (isEnabled: boolean) =>
+            updatePublicRegistrationHandler({ data: { isEnabled } }),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: SYSTEM_SETTINGS_QUERY_KEY,
+            })
+            toast.success(t('admin.systemSettings.publicRegistrationSaved'), {
+                title: t('admin.systemSettings.title'),
+            })
+        },
+        onError: () => {
+            toast.error(t('admin.systemSettings.publicRegistrationSaveError'), {
+                title: t('common.error'),
+            })
+        },
     })
     const companyNameForm = useCompanyNameForm(settingsQuery.data?.companyName)
     const systemLogoUpload = useSystemLogoUpload()
@@ -28,6 +55,10 @@ export default function useSystemSettingsLogic(): SystemSettingsLogicReturn {
             crop: systemLogoUpload.state.crop,
             zoom: systemLogoUpload.state.zoom,
             isSavingLogo: systemLogoUpload.state.isSavingLogo,
+            isPublicRegistrationEnabled:
+                settingsQuery.data?.isPublicRegistrationEnabled ?? false,
+            isPublicRegistrationSwitchDisabled:
+                !settingsQuery.data || publicRegistration.isPending,
             isMaintenanceModeEnabled:
                 settingsQuery.data?.isMaintenanceModeEnabled ?? false,
             isMaintenanceModeActive:
@@ -48,6 +79,7 @@ export default function useSystemSettingsLogic(): SystemSettingsLogicReturn {
                 settingsQuery.data?.pendingMaintenanceExtensionRequest ?? null,
         },
         handler: {
+            handlePublicRegistrationChange: publicRegistration.mutate,
             handleCompanyNameChange:
                 companyNameForm.handler.handleCompanyNameChange,
             handleSaveCompanyName:

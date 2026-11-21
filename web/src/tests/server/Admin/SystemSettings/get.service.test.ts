@@ -27,6 +27,7 @@ beforeEach(() => {
     settings.mockReset().mockResolvedValue({
         companyName: 'Company',
         logoUpdatedAt: null,
+        isPublicRegistrationEnabled: false,
         isMaintenanceModeEnabled: false,
     })
     pending.mockReset().mockResolvedValue(null)
@@ -51,6 +52,7 @@ describe('system settings read models', () => {
             logoSrc: '/images/default.webp',
             logoSrc64: '/images/default.webp',
             faviconSrc: '/favicon.ico',
+            isPublicRegistrationEnabled: false,
             isMaintenanceModeEnabled: false,
             isMaintenanceModeActive: false,
             isMaintenanceModeScheduled: false,
@@ -65,6 +67,7 @@ describe('system settings read models', () => {
         const rawSettings = {
             companyName: 'Company',
             logoUpdatedAt: updated,
+            isPublicRegistrationEnabled: true,
             isMaintenanceModeEnabled: true,
         }
         settings.mockResolvedValue(rawSettings)
@@ -85,6 +88,7 @@ describe('system settings read models', () => {
             logoSrc: `/logo.webp?v=${updated.getTime()}`,
             logoSrc64: `/logo-64.webp?v=${updated.getTime()}`,
             faviconSrc: `/favicon.ico?v=${updated.getTime()}`,
+            isPublicRegistrationEnabled: true,
             isMaintenanceModeEnabled: true,
             isMaintenanceModeScheduled: true,
             maintenanceStartsAt: '2026-12-01T12:00:00Z',

@@ -3,6 +3,7 @@ import {
     resolveMaintenanceExtensionRequestInputSchema,
     updateCompanyNameInputSchema,
     updateMaintenanceModeInputSchema,
+    updatePublicRegistrationInputSchema,
     updateSystemLogoInputSchema,
 } from '@/features/Admin/SystemSettings/validation.ts'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/server/Admin/SystemSettings/branding.service.ts'
 import { resolveMaintenanceExtensionRequestService } from '@/server/Admin/SystemSettings/maintenance-extension.service.ts'
 import { updateMaintenanceModeService } from '@/server/Admin/SystemSettings/maintenance-mode.service.ts'
+import { updatePublicRegistrationService } from '@/server/Admin/SystemSettings/public-registration.service.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { requirePermissionService } from '@/server/Auth/authorization.service.ts'
 import { RATE_LIMITS } from '@/config/security.config.ts'
@@ -86,6 +88,20 @@ export const updateMaintenanceModeHandler = createServerFn({ method: 'POST' })
         )
         await enforceSystemSettingsMutationRateLimits(userId)
         return updateMaintenanceModeService(data, userId)
+    })
+
+export const updatePublicRegistrationHandler = createServerFn({
+    method: 'POST',
+})
+    .validator((data: unknown) =>
+        updatePublicRegistrationInputSchema.parse(data),
+    )
+    .handler(async ({ data }) => {
+        const { userId } = await requirePermissionService(
+            PERMISSIONS.ADMIN_SYSTEM_SETTINGS,
+        )
+        await enforceSystemSettingsMutationRateLimits(userId)
+        return updatePublicRegistrationService(data.isEnabled, userId)
     })
 
 export const resolveMaintenanceExtensionRequestHandler = createServerFn({

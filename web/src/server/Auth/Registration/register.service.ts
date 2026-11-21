@@ -3,7 +3,6 @@ import { and, eq, lt } from 'drizzle-orm'
 import {
     accountIdentityMatchesService,
     hasStaffIdentityReservationInTransactionService,
-    lockAccountUniquenessInTransactionService,
 } from '@/server/Auth/accountUniqueness.service.ts'
 import { db } from '@/db'
 import { users } from '@/db/Schema/users.ts'
@@ -14,6 +13,11 @@ import type {
     RegistrationResult,
 } from '@/features/Auth/Register/Types/registration.types.ts'
 import { createPublicAccountInTransactionService } from './account.service.ts'
+import {
+    disabledRegistrationResult,
+    isPublicRegistrationEnabledService,
+    withPublicRegistrationTransactionService,
+} from './policy.service.ts'
 import {
     createRegistrationLinkService,
     createRegistrationTokenService,
@@ -31,6 +35,9 @@ import { logError } from '@/server/Logging/logger.ts'
 export async function registerService(
     data: RegistrationInput,
 ): Promise<RegistrationResult> {
+    if (!(await isPublicRegistrationEnabledService()))
+        return disabledRegistrationResult
+
     const identity = await getSocialRegistrationIdentityService()
     const password = identity
         ? randomBytes(64).toString('base64url')
@@ -55,17 +62,22 @@ export async function registerService(
         identity?.emailVerified &&
         identity.email?.toLowerCase() === data.email
     ) {
-        const created = await db.transaction(async (transaction) => {
-            await lockAccountUniquenessInTransactionService(transaction)
-            if (
-                !(await consumeSocialRegistrationIdentityInTransactionService(
+        const created = await withPublicRegistrationTransactionService(
+            async (transaction) => {
+                if (
+                    !(await consumeSocialRegistrationIdentityInTransactionService(
+                        transaction,
+                        identity.requestId,
+                    ))
+                )
+                    throw new Error('Social registration expired')
+                return createPublicAccountInTransactionService(
                     transaction,
-                    identity.requestId,
-                ))
-            )
-                throw new Error('Social registration expired')
-            return createPublicAccountInTransactionService(transaction, account)
-        })
+                    account,
+                )
+            },
+        )
+        if (created === 'disabled') return disabledRegistrationResult
         clearSocialRegistrationCookieService()
         if (!created) return { success: true, requiresEmailVerification: true }
         await publishCommittedAuditLogService(created.auditReceipt)
@@ -88,49 +100,53 @@ export async function registerService(
     }
     const { token, tokenHash, expiresAt } =
         await createRegistrationTokenService()
-    const staged = await db.transaction(async (transaction) => {
-        await lockAccountUniquenessInTransactionService(transaction)
-        const initialized = await transaction
-            .select({ id: users.id })
-            .from(users)
-            .where(eq(users.isDeleted, false))
-            .limit(1)
-        if (!initialized.at(0))
-            throw new Error('Public registration requires completed bootstrap')
-        await transaction
-            .delete(pendingRegistrations)
-            .where(lt(pendingRegistrations.expiresAt, new Date()))
-        const duplicates = await transaction
-            .select({ id: users.id })
-            .from(users)
-            .where(
-                and(
-                    eq(users.isDeleted, false),
-                    accountIdentityMatchesService(data),
-                ),
+    const staged = await withPublicRegistrationTransactionService(
+        async (transaction) => {
+            const initialized = await transaction
+                .select({ id: users.id })
+                .from(users)
+                .where(eq(users.isDeleted, false))
+                .limit(1)
+            if (!initialized.at(0))
+                throw new Error(
+                    'Public registration requires completed bootstrap',
+                )
+            await transaction
+                .delete(pendingRegistrations)
+                .where(lt(pendingRegistrations.expiresAt, new Date()))
+            const duplicates = await transaction
+                .select({ id: users.id })
+                .from(users)
+                .where(
+                    and(
+                        eq(users.isDeleted, false),
+                        accountIdentityMatchesService(data),
+                    ),
+                )
+                .limit(1)
+            if (
+                duplicates.at(0) ||
+                (await hasStaffIdentityReservationInTransactionService(
+                    transaction,
+                    data,
+                ))
             )
-            .limit(1)
-        if (
-            duplicates.at(0) ||
-            (await hasStaffIdentityReservationInTransactionService(
-                transaction,
-                data,
-            ))
-        )
-            return false
-        if (
-            identity &&
-            !(await consumeSocialRegistrationIdentityInTransactionService(
-                transaction,
-                identity.requestId,
-            ))
-        )
-            throw new Error('Social registration expired')
-        await transaction
-            .insert(pendingRegistrations)
-            .values({ ...account, tokenHash, expiresAt })
-        return true
-    })
+                return false
+            if (
+                identity &&
+                !(await consumeSocialRegistrationIdentityInTransactionService(
+                    transaction,
+                    identity.requestId,
+                ))
+            )
+                throw new Error('Social registration expired')
+            await transaction
+                .insert(pendingRegistrations)
+                .values({ ...account, tokenHash, expiresAt })
+            return true
+        },
+    )
+    if (staged === 'disabled') return disabledRegistrationResult
     if (identity && staged) clearSocialRegistrationCookieService()
     if (staged) {
         try {

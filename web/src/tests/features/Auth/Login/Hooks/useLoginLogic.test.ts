@@ -98,6 +98,7 @@ vi.mock('@tanstack/react-form', () => ({
 }))
 vi.mock('@tanstack/react-query', () => ({
     ...actualQueryExports,
+    useQuery: () => ({ data: undefined }),
     useQueryClient: () => queryClient,
     useMutation(options: LoginHookMutationOptions) {
         const index = mutationCursor++

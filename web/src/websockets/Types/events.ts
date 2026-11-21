@@ -18,6 +18,7 @@ const systemSettingsUpdatedPayloadSchema = z.object({
     logoSrc: z.string().optional(),
     logoSrc64: z.string().optional(),
     faviconSrc: z.string().optional(),
+    isPublicRegistrationEnabled: z.boolean().optional(),
     isMaintenanceModeEnabled: z.boolean().optional(),
     maintenanceStartsAt: z.string().optional(),
     updatedAt: eventTimestampSchema,

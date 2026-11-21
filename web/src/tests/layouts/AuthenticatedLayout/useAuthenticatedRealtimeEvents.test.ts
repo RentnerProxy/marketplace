@@ -173,6 +173,34 @@ describe('Realtime cache and navigation events', () => {
     })
 
     it.each([false, true])(
+        'refetches both registration settings queries after an older event with enabled=%s',
+        async (enabled) => {
+            const current = { isPublicRegistrationEnabled: !enabled }
+            const client = websocketMocks.queryClient
+            client.setQueryData(SYSTEM_SETTINGS_QUERY_KEY, current)
+            client.setQueryData(ADMIN_SYSTEM_SETTINGS_QUERY_KEY, current)
+            useAuthenticatedRealtimeEvents()
+
+            await emit({
+                type: 'system-settings.updated',
+                payload: {
+                    companyName: 'Example company',
+                    isPublicRegistrationEnabled: enabled,
+                    updatedAt: '2026-09-06T12:00:00Z',
+                },
+            })
+
+            for (const key of [
+                SYSTEM_SETTINGS_QUERY_KEY,
+                ADMIN_SYSTEM_SETTINGS_QUERY_KEY,
+            ]) {
+                expect(client.getQueryData(key)).toEqual(current)
+                expect(client.getQueryState(key)?.isInvalidated).toBe(true)
+            }
+        },
+    )
+
+    it.each([false, true])(
         'routes active maintenance only without bypass permission, bypass=%s',
         async (bypass) => {
             const session = createActivityTestSession()

@@ -9,21 +9,12 @@ export const DEFAULT_COMPANY_NAME: string = PROJECT_CONFIG.defaultName
 export const SYSTEM_SETTINGS_ID = 'default'
 
 export async function getOrCreateSystemSettingsService() {
-    const existing = await db.select().from(systemSettings).limit(1)
-
-    if (existing[0]) {
-        return existing[0]
-    }
-
-    const created = await db
-        .insert(systemSettings)
-        .values({
-            id: SYSTEM_SETTINGS_ID,
-            companyName: DEFAULT_COMPANY_NAME,
-        })
-        .returning()
-
-    return created[0]
+    const [existing] = await db
+        .select()
+        .from(systemSettings)
+        .where(eq(systemSettings.id, SYSTEM_SETTINGS_ID))
+        .limit(1)
+    return existing ?? db.transaction(getOrCreateSystemSettingsForUpdateService)
 }
 
 export async function getOrCreateSystemSettingsForUpdateService(

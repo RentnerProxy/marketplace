@@ -109,6 +109,7 @@ function defaultSystemSettings() {
     return {
         id: 'default',
         companyName: 'Alte Firma',
+        isPublicRegistrationEnabled: false,
         isMaintenanceModeEnabled: false,
         maintenanceStartsAt: null as Date | null,
         logoUpdatedAt: null as Date | null,

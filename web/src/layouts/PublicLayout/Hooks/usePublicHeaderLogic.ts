@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { systemSettingsQueryOptions } from '@/lib/Queries/appQueries.ts'
 import type { PublicHeaderLogicReturn } from '../Types/public-header-logic.types.ts'
 
 export default function usePublicHeaderLogic(): PublicHeaderLogicReturn {
     const [isScrolled, setIsScrolled] = useState(false)
+    const settings = useQuery(systemSettingsQueryOptions())
 
     useEffect(() => {
         if (typeof window === 'undefined') return undefined
@@ -16,5 +19,11 @@ export default function usePublicHeaderLogic(): PublicHeaderLogicReturn {
         return () => window.removeEventListener('scroll', updateScrollState)
     }, [])
 
-    return { state: { isScrolled } }
+    return {
+        state: {
+            isScrolled,
+            isPublicRegistrationEnabled:
+                settings.data?.isPublicRegistrationEnabled === true,
+        },
+    }
 }
