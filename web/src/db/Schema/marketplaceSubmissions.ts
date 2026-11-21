@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm'
 import {
     check,
+    customType,
     index,
     integer,
-    jsonb,
     timestamp,
     uniqueIndex,
     uuid,
@@ -19,6 +19,21 @@ import type {
     ValidatedSubmission,
 } from '@/lib/Marketplace/Types/submission.types.ts'
 import { appSchema } from './base.ts'
+
+const submissionJsonb = customType<{ data: unknown; driverData: unknown }>({
+    dataType: () => 'jsonb',
+    // Bind JSON as text so Bun SQL sends the already serialized value unchanged.
+    toDriver: (value) => sql`${JSON.stringify(value)}::text::jsonb`,
+    fromDriver(value) {
+        if (typeof value !== 'string') return value
+        try {
+            const decoded: unknown = JSON.parse(value)
+            return decoded
+        } catch {
+            return value
+        }
+    },
+})
 
 export const marketplaceRepositoryClaims = appSchema.table(
     'marketplace_repository_claims',
@@ -64,12 +79,12 @@ export const marketplaceSubmissions = appSchema.table(
         namespaceRevision: integer('namespace_revision'),
         appId: varchar('app_id', { length: 97 }).notNull(),
         version: varchar('version', { length: 64 }).notNull(),
-        request: jsonb('request').$type<SubmissionInput>().notNull(),
+        request: submissionJsonb('request').$type<SubmissionInput>().notNull(),
         status: varchar('status', { length: 24 })
             .$type<SubmissionStatus>()
             .notNull(),
         revision: integer('revision').notNull(),
-        history: jsonb('history').$type<SubmissionEvent[]>().notNull(),
+        history: submissionJsonb('history').$type<SubmissionEvent[]>().notNull(),
         createdAt: timestamp('created_at', { withTimezone: true })
             .defaultNow()
             .notNull(),
@@ -79,10 +94,10 @@ export const marketplaceSubmissions = appSchema.table(
         }),
         buildKey: uuid('build_key').notNull(),
         buildRunId: varchar('build_run_id', { length: 20 }),
-        validation: jsonb('validation').$type<ValidatedSubmission>(),
-        approval: jsonb('approval').$type<SubmissionApproval>(),
-        publicationRun: jsonb('publication_run').$type<PublicationRun>(),
-        publication: jsonb('publication').$type<Publication>(),
+        validation: submissionJsonb('validation').$type<ValidatedSubmission>(),
+        approval: submissionJsonb('approval').$type<SubmissionApproval>(),
+        publicationRun: submissionJsonb('publication_run').$type<PublicationRun>(),
+        publication: submissionJsonb('publication').$type<Publication>(),
         publicationRetryAt: timestamp('publication_retry_at', {
             withTimezone: true,
         }),

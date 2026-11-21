@@ -16,7 +16,10 @@ import {
     users,
 } from '@/db/schema.ts'
 import type { SubmissionArtifact } from '@/lib/Marketplace/Types/submission.types.ts'
-import { catalogPublisherWorkflow } from '@/lib/Marketplace/catalogPublication.ts'
+import {
+    catalogPublicationQueue,
+    catalogPublisherWorkflow,
+} from '@/lib/Marketplace/catalogPublication.ts'
 import {
     decideCandidateService,
     invalidateSubmission,
@@ -62,6 +65,10 @@ import {
 vi.mock('@/server/Realtime/publish.service.ts', () => ({
     publishAuditLogCreatedService: vi.fn(async () => {}),
 }))
+
+function legacySubmissionJson(value: object) {
+    return sql`to_jsonb(${JSON.stringify(value)}::text)`
+}
 
 async function user(accountType: 'public' | 'staff') {
     const suffix = crypto.randomUUID()
@@ -410,7 +417,26 @@ export async function exerciseSubmissionLifecycle() {
             submissionId: first.id,
             approvalRevision: approval.revision,
         })
-        expect(await listCatalogPublicationWorkService()).toContainEqual({
+        const [storedApproval] = await db
+            .select({
+                approval: sql`jsonb_typeof(${marketplaceSubmissions.approval})`,
+                history: sql`jsonb_typeof(${marketplaceSubmissions.history})`,
+            })
+            .from(marketplaceSubmissions)
+            .where(eq(marketplaceSubmissions.id, first.id))
+        expect(storedApproval).toEqual({ approval: 'object', history: 'array' })
+
+        await db
+            .update(marketplaceSubmissions)
+            .set({
+                approval: legacySubmissionJson(approval),
+                history: legacySubmissionJson(approved.history),
+            })
+            .where(eq(marketplaceSubmissions.id, first.id))
+        const queue: unknown = await Response.json({
+            items: await listCatalogPublicationWorkService(),
+        }).json()
+        expect(catalogPublicationQueue.parse(queue).items).toContainEqual({
             submissionId: first.id,
             approvalRevision: approval.revision,
             revision: approved.revision,
@@ -509,6 +535,17 @@ export async function exerciseSubmissionLifecycle() {
         expect(await authorizePublicationAttemptService(firstAttempt)).toEqual(
             authorized,
         )
+        const [storedAttempt] = await db
+            .select({
+                run: sql`jsonb_typeof(${marketplaceSubmissions.publicationRun})`,
+            })
+            .from(marketplaceSubmissions)
+            .where(eq(marketplaceSubmissions.id, first.id))
+        expect(storedAttempt?.run).toBe('object')
+        await db
+            .update(marketplaceSubmissions)
+            .set({ publicationRun: legacySubmissionJson(firstAttempt.run) })
+            .where(eq(marketplaceSubmissions.id, first.id))
         expect(await listCatalogPublicationWorkService()).toContainEqual({
             ...publication,
             revision: authorized.revision,
@@ -702,6 +739,11 @@ export async function exerciseSubmissionLifecycle() {
         await expect(
             confirmCatalogRevocationService(publication, 20, revocation),
         ).resolves.toBe('revoked')
+        const confirmed = await readSubmission(first.id)
+        await db
+            .update(marketplaceSubmissions)
+            .set({ history: legacySubmissionJson(confirmed.history) })
+            .where(eq(marketplaceSubmissions.id, first.id))
         await expect(
             confirmCatalogRevocationService(publication, 20, revocation),
         ).resolves.toBe('revoked')
