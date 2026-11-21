@@ -145,12 +145,21 @@ async function checkAgain(
         .where(leaseCondition(row))
 }
 
-async function processSubmission(
-    row: Submission,
-    token: string,
-    signal?: AbortSignal,
-) {
-    if (['awaitingReview', 'approved', 'publishing'].includes(row.status)) {
+async function processSubmission(row: Submission, signal?: AbortSignal) {
+    const recheck = ['awaitingReview', 'approved', 'publishing'].includes(
+        row.status,
+    )
+    if (
+        !recheck &&
+        Date.now() - row.createdAt.getTime() >= pipeline.buildTimeoutMs
+    ) {
+        await changeLeased(row, { status: 'failed', failure: 'buildTimedOut' })
+        return
+    }
+
+    const token = await candidateGitHubToken()
+    if (!token || signal?.aborted) return
+    if (recheck) {
         try {
             await checkCurrentCandidate(row, token)
         } catch (error) {
@@ -161,12 +170,6 @@ async function processSubmission(
         await checkAgain(row, expiresOrRecheck(row))
         return
     }
-    const elapsed = Date.now() - row.createdAt.getTime()
-    if (elapsed >= pipeline.buildTimeoutMs) {
-        await changeLeased(row, { status: 'failed', failure: 'buildTimedOut' })
-        return
-    }
-
     try {
         const claim = await readClaim(row.claimId)
         if (!row.dispatchRequestedAt) {
@@ -272,18 +275,12 @@ function boundedRetryAt(row: Submission, retryAt: Date) {
     )
 }
 
-export async function reconcileNextSubmissionService(
-    token?: string,
-    signal?: AbortSignal,
-) {
+export async function reconcileNextSubmissionService(signal?: AbortSignal) {
     if (signal?.aborted) return
     const row = await leaseDueSubmission()
     if (!row || signal?.aborted) return
     try {
-        const currentToken = token ?? (await candidateGitHubToken())
-        if (currentToken && !signal?.aborted) {
-            await processSubmission(row, currentToken, signal)
-        }
+        await processSubmission(row, signal)
     } catch (error) {
         if (!(error instanceof GitHubRequestError) || !error.retryAt)
             throw error
@@ -316,7 +313,7 @@ export async function runCandidateValidationWorker(
             await withSharedStorageMutationBarrier(async () => {
                 if (signal.aborted || (await isRestoreQuiescenceActive()))
                     return
-                await reconcileNextSubmissionService(undefined, signal)
+                await reconcileNextSubmissionService(signal)
             })
         } catch (error) {
             if (!(error instanceof RestoreInProgressError)) {

@@ -1,8 +1,11 @@
 import { afterAll, beforeAll, expect, test, vi } from 'bun:test'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { eq } from 'drizzle-orm'
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
 import { migrate } from 'drizzle-orm/pglite/migrator'
+import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
 import * as schema from '@/db/schema.ts'
 import { fixtureClaim, fixtureSubmission } from './submission.fixture.ts'
 
@@ -34,6 +37,53 @@ test(
     'recovers candidate validation and authorizes exact publication on a migrated PostgreSQL schema',
     exerciseSubmissionLifecycle,
 )
+
+test('times out a submitted build when the GitHub App key is unavailable', async () => {
+    const { reconcileNextSubmissionService } =
+        await import('@/server/Marketplace/Submissions/validation.worker.ts')
+    const claim = fixtureClaim()
+    const submission = {
+        ...fixtureSubmission(claim),
+        status: 'submitted' as const,
+        dispatchRequestedAt: null,
+        createdAt: new Date(Date.now() - pipeline.buildTimeoutMs),
+        nextCheckAt: new Date(0),
+    }
+    const app = {
+        MARKETPLACE_CANDIDATE_GITHUB_APP_CLIENT_ID: 'fixture-builder',
+        MARKETPLACE_CANDIDATE_GITHUB_APP_INSTALLATION_ID: '123',
+        MARKETPLACE_CANDIDATE_GITHUB_APP_PRIVATE_KEY_FILE: join(
+            tmpdir(),
+            `missing-candidate-builder-${crypto.randomUUID()}.pem`,
+        ),
+    }
+    const previous = Object.keys(app).map(
+        (key) => [key, process.env[key]] as const,
+    )
+    await db.insert(schema.marketplaceRepositoryClaims).values(claim)
+    await db.insert(schema.marketplaceSubmissions).values(submission)
+    try {
+        Object.assign(process.env, app)
+        await reconcileNextSubmissionService()
+        const [row] = await db
+            .select()
+            .from(schema.marketplaceSubmissions)
+            .where(eq(schema.marketplaceSubmissions.id, submission.id))
+        expect(row).toMatchObject({ status: 'failed', nextCheckAt: null })
+        expect(row.history.at(-1)).toMatchObject({ failure: 'buildTimedOut' })
+    } finally {
+        for (const [key, value] of previous) {
+            if (value === undefined) delete process.env[key]
+            else process.env[key] = value
+        }
+        await db
+            .delete(schema.marketplaceSubmissions)
+            .where(eq(schema.marketplaceSubmissions.id, submission.id))
+        await db
+            .delete(schema.marketplaceRepositoryClaims)
+            .where(eq(schema.marketplaceRepositoryClaims.id, claim.id))
+    }
+})
 
 test('rechecks restore quiescence inside the shared barrier before leasing work', async () => {
     const { runCandidateValidationWorker } =

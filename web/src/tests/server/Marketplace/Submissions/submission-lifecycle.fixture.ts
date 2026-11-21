@@ -300,8 +300,8 @@ export async function exerciseSubmissionLifecycle() {
             'submissionConflict',
         )
         await Promise.all([
-            reconcileNextSubmissionService(token),
-            reconcileNextSubmissionService(token),
+            reconcileNextSubmissionService(),
+            reconcileNextSubmissionService(),
         ])
         const rateLimited = await readSubmission(first.id)
         expect(rateLimited).toMatchObject({
@@ -316,7 +316,7 @@ export async function exerciseSubmissionLifecycle() {
             Date.now() + 100_000,
         )
         await makeDue(first.id)
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         const lost = await readSubmission(first.id)
         expect(lost).toMatchObject({ status: 'validating', buildRunId: null })
         fixture = await fixtureCandidate(lost, claim)
@@ -336,7 +336,7 @@ export async function exerciseSubmissionLifecycle() {
             })),
         )
         await makeDue(first.id)
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         const validated = await readSubmission(first.id)
         expect(discoveryPages).toEqual([1, 2])
         expect(dispatches).toHaveLength(2)
@@ -870,7 +870,7 @@ export async function exerciseSubmissionLifecycle() {
             publication: null,
         })
         proofRemoved = true
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         expect((await readSubmission(later.id)).history.at(-1)).toMatchObject({
             status: 'failed',
             failure: 'ownershipChanged',
@@ -936,7 +936,7 @@ export async function exerciseSubmissionLifecycle() {
             { ...assign, claimId: null, revision: assignment.revision },
             staff,
         )
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         expect(
             (await readSubmission(officialSubmission.id)).history.at(-1),
         ).toMatchObject({
@@ -957,7 +957,7 @@ export async function exerciseSubmissionLifecycle() {
             }),
         )
         await db.insert(marketplaceSubmissions).values(otherIntents)
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         expect(await readSubmission(waiting.id)).toMatchObject({
             status: 'submitted',
             dispatchRequestedAt: null,
