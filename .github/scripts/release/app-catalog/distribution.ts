@@ -75,7 +75,7 @@ export function createDistribution(
     async function checkPublicRepository() {
         if (
             !publicRepository.safeParse(
-                await http.request({ path: repositoryPath, anonymous: true }),
+                await http.request({ path: repositoryPath }),
             ).success
         )
             throw new Error(

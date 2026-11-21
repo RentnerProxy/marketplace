@@ -75,8 +75,7 @@ function fixtureFetch(
         expect(options.redirect).toBe('manual')
         const parsed = new URL(url)
         const authenticated =
-            (parsed.hostname === 'api.github.com' &&
-                parsed.pathname !== repository) ||
+            parsed.hostname === 'api.github.com' ||
             parsed.hostname === 'uploads.github.com'
         expect(new Headers(options.headers).get('authorization')).toBe(
             authenticated ? `Bearer ${token}` : null,
@@ -88,6 +87,38 @@ function fixtureFetch(
 function assertAnonymous(options: RequestInit) {
     expect(new Headers(options.headers).has('authorization')).toBe(false)
 }
+
+test('uses the installation token when anonymous repository reads are rate limited', async () => {
+    const authenticatedFetch = fixtureFetch((url, options) => {
+        if (url.pathname === repository) return Response.json(repo)
+        if (url.pathname === branchRulesPath)
+            return branchRulesResponse(options)
+        expect(url.pathname).toBe(branch)
+        return branchRef()
+    })
+    const fetcher = ((url: string, options: RequestInit) => {
+        if (!new Headers(options.headers).has('authorization'))
+            return Promise.resolve(new Response(null, { status: 403 }))
+        return authenticatedFetch(url, options)
+    }) as typeof fetch
+
+    await expect(createDistribution(token, fetcher).head()).resolves.toBe(
+        parent,
+    )
+})
+
+test('identifies a rate-limited repository request without exposing its body', async () => {
+    const fetcher = fixtureFetch((url) => {
+        expect(url.pathname).toBe(repository)
+        return new Response('private response details', {
+            status: 403,
+            headers: { 'x-ratelimit-remaining': '0' },
+        })
+    })
+    await expect(createDistribution(token, fetcher).head()).rejects.toThrow(
+        'GitHub catalog API GET /repos/RentnerProxy/app-catalog returned HTTP 403 (rate limited)',
+    )
+})
 
 test('promotes signed catalog files in one commit against the exact public head', async () => {
     const mutations: unknown[] = []
@@ -225,8 +256,7 @@ test.each([
 ])(
     'requires public catalog identity pinned to the organization and main',
     async (wrongRepo) => {
-        const fetcher = fixtureFetch((url, options) => {
-            assertAnonymous(options)
+        const fetcher = fixtureFetch((url) => {
             expect(url.pathname).toBe(repository)
             return Response.json(wrongRepo)
         })
@@ -381,10 +411,7 @@ test('resumes an exact draft, authorizes publication after upload and verifies a
             uploadCount += 1
             return Response.json(asset)
         }
-        if (url.pathname === repository) {
-            assertAnonymous(options)
-            return Response.json(repo)
-        }
+        if (url.pathname === repository) return Response.json(repo)
         if (url.pathname === `${repository}/immutable-releases`)
             return settingsAvailable && !published
                 ? Response.json({ enabled: true })
