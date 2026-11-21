@@ -39,10 +39,6 @@ export const githubNumericId = z
     .max(Number.MAX_SAFE_INTEGER)
     .transform(String)
 
-export function candidateGitHubToken() {
-    return process.env.MARKETPLACE_CANDIDATE_GITHUB_TOKEN?.trim() || undefined
-}
-
 export function githubRequest(
     path: string,
     options: { token?: string; input?: object; redirect?: 'manual' } = {},

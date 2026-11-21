@@ -22,7 +22,8 @@ import {
     failureOf,
     invalidateSubmission,
 } from './decision.service.ts'
-import { candidateGitHubToken, GitHubRequestError } from './github.service.ts'
+import { candidateGitHubToken } from './github-credentials.service.ts'
+import { GitHubRequestError } from './github.service.ts'
 import { assertCurrentNamespace } from './namespace.service.ts'
 import { verifyRepositoryClaim } from './ownership.service.ts'
 import {
@@ -272,14 +273,17 @@ function boundedRetryAt(row: Submission, retryAt: Date) {
 }
 
 export async function reconcileNextSubmissionService(
-    token: string,
+    token?: string,
     signal?: AbortSignal,
 ) {
     if (signal?.aborted) return
     const row = await leaseDueSubmission()
     if (!row || signal?.aborted) return
     try {
-        await processSubmission(row, token, signal)
+        const currentToken = token ?? (await candidateGitHubToken())
+        if (currentToken && !signal?.aborted) {
+            await processSubmission(row, currentToken, signal)
+        }
     } catch (error) {
         if (!(error instanceof GitHubRequestError) || !error.retryAt)
             throw error
@@ -294,12 +298,10 @@ export async function runCandidateValidationWorker(
     signal: AbortSignal,
     isRestoreQuiescenceActive: () => Promise<boolean>,
 ) {
-    const token = candidateGitHubToken()
-    if (!token) return
     while (!signal.aborted) {
         // Run one reconciliation at a time. Its durable lease is shared by all workers.
         // oxlint-disable-next-line no-await-in-loop
-        await reconcileUnlessRestoring(token)
+        await reconcileUnlessRestoring()
         try {
             // oxlint-disable-next-line no-await-in-loop
             await delay(pipeline.pollMs, undefined, { signal })
@@ -308,13 +310,13 @@ export async function runCandidateValidationWorker(
         }
     }
 
-    async function reconcileUnlessRestoring(currentToken: string) {
+    async function reconcileUnlessRestoring() {
         try {
             if (signal.aborted || (await isRestoreQuiescenceActive())) return
             await withSharedStorageMutationBarrier(async () => {
                 if (signal.aborted || (await isRestoreQuiescenceActive()))
                     return
-                await reconcileNextSubmissionService(currentToken, signal)
+                await reconcileNextSubmissionService(undefined, signal)
             })
         } catch (error) {
             if (!(error instanceof RestoreInProgressError)) {

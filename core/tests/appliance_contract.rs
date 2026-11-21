@@ -69,6 +69,31 @@ fn production_environment() -> BTreeMap<String, String> {
 }
 
 #[test]
+fn candidate_app_settings_reach_only_the_application_environment() {
+    let mut input = production_environment();
+    let app = [
+        ("MARKETPLACE_CANDIDATE_GITHUB_APP_CLIENT_ID", "Iv1.fixture"),
+        ("MARKETPLACE_CANDIDATE_GITHUB_APP_INSTALLATION_ID", "123"),
+        (
+            "MARKETPLACE_CANDIDATE_GITHUB_APP_PRIVATE_KEY_FILE",
+            "/run/secrets/candidate-app.pem",
+        ),
+    ];
+    input.extend(app.map(|(key, value)| (key.into(), value.into())));
+    input.insert(
+        "MARKETPLACE_CANDIDATE_GITHUB_APP_PEM".into(),
+        "private fixture".into(),
+    );
+    let application = create_environment(&input, false).unwrap();
+    let maintenance = create_environment(&input, true).unwrap();
+    for (key, value) in app {
+        assert_eq!(application[key], value);
+        assert!(!maintenance.contains_key(key));
+    }
+    assert!(!application.contains_key("MARKETPLACE_CANDIDATE_GITHUB_APP_PEM"));
+}
+
+#[test]
 fn production_environment_rejects_invalid_credentials_transport_and_mail_before_startup() {
     let mut env = production_environment();
     env.insert(

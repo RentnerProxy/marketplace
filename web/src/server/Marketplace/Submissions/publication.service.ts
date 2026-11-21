@@ -14,7 +14,7 @@ import {
     type Publication,
 } from '../../../../../contracts/v1/index.ts'
 import { candidate } from '../../../../../contracts/v1/publication.ts'
-import { candidateGitHubToken } from './github.service.ts'
+import { candidateGitHubToken } from './github-credentials.service.ts'
 import {
     assertCatalogPublisherRun,
     assertTerminalCatalogPublisherRunService,
@@ -92,7 +92,7 @@ function requireApproval(row: Submission, approvalRevision: number) {
 }
 
 async function validateHandoff(row: Submission) {
-    const token = candidateGitHubToken()
+    const token = await candidateGitHubToken()
     if (!token) throw new Error('buildsUnavailable')
     try {
         return await checkCurrentCandidate(row, token)

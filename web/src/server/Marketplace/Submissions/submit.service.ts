@@ -8,7 +8,7 @@ import {
     marketplaceSubmissions as submissions,
 } from '@/db/schema.ts'
 import type { SubmissionInput } from '@/lib/Marketplace/Types/submission.types.ts'
-import { candidateGitHubToken } from './github.service.ts'
+import { candidateBuildsConfigured } from './github-credentials.service.ts'
 import { namespaceRevision } from './namespace.service.ts'
 import {
     candidateNamespace,
@@ -44,7 +44,7 @@ export async function listRepositoryClaimsService(actor: string) {
         .limit(100)
     return {
         claims: result.map(describeClaim),
-        buildsEnabled: Boolean(candidateGitHubToken()),
+        buildsEnabled: candidateBuildsConfigured(),
     }
 }
 
@@ -95,7 +95,7 @@ export async function submitCandidateService(
     const existing = await findRequest()
     if (existing) return existing
 
-    if (!candidateGitHubToken()) throw new Error('buildsUnavailable')
+    if (!candidateBuildsConfigured()) throw new Error('buildsUnavailable')
     const claim = await readClaim(request.claimId, actor)
     await verifyRepositoryClaim(claim, request.commit)
 
