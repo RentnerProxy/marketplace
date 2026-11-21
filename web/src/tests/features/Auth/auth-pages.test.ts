@@ -32,6 +32,7 @@ function Field({
 const loginState = {
     isLoading: false,
     isPasskeyLoading: false,
+    isPublicRegistrationEnabled: false,
     requiresTwoFactor: false,
     twoFactorCode: ['', '', '', '', '', ''],
     trustThisDevice: false,
@@ -162,7 +163,9 @@ vi.mock(
 )
 
 import Login from '@/features/Auth/Login/index.tsx'
-import Register from '@/features/Auth/Register/index.tsx'
+import Register, {
+    RegistrationClosed,
+} from '@/features/Auth/Register/index.tsx'
 import ForgotPassword from '@/features/Auth/ForgotPassword/index.tsx'
 import PasswordReset from '@/features/Auth/PasswordReset/index.tsx'
 import Setup from '@/features/Auth/FirstSuperUser/index.tsx'
@@ -174,6 +177,7 @@ beforeEach(function () {
     Object.assign(loginState, {
         isLoading: false,
         isPasskeyLoading: false,
+        isPublicRegistrationEnabled: false,
         requiresTwoFactor: false,
         trustThisDevice: false,
         isTwoFactorError: false,
@@ -259,14 +263,25 @@ describe('authentication page states', function () {
         expect(change).not.toHaveBeenCalled()
     })
 
-    it('renders credentials, recovery and passkey choices with default branding', function () {
-        const html = renderToStaticMarkup(createElement(Login))
-        expect(html).toContain('Test Workspace')
-        expect(html).toContain('value="starter-admin"')
-        expect(html).toContain('type="password"')
-        expect(html).toContain('href="/forgot-password"')
-        expect(html).toContain('href="/register"')
-        expect(html).not.toContain('/custom-logo.webp')
+    it.each([false, true])(
+        'renders sign-in with public registration enabled=%s',
+        (isEnabled) => {
+            loginState.isPublicRegistrationEnabled = isEnabled
+            const html = renderToStaticMarkup(createElement(Login))
+            expect(html).toContain('Test Workspace')
+            expect(html).toContain('value="starter-admin"')
+            expect(html).toContain('type="password"')
+            expect(html).toContain('href="/forgot-password"')
+            expect(html.includes('href="/register"')).toBe(isEnabled)
+            expect(html).not.toContain('/custom-logo.webp')
+        },
+    )
+
+    it('shows visitors a closed registration message and a sign-in link', () => {
+        const html = renderToStaticMarkup(createElement(RegistrationClosed))
+        expect(html).toContain('auth.register.disabled')
+        expect(html).toContain('href="/login"')
+        expect(html).not.toContain('<form')
     })
 
     it('hides password fields during provider registration and prevents pending edits', function () {

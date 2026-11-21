@@ -10,6 +10,7 @@ let collapsed = false
 let loggingOut = false
 let requesting = false
 let minimized = false
+let publicRegistrationEnabled = false
 const navItems: AuthenticatedNavItem[] = [
     { labelKey: 'nav.home', to: '/user/dashboard', icon: Home },
 ]
@@ -17,6 +18,14 @@ vi.mock('@tanstack/react-router', () => ({
     Outlet: () => createElement('article', null, 'Route content'),
     Link: ({ to, children }: { to: string; children: ReactNode }) =>
         createElement('a', { href: to }, children),
+}))
+vi.mock('@tanstack/react-query', () => ({
+    useQuery: () => ({
+        data: { isPublicRegistrationEnabled: publicRegistrationEnabled },
+    }),
+}))
+vi.mock('@/lib/Queries/appQueries.ts', () => ({
+    systemSettingsQueryOptions: () => ({}),
 }))
 vi.mock('@rentnerkev/tooltips', () => ({
     CustomTooltip: ({ children }: { children: ReactNode }) =>
@@ -172,6 +181,7 @@ beforeEach(() => {
     loggingOut = false
     requesting = false
     minimized = false
+    publicRegistrationEnabled = false
 })
 
 it.each([false, true])(
@@ -307,6 +317,16 @@ it('keeps legal navigation and version in the footer while language selection is
     expect(footerHtml).not.toContain('aria-pressed')
     expect(footerHtml).not.toContain('href="#main-content"')
 })
+
+it.each([false, true])(
+    'shows the public signup link only while registration is enabled (%s)',
+    (enabled) => {
+        publicRegistrationEnabled = enabled
+        const html = renderToStaticMarkup(createElement(PublicLayout))
+        expect(html.includes('href="/register"')).toBe(enabled)
+        expect(html).toContain('href="/login"')
+    },
+)
 
 it.each([false, true])(
     'composes the authenticated shell with maintenance and backup progress, minimized=%s',
