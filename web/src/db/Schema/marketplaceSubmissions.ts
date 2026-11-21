@@ -84,7 +84,9 @@ export const marketplaceSubmissions = appSchema.table(
             .$type<SubmissionStatus>()
             .notNull(),
         revision: integer('revision').notNull(),
-        history: submissionJsonb('history').$type<SubmissionEvent[]>().notNull(),
+        history: submissionJsonb('history')
+            .$type<SubmissionEvent[]>()
+            .notNull(),
         createdAt: timestamp('created_at', { withTimezone: true })
             .defaultNow()
             .notNull(),
@@ -96,7 +98,8 @@ export const marketplaceSubmissions = appSchema.table(
         buildRunId: varchar('build_run_id', { length: 20 }),
         validation: submissionJsonb('validation').$type<ValidatedSubmission>(),
         approval: submissionJsonb('approval').$type<SubmissionApproval>(),
-        publicationRun: submissionJsonb('publication_run').$type<PublicationRun>(),
+        publicationRun:
+            submissionJsonb('publication_run').$type<PublicationRun>(),
         publication: submissionJsonb('publication').$type<Publication>(),
         publicationRetryAt: timestamp('publication_retry_at', {
             withTimezone: true,

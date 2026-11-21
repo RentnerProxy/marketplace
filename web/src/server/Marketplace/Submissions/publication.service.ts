@@ -154,14 +154,8 @@ export async function listPendingPublicationsService() {
 }
 
 export async function listCatalogPublicationWorkService() {
-    const {
-        status,
-        publicationRun,
-        publication,
-        createdAt,
-        id,
-        revision,
-    } = marketplaceSubmissions
+    const { status, publicationRun, publication, createdAt, id, revision } =
+        marketplaceSubmissions
     const rows = await db
         .select({
             submissionId: id,
