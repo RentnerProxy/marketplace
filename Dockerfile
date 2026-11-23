@@ -46,6 +46,12 @@ WORKDIR /app
 
 FROM postgres:18.7-alpine3.24 AS postgres-runtime
 
+# Marketplace starts PostgreSQL through its own supervisor and su-exec.
+RUN rm -f /usr/local/bin/gosu \
+    /usr/local/bin/docker-entrypoint.sh \
+    /usr/local/bin/docker-ensure-initdb.sh \
+    /usr/local/bin/docker-enforce-initdb.sh
+
 # Copy the filesystem so the appliance controls mounts, ports and startup.
 FROM scratch AS runtime-base
 COPY --from=postgres-runtime / /
