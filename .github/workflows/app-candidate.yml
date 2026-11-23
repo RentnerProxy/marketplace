@@ -44,7 +44,7 @@ env:
     SOURCE_PATH: ${{ inputs.source_path }}
     ARTIFACT_PREFIX: ${{ inputs.artifact_prefix }}
     PUBLISHER_NAME: ${{ inputs.publisher_name }}
-    BUN_VERSION: 1.4.4
+    BUN_VERSION: 1.4.5
     BUN_FEATURE_FLAG_DISABLE_NATIVE_DEPENDENCY_LINKER: '1'
 
 # GitHub exposes the callee workflow identity in job. The JSON conversion

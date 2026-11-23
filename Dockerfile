@@ -1,6 +1,6 @@
-ARG BUN_VERSION=1.4.4
+ARG BUN_VERSION=1.4.5
 
-FROM rust:1.100.0-alpine3.24@sha256:de1e0058543a81ed7b046629167db587c67a94bdf37cce14eb27f0ec83baaffb AS core-sources
+FROM rust:1.100.0-alpine3.24 AS core-sources
 
 WORKDIR /app/core
 RUN apk add --no-cache musl-dev
@@ -44,17 +44,23 @@ FROM oven/bun:${BUN_VERSION}-alpine AS base
 
 WORKDIR /app
 
-FROM alpine:3.24 AS runtime-base
+FROM postgres:18.7-alpine3.24 AS postgres-runtime
+
+# Copy the filesystem so the appliance controls mounts, ports and startup.
+FROM scratch AS runtime-base
+COPY --from=postgres-runtime / /
 
 WORKDIR /app
 
 ENV BUN_RUNTIME_TRANSPILER_CACHE_PATH=0 \
-    BUN_INSTALL_BIN=/usr/local/bin
+    BUN_INSTALL_BIN=/usr/local/bin \
+    LANG=C.UTF-8 \
+    PGDATA=/data/postgresql/18/docker
 
 COPY --from=base /usr/local/bin/bun /usr/local/bin/bun
 
 RUN apk upgrade --no-cache \
-    && apk add --no-cache postgresql18 postgresql18-client su-exec tini bash openssl libgcc libstdc++ ca-certificates \
+    && apk add --no-cache su-exec tini bash openssl libgcc libstdc++ ca-certificates \
     && addgroup -g 1000 bun \
     && adduser -u 1000 -G bun -s /bin/sh -D bun \
     && addgroup -g 1001 valkey \
@@ -72,6 +78,7 @@ COPY --chmod=755 \
     /usr/local/bin/
 
 RUN bun --version \
+    && postgres --version | grep -E '^postgres \(PostgreSQL\) 18\.' \
     && pg_dump --version | grep -E '^pg_dump \(PostgreSQL\) 18\.' \
     && pg_restore --version | grep -E '^pg_restore \(PostgreSQL\) 18\.' \
     && valkey-server --version && valkey-cli --version
@@ -80,6 +87,7 @@ HEALTHCHECK --interval=30s --timeout=15s --start-period=5m --retries=3 \
     CMD ["container-healthcheck.sh"]
 
 ENTRYPOINT ["tini", "--", "container-entrypoint.sh"]
+STOPSIGNAL SIGTERM
 CMD ["start"]
 
 FROM base AS deps

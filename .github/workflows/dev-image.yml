@@ -6,7 +6,7 @@ concurrency:
     group: dev-image
     cancel-in-progress: false
 env:
-    BUN_VERSION: 1.4.4
+    BUN_VERSION: 1.4.5
 jobs:
     prepare:
         name: Prepare dev identity

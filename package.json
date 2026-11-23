@@ -2,7 +2,7 @@
     "name": "rentnerproxy-marketplace",
     "private": true,
     "type": "module",
-    "packageManager": "bun@1.4.4",
+    "packageManager": "bun@1.4.5",
     "scripts": {
         "dev": "bun run core:build && bun run project:check && bun run --parallel dev:core dev:web dev:realtime worker:dev",
         "dev:web": "bunx --bun vite dev --port 3000",
