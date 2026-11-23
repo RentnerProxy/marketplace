@@ -70,10 +70,12 @@ describe('self-contained appliance deployment', function () {
     })
 
     test('packages the server, tools and fixed private targets without a host control socket', function () {
-        expect(dockerfile).toContain(
-            'apk add --no-cache postgresql18 postgresql18-client su-exec',
+        expect(dockerfile).toMatch(
+            /^FROM postgres:18\.\d+-alpine3\.\d+ AS postgres-runtime$/mu,
         )
+        expect(dockerfile).toContain('COPY --from=postgres-runtime / /')
         for (const assignment of [
+            'PGDATA=/data/postgresql/18/docker',
             'POSTGRES_HOST=127.0.0.1',
             'POSTGRES_PORT=5432',
             'POSTGRES_DB=' + project.databaseName,
