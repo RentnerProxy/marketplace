@@ -241,9 +241,21 @@ fn bounds_the_serialized_size_of_a_legacy_handoff_part() {
         ("ASCII above the limit", json!("a".repeat(262_143)), false),
         ("UTF-8 at the limit", json!("\u{e4}".repeat(131_071)), true),
         ("escapes at the limit", json!("\n".repeat(131_071)), true),
-        ("escapes above the limit", json!("\n".repeat(131_072)), false),
-        ("decimals at the limit", Value::from(vec![0.000_001; 29_127]), true),
-        ("decimals above the limit", Value::from(vec![0.000_001; 29_128]), false),
+        (
+            "escapes above the limit",
+            json!("\n".repeat(131_072)),
+            false,
+        ),
+        (
+            "decimals at the limit",
+            Value::from(vec![0.000_001; 29_127]),
+            true,
+        ),
+        (
+            "decimals above the limit",
+            Value::from(vec![0.000_001; 29_128]),
+            false,
+        ),
     ] {
         let document = json!({"sequence": 0, "part": part});
         let expected = if valid {
