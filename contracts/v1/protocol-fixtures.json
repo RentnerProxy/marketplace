@@ -1095,45 +1095,160 @@
             "valid": false
         },
         {
-            "title": "a part request names the first sequence",
+            "title": "a begin result carries the fixed export",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": true
+        },
+        {
+            "title": "a begin result after commit carries only the digest",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a begin result never reports platform ownership",
+            "schema": "LegacyHandoffBeginResult",
+            "document": { "domain": "monitoring", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a begin result after commit rejects a part count",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit result reports ownership",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a commit result rejects an open export",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit result rejects platform ownership",
+            "schema": "LegacyHandoffCommitResult",
+            "document": { "domain": "dns", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a commit result requires the digest",
+            "schema": "LegacyHandoffCommitResult",
+            "document": { "domain": "dns", "state": "committed" },
+            "valid": false
+        },
+        {
+            "title": "a commit result rejects unknown members",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "installationId": "install-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request names the export and the first sequence",
             "schema": "LegacyHandoffPartRequest",
-            "document": { "sequence": 0 },
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 0
+            },
             "valid": true
         },
         {
             "title": "a part request names the last possible sequence",
             "schema": "LegacyHandoffPartRequest",
-            "document": { "sequence": 1023 },
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1023
+            },
             "valid": true
         },
         {
             "title": "a part request rejects a sequence beyond the journal",
             "schema": "LegacyHandoffPartRequest",
-            "document": { "sequence": 1024 },
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1024
+            },
             "valid": false
         },
         {
             "title": "a part request rejects a negative sequence",
             "schema": "LegacyHandoffPartRequest",
-            "document": { "sequence": -1 },
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": -1
+            },
             "valid": false
         },
         {
             "title": "a part request rejects a fractional sequence",
             "schema": "LegacyHandoffPartRequest",
-            "document": { "sequence": 1.5 },
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1.5
+            },
             "valid": false
         },
         {
             "title": "a part request requires a sequence",
             "schema": "LegacyHandoffPartRequest",
-            "document": {},
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request requires the export digest",
+            "schema": "LegacyHandoffPartRequest",
+            "document": { "sequence": 0 },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects a malformed digest",
+            "schema": "LegacyHandoffPartRequest",
+            "document": { "digest": "9f86d081884c7d65", "sequence": 0 },
             "valid": false
         },
         {
             "title": "a part request rejects unknown members",
             "schema": "LegacyHandoffPartRequest",
-            "document": { "sequence": 0, "domain": "monitoring" },
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 0,
+                "domain": "monitoring"
+            },
             "valid": false
         },
         {

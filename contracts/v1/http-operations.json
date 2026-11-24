@@ -248,14 +248,14 @@
             "pathParameter": "domain",
             "summary": "Fence platform writers and fix a built-in feature export",
             "status": 200,
-            "response": "LegacyHandoffStatus",
+            "response": "LegacyHandoffBeginResult",
             "idempotencyKey": true,
             "failures": {
                 "401": "The credential is invalid, or the generation or its lease is no longer current.",
                 "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
                 "409": "Another installation holds the domain, or the idempotency key conflicts."
             },
-            "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. The result state is exported, or committed after a completed handoff. Repeating begin returns the same digest and part count, so an interrupted import resumes."
+            "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. While the export is open, repeating begin returns exported with the same digest and part count, so an interrupted import resumes. After commit, begin returns committed with the same digest and no part count."
         },
         {
             "id": "readLegacyHandoffPart",
@@ -270,11 +270,11 @@
             "failures": {
                 "401": "The credential is invalid, or the generation or its lease is no longer current.",
                 "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
-                "404": "No export exists for this installation, or the sequence is outside the export.",
-                "409": "Another installation holds the domain.",
+                "404": "No export exists for this installation, or the sequence is not below the part count.",
+                "409": "Another installation holds the domain, or the digest differs from the current export.",
                 "503": "The stored part is unreadable. The platform must abort the handoff and export again."
             },
-            "description": "Read every sequence from zero up to the exported part count and import each part durably before commit. A serialized part is at most 262144 bytes."
+            "description": "Read every sequence with 0 <= sequence < partCount and import each part durably before commit. An export with no parts needs no reads. The digest binds each read to the export that begin fixed, so a read never returns a part of a replaced export. A serialized part is at most 262144 bytes."
         },
         {
             "id": "commitLegacyHandoff",
@@ -285,7 +285,7 @@
             "summary": "Commit an imported built-in feature export",
             "status": 200,
             "request": "LegacyHandoffCommit",
-            "response": "LegacyHandoffStatus",
+            "response": "LegacyHandoffCommitResult",
             "idempotencyKey": true,
             "failures": {
                 "401": "The credential is invalid, or the generation or its lease is no longer current.",

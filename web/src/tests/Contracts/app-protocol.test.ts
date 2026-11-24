@@ -144,6 +144,29 @@ describe('app protocol v1', () => {
             }),
         ).toThrow(ContractError)
     })
+
+    const decimals = (length: number) =>
+        Array.from({ length }, () => 0.000_001)
+    const partSizes: [string, () => unknown, boolean][] = [
+        ['ASCII at the limit', () => 'a'.repeat(262_142), true],
+        ['ASCII above the limit', () => 'a'.repeat(262_143), false],
+        ['UTF-8 at the limit', () => 'ä'.repeat(131_071), true],
+        ['escapes at the limit', () => '\n'.repeat(131_071), true],
+        ['escapes above the limit', () => '\n'.repeat(131_072), false],
+        ['decimals at the limit', () => decimals(29_127), true],
+        ['decimals above the limit', () => decimals(29_128), false],
+    ]
+    for (const [label, part, valid] of partSizes) {
+        test('bounds a legacy handoff part: ' + label, () => {
+            const check = () =>
+                parseProtocolDocument('LegacyHandoffPart', {
+                    sequence: 0,
+                    part: part(),
+                })
+            if (valid) expect(check()).toBeDefined()
+            else expect(check).toThrow(ContractError)
+        })
+    }
 })
 
 describe('app HTTP SDK v1', () => {

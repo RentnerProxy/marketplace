@@ -1765,7 +1765,7 @@
             "post": {
                 "operationId": "beginLegacyHandoff",
                 "summary": "Fence platform writers and fix a built-in feature export",
-                "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. The result state is exported, or committed after a completed handoff. Repeating begin returns the same digest and part count, so an interrupted import resumes.",
+                "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. While the export is open, repeating begin returns exported with the same digest and part count, so an interrupted import resumes. After commit, begin returns committed with the same digest and no part count.",
                 "x-rentnerproxy-socket": "core.sock",
                 "security": [
                     {
@@ -1795,7 +1795,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LegacyHandoffStatus"
+                                    "$ref": "#/components/schemas/LegacyHandoffBeginResult"
                                 }
                             }
                         }
@@ -1857,7 +1857,7 @@
             "post": {
                 "operationId": "readLegacyHandoffPart",
                 "summary": "Read one part of the fixed built-in feature export",
-                "description": "Read every sequence from zero up to the exported part count and import each part durably before commit. A serialized part is at most 262144 bytes.",
+                "description": "Read every sequence with 0 <= sequence < partCount and import each part durably before commit. An export with no parts needs no reads. The digest binds each read to the export that begin fixed, so a read never returns a part of a replaced export. A serialized part is at most 262144 bytes.",
                 "x-rentnerproxy-socket": "core.sock",
                 "security": [
                     {
@@ -1920,7 +1920,7 @@
                         }
                     },
                     "404": {
-                        "description": "No export exists for this installation, or the sequence is outside the export.",
+                        "description": "No export exists for this installation, or the sequence is not below the part count.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -1930,7 +1930,7 @@
                         }
                     },
                     "409": {
-                        "description": "Another installation holds the domain.",
+                        "description": "Another installation holds the domain, or the digest differs from the current export.",
                         "content": {
                             "application/problem+json": {
                                 "schema": {
@@ -2016,7 +2016,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LegacyHandoffStatus"
+                                    "$ref": "#/components/schemas/LegacyHandoffCommitResult"
                                 }
                             }
                         }
@@ -2317,6 +2317,9 @@
             "LegacyHandoffStatus": {
                 "$ref": "./contracts.schema.json#/$defs/LegacyHandoffStatus"
             },
+            "LegacyHandoffBeginResult": {
+                "$ref": "./contracts.schema.json#/$defs/LegacyHandoffBeginResult"
+            },
             "LegacyHandoffPartRequest": {
                 "$ref": "./contracts.schema.json#/$defs/LegacyHandoffPartRequest"
             },
@@ -2325,6 +2328,9 @@
             },
             "LegacyHandoffCommit": {
                 "$ref": "./contracts.schema.json#/$defs/LegacyHandoffCommit"
+            },
+            "LegacyHandoffCommitResult": {
+                "$ref": "./contracts.schema.json#/$defs/LegacyHandoffCommitResult"
             },
             "UiBridgeMessage": {
                 "$ref": "./contracts.schema.json#/$defs/UiBridgeMessage"

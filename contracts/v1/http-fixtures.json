@@ -228,11 +228,14 @@
             }
         },
         {
-            "title": "a legacy handoff part is read by sequence",
+            "title": "a legacy handoff part is read by export digest and sequence",
             "operation": "readLegacyHandoffPart",
             "options": {
                 "pathParameter": "load-balancer",
-                "body": { "sequence": 0 }
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 0
+                }
             },
             "expected": {
                 "method": "POST",
@@ -241,11 +244,22 @@
             }
         },
         {
+            "title": "a legacy handoff part read is bound to an export digest",
+            "operation": "readLegacyHandoffPart",
+            "options": {
+                "pathParameter": "load-balancer",
+                "body": { "sequence": 0 }
+            }
+        },
+        {
             "title": "a legacy handoff part sequence stays within the journal",
             "operation": "readLegacyHandoffPart",
             "options": {
                 "pathParameter": "load-balancer",
-                "body": { "sequence": 1024 }
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 1024
+                }
             }
         },
         {
@@ -253,7 +267,11 @@
             "operation": "readLegacyHandoffPart",
             "options": {
                 "pathParameter": "load-balancer",
-                "body": { "sequence": 0, "digest": "unexpected" }
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 0,
+                    "partCount": 2
+                }
             }
         },
         {
@@ -262,7 +280,10 @@
             "options": {
                 "pathParameter": "load-balancer",
                 "idempotencyKey": "part-1",
-                "body": { "sequence": 0 }
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 0
+                }
             }
         },
         {
@@ -479,6 +500,24 @@
             "valid": false
         },
         {
+            "title": "a legacy handoff begin after commit returns the committed digest",
+            "operation": "beginLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "docker-discovery",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff begin never succeeds with platform ownership",
+            "operation": "beginLegacyHandoff",
+            "status": 200,
+            "body": { "domain": "docker-discovery", "state": "platform" },
+            "valid": false
+        },
+        {
             "title": "a legacy handoff begin reports another holder as a conflict",
             "operation": "beginLegacyHandoff",
             "status": 409,
@@ -522,6 +561,19 @@
             "valid": true
         },
         {
+            "title": "a legacy handoff part read of a replaced export is a conflict",
+            "operation": "readLegacyHandoffPart",
+            "status": 409,
+            "body": {
+                "type": "urn:rentnerproxy:problem:conflict",
+                "title": "App operation conflicts with current state.",
+                "status": 409,
+                "code": "conflict",
+                "requestId": "request-1"
+            },
+            "valid": true
+        },
+        {
             "title": "a legacy handoff part reports an unreadable part",
             "operation": "readLegacyHandoffPart",
             "status": 503,
@@ -552,6 +604,18 @@
             "body": {
                 "domain": "crowdsec",
                 "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 2
+            },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff commit never succeeds with an open export",
+            "operation": "commitLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "crowdsec",
+                "state": "exported",
                 "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
                 "partCount": 2
             },

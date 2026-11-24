@@ -223,7 +223,7 @@ export const generatedHttpOperations = {
         "summary": "Read the handoff state of a built-in feature domain"
     },
     beginLegacyHandoff: {
-        "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. The result state is exported, or committed after a completed handoff. Repeating begin returns the same digest and part count, so an interrupted import resumes.",
+        "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. While the export is open, repeating begin returns exported with the same digest and part count, so an interrupted import resumes. After commit, begin returns committed with the same digest and no part count.",
         "failures": {
             "401": "The credential is invalid, or the generation or its lease is no longer current.",
             "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
@@ -233,18 +233,18 @@ export const generatedHttpOperations = {
         "method": "POST",
         "path": "/platform/v1/legacy-handoffs/{domain}/begin",
         "pathParameter": "domain",
-        "response": "LegacyHandoffStatus",
+        "response": "LegacyHandoffBeginResult",
         "socket": "core.sock",
         "status": 200,
         "summary": "Fence platform writers and fix a built-in feature export"
     },
     readLegacyHandoffPart: {
-        "description": "Read every sequence from zero up to the exported part count and import each part durably before commit. A serialized part is at most 262144 bytes.",
+        "description": "Read every sequence with 0 <= sequence < partCount and import each part durably before commit. An export with no parts needs no reads. The digest binds each read to the export that begin fixed, so a read never returns a part of a replaced export. A serialized part is at most 262144 bytes.",
         "failures": {
             "401": "The credential is invalid, or the generation or its lease is no longer current.",
             "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
-            "404": "No export exists for this installation, or the sequence is outside the export.",
-            "409": "Another installation holds the domain.",
+            "404": "No export exists for this installation, or the sequence is not below the part count.",
+            "409": "Another installation holds the domain, or the digest differs from the current export.",
             "503": "The stored part is unreadable. The platform must abort the handoff and export again."
         },
         "method": "POST",
@@ -269,7 +269,7 @@ export const generatedHttpOperations = {
         "path": "/platform/v1/legacy-handoffs/{domain}/commit",
         "pathParameter": "domain",
         "request": "LegacyHandoffCommit",
-        "response": "LegacyHandoffStatus",
+        "response": "LegacyHandoffCommitResult",
         "socket": "core.sock",
         "status": 200,
         "summary": "Commit an imported built-in feature export"

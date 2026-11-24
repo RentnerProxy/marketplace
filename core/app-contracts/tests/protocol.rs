@@ -144,7 +144,6 @@ fn generated_http_operations_match_openapi() {
 
 #[test]
 fn legacy_handoff_operations_address_one_provider_domain() {
-    let status = Some("LegacyHandoffStatus");
     let expected = [
         HttpDescriptor {
             method: HttpMethod::Get,
@@ -155,7 +154,7 @@ fn legacy_handoff_operations_address_one_provider_domain() {
             resume_cursor: false,
             request: None,
             success_status: 200,
-            response: status,
+            response: Some("LegacyHandoffStatus"),
             event: None,
         },
         HttpDescriptor {
@@ -167,7 +166,7 @@ fn legacy_handoff_operations_address_one_provider_domain() {
             resume_cursor: false,
             request: None,
             success_status: 200,
-            response: status,
+            response: Some("LegacyHandoffBeginResult"),
             event: None,
         },
         HttpDescriptor {
@@ -191,7 +190,7 @@ fn legacy_handoff_operations_address_one_provider_domain() {
             resume_cursor: false,
             request: Some("LegacyHandoffCommit"),
             success_status: 200,
-            response: status,
+            response: Some("LegacyHandoffCommitResult"),
             event: None,
         },
     ];
@@ -231,6 +230,31 @@ fn legacy_handoff_domains_are_exactly_the_provider_profiles() {
         assert_eq!(
             request.unwrap().path(),
             format!("/platform/v1/legacy-handoffs/{domain}")
+        );
+    }
+}
+
+#[test]
+fn bounds_the_serialized_size_of_a_legacy_handoff_part() {
+    for (label, part, valid) in [
+        ("ASCII at the limit", json!("a".repeat(262_142)), true),
+        ("ASCII above the limit", json!("a".repeat(262_143)), false),
+        ("UTF-8 at the limit", json!("\u{e4}".repeat(131_071)), true),
+        ("escapes at the limit", json!("\n".repeat(131_071)), true),
+        ("escapes above the limit", json!("\n".repeat(131_072)), false),
+        ("decimals at the limit", Value::from(vec![0.000_001; 29_127]), true),
+        ("decimals above the limit", Value::from(vec![0.000_001; 29_128]), false),
+    ] {
+        let document = json!({"sequence": 0, "part": part});
+        let expected = if valid {
+            Ok(())
+        } else {
+            Err(ContractError::InvalidShape)
+        };
+        assert_eq!(
+            CONTRACTS.validate("LegacyHandoffPart", &document),
+            expected,
+            "{label}"
         );
     }
 }

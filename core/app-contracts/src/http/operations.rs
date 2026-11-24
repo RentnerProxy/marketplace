@@ -340,7 +340,7 @@ impl HttpOperation {
                 resume_cursor: false,
                 request: None,
                 success_status: 200,
-                response: Some("LegacyHandoffStatus"),
+                response: Some("LegacyHandoffBeginResult"),
                 event: None,
             },
             Self::ReadLegacyHandoffPart => HttpDescriptor {
@@ -364,7 +364,7 @@ impl HttpOperation {
                 resume_cursor: false,
                 request: Some("LegacyHandoffCommit"),
                 success_status: 200,
-                response: Some("LegacyHandoffStatus"),
+                response: Some("LegacyHandoffCommitResult"),
                 event: None,
             },
         }

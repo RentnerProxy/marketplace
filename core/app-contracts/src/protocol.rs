@@ -1,13 +1,69 @@
 use std::collections::{HashMap, hash_map::Entry};
 
 use jsonschema::Validator;
-use serde_json::Value;
+use serde_json::{Number, Value};
 
 use crate::validation::{array, string, unique_strings};
 use crate::{ContractError, MAX_JSON_DEPTH, compile_schema, embedded_schema, validate_shape};
 
 const DOCUMENTS: &str = "x-rentnerproxy-protocol-documents";
 const MAX_JSON_NUMBER: f64 = 9_007_199_254_740_991.0;
+/// Serialized size limit of a legacy handoff part.
+const MAX_PART_BYTES: usize = 262_144;
+
+/// UTF-8 length of the ECMAScript `JSON.stringify` form of decoded wire JSON.
+fn json_text_len(value: &Value) -> usize {
+    match value {
+        Value::Null | Value::Bool(true) => 4,
+        Value::Bool(false) => 5,
+        Value::Number(number) => number_text_len(number),
+        Value::String(text) => string_text_len(text),
+        Value::Array(items) => {
+            items.iter().map(json_text_len).sum::<usize>() + items.len().max(1) + 1
+        }
+        Value::Object(fields) => {
+            let members = fields
+                .iter()
+                .map(|(key, value)| string_text_len(key) + 1 + json_text_len(value));
+            members.sum::<usize>() + fields.len().max(1) + 1
+        }
+    }
+}
+
+fn string_text_len(text: &str) -> usize {
+    let mut length = 2;
+    for character in text.chars() {
+        length += match character {
+            '"' | '\\' | '\u{8}' | '\u{c}' | '\n' | '\r' | '\t' => 2,
+            _ if character < ' ' => 6,
+            _ => character.len_utf8(),
+        };
+    }
+    length
+}
+
+/// ECMAScript `Number::toString` length for a number within the wire bound.
+fn number_text_len(number: &Number) -> usize {
+    let value = number.as_f64().unwrap_or_default();
+    if value.fract() == 0.0 {
+        return (value as i64).to_string().len();
+    }
+    let scientific = format!("{:e}", value.abs());
+    let Some((mantissa, exponent)) = scientific.split_once('e') else {
+        return scientific.len();
+    };
+    let digits = mantissa.len() - usize::from(mantissa.contains('.'));
+    let point = exponent.parse::<i32>().unwrap_or_default() + 1;
+    let length = match point {
+        1..=21 => digits + 1,
+        -5..=0 => digits + 2 + point.unsigned_abs() as usize,
+        _ => {
+            let exponent_digits = (point - 1).unsigned_abs().to_string().len();
+            digits + usize::from(digits > 1) + 2 + exponent_digits
+        }
+    };
+    length + usize::from(value < 0.0)
+}
 
 fn is_wire_json(value: &Value, depth: usize) -> bool {
     match value {
@@ -86,6 +142,9 @@ impl ProtocolContracts {
         {
             return Err(ContractError::InvalidShape);
         }
+        if name == "LegacyHandoffPart" && json_text_len(&document["part"]) > MAX_PART_BYTES {
+            return Err(ContractError::InvalidShape);
+        }
         let problem = match name {
             "Problem" => Some(document),
             "Operation" if document["status"] == "failed" => Some(&document["problem"]),
@@ -122,6 +181,32 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+
+    #[test]
+    fn measures_wire_json_like_json_stringify() {
+        for (value, expected) in [
+            (json!(0.5), 3),
+            (json!(123.456), 7),
+            (json!(0.000_001), 8),
+            (json!(0.000_012_34), 10),
+            (json!(1e-7), 4),
+            (json!(1.5e-7), 6),
+            (json!(1.5e-10), 7),
+            (json!(-0.25), 5),
+            (json!(3.0), 1),
+            (json!(-0.0), 1),
+            (json!(0.1 + 0.2), 19),
+            (json!(9_007_199_254_740_991_u64), 16),
+            (json!(-1234.5678), 10),
+            (json!("\u{1}\u{1f}\u{7f}\"\\/\u{8}\u{c}\n\r\t\u{2028}\u{e4}\u{1f600}"), 39),
+            (json!([]), 2),
+            (json!({}), 2),
+            (json!([null, true, false]), 17),
+            (json!({"a": [1, {"b": "c"}]}), 19),
+        ] {
+            assert_eq!(json_text_len(&value), expected, "{value}");
+        }
+    }
 
     #[test]
     fn validates_only_registered_schema_names() {
