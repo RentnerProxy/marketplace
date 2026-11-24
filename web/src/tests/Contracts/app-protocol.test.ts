@@ -145,8 +145,7 @@ describe('app protocol v1', () => {
         ).toThrow(ContractError)
     })
 
-    const decimals = (length: number) =>
-        Array.from({ length }, () => 0.000_001)
+    const decimals = (length: number) => Array.from({ length }, () => 0.000_001)
     const partSizes: [string, () => unknown, boolean][] = [
         ['ASCII at the limit', () => 'a'.repeat(262_142), true],
         ['ASCII above the limit', () => 'a'.repeat(262_143), false],
