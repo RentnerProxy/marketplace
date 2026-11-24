@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { displayName, recordId, summary } from './primitives.ts'
+import { providerProfile } from './manifest.ts'
+import { displayName, recordId, sha256, summary } from './primitives.ts'
 
 const hostname = z
     .string()
@@ -27,6 +28,67 @@ const notification = z.strictObject({
 })
 
 export const jsonValue = z.json()
+
+const maxLegacyHandoffParts = 1_024
+const legacyHandoffDomain = providerProfile.describe(
+    'Built-in feature domain that an official app takes over. It equals a provider profile. The app manifest must declare that profile, and the installation must hold the platform grant to register a provider for it.',
+)
+const legacyHandoffDigest = sha256.describe(
+    'Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to commit.',
+)
+const legacyHandoffSequence = z
+    .number()
+    .int()
+    .min(0)
+    .max(maxLegacyHandoffParts - 1)
+    .describe('Zero-based position of a part in the fixed export.')
+const legacyHandoffStatus = z
+    .discriminatedUnion('state', [
+        z.strictObject({
+            domain: legacyHandoffDomain,
+            state: z.literal('platform'),
+        }),
+        z.strictObject({
+            domain: legacyHandoffDomain,
+            state: z.literal('exported'),
+            digest: legacyHandoffDigest,
+            partCount: z
+                .number()
+                .int()
+                .min(0)
+                .max(maxLegacyHandoffParts)
+                .describe('Number of parts in the fixed export.'),
+        }),
+        z.strictObject({
+            domain: legacyHandoffDomain,
+            state: z.literal('committed'),
+            digest: legacyHandoffDigest,
+        }),
+    ])
+    .describe(
+        'Ownership of the domain as seen by the active generation of the calling installation. platform means the platform still owns it. exported means this installation is importing the fixed export. committed means this installation owns it. Another holder is a conflict, never a state.',
+    )
+
+const legacyHandoffSchemas = {
+    LegacyHandoffDomain: legacyHandoffDomain,
+    LegacyHandoffStatus: legacyHandoffStatus,
+    LegacyHandoffPartRequest: z
+        .strictObject({ sequence: legacyHandoffSequence })
+        .describe(
+            'Read one part of the export that begin fixed for this installation.',
+        ),
+    LegacyHandoffPart: z
+        .strictObject({ sequence: legacyHandoffSequence, part: jsonValue })
+        .describe(
+            'One exported part as App API wire JSON. Its serialized form is at most 262144 bytes. Import it durably before commit.',
+        ),
+    LegacyHandoffCommit: z
+        .strictObject({ digest: legacyHandoffDigest })
+        .describe(
+            'Commit exactly the digest that begin returned after every part is imported durably. The platform retires its state once.',
+        ),
+}
+
 export const appApiPayload = z
     .record(z.string(), jsonValue)
     .describe(
@@ -87,4 +149,5 @@ export const platformApiSchemas = {
         .describe(
             'Return only to the authorized backend. Keep secret values out of logs and browser messages.',
         ),
+    ...legacyHandoffSchemas,
 }

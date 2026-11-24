@@ -1671,6 +1671,418 @@
                     }
                 }
             }
+        },
+        "/platform/v1/legacy-handoffs/{domain}": {
+            "get": {
+                "operationId": "getLegacyHandoff",
+                "summary": "Read the handoff state of a built-in feature domain",
+                "description": "A legacy feature domain equals a provider profile. Every handoff operation acts only for the active generation of the calling installation. The state platform means the platform still owns the domain. The state exported means this installation is importing a fixed export. The state committed means this installation owns the domain.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/domain"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LegacyHandoffStatus"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The credential is invalid, or the generation or its lease is no longer current.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Another installation holds the domain.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/legacy-handoffs/{domain}/begin": {
+            "post": {
+                "operationId": "beginLegacyHandoff",
+                "summary": "Fence platform writers and fix a built-in feature export",
+                "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. The result state is exported, or committed after a completed handoff. Repeating begin returns the same digest and part count, so an interrupted import resumes.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/domain"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LegacyHandoffStatus"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The credential is invalid, or the generation or its lease is no longer current.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Another installation holds the domain, or the idempotency key conflicts.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/legacy-handoffs/{domain}/parts": {
+            "post": {
+                "operationId": "readLegacyHandoffPart",
+                "summary": "Read one part of the fixed built-in feature export",
+                "description": "Read every sequence from zero up to the exported part count and import each part durably before commit. A serialized part is at most 262144 bytes.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/domain"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LegacyHandoffPartRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LegacyHandoffPart"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The credential is invalid, or the generation or its lease is no longer current.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No export exists for this installation, or the sequence is outside the export.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Another installation holds the domain.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "The stored part is unreadable. The platform must abort the handoff and export again.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/platform/v1/legacy-handoffs/{domain}/commit": {
+            "post": {
+                "operationId": "commitLegacyHandoff",
+                "summary": "Commit an imported built-in feature export",
+                "description": "Commit exactly the digest that begin returned, after every part is imported durably. Commit retires the platform state once and transfers ownership to this installation. The result state is committed. Repeating commit with the same digest returns committed.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/domain"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LegacyHandoffCommit"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LegacyHandoffStatus"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The credential is invalid, or the generation or its lease is no longer current.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No export exists for this installation.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Another installation holds the domain, the digest differs from the export, or the idempotency key conflicts.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "x-rentnerproxy-rpc-limits": {
@@ -1785,6 +2197,14 @@
                     "$ref": "#/components/schemas/RecordId"
                 }
             },
+            "domain": {
+                "name": "domain",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/LegacyHandoffDomain"
+                }
+            },
             "ResumeCursor": {
                 "name": "Last-Event-ID",
                 "in": "header",
@@ -1890,6 +2310,21 @@
             },
             "AppSecret": {
                 "$ref": "./contracts.schema.json#/$defs/AppSecret"
+            },
+            "LegacyHandoffDomain": {
+                "$ref": "./contracts.schema.json#/$defs/LegacyHandoffDomain"
+            },
+            "LegacyHandoffStatus": {
+                "$ref": "./contracts.schema.json#/$defs/LegacyHandoffStatus"
+            },
+            "LegacyHandoffPartRequest": {
+                "$ref": "./contracts.schema.json#/$defs/LegacyHandoffPartRequest"
+            },
+            "LegacyHandoffPart": {
+                "$ref": "./contracts.schema.json#/$defs/LegacyHandoffPart"
+            },
+            "LegacyHandoffCommit": {
+                "$ref": "./contracts.schema.json#/$defs/LegacyHandoffCommit"
             },
             "UiBridgeMessage": {
                 "$ref": "./contracts.schema.json#/$defs/UiBridgeMessage"

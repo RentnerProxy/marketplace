@@ -1,7 +1,8 @@
 use std::sync::LazyLock;
 
 use rentnerproxy_app_contracts::{
-    ContractError, HttpMethod, HttpOperation, HttpRequestOptions, HttpSocket, ProtocolContracts,
+    ContractError, HttpDescriptor, HttpMethod, HttpOperation, HttpRequestOptions, HttpSocket,
+    ProtocolContracts,
 };
 use serde_json::{Value, json};
 
@@ -100,6 +101,20 @@ fn generated_http_operations_match_openapi() {
                     "{id}: {name}"
                 );
             }
+            if let Some(name) = descriptor.path_parameter {
+                let reference = format!("#/components/parameters/{name}");
+                assert!(
+                    parameters
+                        .iter()
+                        .any(|parameter| parameter["$ref"] == reference),
+                    "{id}: {name}"
+                );
+                assert_eq!(
+                    schema_name(&document["components"]["parameters"][name]["schema"]),
+                    descriptor.path_parameter_schema(),
+                    "{id}: {name}"
+                );
+            }
 
             let status = descriptor.success_status.to_string();
             let response = spec["responses"]
@@ -125,6 +140,99 @@ fn generated_http_operations_match_openapi() {
         }
     }
     assert_eq!(HttpOperation::from_id("unknownOperation"), None);
+}
+
+#[test]
+fn legacy_handoff_operations_address_one_provider_domain() {
+    let status = Some("LegacyHandoffStatus");
+    let expected = [
+        HttpDescriptor {
+            method: HttpMethod::Get,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}",
+            path_parameter: Some("domain"),
+            idempotency_key: false,
+            resume_cursor: false,
+            request: None,
+            success_status: 200,
+            response: status,
+            event: None,
+        },
+        HttpDescriptor {
+            method: HttpMethod::Post,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}/begin",
+            path_parameter: Some("domain"),
+            idempotency_key: true,
+            resume_cursor: false,
+            request: None,
+            success_status: 200,
+            response: status,
+            event: None,
+        },
+        HttpDescriptor {
+            method: HttpMethod::Post,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}/parts",
+            path_parameter: Some("domain"),
+            idempotency_key: false,
+            resume_cursor: false,
+            request: Some("LegacyHandoffPartRequest"),
+            success_status: 200,
+            response: Some("LegacyHandoffPart"),
+            event: None,
+        },
+        HttpDescriptor {
+            method: HttpMethod::Post,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}/commit",
+            path_parameter: Some("domain"),
+            idempotency_key: true,
+            resume_cursor: false,
+            request: Some("LegacyHandoffCommit"),
+            success_status: 200,
+            response: status,
+            event: None,
+        },
+    ];
+    let operations = [
+        HttpOperation::GetLegacyHandoff,
+        HttpOperation::BeginLegacyHandoff,
+        HttpOperation::ReadLegacyHandoffPart,
+        HttpOperation::CommitLegacyHandoff,
+    ];
+    for (operation, expected) in operations.into_iter().zip(expected) {
+        assert_eq!(operation.descriptor(), expected, "{}", operation.id());
+        assert_eq!(
+            operation.descriptor().path_parameter_schema(),
+            Some("LegacyHandoffDomain"),
+            "{}",
+            operation.id()
+        );
+    }
+}
+
+#[test]
+fn legacy_handoff_domains_are_exactly_the_provider_profiles() {
+    let schema: Value =
+        serde_json::from_str(include_str!("../../../contracts/v1/contracts.schema.json")).unwrap();
+    let domains = &schema["$defs"]["LegacyHandoffDomain"]["enum"];
+    assert_eq!(
+        domains,
+        &schema["$defs"]["AppManifest"]["properties"]["providers"]["items"]["enum"]
+    );
+    for domain in domains.as_array().unwrap() {
+        let domain = domain.as_str().unwrap();
+        let options = HttpRequestOptions {
+            path_value: Some(domain),
+            ..HttpRequestOptions::default()
+        };
+        let request = CONTRACTS.prepare_http_request(HttpOperation::GetLegacyHandoff, options);
+        assert_eq!(
+            request.unwrap().path(),
+            format!("/platform/v1/legacy-handoffs/{domain}")
+        );
+    }
 }
 
 #[test]

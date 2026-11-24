@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import httpFixtures from '../../../../contracts/v1/http-fixtures.json'
 import fixtures from '../../../../contracts/v1/protocol-fixtures.json'
+import {
+    pathParameterSchemas,
+    type HttpOperationDefinition,
+} from '../../../../contracts/v1/http-operations.ts'
+import { providerProfile } from '../../../../contracts/v1/manifest.ts'
 import { buildContractDocuments } from '../../../../contracts/v1/schemas.ts'
 import {
     ContractError,
@@ -99,6 +104,45 @@ describe('app protocol v1', () => {
             expect(metadata?.['x-rentnerproxy-socket']).toBe(socket)
             expect(metadata?.responses[status]).toBeDefined()
         }
+    })
+
+    test('restricts each path parameter to its protocol document', () => {
+        const { paths, components } = buildContractDocuments()['openapi.json']
+        const operations: [string, HttpOperationDefinition][] =
+            Object.entries(httpOperations)
+        for (const [, { method, path, pathParameter }] of operations) {
+            if (!pathParameter) continue
+            const metadata = paths[path]?.[method === 'GET' ? 'get' : 'post']
+            expect(metadata?.parameters).toContainEqual({
+                $ref: '#/components/parameters/' + pathParameter,
+            })
+            expect(components.parameters[pathParameter]).toEqual({
+                name: pathParameter,
+                in: 'path',
+                required: true,
+                schema: {
+                    $ref:
+                        '#/components/schemas/' +
+                        pathParameterSchemas[pathParameter],
+                },
+            })
+        }
+    })
+
+    test('accepts exactly the provider profiles as legacy handoff domains', () => {
+        const { $defs } = buildContractDocuments()['contracts.schema.json']
+        expect($defs.LegacyHandoffDomain.enum).toEqual(providerProfile.options)
+        for (const domain of providerProfile.options) {
+            const { path } = prepareHttpRequest('getLegacyHandoff', {
+                pathParameter: domain,
+            })
+            expect(path).toBe('/platform/v1/legacy-handoffs/' + domain)
+        }
+        expect(() =>
+            prepareHttpRequest('getLegacyHandoff', {
+                pathParameter: 'proxy-hosts',
+            }),
+        ).toThrow(ContractError)
     })
 })
 
