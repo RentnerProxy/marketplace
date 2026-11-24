@@ -941,6 +941,398 @@
                 }
             },
             "valid": false
+        },
+        {
+            "title": "a legacy handoff domain is a provider profile",
+            "schema": "LegacyHandoffDomain",
+            "document": "docker-discovery",
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff domain rejects a record ID outside the provider profiles",
+            "schema": "LegacyHandoffDomain",
+            "document": "proxy-hosts",
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff domain is case sensitive",
+            "schema": "LegacyHandoffDomain",
+            "document": "Monitoring",
+            "valid": false
+        },
+        {
+            "title": "a platform-owned domain carries no export",
+            "schema": "LegacyHandoffStatus",
+            "document": { "domain": "monitoring", "state": "platform" },
+            "valid": true
+        },
+        {
+            "title": "a platform-owned domain rejects a digest",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "platform",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "an exported domain carries its digest and part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": true
+        },
+        {
+            "title": "an exported domain may have no parts",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "dns",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 0
+            },
+            "valid": true
+        },
+        {
+            "title": "an exported domain admits the maximum part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "crowdsec",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 1024
+            },
+            "valid": true
+        },
+        {
+            "title": "an exported domain rejects more parts than the journal holds",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "crowdsec",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 1025
+            },
+            "valid": false
+        },
+        {
+            "title": "an exported domain requires its part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "an exported domain requires its digest",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a committed domain carries only its digest",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "load-balancer",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a committed domain rejects a part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "load-balancer",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a handoff status rejects unknown members",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "oidc",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "installationId": "install-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "a handoff status rejects a domain outside the provider profiles",
+            "schema": "LegacyHandoffStatus",
+            "document": { "domain": "proxy-hosts", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a handoff status rejects an unknown state",
+            "schema": "LegacyHandoffStatus",
+            "document": { "domain": "monitoring", "state": "handoff" },
+            "valid": false
+        },
+        {
+            "title": "a handoff digest is lowercase hexadecimal",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a begin result carries the fixed export",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": true
+        },
+        {
+            "title": "a begin result after commit carries only the digest",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a begin result never reports platform ownership",
+            "schema": "LegacyHandoffBeginResult",
+            "document": { "domain": "monitoring", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a begin result after commit rejects a part count",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit result reports ownership",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a commit result rejects an open export",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit result rejects platform ownership",
+            "schema": "LegacyHandoffCommitResult",
+            "document": { "domain": "dns", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a commit result requires the digest",
+            "schema": "LegacyHandoffCommitResult",
+            "document": { "domain": "dns", "state": "committed" },
+            "valid": false
+        },
+        {
+            "title": "a commit result rejects unknown members",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "installationId": "install-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request names the export and the first sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 0
+            },
+            "valid": true
+        },
+        {
+            "title": "a part request names the last possible sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1023
+            },
+            "valid": true
+        },
+        {
+            "title": "a part request rejects a sequence beyond the journal",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1024
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects a negative sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": -1
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects a fractional sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1.5
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request requires a sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request requires the export digest",
+            "schema": "LegacyHandoffPartRequest",
+            "document": { "sequence": 0 },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects a malformed digest",
+            "schema": "LegacyHandoffPartRequest",
+            "document": { "digest": "9f86d081884c7d65", "sequence": 0 },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects unknown members",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 0,
+                "domain": "monitoring"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part carries app wire JSON",
+            "schema": "LegacyHandoffPart",
+            "document": {
+                "sequence": 2,
+                "part": {
+                    "kind": "monitor",
+                    "items": [{ "id": "monitor-1", "intervalSeconds": 60 }],
+                    "history": null
+                }
+            },
+            "valid": true
+        },
+        {
+            "title": "a part may be any wire JSON value",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 0, "part": ["entry", 1, null, true] },
+            "valid": true
+        },
+        {
+            "title": "a part requires its content",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 0 },
+            "valid": false
+        },
+        {
+            "title": "a part rejects a sequence beyond the journal",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 1024, "part": {} },
+            "valid": false
+        },
+        {
+            "title": "a part rejects unknown members",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 0, "part": {}, "partCount": 1 },
+            "valid": false
+        },
+        {
+            "title": "a part rejects numbers outside the exact JSON integer range",
+            "schema": "LegacyHandoffPart",
+            "document": {
+                "sequence": 0,
+                "part": { "count": 9007199254740992 }
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit names the exported digest",
+            "schema": "LegacyHandoffCommit",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a commit rejects an uppercase digest",
+            "schema": "LegacyHandoffCommit",
+            "document": {
+                "digest": "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit rejects a truncated digest",
+            "schema": "LegacyHandoffCommit",
+            "document": { "digest": "9f86d081884c7d659a2feaa0c55ad015" },
+            "valid": false
+        },
+        {
+            "title": "a commit requires a digest",
+            "schema": "LegacyHandoffCommit",
+            "document": {},
+            "valid": false
+        },
+        {
+            "title": "a commit rejects unknown members",
+            "schema": "LegacyHandoffCommit",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
         }
     ]
 }

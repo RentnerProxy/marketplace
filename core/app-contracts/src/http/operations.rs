@@ -25,6 +25,10 @@ pub enum HttpOperation {
     GetOperation,
     CancelOperation,
     SubscribeToEvents,
+    GetLegacyHandoff,
+    BeginLegacyHandoff,
+    ReadLegacyHandoffPart,
+    CommitLegacyHandoff,
 }
 
 impl HttpOperation {
@@ -49,6 +53,10 @@ impl HttpOperation {
             "getOperation" => Some(Self::GetOperation),
             "cancelOperation" => Some(Self::CancelOperation),
             "subscribeToEvents" => Some(Self::SubscribeToEvents),
+            "getLegacyHandoff" => Some(Self::GetLegacyHandoff),
+            "beginLegacyHandoff" => Some(Self::BeginLegacyHandoff),
+            "readLegacyHandoffPart" => Some(Self::ReadLegacyHandoffPart),
+            "commitLegacyHandoff" => Some(Self::CommitLegacyHandoff),
             _ => None,
         }
     }
@@ -74,6 +82,10 @@ impl HttpOperation {
             Self::GetOperation => "getOperation",
             Self::CancelOperation => "cancelOperation",
             Self::SubscribeToEvents => "subscribeToEvents",
+            Self::GetLegacyHandoff => "getLegacyHandoff",
+            Self::BeginLegacyHandoff => "beginLegacyHandoff",
+            Self::ReadLegacyHandoffPart => "readLegacyHandoffPart",
+            Self::CommitLegacyHandoff => "commitLegacyHandoff",
         }
     }
 
@@ -306,6 +318,54 @@ impl HttpOperation {
                 success_status: 200,
                 response: None,
                 event: Some("PlatformEvent"),
+            },
+            Self::GetLegacyHandoff => HttpDescriptor {
+                method: HttpMethod::Get,
+                socket: HttpSocket::Core,
+                path: "/platform/v1/legacy-handoffs/{domain}",
+                path_parameter: Some("domain"),
+                idempotency_key: false,
+                resume_cursor: false,
+                request: None,
+                success_status: 200,
+                response: Some("LegacyHandoffStatus"),
+                event: None,
+            },
+            Self::BeginLegacyHandoff => HttpDescriptor {
+                method: HttpMethod::Post,
+                socket: HttpSocket::Core,
+                path: "/platform/v1/legacy-handoffs/{domain}/begin",
+                path_parameter: Some("domain"),
+                idempotency_key: true,
+                resume_cursor: false,
+                request: None,
+                success_status: 200,
+                response: Some("LegacyHandoffBeginResult"),
+                event: None,
+            },
+            Self::ReadLegacyHandoffPart => HttpDescriptor {
+                method: HttpMethod::Post,
+                socket: HttpSocket::Core,
+                path: "/platform/v1/legacy-handoffs/{domain}/parts",
+                path_parameter: Some("domain"),
+                idempotency_key: false,
+                resume_cursor: false,
+                request: Some("LegacyHandoffPartRequest"),
+                success_status: 200,
+                response: Some("LegacyHandoffPart"),
+                event: None,
+            },
+            Self::CommitLegacyHandoff => HttpDescriptor {
+                method: HttpMethod::Post,
+                socket: HttpSocket::Core,
+                path: "/platform/v1/legacy-handoffs/{domain}/commit",
+                path_parameter: Some("domain"),
+                idempotency_key: true,
+                resume_cursor: false,
+                request: Some("LegacyHandoffCommit"),
+                success_status: 200,
+                response: Some("LegacyHandoffCommitResult"),
+                event: None,
             },
         }
     }

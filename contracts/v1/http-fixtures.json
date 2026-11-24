@@ -179,6 +179,158 @@
                 "idempotencyKey": "settings-1",
                 "body": [null, { "enabled": true, "count": 3 }]
             }
+        },
+        {
+            "title": "a legacy handoff status names its domain in the path",
+            "operation": "getLegacyHandoff",
+            "options": { "pathParameter": "monitoring" },
+            "expected": {
+                "method": "GET",
+                "socket": "core.sock",
+                "path": "/platform/v1/legacy-handoffs/monitoring"
+            }
+        },
+        {
+            "title": "a legacy handoff domain must be a provider profile",
+            "operation": "getLegacyHandoff",
+            "options": { "pathParameter": "proxy-hosts" }
+        },
+        {
+            "title": "a legacy handoff domain cannot add URL syntax",
+            "operation": "getLegacyHandoff",
+            "options": { "pathParameter": "monitoring/begin" }
+        },
+        {
+            "title": "a legacy handoff begins with an idempotency key and no body",
+            "operation": "beginLegacyHandoff",
+            "options": {
+                "pathParameter": "docker-discovery",
+                "idempotencyKey": "begin-1"
+            },
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/legacy-handoffs/docker-discovery/begin"
+            }
+        },
+        {
+            "title": "a legacy handoff begin requires an idempotency key",
+            "operation": "beginLegacyHandoff",
+            "options": { "pathParameter": "docker-discovery" }
+        },
+        {
+            "title": "a legacy handoff begin carries no body",
+            "operation": "beginLegacyHandoff",
+            "options": {
+                "pathParameter": "docker-discovery",
+                "idempotencyKey": "begin-1",
+                "body": {}
+            }
+        },
+        {
+            "title": "a legacy handoff part is read by export digest and sequence",
+            "operation": "readLegacyHandoffPart",
+            "options": {
+                "pathParameter": "load-balancer",
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 0
+                }
+            },
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/legacy-handoffs/load-balancer/parts"
+            }
+        },
+        {
+            "title": "a legacy handoff part read is bound to an export digest",
+            "operation": "readLegacyHandoffPart",
+            "options": {
+                "pathParameter": "load-balancer",
+                "body": { "sequence": 0 }
+            }
+        },
+        {
+            "title": "a legacy handoff part sequence stays within the journal",
+            "operation": "readLegacyHandoffPart",
+            "options": {
+                "pathParameter": "load-balancer",
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 1024
+                }
+            }
+        },
+        {
+            "title": "a legacy handoff part request rejects unknown members",
+            "operation": "readLegacyHandoffPart",
+            "options": {
+                "pathParameter": "load-balancer",
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 0,
+                    "partCount": 2
+                }
+            }
+        },
+        {
+            "title": "a legacy handoff part read takes no idempotency key",
+            "operation": "readLegacyHandoffPart",
+            "options": {
+                "pathParameter": "load-balancer",
+                "idempotencyKey": "part-1",
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "sequence": 0
+                }
+            }
+        },
+        {
+            "title": "a legacy handoff commits the exported digest",
+            "operation": "commitLegacyHandoff",
+            "options": {
+                "pathParameter": "crowdsec",
+                "idempotencyKey": "commit-1",
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+            },
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/legacy-handoffs/crowdsec/commit"
+            }
+        },
+        {
+            "title": "a legacy handoff commit rejects a malformed digest",
+            "operation": "commitLegacyHandoff",
+            "options": {
+                "pathParameter": "crowdsec",
+                "idempotencyKey": "commit-1",
+                "body": { "digest": "not-a-digest" }
+            }
+        },
+        {
+            "title": "a legacy handoff commit rejects a domain outside the provider profiles",
+            "operation": "commitLegacyHandoff",
+            "options": {
+                "pathParameter": "crowdsec-bouncer",
+                "idempotencyKey": "commit-1",
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+            }
+        },
+        {
+            "title": "a legacy handoff commit requires an idempotency key",
+            "operation": "commitLegacyHandoff",
+            "options": {
+                "pathParameter": "crowdsec",
+                "body": {
+                    "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+            }
         }
     ],
     "responses": [
@@ -290,6 +442,208 @@
             "operation": "getAppReadiness",
             "status": 302,
             "valid": false
+        },
+        {
+            "title": "a legacy handoff status reports platform ownership",
+            "operation": "getLegacyHandoff",
+            "status": 200,
+            "body": { "domain": "monitoring", "state": "platform" },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff status rejects an export digest under platform ownership",
+            "operation": "getLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "monitoring",
+                "state": "platform",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff status failure reports a stale generation",
+            "operation": "getLegacyHandoff",
+            "status": 401,
+            "body": {
+                "type": "urn:rentnerproxy:problem:unauthorized",
+                "title": "App API credential is invalid.",
+                "status": 401,
+                "code": "unauthorized",
+                "requestId": "request-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff begin returns the fixed export",
+            "operation": "beginLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "docker-discovery",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 2
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff begin rejects unknown members",
+            "operation": "beginLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "docker-discovery",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 2,
+                "installationId": "install-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff begin after commit returns the committed digest",
+            "operation": "beginLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "docker-discovery",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff begin never succeeds with platform ownership",
+            "operation": "beginLegacyHandoff",
+            "status": 200,
+            "body": { "domain": "docker-discovery", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff begin reports another holder as a conflict",
+            "operation": "beginLegacyHandoff",
+            "status": 409,
+            "body": {
+                "type": "urn:rentnerproxy:problem:conflict",
+                "title": "App operation conflicts with current state.",
+                "status": 409,
+                "code": "conflict",
+                "requestId": "request-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff part returns its sequence and content",
+            "operation": "readLegacyHandoffPart",
+            "status": 200,
+            "body": {
+                "sequence": 1,
+                "part": { "monitors": [{ "id": "monitor-1" }] }
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff part rejects a sequence beyond the journal",
+            "operation": "readLegacyHandoffPart",
+            "status": 200,
+            "body": { "sequence": 1024, "part": {} },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff part reports an unknown sequence",
+            "operation": "readLegacyHandoffPart",
+            "status": 404,
+            "body": {
+                "type": "urn:rentnerproxy:problem:notFound",
+                "title": "App resource is unavailable.",
+                "status": 404,
+                "code": "notFound",
+                "requestId": "request-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff part read of a replaced export is a conflict",
+            "operation": "readLegacyHandoffPart",
+            "status": 409,
+            "body": {
+                "type": "urn:rentnerproxy:problem:conflict",
+                "title": "App operation conflicts with current state.",
+                "status": 409,
+                "code": "conflict",
+                "requestId": "request-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff part reports an unreadable part",
+            "operation": "readLegacyHandoffPart",
+            "status": 503,
+            "body": {
+                "type": "urn:rentnerproxy:problem:unavailable",
+                "title": "App API is unavailable.",
+                "status": 503,
+                "code": "unavailable",
+                "requestId": "request-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff commit transfers ownership",
+            "operation": "commitLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "crowdsec",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff commit rejects a part count after ownership moved",
+            "operation": "commitLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "crowdsec",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 2
+            },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff commit never succeeds with an open export",
+            "operation": "commitLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "crowdsec",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 2
+            },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff commit rejects a domain outside the provider profiles",
+            "operation": "commitLegacyHandoff",
+            "status": 200,
+            "body": {
+                "domain": "proxy-hosts",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff commit reports a digest mismatch as a conflict",
+            "operation": "commitLegacyHandoff",
+            "status": 409,
+            "body": {
+                "type": "urn:rentnerproxy:problem:conflict",
+                "title": "App operation conflicts with current state.",
+                "status": 409,
+                "code": "conflict",
+                "requestId": "request-1"
+            },
+            "valid": true
         }
     ],
     "events": [

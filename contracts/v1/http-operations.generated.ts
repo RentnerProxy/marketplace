@@ -207,4 +207,71 @@ export const generatedHttpOperations = {
         "status": 200,
         "summary": "Resume the permission-filtered durable stream"
     },
+    getLegacyHandoff: {
+        "description": "A legacy feature domain equals a provider profile. Every handoff operation acts only for the active generation of the calling installation. The state platform means the platform still owns the domain. The state exported means this installation is importing a fixed export. The state committed means this installation owns the domain.",
+        "failures": {
+            "401": "The credential is invalid, or the generation or its lease is no longer current.",
+            "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+            "409": "Another installation holds the domain."
+        },
+        "method": "GET",
+        "path": "/platform/v1/legacy-handoffs/{domain}",
+        "pathParameter": "domain",
+        "response": "LegacyHandoffStatus",
+        "socket": "core.sock",
+        "status": 200,
+        "summary": "Read the handoff state of a built-in feature domain"
+    },
+    beginLegacyHandoff: {
+        "description": "Begin fences the platform writers of the domain and fixes one export of its configuration, credentials and history as ordered parts. While the export is open, repeating begin returns exported with the same digest and part count, so an interrupted import resumes. After commit, begin returns committed with the same digest and no part count.",
+        "failures": {
+            "401": "The credential is invalid, or the generation or its lease is no longer current.",
+            "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+            "409": "Another installation holds the domain, or the idempotency key conflicts."
+        },
+        "idempotencyKey": true,
+        "method": "POST",
+        "path": "/platform/v1/legacy-handoffs/{domain}/begin",
+        "pathParameter": "domain",
+        "response": "LegacyHandoffBeginResult",
+        "socket": "core.sock",
+        "status": 200,
+        "summary": "Fence platform writers and fix a built-in feature export"
+    },
+    readLegacyHandoffPart: {
+        "description": "Read every sequence with 0 <= sequence < partCount and import each part durably before commit. An export with no parts needs no reads. The digest binds each read to the export that begin fixed, so a read never returns a part of a replaced export. A serialized part is at most 262144 bytes.",
+        "failures": {
+            "401": "The credential is invalid, or the generation or its lease is no longer current.",
+            "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+            "404": "No export exists for this installation, or the sequence is not below the part count.",
+            "409": "Another installation holds the domain, or the digest differs from the current export.",
+            "503": "The stored part is unreadable. The platform must abort the handoff and export again."
+        },
+        "method": "POST",
+        "path": "/platform/v1/legacy-handoffs/{domain}/parts",
+        "pathParameter": "domain",
+        "request": "LegacyHandoffPartRequest",
+        "response": "LegacyHandoffPart",
+        "socket": "core.sock",
+        "status": 200,
+        "summary": "Read one part of the fixed built-in feature export"
+    },
+    commitLegacyHandoff: {
+        "description": "Commit exactly the digest that begin returned, after every part is imported durably. Commit retires the platform state once and transfers ownership to this installation. The result state is committed. Repeating commit with the same digest returns committed.",
+        "failures": {
+            "401": "The credential is invalid, or the generation or its lease is no longer current.",
+            "403": "The manifest does not declare the domain as a provider profile, or the installation lacks the provider grant for it.",
+            "404": "No export exists for this installation.",
+            "409": "Another installation holds the domain, the digest differs from the export, or the idempotency key conflicts."
+        },
+        "idempotencyKey": true,
+        "method": "POST",
+        "path": "/platform/v1/legacy-handoffs/{domain}/commit",
+        "pathParameter": "domain",
+        "request": "LegacyHandoffCommit",
+        "response": "LegacyHandoffCommitResult",
+        "socket": "core.sock",
+        "status": 200,
+        "summary": "Commit an imported built-in feature export"
+    },
 } as const

@@ -9,13 +9,23 @@ export type HttpMethod = 'GET' | 'POST'
 
 export const rpcLimits = Object.freeze(generatedRpcLimits)
 
+/** The protocol document that admits each path parameter value. */
+export const pathParameterSchemas = Object.freeze({
+    operationId: 'RecordId',
+    providerId: 'RecordId',
+    secretId: 'RecordId',
+    domain: 'LegacyHandoffDomain',
+} as const satisfies Record<string, ProtocolDocumentName>)
+
+export type HttpPathParameter = keyof typeof pathParameterSchemas
+
 export interface HttpOperationDefinition {
     socket: HttpSocket
     method: HttpMethod
     path: `/${string}`
     summary: string
     status: 200 | 202 | 204
-    pathParameter?: 'operationId' | 'providerId' | 'secretId'
+    pathParameter?: HttpPathParameter
     idempotencyKey?: true
     resumeCursor?: true
     request?: ProtocolDocumentName

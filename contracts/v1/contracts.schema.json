@@ -2827,6 +2827,232 @@
             "additionalProperties": false,
             "description": "Return only to the authorized backend. Keep secret values out of logs and browser messages."
         },
+        "LegacyHandoffDomain": {
+            "type": "string",
+            "enum": [
+                "monitoring",
+                "docker-discovery",
+                "load-balancer",
+                "dns",
+                "oidc",
+                "crowdsec"
+            ],
+            "description": "Built-in feature domain that an official app takes over. It equals a provider profile. The app manifest must declare that profile, and the installation must hold the platform grant to register a provider for it."
+        },
+        "LegacyHandoffStatus": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "platform"
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "exported"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        },
+                        "partCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1024,
+                            "description": "Number of parts in the fixed export."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest",
+                        "partCount"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "committed"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest"
+                    ],
+                    "additionalProperties": false
+                }
+            ],
+            "description": "Ownership of the domain as seen by the active generation of the calling installation. platform means the platform still owns it. exported means this installation is importing the fixed export. committed means this installation owns it. Another holder is a conflict, never a state."
+        },
+        "LegacyHandoffBeginResult": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "exported"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        },
+                        "partCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1024,
+                            "description": "Number of parts in the fixed export."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest",
+                        "partCount"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "committed"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest"
+                    ],
+                    "additionalProperties": false
+                }
+            ],
+            "description": "exported carries the fixed export that this installation imports. committed means this installation already owns the domain and carries the committed digest without a part count."
+        },
+        "LegacyHandoffPartRequest": {
+            "type": "object",
+            "properties": {
+                "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                },
+                "sequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023,
+                    "description": "Zero-based position of a part in the fixed export. Valid sequences satisfy 0 <= sequence < partCount."
+                }
+            },
+            "required": [
+                "digest",
+                "sequence"
+            ],
+            "additionalProperties": false,
+            "description": "Read one part of the export that begin fixed for this installation. The digest binds the read to that export. A read of a replaced export with a different digest fails and returns no part."
+        },
+        "LegacyHandoffPart": {
+            "type": "object",
+            "properties": {
+                "sequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023,
+                    "description": "Zero-based position of a part in the fixed export. Valid sequences satisfy 0 <= sequence < partCount."
+                },
+                "part": {
+                    "$ref": "#/$defs/JsonValue"
+                }
+            },
+            "required": [
+                "sequence",
+                "part"
+            ],
+            "additionalProperties": false,
+            "description": "One exported part as App API wire JSON. The SDK checks that the compact JSON.stringify form of part is at most 262144 UTF-8 bytes. Import it durably before commit."
+        },
+        "LegacyHandoffCommit": {
+            "type": "object",
+            "properties": {
+                "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                }
+            },
+            "required": [
+                "digest"
+            ],
+            "additionalProperties": false,
+            "description": "Commit exactly the digest that begin returned after every part is imported durably. The platform retires its state once."
+        },
+        "LegacyHandoffCommitResult": {
+            "type": "object",
+            "properties": {
+                "domain": {
+                    "$ref": "#/$defs/LegacyHandoffDomain"
+                },
+                "state": {
+                    "type": "string",
+                    "const": "committed"
+                },
+                "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                }
+            },
+            "required": [
+                "domain",
+                "state",
+                "digest"
+            ],
+            "additionalProperties": false,
+            "description": "This installation owns the domain. A repeated commit with the same digest returns the same result."
+        },
         "UiBridgeMessage": {
             "oneOf": [
                 {
@@ -3298,6 +3524,13 @@
         "AppNotification",
         "AppAuditEvent",
         "AppSecret",
+        "LegacyHandoffDomain",
+        "LegacyHandoffStatus",
+        "LegacyHandoffBeginResult",
+        "LegacyHandoffPartRequest",
+        "LegacyHandoffPart",
+        "LegacyHandoffCommit",
+        "LegacyHandoffCommitResult",
         "UiBridgeMessage",
         "Problem",
         "Operation"
