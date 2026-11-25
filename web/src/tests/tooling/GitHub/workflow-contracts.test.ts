@@ -306,6 +306,12 @@ test('Bun and Docker toolchain pins agree and actions are maintained through Dep
             'group-by': 'dependency-name',
         },
     })
+    expect(docker?.ignore).toEqual([
+        {
+            'dependency-name': 'postgres',
+            'update-types': ['version-update:semver-major'],
+        },
+    ])
     const compose = config.updates.find(
         (entry) => entry['package-ecosystem'] === 'docker-compose',
     )
