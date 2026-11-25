@@ -27,6 +27,7 @@ fn atomically_publishes_bounded_state_with_no_temporary_residue() {
             .unwrap()
             .is_null()
     );
+    assert_eq!(fs::read_dir(root.path()).unwrap().count(), 0);
     for status in ["running", "completed", "failed", "recovery-required"] {
         for phase in [
             "preparing",
@@ -64,6 +65,56 @@ fn atomically_publishes_bounded_state_with_no_temporary_residue() {
             0o600
         );
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn restore_state_reads_leave_directory_metadata_intact_and_fail_closed_on_unsafe_modes() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let root = tempfile::tempdir().unwrap();
+    let backup = root.path().join("backup");
+    let expected = state();
+    run(root.path(), "restoreStateWrite", expected.clone()).unwrap();
+    for mode in [0o700, 0o755] {
+        fs::set_permissions(&backup, fs::Permissions::from_mode(mode)).unwrap();
+        let before = fs::metadata(&backup).unwrap();
+        assert_eq!(
+            run(root.path(), "restoreStateGet", Value::Null).unwrap(),
+            expected
+        );
+        let after = fs::metadata(&backup).unwrap();
+        assert_eq!(after.permissions().mode() & 0o7777, mode);
+        assert_eq!(
+            (before.ctime(), before.ctime_nsec()),
+            (after.ctime(), after.ctime_nsec())
+        );
+    }
+    fs::set_permissions(&backup, fs::Permissions::from_mode(0o775)).unwrap();
+    assert!(run(root.path(), "restoreStateGet", Value::Null).is_err());
+    assert_eq!(
+        fs::metadata(&backup).unwrap().permissions().mode() & 0o777,
+        0o775
+    );
+}
+
+#[test]
+fn reads_backup_state_without_initializing_an_absent_storage_root() {
+    let root = tempfile::tempdir().unwrap();
+    let expected = state();
+    run(root.path(), "restoreStateWrite", expected.clone()).unwrap();
+    let storage = root.path().join("storage");
+    fs::remove_dir(&storage).unwrap();
+    assert_eq!(
+        run(root.path(), "restoreStateGet", Value::Null).unwrap(),
+        expected
+    );
+    fs::remove_file(root.path().join("backup/.restore-state-v1.json")).unwrap();
+    assert!(
+        run(root.path(), "restoreStateGet", Value::Null)
+            .unwrap()
+            .is_null()
+    );
+    assert!(!storage.exists());
 }
 
 #[test]
@@ -131,7 +182,7 @@ fn zero_and_maximum_safe_progress_and_fractional_iso_precision_round_trip() {
 #[test]
 fn malformed_oversized_and_unknown_persisted_markers_fail_closed() {
     let root = tempfile::tempdir().unwrap();
-    fs::create_dir(root.path().join("backup")).unwrap();
+    run(root.path(), "restoreStateWrite", state()).unwrap();
     let path = root.path().join("backup/.restore-state-v1.json");
     for bytes in [
         b"{".to_vec(),
@@ -150,7 +201,10 @@ fn malformed_oversized_and_unknown_persisted_markers_fail_closed() {
 #[test]
 fn failed_publication_cleans_only_owned_staging_file() {
     let root = tempfile::tempdir().unwrap();
-    fs::create_dir_all(root.path().join("backup/.restore-state-v1.json")).unwrap();
+    run(root.path(), "restoreStateWrite", state()).unwrap();
+    let path = root.path().join("backup/.restore-state-v1.json");
+    fs::remove_file(&path).unwrap();
+    fs::create_dir(&path).unwrap();
     assert!(run(root.path(), "restoreStateWrite", state()).is_err());
     assert_eq!(fs::read_dir(root.path().join("backup")).unwrap().count(), 1);
 }
@@ -170,10 +224,11 @@ fn cancelled_and_overlapping_requests_leave_no_state() {
 fn nofollow_read_rejects_symlinks_and_write_replaces_link_without_following() {
     use std::os::unix::fs::symlink;
     let root = tempfile::tempdir().unwrap();
-    fs::create_dir(root.path().join("backup")).unwrap();
+    run(root.path(), "restoreStateWrite", state()).unwrap();
     let external = root.path().join("external");
     fs::write(&external, b"outside").unwrap();
     let path = root.path().join("backup/.restore-state-v1.json");
+    fs::remove_file(&path).unwrap();
     symlink(&external, &path).unwrap();
     assert!(run(root.path(), "restoreStateGet", Value::Null).is_err());
     run(root.path(), "restoreStateWrite", state()).unwrap();
@@ -218,12 +273,13 @@ fn fifo_state_is_rejected_promptly_without_a_writer() {
         time::{Duration, Instant},
     };
     let root = tempfile::tempdir().unwrap();
-    fs::create_dir(root.path().join("backup")).unwrap();
+    run(root.path(), "restoreStateWrite", state()).unwrap();
     let path = root.path().join("backup/.restore-state-v1.json");
+    fs::remove_file(&path).unwrap();
     assert!(
         Command::new("mkfifo")
             .args(["-m", "600"])
-            .arg(path)
+            .arg(&path)
             .status()
             .unwrap()
             .success()

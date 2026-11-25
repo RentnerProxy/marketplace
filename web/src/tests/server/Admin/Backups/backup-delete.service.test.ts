@@ -19,7 +19,7 @@ vi.mock('@/server/Admin/Backups/backup-directory.service.ts', () => ({
     }),
 }))
 const { deleteBackupFilesService } =
-    await import('@/server/Admin/Backups/backup-delete.service.ts')
+    await import('@/server/Admin/Backups/backup-files.service.ts')
 
 beforeEach(() => {
     runCore.mockClear()

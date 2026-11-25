@@ -2,7 +2,6 @@ services:
     marketplace:
         image: ghcr.io/rentnerproxy/marketplace:v1.0.0-alpha.1
         restart: unless-stopped
-        init: true
         stop_grace_period: 4h10m
         ports:
             - '${APP_PORT:-6600}:3000'

@@ -1,4 +1,4 @@
-type AuditLogJsonValue =
+export type AuditLogJsonValue =
     | string
     | number
     | boolean

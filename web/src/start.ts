@@ -107,15 +107,6 @@ const restoreGateMiddleware = createMiddleware({ type: 'request' }).server(
             return next()
         }
 
-        const gateResponse = await getRestoreRequestGateResponse(
-            request,
-            pathname,
-        )
-
-        if (gateResponse) {
-            return gateResponse
-        }
-
         try {
             return await withSharedStorageMutationBarrierResponseService(next, {
                 signal: request.signal,
@@ -144,7 +135,10 @@ const restoreGateMiddleware = createMiddleware({ type: 'request' }).server(
 
 const serverFunctionCsrfMiddleware = createCsrfMiddleware({
     filter: (context) => context.handlerType === 'serverFn',
-    origin: (origin) => origin === process.env.ORIGIN?.trim(),
+    origin: (origin, { request }) =>
+        origin ===
+        (process.env.ORIGIN?.trim() ||
+            (import.meta.env.DEV ? new URL(request.url).origin : undefined)),
     secFetchSite: 'same-origin',
     allowRequestsWithoutOriginCheck: false,
 })

@@ -4,14 +4,17 @@ mod fence;
 #[path = "storage/files.rs"]
 pub(crate) mod files;
 mod journal_session;
+mod native;
 #[path = "storage/recovery.rs"]
 mod recovery;
 mod restore_journal;
 mod restore_state;
 pub(crate) mod workflows;
 
-use crate::protocol::{CoreError, CoreResult, OperationContext, WorkerResponse, branding_lengths};
+use crate::protocol::{CoreError, CoreResult, OperationContext, WorkerResponse};
 use serde_json::{Value, json};
+
+pub use native::{MAX_NATIVE_BINARY_BYTES, MAX_NATIVE_REQUEST_BYTES, execute_native};
 
 pub fn execute(request: Value, context: &OperationContext) -> CoreResult<Value> {
     execute_ref(&request, context)
@@ -32,7 +35,6 @@ pub fn execute_worker(
                 files::write_bytes(request, bytes, context).map(WorkerResponse::Json)
             }
             Some("brandingPublish") => {
-                branding_lengths(request, bytes.len() as u64)?;
                 workflows::publish_branding_bytes(request, bytes, context).map(WorkerResponse::Json)
             }
             _ => Err(invalid()),
@@ -41,14 +43,18 @@ pub fn execute_worker(
     if request.get("binaryLengths").is_some() {
         return Err(invalid());
     }
-    if request["operation"] == "readBackgroundBytes" {
-        context.check()?;
-        return Ok(match files::read_background_bytes(request, context)? {
-            Some(bytes) => WorkerResponse::Binary(bytes),
-            None => WorkerResponse::Json(Value::Null),
-        });
+    match request["operation"].as_str() {
+        Some("readBackgroundRepresentation") => {
+            context.check()?;
+            Ok(
+                match files::read_background_representation(request, context)? {
+                    Some((version, bytes)) => WorkerResponse::VersionedBinary { bytes, version },
+                    None => WorkerResponse::Json(Value::Null),
+                },
+            )
+        }
+        _ => execute_ref(request, context).map(WorkerResponse::Json),
     }
-    execute_ref(request, context).map(WorkerResponse::Json)
 }
 
 pub fn execute_ref(request: &Value, context: &OperationContext) -> CoreResult<Value> {
@@ -58,12 +64,13 @@ pub fn execute_ref(request: &Value, context: &OperationContext) -> CoreResult<Va
     }
     match string(request, "operation")? {
         "prepareDirectories" => files::prepare(request),
-        "assertDirectories" => files::assert_snapshots(request),
-        "writeFile" => files::write(request, context),
-        "readFile" => files::read(request, context),
-        "readBackground" => files::read_background(request, context),
+        "statBackground" => files::stat_background(request, context),
         "syncTree" => {
-            recovery::sync_tree_path(string(request, "path")?, context)?;
+            let directories_only = match request.get("directoriesOnly") {
+                None => false,
+                Some(value) => value.as_bool().ok_or_else(invalid)?,
+            };
+            recovery::sync_tree_path(string(request, "path")?, directories_only, context)?;
             Ok(Value::Null)
         }
         "recoveryPrepare" => recovery::prepare(request, context),
@@ -73,12 +80,11 @@ pub fn execute_ref(request: &Value, context: &OperationContext) -> CoreResult<Va
             fence::execute(request, context)
         }
         "restoreStateGet" | "restoreStateWrite" => restore_state::execute(request, context),
-        "journalValidate" => restore_journal::execute(request, context),
-        "backupPreparePaths" | "backupDeleteFiles" | "backupPublishFile" | "brandingPublish" => {
+        "backupPreparePaths" | "backupDeleteFiles" | "backupPublishFile" => {
             workflows::execute(request, context)
         }
-        "syncFile" | "syncDirectory" | "rename" | "remove" | "tempDirectory" | "permissions" => {
-            files::utility(request, context)
+        "syncFile" | "syncDirectory" | "remove" | "tempDirectory" | "permissions" => {
+            files::utility(request)
         }
         "postgresDump" | "postgresRestore" => crate::postgres::execute(request, context),
         _ => Err(CoreError::new(

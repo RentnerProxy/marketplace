@@ -11,14 +11,25 @@ const config = defineConfig({
     resolve: { tsconfigPaths: true },
     publicDir: 'web/public',
 
+    server: {
+        watch: {
+            // Large generated trees can stall Nitro's initial module load on Windows.
+            ignored: ['**/.tools/**', '**/core/target/**'],
+        },
+    },
+
     optimizeDeps: {
-        exclude: ['bun'],
+        exclude: ['bun', 'bun:ffi'],
     },
 
     build: {
         rollupOptions: {
-            external: ['bun'],
+            external: ['bun', 'bun:ffi'],
         },
+    },
+    nitro: {
+        preset: 'bun',
+        serverEntry: './web/src/server/Runtime/nitro-server-entry.ts',
     },
     plugins: [
         devtools({
@@ -29,6 +40,7 @@ const config = defineConfig({
             publicAssets: [{ dir: 'web/public' }],
             plugins: [
                 './web/src/server/Runtime/core-worker-lifecycle.service.ts',
+                './web/src/server/Runtime/backup-request-timeout.service.ts',
             ],
             routes: {
                 '/api/user/background':
@@ -36,11 +48,10 @@ const config = defineConfig({
             },
             rollupConfig: {
                 external: [
-                    /^@sentry\//,
-                    '@aws-sdk/client-s3',
-                    // WebAuthn muss den Reflect-Polyfill vor X.509 selbst laden.
+                    // WebAuthn must load the Reflect polyfill before X.509.
                     '@simplewebauthn/server',
                     'bun',
+                    'bun:ffi',
                 ],
             },
         }),

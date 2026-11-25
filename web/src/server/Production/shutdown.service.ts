@@ -1,6 +1,8 @@
 import { logError, logWarn } from '@/server/Logging/logger.ts'
+import { closeCoreWorkerPoolsService } from '@/server/Core/worker-pool.service.ts'
 import { closeAppConnectionsService } from '@/server/Runtime/app-connections.service.ts'
 import { waitForWorkerCleanupService } from '@/server/Runtime/worker-cleanup.service.ts'
+import { drainSharedStorageMutationBarrierService } from '@/server/Storage/storage-mutation-barrier.service.ts'
 import type {
     ProductionShutdownOptions,
     ProductionShutdownSignal,
@@ -38,8 +40,39 @@ export async function shutdownProductionServerService(
         logError('production.shutdown_setup_log_failed', error)
     }
 
-    const serverClosed = cleanup('server', () => options.server.stop(true))
-    // Forward immediately: stalled proxy/WebSocket cleanup must not prevent the app drain.
+    async function stopServer() {
+        if (options.server.pendingRequests > 0) {
+            const drained = Promise.resolve()
+                .then(() => options.server.stop(false))
+                .then(
+                    () => true,
+                    (error: unknown) => {
+                        failures += 1
+                        logError(
+                            'production.shutdown_server_drain_failed',
+                            error,
+                        )
+                        return false
+                    },
+                )
+            // Keep active HTTP exchanges alive while Nitro drains. Disconnect lingering sockets afterwards.
+            await options.appProcess.exited
+            if (options.server.pendingRequests > 0) {
+                const finished = await waitForWorkerCleanupService(
+                    drained.then(() => undefined),
+                )
+                if (finished && (await drained)) return
+                if (!finished && options.server.pendingRequests > 0) {
+                    failures += 1
+                    logWarn('production.shutdown_server_drain_timeout')
+                }
+            }
+        }
+        await cleanup('server', () => options.server.stop(true))
+    }
+
+    const serverClosed = stopServer()
+    // Forward immediately so Nitro can drain its own requests and release its connections.
     try {
         options.appProcess.kill(signal)
     } catch (error) {
@@ -53,6 +86,19 @@ export async function shutdownProductionServerService(
     if (exitCode !== 0) {
         failures += 1
         logWarn('production.shutdown_app_failed')
+    }
+
+    try {
+        await drainSharedStorageMutationBarrierService()
+    } catch (error) {
+        failures += 1
+        logError('production.shutdown_storage_barrier_failed', error)
+    }
+    try {
+        await closeCoreWorkerPoolsService()
+    } catch (error) {
+        failures += 1
+        logError('production.shutdown_core_pools_failed', error)
     }
 
     const subscriber = options.subscriber

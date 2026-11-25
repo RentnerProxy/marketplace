@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop -- Each invalid key uses a distinct shared environment mock. */
+/* oxlint-disable no-await-in-loop -- Each invalid key uses a distinct shared environment mock. */
 import { beforeEach, describe, expect, test, vi } from 'bun:test'
 import {
     JOURNAL_BINDING,

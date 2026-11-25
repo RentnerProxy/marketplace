@@ -15,18 +15,18 @@ it.skipIf(process.platform === 'win32')(
             const peer = Bun.listen({
                 hostname: '127.0.0.1', port: 0,
                 socket: {
-                    open() { if (++connected === 3) connectionsReady.resolve() },
+                    open() { if (++connected === 2) connectionsReady.resolve() },
                     data() {},
                 },
             })
             process.env.VALKEY_URL = 'redis://127.0.0.1:' + peer.port
-            const { getValkeyConnection, getValkeyPublisher } = await import('@/server/Valkey/valkey.service.ts')
+            const { getValkeyConnection } = await import('@/server/Valkey/valkey.service.ts')
             const { getBackupQueue } = await import('@/server/Admin/Backups/backup.queue.ts')
             const { default: lifecycle } = await import('@/server/Runtime/core-worker-lifecycle.service.ts')
             let onClose
             lifecycle({ hooks: { hook(name, callback) { if (name === 'close') onClose = callback } } })
             void getValkeyConnection().ping().catch(() => undefined)
-            void getValkeyPublisher().ping().catch(() => undefined)
+            void getValkeyConnection().publish('synthetic-realtime', 'synthetic-event').catch(() => undefined)
             getBackupQueue().on('error', () => undefined)
             process.once('SIGTERM', async () => {
                 try {

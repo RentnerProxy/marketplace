@@ -123,6 +123,10 @@ export const markUnhealthy = vi.fn(() => {
 vi.mock('@/db', () => ({ db: { $client: { reserve } } }))
 vi.mock('@/server/Admin/Backups/backup-directory.service.ts', () => ({
     getBackupFilePath: vi.fn(async () => sqlModel.rootDirectory),
+    getBackupStoragePaths: vi.fn(() => ({
+        backupDirectory: sqlModel.rootDirectory,
+        storageDirectory: sqlModel.rootDirectory,
+    })),
 }))
 vi.mock('@/server/Admin/Backups/restore-state.service.ts', () => ({
     isRestoreStateActiveService: vi.fn(async () => sqlModel.restoreActive),
@@ -134,6 +138,7 @@ vi.mock('@/server/Storage/storage-mutation-barrier-health.service.ts', () => ({
 vi.mock('@/server/Logging/logger.ts', () => ({
     logError: vi.fn(),
     logInfo: vi.fn(),
+    logWarn: vi.fn(),
 }))
 
 export function resetStorageMutationSqlModelService(rootDirectory: string) {

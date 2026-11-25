@@ -130,16 +130,18 @@ struct Fence {
 }
 impl Fence {
     fn open(root: &Path, expected: Option<&Value>) -> CoreResult<Self> {
-        let root_handle = files::open_absolute(root, expected.is_none())?;
-        if expected.is_none() {
-            files::secure_directory(&root_handle)?;
-        }
-        let shared_handle = files::descend(
-            &root_handle,
-            Path::new(SHARED),
-            expected.is_none(),
-            expected.is_none(),
-        )?;
+        let initialize = expected.is_none();
+        let root_handle = files::open_absolute(root, initialize)?;
+        let permissions = if initialize {
+            files::assert_location(root, &root_handle)?;
+            files::prepare_private_directory(&root_handle)?;
+            files::DirectoryPermissions::PreparePrivate
+        } else {
+            files::verify_private_directory(&root_handle.dir_metadata()?)?;
+            files::DirectoryPermissions::Private
+        };
+        let shared_handle =
+            files::descend(&root_handle, Path::new(SHARED), initialize, permissions)?;
         let root_identity = files::identity(&root_handle.dir_metadata()?)?;
         let shared_identity = files::identity(&shared_handle.dir_metadata()?)?;
         let fence = Self {
@@ -180,6 +182,33 @@ impl Fence {
             Err(error) => Err(error),
         }
     }
+    fn reuse_shared(&self, lease: &Value) -> CoreResult<Value> {
+        self.assert_entries()?;
+        let (directory, name, _) = lease_file(self, lease, Some(SHARED))?;
+        read_control(directory, &name, SHARED, Some(&lease["file"]))?;
+
+        // The caller retains this published lease until revalidation finishes.
+        // An exclusive owner publishing after the absence check must drain it
+        // before entering. Presence also covers a partially published record.
+        for (name, is_directory) in [(ADMISSION, true), (EXCLUSIVE_FILE, false)] {
+            match self.root.handle.symlink_metadata(name) {
+                Ok(metadata)
+                    if (is_directory && metadata.is_dir() && mode(&metadata, 0o700))
+                        || (!is_directory
+                            && metadata.is_file()
+                            && metadata.nlink() == 1
+                            && mode(&metadata, 0o600)) =>
+                {
+                    return Err(busy());
+                }
+                Ok(_) => return Err(invalid()),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+                Err(error) => return Err(error.into()),
+            }
+        }
+        self.assert()?;
+        Ok(lease.clone())
+    }
     fn has_shared(&self) -> CoreResult<bool> {
         self.assert()?;
         for (index, entry) in self.shared.handle.entries()?.enumerate() {
@@ -210,22 +239,34 @@ impl Fence {
         self.assert()?;
         for (index, entry) in self.root.handle.entries()?.enumerate() {
             let entry = entry?;
-            let kind = entry.file_type()?;
-            let name = entry.file_name();
-            let name = name.to_str().ok_or_else(invalid)?;
-            if index >= MAX_ENTRIES
-                || kind.is_symlink()
-                || match name {
-                    SHARED | ADMISSION => !kind.is_dir(),
-                    EXCLUSIVE_FILE => !kind.is_file(),
-                    _ => true,
-                }
-            {
+            if index >= MAX_ENTRIES {
                 return Err(invalid());
             }
+            let name = entry.file_name();
+            let name = name.to_str().ok_or_else(invalid)?;
+            assert_entry_type(name, entry.file_type())?;
         }
         self.assert()
     }
+}
+
+fn assert_entry_type(name: &str, kind: std::io::Result<cap_std::fs::FileType>) -> CoreResult<()> {
+    let kind = match kind {
+        Err(error) if name == ADMISSION && error.kind() == std::io::ErrorKind::NotFound => {
+            return Err(busy());
+        }
+        result => result?,
+    };
+    if kind.is_symlink()
+        || match name {
+            SHARED | ADMISSION => !kind.is_dir(),
+            EXCLUSIVE_FILE => !kind.is_file(),
+            _ => true,
+        }
+    {
+        return Err(invalid());
+    }
+    Ok(())
 }
 
 // Closing is observable: after an unconfirmed close we must not remove the
@@ -521,6 +562,9 @@ fn execute_inner(request: &Value, context: &OperationContext) -> CoreResult<Valu
             }
             let root = files::absolute(string(request, "rootDirectory")?)?;
             let fence = Fence::open(&root, current.map(|lease| &lease["context"]))?;
+            if let Some(lease) = current {
+                return fence.reuse_shared(lease);
+            }
             let try_only = if shared {
                 true
             } else {
@@ -536,12 +580,6 @@ fn execute_inner(request: &Value, context: &OperationContext) -> CoreResult<Valu
                 } else {
                     Err(busy())
                 };
-            }
-            if let Some(lease) = current {
-                let (directory, name, _) = lease_file(&fence, lease, Some(SHARED))?;
-                read_control(directory, &name, SHARED, Some(&lease["file"]))?;
-                release_gate(&fence, gate)?;
-                return Ok(lease.clone());
             }
             if !shared && try_only && fence.has_shared()? {
                 release_gate(&fence, gate)?;

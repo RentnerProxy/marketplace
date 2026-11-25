@@ -19,7 +19,7 @@ pub const MAX_METADATA: u64 = 64 * 1024;
 pub const MAX_PAX: usize = 4096 + 512;
 pub const MAX_PLAINTEXT: u64 =
     MAX_CONTENT + MAX_ENTRIES as u64 * (1024 + MAX_PAX as u64 + 1022) + 1024;
-pub const MAX_ARCHIVE: u64 = MAX_PLAINTEXT + 70;
+pub const MAX_ARCHIVE: u64 = MAX_PLAINTEXT + crypto::ENVELOPE_OVERHEAD;
 pub const CHUNK: usize = 65536;
 
 pub(crate) fn invalid(message: &str) -> CoreError {
@@ -64,60 +64,47 @@ pub fn execute_worker(
 
 pub fn execute_ref(request: &Value, context: &OperationContext) -> CoreResult<Value> {
     context.check()?;
-    match text(request, "operation")? {
+    let operation = text(request, "operation")?;
+    match operation {
         "validateKey" => {
             let _key = root_key(request)?;
             Ok(Value::Null)
         }
-        "authenticate" | "decrypt" => {
+        "authenticate" | "validate" => {
             let key = root_key(request)?;
-            let destination = request
-                .get("destinationPath")
-                .and_then(Value::as_str)
-                .map(Path::new);
-            let result = crypto::decrypt(
+            let mut reader = crypto::DecryptReader::new(
                 Path::new(text(request, "sourcePath")?),
-                destination,
                 &key,
-                request
-                    .get("expectedChecksumSha256")
-                    .and_then(Value::as_str),
                 request,
                 context,
             )?;
-            Ok(serde_json::to_value(result)?)
+            reader.report_start()?;
+            if operation == "authenticate" {
+                return Ok(serde_json::to_value(reader.finish()?)?);
+            }
+            let size = reader.plaintext_size();
+            let manifest = tar::validate_stream(&mut reader, size, &key, context);
+            let metadata = reader.finish()?;
+            Ok(json!({
+                "archiveSize": metadata.archive_size,
+                "checksumSha256": metadata.checksum_sha256,
+                "manifest": manifest?,
+            }))
         }
-        "encrypt" => {
-            let key = root_key(request)?;
-            let result = crypto::encrypt_file(
-                Path::new(text(request, "sourcePath")?),
-                Path::new(text(request, "destinationPath")?),
-                &key,
-                context,
-            )?;
-            Ok(serde_json::to_value(result)?)
-        }
-        "validate" | "extract" => {
+        "extract" => {
             let key = root_key(request)?;
             let temporary_root = Path::new(text(request, "temporaryDirectory")?);
             let temporary = files::temporary_directory(temporary_root, "decrypted-")?;
             let plaintext = temporary.path().join("archive.tar");
             let result = (|| {
-                let metadata = crypto::decrypt(
+                let metadata = crypto::DecryptReader::new(
                     Path::new(text(request, "sourcePath")?),
-                    Some(&plaintext),
                     &key,
-                    request
-                        .get("expectedChecksumSha256")
-                        .and_then(Value::as_str),
                     request,
                     context,
-                )?;
-                let destination = if request["operation"] == "extract" {
-                    Some(Path::new(text(request, "destinationDirectory")?))
-                } else {
-                    None
-                };
+                )?
+                .write_temporary(&plaintext)?;
+                let destination = Path::new(text(request, "destinationDirectory")?);
                 let maximum_write = request
                     .get("maximumWriteBytes")
                     .and_then(Value::as_u64)
@@ -131,8 +118,13 @@ pub fn execute_ref(request: &Value, context: &OperationContext) -> CoreResult<Va
                 if let Some(maximum) = maximum_write {
                     extraction_request["maximumWriteBytes"] = json!(maximum);
                 }
-                let manifest =
-                    tar::process(&plaintext, &key, destination, &extraction_request, context);
+                let manifest = tar::process(
+                    &plaintext,
+                    &key,
+                    Some(destination),
+                    &extraction_request,
+                    context,
+                );
                 crate::protocol::clear_value(&mut extraction_request);
                 let manifest = manifest?;
                 Ok(
@@ -148,7 +140,6 @@ pub fn execute_ref(request: &Value, context: &OperationContext) -> CoreResult<Va
             result
         }
         "create" => collection::create(request, context),
-        "collect" => collection::collect_request(request, context),
         "backgroundCollect" | "backgroundAssertRoots" | "backgroundPartition" => {
             background::execute(request, context)
         }
@@ -157,23 +148,6 @@ pub fn execute_ref(request: &Value, context: &OperationContext) -> CoreResult<Va
         | "admissionReserve"
         | "admissionRelease"
         | "admissionMarkIncomplete" => admission::execute(request, context),
-        "validateEntry" => Ok(serde_json::to_value(tar::validate_entry(
-            text(request, "path")?,
-            request["size"]
-                .as_u64()
-                .ok_or_else(|| invalid("Die Archivgröße ist ungültig."))?,
-            text(request, "kind")?,
-        )?)?),
-        "processTar" => {
-            let key = root_key(request)?;
-            Ok(tar::process(
-                Path::new(text(request, "sourcePath")?),
-                &key,
-                None,
-                request,
-                context,
-            )?)
-        }
         _ => Err(CoreError::new(
             "CORE_UNKNOWN_OPERATION",
             "Der Archivauftrag wird nicht unterstützt.",

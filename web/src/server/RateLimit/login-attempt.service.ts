@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { LOGIN_ATTEMPT_POLICY } from '@/config/security.config.ts'
-import { createTokenHash } from '@/lib/Auth/tokens.ts'
+import { createTokenHashSync } from '@/lib/Auth/tokens.ts'
+import { defineValkeyScript } from '@/server/Valkey/valkey-script.ts'
 import { getValkeyConnection } from '@/server/Valkey/valkey.service.ts'
 import { LOGIN_ATTEMPT_SCRIPT } from './login-attempt.script.ts'
 import type {
@@ -29,6 +30,11 @@ const maximumLockMs =
     Math.max(...LOGIN_ATTEMPT_POLICY.lockDurationsSeconds) * 1000
 const lockDurationSchema = integerSchema.max(maximumLockMs)
 const flagSchema = z.union([z.literal(0), z.literal(1)])
+const updateLoginAttempt = defineValkeyScript(
+    'tdUpdateLoginAttempt',
+    4,
+    LOGIN_ATTEMPT_SCRIPT,
+)
 const replySchema = z
     .union([
         z.tuple([
@@ -78,15 +84,14 @@ async function runLoginAttempt(
     if (!normalizedUsername.success) {
         throw new Error('Invalid login attempt identity')
     }
-    const identityHash = await createTokenHash(normalizedUsername.data)
+    const identityHash = createTokenHashSync(normalizedUsername.data)
     const prefix = `rentnerproxy-marketplace:rate-limit:login:${identityHash}`
     const attemptId =
         operation === 'reserve'
             ? randomBytes(32).toString('base64url')
             : (attempt?.attemptId ?? '')
-    const rawReply: unknown = await getValkeyConnection().eval(
-        LOGIN_ATTEMPT_SCRIPT,
-        4,
+    const rawReply = await updateLoginAttempt(
+        getValkeyConnection(),
         `${prefix}:state`,
         `${prefix}:lock`,
         `${prefix}:generation`,

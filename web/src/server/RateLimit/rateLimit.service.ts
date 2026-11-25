@@ -1,4 +1,6 @@
+import { createTokenHashSync } from '@/lib/Auth/tokens.ts'
 import { getClientIp } from '@/lib/Request/clientRequestMeta.ts'
+import { defineValkeyScript } from '@/server/Valkey/valkey-script.ts'
 import { getValkeyConnection } from '@/server/Valkey/valkey.service.ts'
 import { z } from 'zod'
 
@@ -9,14 +11,18 @@ const rateLimitResultSchema = z.tuple([
     z.number().int(),
 ])
 
-const RATE_LIMIT_SCRIPT = `
+const incrementRateLimit = defineValkeyScript(
+    'tdIncrementRateLimit',
+    1,
+    `
 local count = server.call('INCR', KEYS[1])
 if count == 1 then
     server.call('PEXPIRE', KEYS[1], ARGV[1])
 end
 local ttl = server.call('PTTL', KEYS[1])
 return { count, ttl }
-`
+`,
+)
 
 function formatRetryDuration(seconds: number) {
     if (seconds < 60) {
@@ -39,13 +45,7 @@ export class RateLimitError extends Error {
     }
 }
 
-async function hashRateLimitKey(value: string) {
-    const bytes = new TextEncoder().encode(value)
-    const digest = await crypto.subtle.digest('SHA-256', bytes)
-    return Buffer.from(digest).toString('hex')
-}
-
-async function getRateLimitIdentityHash(
+function getRateLimitIdentityHash(
     identifiers: Array<string | null | undefined>,
     includeClientIp: boolean,
 ) {
@@ -55,7 +55,7 @@ async function getRateLimitIdentityHash(
     ]
         .filter((value): value is string => Boolean(value?.trim()))
         .join('|')
-    return hashRateLimitKey(identity || 'unknown')
+    return createTokenHashSync(identity || 'unknown')
 }
 
 export async function enforceRateLimit({
@@ -65,18 +65,10 @@ export async function enforceRateLimit({
     limit,
     windowMs,
 }: RateLimitOptions) {
-    const identityHash = await getRateLimitIdentityHash(
-        identifiers,
-        includeClientIp,
-    )
+    const identityHash = getRateLimitIdentityHash(identifiers, includeClientIp)
     const key = `rentnerproxy-marketplace:rate-limit:${scope}:${identityHash}`
     const valkey = getValkeyConnection()
-    const result = await valkey.eval(
-        RATE_LIMIT_SCRIPT,
-        1,
-        key,
-        String(windowMs),
-    )
+    const result = await incrementRateLimit(valkey, key, String(windowMs))
     const [count, ttl] = rateLimitResultSchema.parse(result)
 
     if (count > limit) {

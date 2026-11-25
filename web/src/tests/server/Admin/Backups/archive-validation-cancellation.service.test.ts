@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
-import type { BackupImportContext } from '@/server/Admin/Backups/import.types.ts'
+import type { BackupImportContext } from '@/server/Admin/Backups/Types/import.types.ts'
 import type { ValidatedBackupArchive } from '@/server/Admin/Backups/Types/archive-validation.types.ts'
 const source = {
     stat: async () => ({
@@ -43,7 +43,7 @@ vi.mock('@/server/Admin/Backups/archive-plaintext.service.ts', () => ({
         operation: (input: unknown) => unknown,
     ) => operation({ source, context }),
 }))
-const { validateBackupArchive, extractBackupArchive, assertChecksumMatches } =
+const { validateBackupArchive, extractBackupArchive } =
     await import('@/server/Admin/Backups/archive-validation.service.ts')
 beforeEach(() => {
     context = {
@@ -82,23 +82,20 @@ describe('Archive validation core boundary', () => {
         })
         expect(context.markCleanupIncomplete).toHaveBeenCalledTimes(1)
     })
-    it('reserves bounded plaintext writes before starting native validation', async () => {
-        const deferred = Promise.withResolvers<void>()
-        context.beforeWrite = vi.fn(async () => deferred.promise)
-        const pending = validateBackupArchive('/archive.enc', context)
-        await Promise.resolve()
-        await Promise.resolve()
-        expect(core).not.toHaveBeenCalled()
-        deferred.resolve()
-        expect(await pending).toEqual(result)
-        expect(context.beforeWrite).toHaveBeenCalledWith(30)
-        expect(core.mock.calls[0][1]).toMatchObject({
+    it('validates the bounded source without a temporary plaintext allocation', async () => {
+        expect(await validateBackupArchive('/archive.enc', context)).toEqual(
+            result,
+        )
+        expect(context.beforeWrite).not.toHaveBeenCalled()
+        const request = core.mock.calls[0][1]
+        expect(request).toMatchObject({
             operation: 'validate',
-            maximumWriteBytes: 30,
             maximumBytes: 100,
-            temporaryDirectory: '/owned',
             expectedSourceIdentity: { dev: '1', ino: '2' },
         })
+        expect(request).not.toHaveProperty('maximumWriteBytes')
+        expect(request).not.toHaveProperty('temporaryDirectory')
+        expect(request).not.toHaveProperty('capacityDirectory')
     })
     it('passes cancellation and extraction budgets through the bridge', async () => {
         const progress = vi.fn()
@@ -148,12 +145,13 @@ describe('Archive validation core boundary', () => {
                 importContext: context,
             }),
         ).rejects.toThrow('Fortschritt')
-        expect(() =>
-            assertChecksumMatches('a'.repeat(64), 'b'.repeat(64)),
-        ).toThrow()
-        expect(() => assertChecksumMatches('a'.repeat(64), 'invalid')).toThrow()
-        expect(() =>
-            assertChecksumMatches('a'.repeat(64), 'A'.repeat(64)),
-        ).not.toThrow()
+        await expect(
+            extractBackupArchive({
+                filePath: '/archive.enc',
+                destinationDirectory: '/restore',
+                expectedChecksumSha256: 'invalid',
+                importContext: context,
+            }),
+        ).rejects.toThrow('SHA-256')
     })
 })

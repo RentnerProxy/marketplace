@@ -83,6 +83,29 @@ describe('audit log reads', () => {
         expect(await getAuditLogsService()).toEqual([])
     })
 
+    it('preserves JSON transport semantics and excludes prototype keys at every depth', async function () {
+        const values: unknown = JSON.parse(
+            '{"__proto__":{"injected":true},"constructor":"stored value","nested":[{"__proto__":{"injected":true},"valid":1}]}',
+        )
+        read.results.push([
+            {
+                createdAt: new Date(),
+                oldValues: values,
+                newValues: {
+                    omitted: undefined,
+                    nested: [undefined, Number.POSITIVE_INFINITY, -0],
+                },
+            },
+        ])
+        const log = (await getAuditLogsService()).at(0)
+        expect(log?.oldValues).toEqual({
+            constructor: 'stored value',
+            nested: [{ valid: 1 }],
+        })
+        expect(JSON.stringify(log)).not.toContain('injected')
+        expect(log?.newValues).toEqual({ nested: [null, null, 0] })
+    })
+
     it('rejects unserializable stored values instead of returning invalid transport data', async () => {
         read.results.push([
             {

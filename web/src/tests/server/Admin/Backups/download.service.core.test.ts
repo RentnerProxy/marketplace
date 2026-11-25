@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import {
     BACKUP_ARCHIVE_ENCRYPTION_CONFIG,
     BACKUP_ARCHIVE_EXTENSION,
+    BACKUP_DOWNLOAD_CHUNK_BYTES,
     BACKUP_LIMITS,
     BACKUP_TIMEOUTS,
 } from '@/config/backup.config.ts'
@@ -359,6 +360,7 @@ describe('verified encrypted backup downloads', function () {
         const reader = download.createBody().getReader()
         const first = await reader.read()
         expect(first.done).toBe(false)
+        expect(first.value?.length).toBe(BACKUP_DOWNLOAD_CHUNK_BYTES)
         expect(first.value?.length).toBeLessThan(archive.fileSize)
         await reader.cancel()
         await download.dispose()
@@ -394,13 +396,16 @@ describe('verified encrypted backup downloads', function () {
         expect(vi.getTimerCount()).toBe(0)
     })
 
-    it('closes the descriptor and fails the response after a post-verification truncation', async function () {
+    it('returns only the initialized bytes of a short read after verification', async function () {
         const archive = await fixture()
         const download = await prepare(archive)
-        await nativeFileSystem.truncate(archive.filePath, 0)
-        await expect(
-            new Response(download.createBody()).arrayBuffer(),
-        ).rejects.toThrow()
+        const remainingBytes = 73
+        await nativeFileSystem.truncate(archive.filePath, remainingBytes)
+        const reader = download.createBody().getReader()
+        const first = await reader.read()
+        expect(first.done).toBe(false)
+        expect(first.value).toEqual(archive.bytes.subarray(0, remainingBytes))
+        await expect(reader.read()).rejects.toThrow()
         await expectClosedHandles()
     })
 })

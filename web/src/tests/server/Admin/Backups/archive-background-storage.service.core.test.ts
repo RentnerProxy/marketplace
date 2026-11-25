@@ -177,6 +177,15 @@ afterEach(async () => {
     await actualFs.rm(resolved, { recursive: true, force: true })
 })
 
+async function expectNativeFailure(
+    operation: Promise<unknown>,
+    errorType: ErrorConstructor | typeof RestoreRollbackError = Error,
+) {
+    // Let subprocess I/O settle before entering Bun's assertion matcher.
+    const outcome = await operation.catch((error: unknown) => error)
+    expect(outcome).toBeInstanceOf(errorType)
+}
+
 async function writeOwned(filePath: string, content: string) {
     await actualFs.mkdir(path.dirname(filePath), {
         recursive: true,
@@ -439,9 +448,9 @@ describe('Private background archive coverage', () => {
             const expectedChecksumSha256 = createHash('sha256')
                 .update(await actualFs.readFile(filePath))
                 .digest('hex')
-            await expect(
+            await expectNativeFailure(
                 restoreBackupArchive({ filePath, expectedChecksumSha256 }),
-            ).rejects.toThrow()
+            )
             expect(createDump).not.toHaveBeenCalled()
             expect(restoreDump).not.toHaveBeenCalled()
         },
@@ -462,7 +471,7 @@ describe('Private background archive coverage', () => {
                     createdAt: new Date().toISOString(),
                 },
             })
-            await expect(validateBackupArchive(filePath)).rejects.toThrow()
+            await expectNativeFailure(validateBackupArchive(filePath))
         },
     )
 
@@ -474,14 +483,14 @@ describe('Private background archive coverage', () => {
         bytes[bytes.length - 1] = bytes[bytes.length - 1]! ^ 1
         await actualFs.writeFile(source.filePath, bytes)
         createDump.mockClear()
-        await expect(
+        await expectNativeFailure(
             restoreBackupArchive({
                 ...source,
                 expectedChecksumSha256: createHash('sha256')
                     .update(bytes)
                     .digest('hex'),
             }),
-        ).rejects.toThrow()
+        )
         expect(createDump).not.toHaveBeenCalled()
         expect(restoreDump).not.toHaveBeenCalled()
         expect(await actualFs.readFile(image.absoluteBackground, 'utf8')).toBe(
@@ -508,7 +517,7 @@ describe('Private background archive coverage', () => {
                 restoreDump.mockRejectedValueOnce(
                     new Error('Synthetic database failure'),
                 )
-            await expect(
+            await expectNativeFailure(
                 restoreBackupArchive({
                     ...source,
                     ...(failure === 'after-database'
@@ -521,7 +530,7 @@ describe('Private background archive coverage', () => {
                           }
                         : {}),
                 }),
-            ).rejects.toThrow()
+            )
             expect(
                 await actualFs.readFile(image.absoluteBackground, 'utf8'),
             ).toBe('before-private')
@@ -549,7 +558,7 @@ describe('Private background archive coverage', () => {
             'before-public',
         )
         state.failPrivateOpenCount = 1
-        await expect(restoreBackupArchive(source)).rejects.toThrow()
+        await expectNativeFailure(restoreBackupArchive(source))
         expect(await actualFs.readFile(image.absoluteBackground, 'utf8')).toBe(
             'before',
         )
@@ -575,7 +584,7 @@ describe('Private background archive coverage', () => {
             path.join(state.publicRoot, 'public-file'),
             'before-public',
         )
-        await expect(
+        await expectNativeFailure(
             restoreBackupArchive({
                 ...source,
                 afterDatabaseRestore: async () => {
@@ -583,7 +592,8 @@ describe('Private background archive coverage', () => {
                     throw new Error('Synthetic callback failure')
                 },
             }),
-        ).rejects.toBeInstanceOf(RestoreRollbackError)
+            RestoreRollbackError,
+        )
         expect(
             await actualFs.readFile(
                 path.join(state.publicRoot, 'public-file'),
@@ -605,7 +615,7 @@ describe('Private background archive coverage', () => {
     it('does not delete a foreign replacement while rolling a newly added v2 file back', async () => {
         const source = await createHistoricalSnapshot(['newly-added'])
         const image = getUserPublicImagePaths('newly-added')
-        await expect(
+        await expectNativeFailure(
             restoreBackupArchive({
                 ...source,
                 afterDatabaseRestore: async () => {
@@ -620,7 +630,8 @@ describe('Private background archive coverage', () => {
                     throw new Error('Synthetic later failure')
                 },
             }),
-        ).rejects.toBeInstanceOf(RestoreRollbackError)
+            RestoreRollbackError,
+        )
         expect(await actualFs.readFile(image.absoluteBackground, 'utf8')).toBe(
             'foreign-replacement',
         )
@@ -632,7 +643,8 @@ describe('Private background archive coverage', () => {
         const source = await createSnapshot()
         await writeOwned(image.absoluteBackground, 'before')
         state.failPrivateCleanup = true
-        await expect(restoreBackupArchive(source)).rejects.toBeInstanceOf(
+        await expectNativeFailure(
+            restoreBackupArchive(source),
             RestoreRollbackError,
         )
         expect(await actualFs.readFile(image.absoluteBackground, 'utf8')).toBe(
@@ -653,7 +665,7 @@ describe('Private background archive coverage', () => {
             image.absoluteBackground,
             path.join(state.root, 'second-link'),
         )
-        await expect(createSnapshot()).rejects.toThrow()
+        await expectNativeFailure(createSnapshot())
         expect(await actualFs.readdir(state.backupRoot)).toEqual([])
     })
 
@@ -661,7 +673,7 @@ describe('Private background archive coverage', () => {
         const source = await createSnapshot()
         process.env.APP_PRIVATE_STORAGE_DIR = state.publicRoot
         createDump.mockClear()
-        await expect(restoreBackupArchive(source)).rejects.toThrow()
+        await expectNativeFailure(restoreBackupArchive(source))
         expect(createDump).not.toHaveBeenCalled()
         expect(restoreDump).not.toHaveBeenCalled()
     })
@@ -673,13 +685,13 @@ describe('Private background archive coverage', () => {
             alias,
             process.platform === 'win32' ? 'junction' : 'dir',
         )
-        await expect(
+        await expectNativeFailure(
             assertBackgroundStoragePathsService({
                 storageRoot: state.publicRoot,
                 privateStorageRoot: alias,
                 protectedPaths: [state.backupRoot],
             }),
-        ).rejects.toThrow()
+        )
     })
 
     it('keeps private metadata collection bounded and ignores unrelated private files', async () => {
@@ -755,14 +767,14 @@ describe('Private background archive coverage', () => {
             'old-private',
             'inserted-private',
         ])
-        await expect(
+        await expectNativeFailure(
             restoreBackupArchive({
                 ...source,
                 afterDatabaseRestore: async () => {
                     throw new Error('Synthetic later failure')
                 },
             }),
-        ).rejects.toThrow()
+        )
         const after = await actualFs.lstat(existing.absoluteBackground, {
             bigint: true,
         })
@@ -792,7 +804,7 @@ describe('Private background archive coverage', () => {
     it('does not enter an exchanged parent directory during historical rollback cleanup', async () => {
         const source = await createHistoricalSnapshot(['parent-replaced'])
         const image = getUserPublicImagePaths('parent-replaced')
-        await expect(
+        await expectNativeFailure(
             restoreBackupArchive({
                 ...source,
                 afterDatabaseRestore: async () => {
@@ -807,7 +819,8 @@ describe('Private background archive coverage', () => {
                     throw new Error('Synthetic callback failure')
                 },
             }),
-        ).rejects.toBeInstanceOf(RestoreRollbackError)
+            RestoreRollbackError,
+        )
         expect(await actualFs.readFile(image.absoluteBackground, 'utf8')).toBe(
             'foreign-parent-file',
         )
@@ -827,7 +840,7 @@ describe('Private background archive coverage', () => {
             linkedRoot,
             process.platform === 'win32' ? 'junction' : 'dir',
         )
-        await expect(createSnapshot()).rejects.toThrow()
+        await expectNativeFailure(createSnapshot())
         expect(await actualFs.readdir(state.backupRoot)).toEqual([])
     })
 })

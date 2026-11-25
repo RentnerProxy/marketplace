@@ -54,7 +54,7 @@ beforeEach(async function () {
     await Promise.all(
         Object.entries({
             'valkey-server':
-                '#!/bin/sh\nset -eu\n[ "$#" -eq 9 ] || exit 81\n[ -z "${VALKEY_PASSWORD:-}" ] || exit 82\ncmp -s "$1" "$EXPECTED_CONFIG" || exit 83\nshift\n[ "$*" = "--bind 127.0.0.1 --protected-mode yes --save  --maxmemory 256mb" ] || exit 86\nprintf "SERVER_STUB_CALLED\\n"\n',
+                '#!/bin/sh\nset -eu\n[ "$#" -eq 11 ] || exit 81\n[ -z "${VALKEY_PASSWORD:-}" ] || exit 82\ncmp -s "$1" "$EXPECTED_CONFIG" || exit 83\nshift\n[ "$*" = "--bind 127.0.0.1 --protected-mode yes --save  --maxmemory 256mb --maxmemory-policy noeviction" ] || exit 86\nprintf "SERVER_STUB_CALLED\\n"\n',
             'valkey-cli':
                 '#!/bin/sh\nset -eu\n[ "$VALKEYCLI_AUTH" = "$EXPECTED_VALKEY_AUTH" ] || exit 84\n[ "$*" = "--raw ping" ] || exit 85\nprintf "CLI_STUB_CALLED\\n" >&2\nprintf "%s" "$SYNTHETIC_REPLY"\nexit "$SYNTHETIC_CLI_STATUS"\n',
         }).map(([name, source]) =>

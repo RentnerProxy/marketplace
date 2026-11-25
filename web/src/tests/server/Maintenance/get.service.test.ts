@@ -27,6 +27,8 @@ vi.mock('@/server/Realtime/publish.service.ts', () => ({
 }))
 const { getMaintenancePageStatusService } =
     await import('@/server/Maintenance/get.service.ts')
+const { invalidateMaintenanceStateService } =
+    await import('@/server/Maintenance/state.service.ts')
 
 const user = {
     id: 'member',
@@ -44,6 +46,7 @@ const request = {
 }
 
 beforeEach(() => {
+    invalidateMaintenanceStateService()
     vi.clearAllMocks()
     session.mockReset().mockResolvedValue(user)
     permissions.mockReset().mockResolvedValue([PERMISSIONS.USER_DASHBOARD])

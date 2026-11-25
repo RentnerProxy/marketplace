@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop -- Native progress and terminal records must be consumed in protocol order. */
+/* oxlint-disable no-await-in-loop -- Native progress and terminal records must be consumed in protocol order. */
 import { spawn } from 'node:child_process'
 import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -100,7 +100,7 @@ export async function runOneShotCoreCommandService(
         interruptProgress?.()
         if (cancellationWrite || exited) return
         // A signal callback must persist cancellation without blocking the event loop.
-        // eslint-disable-next-line promise/no-promise-in-callback
+        // oxlint-disable-next-line promise/no-promise-in-callback
         cancellationWrite = writeFile(cancellationPath, '', {
             flag: 'wx',
             mode: 0o600,

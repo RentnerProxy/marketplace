@@ -32,7 +32,13 @@ export const auditLogs = appSchema.table(
     },
     (table) => [
         index('audit_logs_created_at_idx').on(table.createdAt),
-        index('audit_logs_action_idx').on(table.action),
-        index('audit_logs_actor_user_id_idx').on(table.actorUserId),
+        index('audit_logs_actor_user_id_created_at_idx').on(
+            table.actorUserId,
+            table.createdAt,
+        ),
+        index('audit_logs_action_created_at_idx').on(
+            table.action,
+            table.createdAt,
+        ),
     ],
 )

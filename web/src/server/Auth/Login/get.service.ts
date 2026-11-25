@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { trustedDevices } from '@/db/schema'
+import { trustedDevices } from '@/db/schema.ts'
 import { and, eq } from 'drizzle-orm'
 import { getCookie } from '@tanstack/react-start/server'
 import { TRUSTED_DEVICE_COOKIE_NAME } from '@/config/session.config.ts'

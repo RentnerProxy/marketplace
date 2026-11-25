@@ -1,16 +1,9 @@
 import { CORE_RUNTIME } from '@/config/core.config.ts'
 import { CoreCommandError } from './error.ts'
-import {
-    encodeIsolatedBinaryRequestService,
-    validateCoreBinaryInputService,
-} from './binary-payload.service.ts'
+import { tryRunNativeStorageCommandService } from './native-storage.service.ts'
 import { runOneShotCoreCommandService } from './one-shot.service.ts'
 import { runPooledCoreCommandService } from './worker-pool.service.ts'
-import type {
-    CoreBinary,
-    CoreBrandingBinaryLengths,
-    CoreCommandOptions,
-} from './Types/core.types.ts'
+import type { CoreBinary, CoreCommandOptions } from './Types/core.types.ts'
 
 export function runCoreCommandService<TResult>(
     binary: CoreBinary,
@@ -36,37 +29,25 @@ export function runCoreCommandService(
         typeof request.operation === 'string' &&
         operations.includes(request.operation)
     ) {
+        if (binary === 'storage') {
+            const native = tryRunNativeStorageCommandService(request, options)
+            if (native) return native
+        }
         return runPooledCoreCommandService(binary, request, options)
     }
-    // Explicit environments and long/progress-producing operations retain their
-    // isolated process and its existing cancellation and completion guarantees.
-    if (request.operation === 'readBackgroundBytes')
+    // The isolated process only accepts and returns JSON.
+    if (
+        options.binaryInput !== undefined ||
+        'binaryLengths' in request ||
+        request.operation === 'writeFile' ||
+        request.operation === 'brandingPublish' ||
+        request.operation === 'readBackgroundRepresentation'
+    )
         return Promise.reject(
             new CoreCommandError(
                 'CORE_INVALID_REQUEST',
-                'Binäre Core-Antworten benötigen den privaten Worker-Kanal.',
+                'Binäre Core-Aufträge benötigen den privaten Worker-Kanal.',
             ),
         )
-    let lengths: CoreBrandingBinaryLengths | undefined
-    try {
-        lengths = validateCoreBinaryInputService(
-            binary,
-            request,
-            options.binaryInput,
-        )
-    } catch (error) {
-        return Promise.reject(error)
-    }
-    if (options.binaryInput !== undefined) {
-        return runOneShotCoreCommandService(
-            binary,
-            encodeIsolatedBinaryRequestService(
-                request,
-                options.binaryInput,
-                lengths,
-            ),
-            options,
-        )
-    }
     return runOneShotCoreCommandService(binary, request, options)
 }

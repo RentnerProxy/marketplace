@@ -37,7 +37,11 @@ describe('Rust-Core-Überwachung', () => {
         expect(await health()).toEqual(runtime)
         const call = fetcher.mock.calls[0]!
         expect(String(call[0])).toBe('http://127.0.0.1:3004/core/health')
-        expect(call[1]).toMatchObject({ cache: 'no-store', redirect: 'error' })
+        expect(call[1]).toMatchObject({
+            cache: 'no-store',
+            redirect: 'error',
+            proxy: false,
+        })
         expect(call[1]?.signal).toBeInstanceOf(AbortSignal)
     })
 
@@ -50,10 +54,52 @@ describe('Rust-Core-Überwachung', () => {
     )
 
     it.each([
+        ['ECONNREFUSED', 'directly'],
+        ['ConnectionRefused', 'directly'],
+        ['ECONNREFUSED', 'as the cause'],
+        ['ConnectionRefused', 'as the cause'],
+    ])('retries IPv6 when fetch reports %s %s', async (code, location) => {
+        process.env.CORE_ORIGIN = 'http://localhost:3004'
+        const refusal = Object.assign(new Error('IPv4 listener unavailable'), {
+            code,
+        })
+        fetcher
+            .mockRejectedValueOnce(
+                location === 'as the cause'
+                    ? new TypeError('Fetch failed', { cause: refusal })
+                    : refusal,
+            )
+            .mockResolvedValueOnce(Response.json(runtime))
+        expect(await health()).toEqual(runtime)
+        expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual([
+            'http://127.0.0.1:3004/core/health',
+            'http://[::1]:3004/core/health',
+        ])
+        expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
+            headers: { host: 'localhost:3004' },
+            proxy: false,
+        })
+    })
+
+    it('keeps other loopback fetch failures without trying IPv6', async () => {
+        process.env.CORE_ORIGIN = 'http://localhost:3004'
+        const error = Object.assign(new Error('Synthetic network error'), {
+            code: 'ECONNRESET',
+        })
+        fetcher.mockRejectedValueOnce(error)
+        await expect(health()).rejects.toBe(error)
+        expect(fetcher).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
         'https://localhost:3004',
         'http://example.com',
+        'http://localhost.example.com',
         'http://user:password@localhost',
+        'http://@localhost',
         'http://localhost/path',
+        'http://localhost/../',
+        'http://localhost?',
         'http://localhost?query',
         'http://localhost#fragment',
     ])(

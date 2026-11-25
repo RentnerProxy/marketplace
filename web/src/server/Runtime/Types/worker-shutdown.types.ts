@@ -3,4 +3,5 @@ export type WorkerShutdownOptions = {
     stopHeartbeat: () => Promise<void>
     closeWorkers: () => Promise<void>
     stopStatus: () => Promise<void>
+    closeConnections: () => Promise<void>
 }

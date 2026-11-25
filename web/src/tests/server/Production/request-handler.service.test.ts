@@ -1,5 +1,8 @@
 import path from 'node:path'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
+import { mockValkeyDefineCommand } from '@/tests/shared/valkey-script.test.helpers.ts'
 import {
     restoreBunProperties,
     restoreTestGlobals,
@@ -89,6 +92,9 @@ const dependencies = {
         return [1, 60_000]
     }),
 }
+const valkey = {
+    defineCommand: mockValkeyDefineCommand(dependencies.valkeyEval),
+}
 
 vi.mock('@tanstack/react-start/server', function () {
     return {
@@ -100,7 +106,7 @@ vi.mock('@tanstack/react-start/server', function () {
 vi.mock('@/server/Valkey/valkey.service.ts', function () {
     return {
         getValkeyConnection: function () {
-            return { eval: dependencies.valkeyEval }
+            return valkey
         },
     }
 })
@@ -147,10 +153,13 @@ const assetConfig = {
     publicStorageRoot: path.resolve('synthetic-production-storage'),
 }
 
-function createHandler(config: ProductionProxyConfig = proxyConfig) {
+function createHandler(
+    config: ProductionProxyConfig = proxyConfig,
+    assets = assetConfig,
+) {
     return createProductionRequestHandlerService({
         proxyConfig: config,
-        assetConfig,
+        assetConfig: assets,
         realtimePublishSecret: publishSecret,
         isInternalAppReady: dependencies.ready,
     })
@@ -506,22 +515,37 @@ describe('Produktions-Request-Handler', function () {
     })
 
     it('liefert gültige Storage-Ranges mit HTTPS-Headern ohne internen Fetch', async function () {
-        const response = await createHandler()(
-            createProxiedRequest('/images/system/logo.webp?v=1', {
-                headers: { range: 'bytes=0-2' },
-            }),
-            createUpgradeServer(),
+        const directory = await mkdtemp(
+            path.join(tmpdir(), 'production-range-test-'),
         )
-        expect(response?.status).toBe(206)
-        expect(await response?.text()).toBe('syn')
-        expect(response?.headers.get('content-range')).toBe('bytes 0-2/15')
-        expect(response?.headers.get('cache-control')).toBe(
-            'public, max-age=31536000, immutable',
-        )
-        expect(response?.headers.has('strict-transport-security')).toBe(true)
-        expect(dependencies.storageBarrier).toHaveBeenCalledTimes(1)
-        expect(dependencies.file).toHaveBeenCalledTimes(1)
-        expect(dependencies.fetch).not.toHaveBeenCalled()
+        try {
+            const systemImages = path.join(directory, 'images', 'system')
+            await mkdir(systemImages, { recursive: true })
+            await writeFile(path.join(systemImages, 'logo.webp'), assetBytes)
+            const response = await createHandler(proxyConfig, {
+                ...assetConfig,
+                publicStorageRoot: directory,
+            })(
+                createProxiedRequest('/images/system/logo.webp?v=1', {
+                    headers: { range: 'bytes=0-2' },
+                }),
+                createUpgradeServer(),
+            )
+            expect(response?.status).toBe(206)
+            expect(await response?.text()).toBe('syn')
+            expect(response?.headers.get('content-range')).toBe('bytes 0-2/15')
+            expect(response?.headers.get('cache-control')).toBe(
+                'public, max-age=31536000, immutable',
+            )
+            expect(response?.headers.has('strict-transport-security')).toBe(
+                true,
+            )
+            expect(dependencies.storageBarrier).toHaveBeenCalledTimes(1)
+            expect(dependencies.file).not.toHaveBeenCalled()
+            expect(dependencies.fetch).not.toHaveBeenCalled()
+        } finally {
+            await rm(directory, { recursive: true, force: true })
+        }
     })
 
     it('erhält den entfernten Hintergrundpfad erst nach gültiger Zuordnung als 404', async function () {
@@ -535,7 +559,7 @@ describe('Produktions-Request-Handler', function () {
         expectNoDownstreamWork(server)
     })
 
-    it('erhöht ausschließlich für zugelassene Backup-Imports das Idle-Timeout', async function () {
+    it('raises the idle timeout for an admitted backup import', async function () {
         const server = createUpgradeServer()
         const request = createProxiedRequest('/api/admin/backups/import', {
             method: 'POST',
@@ -554,6 +578,26 @@ describe('Produktions-Request-Handler', function () {
         expect(response?.status).toBe(200)
         expect(server.timeout).toHaveBeenCalledTimes(1)
     })
+
+    it.each(['GET', 'HEAD'])(
+        'raises the idle timeout before forwarding a stored backup %s request',
+        async function (method) {
+            const server = createUpgradeServer()
+            const request = createProxiedRequest(
+                '/api/admin/backups/01941f29-7c00-7000-8000-000000000001',
+                { method },
+            )
+            dependencies.fetch.mockImplementation(
+                async function (_input, init) {
+                    expect(server.timeout).toHaveBeenCalledWith(request, 255)
+                    expect(init?.signal).toBe(request.signal)
+                    return new Response(null)
+                },
+            )
+            expect((await createHandler()(request, server))?.status).toBe(200)
+            expect(server.timeout).toHaveBeenCalledTimes(1)
+        },
+    )
 
     it('lässt gewöhnliche Requests beim normalen Timeout-Vertrag', async function () {
         const server = createUpgradeServer()

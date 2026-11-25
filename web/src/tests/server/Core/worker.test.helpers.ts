@@ -14,6 +14,7 @@ export function createWorkerProcessFixture() {
     let input = Buffer.alloc(0)
     let header: WorkerRequest | undefined
     let blocked = false
+    let exitOnEof = true
     let release: (() => void) | undefined
     const requests: { header: WorkerRequest; bytes: Buffer }[] = []
     const written: Buffer[] = []
@@ -44,6 +45,10 @@ export function createWorkerProcessFixture() {
         }),
         stdin: new Writable({
             highWaterMark: 1,
+            final(callback) {
+                callback()
+                if (exitOnEof) queueMicrotask(() => finish())
+            },
             write(chunk: Buffer, _encoding, callback) {
                 written.push(chunk)
                 input = Buffer.concat([input, chunk])
@@ -91,6 +96,9 @@ export function createWorkerProcessFixture() {
         child,
         finish,
         send,
+        stallOnEof() {
+            exitOnEof = false
+        },
         setHandler(handler: typeof fixture.onRequest) {
             fixture.onRequest = handler
         },

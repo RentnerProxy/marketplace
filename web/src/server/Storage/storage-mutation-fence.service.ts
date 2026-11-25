@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { STORAGE_MUTATION_BARRIER_CONFIG as config } from '@/config/storage-mutation-barrier.config.ts'
 import { runCoreCommandService } from '@/server/Core/command.service.ts'
 import { CoreCommandError } from '@/server/Core/error.ts'
+import { coreSuccessSchema } from '@/server/Core/protocol.ts'
 import {
     nativeStorageAbsolutePathSchema,
     nativeStorageIdentitySchema,
@@ -70,7 +71,10 @@ const leaseSchema = z
                 message: 'Invalid storage fence lease.',
             })
     })
-const successSchema = z.object({ ok: z.literal(true) }).strict()
+
+function validateSuccessResult(value: unknown) {
+    return coreSuccessSchema.parse(value)
+}
 
 function nativeLease(lease: StorageMutationFenceLease) {
     return {
@@ -133,7 +137,8 @@ function failure(error: unknown, allowBusy = false): never {
         allowBusy &&
         error instanceof CoreCommandError &&
         !error.isUncertain &&
-        error.code === 'STORAGE_MUTATION_ADMISSION_BUSY'
+        (error.code === 'STORAGE_MUTATION_ADMISSION_BUSY' ||
+            error.code === 'CORE_BUSY')
     )
         throw new StorageMutationAdmissionBusyError()
     throw new StorageMutationFenceUnavailableError()
@@ -196,18 +201,28 @@ export async function releaseStorageMutationFenceService(
     lease: StorageMutationFenceLease,
 ): Promise<void> {
     try {
-        await runCoreCommandService(
-            'storage',
-            {
-                operation: 'fenceRelease',
-                lease: leaseSchema.parse(nativeLease(lease)),
-            },
-            {
-                validateResult(value) {
-                    return successSchema.parse(value)
-                },
-            },
-        )
+        const request = {
+            operation: 'fenceRelease',
+            lease: leaseSchema.parse(nativeLease(lease)),
+        }
+        try {
+            await runCoreCommandService('storage', request, {
+                validateResult: validateSuccessResult,
+            })
+        } catch (error) {
+            if (
+                !(error instanceof CoreCommandError) ||
+                error.isUncertain ||
+                error.code !== 'CORE_BUSY'
+            )
+                throw error
+            // CORE_BUSY is returned before admission. Release remains possible
+            // even when unrelated work has filled the storage worker queue.
+            await runCoreCommandService('storage', request, {
+                validateResult: validateSuccessResult,
+                environment: {},
+            })
+        }
     } catch (error) {
         failure(error)
     }
@@ -224,9 +239,7 @@ export async function waitForStorageMutationSharedDrainService(
             'storage',
             { operation: 'fenceDrain', lease: native },
             {
-                validateResult(value) {
-                    return successSchema.parse(value)
-                },
+                validateResult: validateSuccessResult,
             },
         )
     } catch (error) {

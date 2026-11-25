@@ -26,6 +26,34 @@ async function attempt(name: string, operation: () => Promise<unknown>) {
     return false
 }
 
+async function closeValkey() {
+    const client = globalThis.appValkeyConnection
+    if (!client) return
+    await closeOnce(client, async function () {
+        if (
+            client.status === 'ready' &&
+            (await attempt('valkey_connection_quit', () => client.quit()))
+        ) {
+            return
+        }
+        try {
+            client.disconnect()
+        } catch {
+            logWarn('runtime.connections.valkey_connection_disconnect_failed')
+            throw new Error('Failed to disconnect Valkey.')
+        }
+    })
+}
+
+async function closeDatabase() {
+    const client = globalThis.appDatabaseConnection
+    if (!client) return
+    await closeOnce(client, async function () {
+        if (await attempt('database_close', () => client.close())) return
+        throw new Error('Failed to close the database connection.')
+    })
+}
+
 /** Call only after HTTP requests, queue processors and Core writes have drained. */
 export async function closeAppConnectionsService(): Promise<void> {
     const failures: unknown[] = []
@@ -54,31 +82,10 @@ export async function closeAppConnectionsService(): Promise<void> {
         if (result.status === 'rejected') failures.push(result.reason)
     }
 
-    const clients = [
-        ['valkey_connection', globalThis.appValkeyConnection],
-        ['valkey_publisher', globalThis.appValkeyPublisher],
-    ] as const
-    const clientResults = await Promise.allSettled(
-        clients.map(async function ([name, client]) {
-            if (!client) return
-            await closeOnce(client, async function () {
-                if (
-                    client.status === 'ready' &&
-                    (await attempt(`${name}_quit`, () => client.quit()))
-                ) {
-                    return
-                }
-                try {
-                    client.disconnect()
-                } catch {
-                    logWarn(`runtime.connections.${name}_disconnect_failed`)
-                    throw new Error(
-                        `Verbindung konnte nicht beendet werden: ${name}`,
-                    )
-                }
-            })
-        }),
-    )
+    const clientResults = await Promise.allSettled([
+        closeValkey(),
+        closeDatabase(),
+    ])
     for (const result of clientResults) {
         if (result.status === 'rejected') failures.push(result.reason)
     }

@@ -27,7 +27,8 @@ import {
     SYSTEM_SETTINGS_TOPIC,
     getUserTopic,
 } from '@/lib/Realtime/realtimeProtocol.ts'
-import { getValkeyPublisher } from '@/server/Valkey/valkey.service.ts'
+import { DEV_REALTIME_PUBLISH_SECRET } from './environment.service.ts'
+import { getValkeyConnection } from '@/server/Valkey/valkey.service.ts'
 import { REALTIME_VALKEY_CHANNEL } from '@/websockets/Server/realtimeValkey.ts'
 import { logError } from '@/server/Logging/logger.ts'
 import type { AccountType } from '@/lib/Auth/Types/account.types.ts'
@@ -43,8 +44,8 @@ async function publishRealtimeEventViaBridgeService(
             ? undefined
             : `http://127.0.0.1:${process.env.REALTIME_WS_PORT ?? 3001}${REALTIME_PUBLISH_PATH}`)
     const publishSecret =
-        process.env.REALTIME_PUBLISH_SECRET ??
-        (isProduction ? undefined : 'tanstack-dummy-dev-realtime')
+        process.env.REALTIME_PUBLISH_SECRET?.trim() ||
+        (isProduction ? undefined : DEV_REALTIME_PUBLISH_SECRET)
 
     if (!publishUrl || !publishSecret) {
         return false
@@ -73,7 +74,7 @@ async function publishRealtimeEventService(
     event: RealtimeEvent,
 ) {
     if (process.env.VALKEY_URL) {
-        await getValkeyPublisher().publish(
+        await getValkeyConnection().publish(
             REALTIME_VALKEY_CHANNEL,
             JSON.stringify({ topic, event }),
         )

@@ -306,11 +306,20 @@ fn production_commands_drop_privileges_and_scrub_database_and_cache_environments
             .map(|(key, value)| (key.to_str().unwrap(), value.unwrap().to_str().unwrap()))
             .collect();
         if role.consumer() {
-            assert_eq!(args[0], "bun:bun");
-            assert!(args.contains(&"--no-env-file"));
+            let script = if role == Role::Webserver {
+                "runtime/productionEntrypoint.js"
+            } else {
+                "runtime/productionWorkerEntrypoint.js"
+            };
+            assert_eq!(args, ["bun:bun", "bun", "--no-env-file", script]);
             assert_eq!(child_env["POSTGRES_PASSWORD"], "synthetic-password");
         } else if role == Role::Postgresql {
             assert_eq!(args[0], "postgres:postgres");
+            assert!(
+                args.windows(2)
+                    .any(|args| args == ["-c", "idle_in_transaction_session_timeout=60000"])
+            );
+            assert!(!args.iter().any(|arg| arg.starts_with("statement_timeout=")));
             assert_eq!(child_env.len(), 2);
             assert!(!child_env.contains_key("POSTGRES_PASSWORD"));
         } else {
@@ -387,16 +396,12 @@ fn dependency_readiness_requires_success_and_the_exact_authenticated_probe_resul
         "valkey-cli",
         "test \"$VALKEYCLI_AUTH\" = synthetic-password || exit 1; printf PONG",
     );
-    executable("su-exec", "test \"$1\" = bun:bun || exit 1; exit 0");
     assert!(probe(Role::Postgresql, &env));
     assert!(probe(Role::Valkey, &env));
-    assert!(probe(Role::Worker, &env));
     executable("psql", "printf wrong");
     assert!(!probe(Role::Postgresql, &env));
     executable("valkey-cli", "exit 1");
     assert!(!probe(Role::Valkey, &env));
-    executable("su-exec", "exit 1");
-    assert!(!probe(Role::Worker, &env));
 }
 
 #[test]

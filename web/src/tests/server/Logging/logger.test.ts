@@ -68,6 +68,15 @@ describe('strukturierter Logger', () => {
         )
     })
 
+    it('retains the numeric count of closed realtime connections', () => {
+        logError(
+            'realtime.session_revalidation_failed',
+            new Error('Synthetic failure'),
+            { closedConnections: 3 },
+        )
+        expect(readEntry(stderrSpy)).toMatchObject({ closedConnections: 3 })
+    })
+
     it.each(['development', 'production'])(
         'verwirft SQL, Parameter, SMTP-Inhalte und Stacks in %s',
         (environment) => {

@@ -1,7 +1,12 @@
+use aead_gcm_stream::AesGcm;
+use aes::Aes256;
 use base64::Engine;
+use hkdf::Hkdf;
 use marketplace_core::{archive, protocol::OperationContext};
 use serde_json::{Value, json};
+use sha2::Sha256;
 use std::fs;
+use std::path::{Path, PathBuf};
 
 fn key() -> String {
     base64::engine::general_purpose::STANDARD.encode([7; 32])
@@ -10,7 +15,7 @@ fn call(mut request: Value) -> Result<Value, marketplace_core::protocol::CoreErr
     request["key"] = json!(key());
     archive::execute(request, &OperationContext::default())
 }
-fn fixture(root: &std::path::Path, storage: bool) -> std::path::PathBuf {
+fn fixture(root: &Path, storage: bool) -> PathBuf {
     let database = root.join("database.dump");
     fs::write(&database, b"PGDMP\0binary database content").unwrap();
     let archive = root.join("backup.enc");
@@ -25,6 +30,24 @@ fn fixture(root: &std::path::Path, storage: bool) -> std::path::PathBuf {
     };
     call(json!({"operation":"create","databaseDumpPath":database,"destinationPath":archive,"storageRoot":storage_root,"manifest":manifest,"mtime":1700000000})).unwrap();
     archive
+}
+fn create_with_storage(
+    root: &Path,
+    storage: &Path,
+    private_entries: Value,
+) -> Result<PathBuf, marketplace_core::protocol::CoreError> {
+    let database = root.join("collection-db");
+    fs::write(&database, b"PGDMP").unwrap();
+    let archive = root.join("collected.enc");
+    call(json!({
+        "operation": "create",
+        "databaseDumpPath": database,
+        "destinationPath": archive,
+        "storageRoot": storage,
+        "privateEntries": private_entries,
+        "manifest": {"version": 3,"createdAt": "2026-11-10T09:00:00Z","appVersion":"test","includesStorage":true,"privateBackgroundsVersion":1},
+    }))?;
+    Ok(archive)
 }
 #[test]
 fn archive_roundtrip_authenticates_and_extracts_unicode_pax() {
@@ -82,49 +105,92 @@ fn tampering_wrong_key_and_checksums_fail_without_retaining_plaintext() {
     );
     assert!(wrong.is_err());
 }
+
 #[test]
-fn portable_paths_reject_traversal_windows_devices_and_ambiguous_segments() {
-    for path in [
-        "../database.dump",
-        "/storage/file",
-        "storage/../file",
-        "storage/./file",
-        "storage//file",
-        "storage/CON.txt",
-        "storage/com¹.txt",
-        "storage/LPT9",
-        "storage/file.",
-        "storage/file ",
-        "storage/a:b",
-        "storage/a\\b",
-        "storage/\u{fffd}",
-        "storage/a\0b",
-        "storage/a?b",
-        "unexpected",
-    ] {
-        assert!(
-            call(json!({"operation":"validateEntry","path":path,"size":0,"kind":"file"})).is_err(),
-            "accepted {path:?}"
-        );
-    }
-    let normalized=call(json!({"operation":"validateEntry","path":"storage/O\u{308}lbild.txt","size":0,"kind":"file"})).unwrap();
-    assert_eq!(normalized["path"], "storage/Ölbild.txt");
-    assert!(
-        call(json!({"operation":"validateEntry","path":"storage","size":1,"kind":"directory"}))
-            .is_err()
-    );
+fn validation_streams_without_scratch_space_and_authenticates_the_final_tag() {
+    let temp = tempfile::tempdir().unwrap();
+    let dump = temp.path().join("database.dump");
+    fs::write(&dump, vec![0x31; archive::CHUNK * 5 + 7]).unwrap();
+    let source = temp.path().join("backup.enc");
+    let manifest = json!({"version":3,"createdAt":"2026-11-10T09:00:00.000Z","appVersion":"test","includesStorage":false});
+    let created = call(json!({"operation":"create","databaseDumpPath":dump,"destinationPath":source,"manifest":manifest})).unwrap();
+    let missing_scratch = temp.path().join("missing-scratch");
+    let request = json!({
+        "operation":"validate",
+        "sourcePath":source,
+        "temporaryDirectory":missing_scratch,
+        "capacityDirectory":missing_scratch,
+        "maximumWriteBytes":0,
+        "expectedChecksumSha256":created["checksumSha256"],
+    });
+    let result = call(request.clone()).unwrap();
+    assert_eq!(result["manifest"], manifest);
+    assert_eq!(result["archiveSize"], created["archiveSize"]);
+    assert_eq!(result["checksumSha256"], created["checksumSha256"]);
+    assert!(!missing_scratch.exists());
+    assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 2);
+
+    let mut bytes = fs::read(&source).unwrap();
+    *bytes.last_mut().unwrap() ^= 1;
+    fs::write(&source, bytes).unwrap();
+    let error = call(request).unwrap_err();
+    assert!(error.message.contains("authentifiziert"));
+    let destination = temp.path().join("extracted");
+    let error = call(json!({"operation":"extract","sourcePath":source,"temporaryDirectory":temp.path(),"destinationDirectory":destination})).unwrap_err();
+    assert!(error.message.contains("authentifiziert"));
+    assert!(!destination.exists());
+    assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 2);
 }
-fn plaintext(root: &std::path::Path, archive: &std::path::Path) -> Vec<u8> {
-    let path = root.join("plain.tar");
-    call(json!({"operation":"decrypt","sourcePath":archive,"destinationPath":path})).unwrap();
-    let bytes = fs::read(&path).unwrap();
-    fs::remove_file(path).unwrap();
-    bytes
+
+#[test]
+fn validation_exposes_tar_diagnostics_only_after_envelope_authentication() {
+    let temp = tempfile::tempdir().unwrap();
+    let source = temp.path().join("invalid-tar.enc");
+    let mut malformed = vec![b'X'; archive::CHUNK * 2];
+    checksum(&mut malformed[..512]);
+    let mut envelope = seal_fixture(&malformed);
+    fs::write(&source, &envelope).unwrap();
+    let request = json!({"operation":"validate","sourcePath":source});
+    let error = call(request.clone()).unwrap_err();
+    assert!(error.message.contains("TAR-Header"));
+
+    *envelope.last_mut().unwrap() ^= 1;
+    fs::write(&source, envelope).unwrap();
+    let error = call(request).unwrap_err();
+    assert!(error.message.contains("authentifiziert"));
 }
-fn check_tar(root: &std::path::Path, bytes: &[u8]) -> bool {
-    let path = root.join("mutated.tar");
-    fs::write(&path, bytes).unwrap();
-    call(json!({"operation":"processTar","sourcePath":path})).is_ok()
+fn fixture_cipher(header: &[u8]) -> AesGcm<Aes256> {
+    let mut key = [0; 32];
+    Hkdf::<Sha256>::new(Some(&header[10..42]), &[7; 32])
+        .expand(b"tanstackdummy/backup/envelope-v1/aes-256-gcm", &mut key)
+        .unwrap();
+    let mut cipher = AesGcm::new((&key).into(), &header[42..]);
+    cipher.set_aad(header);
+    cipher
+}
+fn plaintext(archive: &Path) -> Vec<u8> {
+    let envelope = fs::read(archive).unwrap();
+    let mut cipher = fixture_cipher(&envelope[..54]);
+    let mut plaintext = envelope[54..envelope.len() - 16].to_vec();
+    cipher.decrypt(&mut plaintext);
+    assert_eq!(cipher.finish().as_slice(), &envelope[envelope.len() - 16..]);
+    plaintext
+}
+fn seal_fixture(bytes: &[u8]) -> Vec<u8> {
+    let mut header = [0; 54];
+    header[..10].copy_from_slice(b"TDBAKENC\x01\x01");
+    getrandom::fill(&mut header[10..]).unwrap();
+    let mut cipher = fixture_cipher(&header);
+    let mut archive = header.to_vec();
+    archive.extend_from_slice(bytes);
+    cipher.encrypt(&mut archive[54..]);
+    archive.extend_from_slice(&cipher.finish());
+    archive
+}
+fn check_tar(root: &Path, bytes: &[u8]) -> bool {
+    let path = root.join("mutated.enc");
+    fs::write(&path, seal_fixture(bytes)).unwrap();
+    call(json!({"operation":"validate","sourcePath":path})).is_ok()
 }
 fn checksum(header: &mut [u8]) {
     header[148..156].fill(b' ');
@@ -135,7 +201,7 @@ fn checksum(header: &mut [u8]) {
 fn strict_physical_tar_rejects_unsafe_types_padding_headers_and_trailing_data() {
     let temp = tempfile::tempdir().unwrap();
     let archive = fixture(temp.path(), false);
-    let bytes = plaintext(temp.path(), &archive);
+    let bytes = plaintext(&archive);
     assert!(check_tar(temp.path(), &bytes));
     let mut corrupt = bytes.clone();
     corrupt[0] ^= 1;
@@ -269,20 +335,18 @@ fn private_backgrounds_override_public_files_and_create_missing_parents() {
     let entry = &entries[0];
     assert_eq!(entry["size"], 11);
     assert!(entry["identity"]["ino"].is_string());
-    let request = json!({"operation":"collect","storageRoot":public,"privateEntries":[{"path":"storage/users/alice/background.avif","type":"file","size":11,"absolutePath":entry["absolutePath"]},{"path":"storage/users/bob/background.avif","type":"file","size":11,"absolutePath":entry["absolutePath"]}]});
-    let sources = call(request).unwrap();
-    let sources = sources.as_array().unwrap();
-    assert!(
-        sources
-            .iter()
-            .any(|s| s["path"] == "storage/users/bob" && s["type"] == "directory")
-    );
-    assert!(
-        sources
-            .iter()
-            .any(|s| s["path"] == "storage/users/alice/background.avif"
-                && s["absolutePath"] == entry["absolutePath"])
-    );
+    let archive = create_with_storage(temp.path(), &public, json!([
+        {"path":"storage/users/alice/background.avif","type":"file","size":11,"absolutePath":entry["absolutePath"]},
+        {"path":"storage/users/bob/background.avif","type":"file","size":11,"absolutePath":entry["absolutePath"]},
+    ])).unwrap();
+    let extracted = temp.path().join("extracted");
+    call(json!({"operation":"extract","sourcePath":archive,"temporaryDirectory":temp.path(),"destinationDirectory":extracted})).unwrap();
+    for user in ["alice", "bob"] {
+        assert_eq!(
+            fs::read(extracted.join(format!("storage/users/{user}/background.avif"))).unwrap(),
+            b"new private"
+        );
+    }
     let restored = temp.path().join("restore");
     fs::create_dir_all(restored.join("storage/users/alice")).unwrap();
     fs::write(
@@ -299,6 +363,17 @@ fn private_backgrounds_override_public_files_and_create_missing_parents() {
         fs::read(restored.join("private-backgrounds/backgrounds/alice/background.avif")).unwrap(),
         b"restored"
     );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        for parent in ["backgrounds", "backgrounds/alice"] {
+            let directory = restored.join("private-backgrounds").join(parent);
+            assert_eq!(
+                fs::metadata(directory).unwrap().permissions().mode() & 0o7777,
+                0o700
+            );
+        }
+    }
     assert!(
         !restored
             .join("storage/users/alice/background.avif")
@@ -346,7 +421,10 @@ fn admission_reserves_persistently_releases_and_rejects_expired_or_corrupt_state
     call(json!({"operation":"admissionReserve","directory":directory,"token":result["token"],"byteLength":1024})).unwrap();
     let mut state: Value =
         serde_json::from_slice(&fs::read(directory.join("admission.json")).unwrap()).unwrap();
+    assert_eq!(state["maximum"], 1024);
     assert_eq!(state["written"], 1024);
+    let over_budget = call(json!({"operation":"admissionReserve","directory":directory,"token":result["token"],"byteLength":1})).unwrap_err();
+    assert_eq!(over_budget.code, "ARCHIVE_BUDGET_EXCEEDED");
     state["deadline"] = json!(0);
     fs::write(
         directory.join("admission.json"),
@@ -370,20 +448,23 @@ fn admission_reserves_persistently_releases_and_rejects_expired_or_corrupt_state
 }
 
 #[test]
-fn file_encryption_and_copy_are_bounded_exclusive_and_checksum_checked() {
+fn restore_admission_budgets_the_staged_archive_tar_and_extracted_payload() {
     let temp = tempfile::tempdir().unwrap();
-    let source = temp.path().join("plain");
-    let encrypted = temp.path().join("encrypted");
-    let restored = temp.path().join("restored");
+    let directory = temp.path().join("lease");
+    let result = call(json!({"operation":"admissionAcquire","directory":directory,"maximumUploadBytes":1024,"forRestore":true})).unwrap();
+    let state: Value =
+        serde_json::from_slice(&fs::read(directory.join("admission.json")).unwrap()).unwrap();
+    assert_eq!(state["maximum"], 1024 + 2 * (1024 - 70));
+    call(json!({"operation":"admissionRelease","directory":directory,"token":result["token"]}))
+        .unwrap();
+}
+
+#[test]
+fn archive_copy_and_extract_are_bounded_exclusive_and_checksum_checked() {
+    let temp = tempfile::tempdir().unwrap();
+    let encrypted = fixture(temp.path(), false);
     let copy = temp.path().join("copy");
-    let content = vec![43; 200_000];
-    fs::write(&source, &content).unwrap();
-    let metadata =
-        call(json!({"operation":"encrypt","sourcePath":source,"destinationPath":encrypted}))
-            .unwrap();
-    let decrypted=call(json!({"operation":"decrypt","sourcePath":encrypted,"destinationPath":restored,"expectedChecksumSha256":metadata["checksumSha256"]})).unwrap();
-    assert_eq!(decrypted, metadata);
-    assert_eq!(fs::read(&restored).unwrap(), content);
+    let metadata = call(json!({"operation":"authenticate","sourcePath":encrypted})).unwrap();
     let copied=call(json!({"operation":"copy","sourcePath":encrypted,"destinationPath":copy,"expectedChecksumSha256":metadata["checksumSha256"]})).unwrap();
     assert_eq!(copied["archiveSize"], metadata["archiveSize"]);
     assert_eq!(fs::read(&copy).unwrap(), fs::read(&encrypted).unwrap());
@@ -400,9 +481,9 @@ fn file_encryption_and_copy_are_bounded_exclusive_and_checksum_checked() {
     fs::write(&short, b"short").unwrap();
     assert!(call(json!({"operation":"authenticate","sourcePath":short})).is_err());
     let limited = temp.path().join("limited");
-    assert!(call(json!({"operation":"decrypt","sourcePath":encrypted,"destinationPath":limited,"maximumWriteBytes":1})).is_err());
+    let error=call(json!({"operation":"extract","sourcePath":encrypted,"temporaryDirectory":temp.path(),"destinationDirectory":limited,"maximumWriteBytes":1})).unwrap_err();
+    assert_eq!(error.code, "ARCHIVE_BUDGET_EXCEEDED");
     assert!(!limited.exists());
-    assert!(call(json!({"operation":"unknown"})).is_err());
     assert!(
         archive::execute(
             json!({"operation":"authenticate","sourcePath":encrypted,"key":"invalid"}),
@@ -443,7 +524,7 @@ fn body_entry(bytes: &[u8], name: &str) -> Vec<u8> {
 fn tar_rejects_metadata_manipulation_path_collisions_and_unsupported_pax() {
     let temp = tempfile::tempdir().unwrap();
     let archive = fixture(temp.path(), false);
-    let original = plaintext(temp.path(), &archive);
+    let original = plaintext(&archive);
     let manifest = body_entry(&original, "manifest.json");
     let database = body_entry(&original, "database.dump");
     let integrity = body_entry(&original, "integrity.json");
@@ -571,11 +652,25 @@ fn creation_validates_manifests_source_types_collisions_and_size_before_streamin
     #[cfg(unix)]
     {
         fs::write(storage.join("a"), b"second").unwrap();
-        assert!(call(json!({"operation":"collect","storageRoot":storage})).is_err());
+        assert!(create_with_storage(temp.path(), &storage, json!([])).is_err());
         fs::remove_file(storage.join("a")).unwrap();
     }
-    assert!(call(json!({"operation":"collect","storageRoot":storage,"privateEntries":[{"path":"storage/A","type":"directory","size":0}]})).is_err());
-    assert!(call(json!({"operation":"collect","storageRoot":storage,"privateEntries":[{"path":"storage/A/child","type":"file","size":5,"absolutePath":dump}]})).is_err());
+    assert!(
+        create_with_storage(
+            temp.path(),
+            &storage,
+            json!([{"path":"storage/A","type":"directory","size":0}])
+        )
+        .is_err()
+    );
+    assert!(
+        create_with_storage(
+            temp.path(),
+            &storage,
+            json!([{"path":"storage/A/child","type":"file","size":5,"absolutePath":dump}])
+        )
+        .is_err()
+    );
     fs::write(&dump, b"").unwrap();
     assert!(call(json!({"operation":"create","databaseDumpPath":dump,"destinationPath":output,"manifest":valid,"storageRoot":storage})).is_err());
     #[cfg(unix)]
@@ -589,10 +684,9 @@ fn creation_validates_manifests_source_types_collisions_and_size_before_streamin
     let missing_capacity = temp.path().join("missing-capacity");
     let plain = temp.path().join("plain");
     fs::write(&plain, b"bounded fixture").unwrap();
-    let encrypted = temp.path().join("encrypted");
-    call(json!({"operation":"encrypt","sourcePath":plain,"destinationPath":encrypted})).unwrap();
+    let encrypted = fixture(temp.path(), false);
     for capacity in [missing_capacity, plain] {
-        let failure=call(json!({"operation":"decrypt","sourcePath":encrypted,"destinationPath":output,"capacityDirectory":capacity})).unwrap_err();
+        let failure=call(json!({"operation":"extract","sourcePath":encrypted,"temporaryDirectory":temp.path(),"destinationDirectory":output,"capacityDirectory":capacity})).unwrap_err();
         assert_eq!(failure.code, "ARCHIVE_CAPACITY_UNAVAILABLE");
     }
     assert!(!output.exists());
@@ -603,25 +697,22 @@ fn creation_validates_manifests_source_types_collisions_and_size_before_streamin
 fn refuses_symlinks_and_hardlinks_in_sources_storage_and_backgrounds() {
     use std::os::unix::fs::symlink;
     let temp = tempfile::tempdir().unwrap();
-    let original = temp.path().join("original");
-    fs::write(&original, b"original file").unwrap();
+    let original = fixture(temp.path(), false);
     let link = temp.path().join("link");
     symlink(&original, &link).unwrap();
-    assert!(call(json!({"operation":"encrypt","sourcePath":link,"destinationPath":temp.path().join("output")})).is_err());
+    assert!(call(json!({"operation":"authenticate","sourcePath":link})).is_err());
     let hard = temp.path().join("hard");
     fs::hard_link(&original, &hard).unwrap();
-    assert!(call(json!({"operation":"encrypt","sourcePath":original,"destinationPath":temp.path().join("output")})).is_err());
+    assert!(call(json!({"operation":"authenticate","sourcePath":original})).is_err());
     fs::remove_file(hard).unwrap();
-    let encrypted = temp.path().join("valid-envelope");
-    call(json!({"operation":"encrypt","sourcePath":original,"destinationPath":encrypted})).unwrap();
     let capacity_link = temp.path().join("capacity-link");
     symlink(temp.path(), &capacity_link).unwrap();
-    let failure=call(json!({"operation":"decrypt","sourcePath":encrypted,"destinationPath":temp.path().join("decrypted"),"capacityDirectory":capacity_link})).unwrap_err();
+    let failure=call(json!({"operation":"extract","sourcePath":original,"temporaryDirectory":temp.path(),"destinationDirectory":temp.path().join("decrypted"),"capacityDirectory":capacity_link})).unwrap_err();
     assert_eq!(failure.code, "ARCHIVE_CAPACITY_UNAVAILABLE");
     let storage = temp.path().join("storage");
     fs::create_dir(&storage).unwrap();
     symlink(&original, storage.join("link")).unwrap();
-    assert!(call(json!({"operation":"collect","storageRoot":storage})).is_err());
+    assert!(create_with_storage(temp.path(), &storage, json!([])).is_err());
     let background = temp.path().join("background");
     fs::create_dir_all(background.join("users")).unwrap();
     symlink(&storage, background.join("users/alice")).unwrap();
@@ -633,7 +724,7 @@ fn refuses_symlinks_and_hardlinks_in_sources_storage_and_backgrounds() {
 fn pax_uses_the_final_validated_path_and_accepts_positive_base256_sizes() {
     let temp = tempfile::tempdir().unwrap();
     let archive = fixture(temp.path(), false);
-    let original = plaintext(temp.path(), &archive);
+    let original = plaintext(&archive);
     let manifest = body_entry(&original, "manifest.json");
     let database = body_entry(&original, "database.dump");
     let integrity = body_entry(&original, "integrity.json");
@@ -676,21 +767,16 @@ fn pax_uses_the_final_validated_path_and_accepts_positive_base256_sizes() {
 }
 
 #[test]
-fn envelopes_handle_empty_partial_and_multichunk_messages_without_size_drift() {
-    let temp = tempfile::tempdir().unwrap();
-    for length in [0, 1, 15, 16, 17, 65535, 65536, 65537, 200003] {
-        let source = temp.path().join(format!("source-{length}"));
-        let destination = temp.path().join(format!("envelope-{length}"));
-        let output = temp.path().join(format!("restored-{length}"));
-        let bytes: Vec<_> = (0..length).map(|index| (index % 251) as u8).collect();
-        fs::write(&source, &bytes).unwrap();
-        let encrypted =
-            call(json!({"operation":"encrypt","sourcePath":source,"destinationPath":destination}))
-                .unwrap();
-        let decrypted=call(json!({"operation":"decrypt","sourcePath":destination,"destinationPath":output,"maximumWriteBytes":length,"capacityDirectory":temp.path()})).unwrap();
-        assert_eq!(encrypted, decrypted);
-        assert_eq!(encrypted["archiveSize"], length + 70);
-        assert_eq!(fs::read(output).unwrap(), bytes);
+fn validates_keys_and_rejects_retired_operations() {
+    for operation in [
+        "encrypt",
+        "decrypt",
+        "collect",
+        "validateEntry",
+        "processTar",
+    ] {
+        let error = call(json!({"operation":operation})).unwrap_err();
+        assert_eq!(error.code, "CORE_UNKNOWN_OPERATION");
     }
     assert!(call(json!({"operation":"validateKey"})).is_ok());
     assert!(archive::execute(json!({"operation":"validateKey","key":base64::engine::general_purpose::STANDARD.encode([0;31])}),&OperationContext::default()).is_err());
@@ -778,19 +864,15 @@ fn private_overlay_normalizes_paths_and_rejects_duplicate_metadata() {
     fs::write(&private, b"private").unwrap();
     let overlay =
         json!({"path":"storage/O\u{308}lbild.txt","size":7,"type":"file","absolutePath":private});
-    let entries =
-        call(json!({"operation":"collect","storageRoot":storage,"privateEntries":[overlay]}))
-            .unwrap();
-    let entries = entries.as_array().unwrap();
-    assert_eq!(entries.len(), 2);
-    assert_eq!(entries[1]["path"], "storage/Ölbild.txt");
-    assert_eq!(entries[1]["size"], 7);
-    assert!(
-        call(
-            json!({"operation":"collect","storageRoot":storage,"privateEntries":[overlay,overlay]})
-        )
-        .is_err()
+    let archive = create_with_storage(temp.path(), &storage, json!([overlay])).unwrap();
+    let extracted = temp.path().join("extracted");
+    call(json!({"operation":"extract","sourcePath":archive,"temporaryDirectory":temp.path(),"destinationDirectory":extracted})).unwrap();
+    assert_eq!(
+        fs::read(extracted.join("storage/Ölbild.txt")).unwrap(),
+        b"private"
     );
+    fs::remove_file(archive).unwrap();
+    assert!(create_with_storage(temp.path(), &storage, json!([overlay, overlay])).is_err());
 }
 
 #[test]
@@ -818,15 +900,17 @@ fn archive_cli_runs_real_file_operations_and_returns_bounded_typed_errors() {
         (output.status.success(), messages)
     }
     let temp = tempfile::tempdir().unwrap();
-    let source = temp.path().join("plain");
+    let source = temp.path().join("database.dump");
     let destination = temp.path().join("encrypted");
     fs::write(&source, b"CLI source with a partial final AES block").unwrap();
-    let (success, messages) = invoke(
-        json!({"operation":"encrypt","key":key(),"sourcePath":source,"destinationPath":destination}),
-    );
+    let (success, messages) = invoke(json!({
+        "operation":"create", "key":key(), "databaseDumpPath":source, "destinationPath":destination,
+        "manifest":{"version":3,"createdAt":"2026-11-10T09:00:00Z","appVersion":"test","includesStorage":false},
+    }));
     assert!(success);
     assert_eq!(messages.last().unwrap()["type"], "result");
     let checksum = messages.last().unwrap()["result"]["checksumSha256"].clone();
+    let plaintext_size = messages.last().unwrap()["result"]["plaintextSize"].clone();
     let (success, messages) = invoke(
         json!({"operation":"authenticate","key":key(),"sourcePath":destination,"expectedChecksumSha256":checksum}),
     );
@@ -834,15 +918,11 @@ fn archive_cli_runs_real_file_operations_and_returns_bounded_typed_errors() {
     assert!(messages.iter().any(|message| message["type"] == "progress"));
     assert_eq!(
         messages.last().unwrap()["result"]["plaintextSize"],
-        b"CLI source with a partial final AES block".len()
+        plaintext_size
     );
     let (success, messages) = invoke(
         json!({"operation":"authenticate","key":key(),"sourcePath":destination,"expectedChecksumSha256":"0".repeat(64)}),
     );
-    assert!(!success);
-    assert_eq!(messages.last().unwrap()["error"]["code"], "ARCHIVE_INVALID");
-    let (success, messages) =
-        invoke(json!({"operation":"validateEntry","path":"storage/file","kind":"file","size":-1}));
     assert!(!success);
     assert_eq!(messages.last().unwrap()["error"]["code"], "ARCHIVE_INVALID");
     let (success, messages) = invoke(json!({}));
@@ -871,7 +951,7 @@ fn cli_cancellation_preserves_quarantined_plaintext_when_cleanup_cannot_be_confi
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
-    let request = json!({"operation":"validate","key":key(),"sourcePath":source,"temporaryDirectory":staging});
+    let request = json!({"operation":"extract","key":key(),"sourcePath":source,"temporaryDirectory":staging,"destinationDirectory":temp.path().join("extracted")});
     child
         .stdin
         .take()
@@ -919,7 +999,6 @@ fn malformed_requests_manifest_versions_and_background_metadata_fail_closed() {
     for request in [
         json!({}),
         json!({"operation":""}),
-        json!({"operation":"validateEntry","path":"storage/a","size":-1,"kind":"file"}),
         json!({"operation":"create"}),
         json!({"operation":"backgroundAssertRoots","storageRoot":public,"privateStorageRoot":private}),
         json!({"operation":"backgroundAssertRoots","storageRoot":public,"privateStorageRoot":private,"protectedPaths":[42]}),
@@ -934,12 +1013,19 @@ fn malformed_requests_manifest_versions_and_background_metadata_fail_closed() {
     for value in [
         "2026-11-10t09:00:00Z",
         "2026-11-10T09:00:60Z",
+        "2026-11-10T29:00:00Z",
+        "2026-11-10T09:00:00.Z",
         "2026-02-30T09:00:00Z",
         "2026-11-10T09:00:00+00:00",
     ] {
         let manifest =
             json!({"version":3,"createdAt":value,"appVersion":"test","includesStorage":false});
-        assert!(call(json!({"operation":"create","manifest":manifest})).is_err());
+        let error = call(json!({"operation":"create","manifest":manifest})).unwrap_err();
+        assert_eq!(error.code, "ARCHIVE_INVALID");
+        assert_eq!(
+            error.message,
+            "Das Backup-Manifest ist ungültig oder nicht unterstützt."
+        );
     }
 }
 
@@ -955,7 +1041,7 @@ fn rejects_non_utf8_public_and_private_user_paths_without_reading_their_contents
         b"private bytes",
     )
     .unwrap();
-    assert!(call(json!({"operation":"collect","storageRoot":public})).is_err());
+    assert!(create_with_storage(temp.path(), &public, json!([])).is_err());
     let root = temp.path().join("private");
     let users = root.join("backgrounds");
     let invalid = users.join(std::ffi::OsString::from_vec(vec![255]));

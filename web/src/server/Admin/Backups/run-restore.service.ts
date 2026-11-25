@@ -1,8 +1,8 @@
-import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-job.types.ts'
+import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-worker.types.ts'
 import { RestoreRollbackError } from './archive-restore.errors.ts'
 import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
-import type { BackupRunRecord } from './Types/run-restore.types.ts'
+import type { BackupRunRecord } from './Types/backup-run.types.ts'
 import { assertExpectedChecksum } from './archive-validation.service.ts'
 import { createRestoreJournalService } from './restore-journal.service.ts'
 import type { RestoreJournal } from './Types/restore-journal.types.ts'
@@ -32,7 +32,7 @@ import {
     getOrCreateBackupSettings,
     serializeBackupSettings,
 } from './settings.service.ts'
-import { BACKUP_FAILURE_MESSAGE } from './error.service.ts'
+import { BACKUP_FAILURE_MESSAGE } from './backup.errors.ts'
 import {
     getBackupRunById,
     markRunAsQueueFailed,
@@ -48,7 +48,7 @@ import { withExclusiveStorageMutationBarrier } from '@/server/Storage/storage-mu
 import type {
     BackupJobExecutionOptions,
     BackupProgressReporter,
-} from './backup-service.types.ts'
+} from './Types/backup-service.types.ts'
 import {
     consumeRestoreInitiatorSessionBindingService,
     deleteRestoreInitiatorSessionBindingBestEffortService,

@@ -121,7 +121,7 @@ fn termination_exits_idle_and_partial_payload_workers_without_a_terminal_acknowl
 }
 
 #[test]
-fn storage_reuses_live_pipe_for_raw_newlines_empty_and_base64_writes() {
+fn storage_reuses_live_pipe_for_raw_newlines_and_empty_writes() {
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path().join("private");
     let marker = fixture.path().join("cancel");
@@ -153,17 +153,8 @@ fn storage_reuses_live_pipe_for_raw_newlines_empty_and_base64_writes() {
         json!({"operation":"writeFile","rootDirectory":root,"filePath":target,"dataBase64":"AQID"}),
         None,
     );
-    assert_eq!(worker.next()["type"], "result");
-    worker.send(
-        4,
-        &marker,
-        json!({"operation":"readFile","rootDirectory":root,"filePath":target}),
-        None,
-    );
-    assert_eq!(
-        worker.next(),
-        json!({"type":"result","requestId":4,"result":{"dataBase64":"AQID"}})
-    );
+    assert_eq!(worker.next()["type"], "error");
+    assert!(std::fs::read(&target).unwrap().is_empty());
     // Terminal publication guarantees operation handles/staging files are gone.
     assert_eq!(
         std::fs::read_dir(target.parent().unwrap()).unwrap().count(),
@@ -212,13 +203,21 @@ fn archive_worker_correlates_progress_and_releases_files_before_terminal() {
     std::fs::write(&source, vec![42; 65537]).unwrap();
     let key = base64::engine::general_purpose::STANDARD.encode([7; 32]);
     let mut worker = Worker::new(true, None);
+    let manifest = json!({"version":3,"createdAt":"2026-11-24T10:00:00.000Z","appVersion":"test","includesStorage":false});
     worker.send(
         1,
         &marker,
-        json!({"operation":"encrypt","key":key,"sourcePath":source,"destinationPath":archive}),
+        json!({"operation":"create","key":key,"databaseDumpPath":source,"destinationPath":archive,"manifest":manifest}),
         None,
     );
-    assert_eq!(worker.next()["type"], "result");
+    loop {
+        let message = worker.next();
+        assert_eq!(message["requestId"], 1);
+        if message["type"] != "progress" {
+            assert_eq!(message["type"], "result");
+            break;
+        }
+    }
     std::fs::remove_file(&source).unwrap();
     worker.send(
         2,
@@ -273,13 +272,8 @@ fn malformed_or_truncated_frames_never_acknowledge_or_mutate_and_never_resynchro
         assert!(!root.exists());
     }
     let mut worker = Worker::new(false, None);
-    worker.send(
-        1,
-        &marker,
-        json!({"operation":"assertDirectories","directories":[]}),
-        None,
-    );
-    assert_eq!(worker.next()["type"], "result");
+    worker.send(1, &marker, json!({"operation":"unknown"}), None);
+    assert_eq!(worker.next()["error"]["code"], "CORE_INVALID_OPERATION");
     worker.send(1, &marker, request, Some(b""));
     worker.finish(false);
     assert!(!root.exists());
@@ -308,7 +302,7 @@ fn raw_payload_accepts_the_exact_eight_mebibyte_limit() {
 }
 
 #[test]
-fn background_binary_results_preserve_migration_empty_missing_and_legacy_json_reads() {
+fn background_binary_results_preserve_migration_and_empty_or_missing_files() {
     let fixture = tempfile::tempdir().unwrap();
     let root = fixture.path().join("private");
     let legacy_root = fixture.path().join("legacy");
@@ -317,14 +311,15 @@ fn background_binary_results_preserve_migration_empty_missing_and_legacy_json_re
     let target = root.join("nested/background");
     let payload = b"\nprivate\0\n{\"type\":\"result\"}\n";
     std::fs::write(&legacy, payload).unwrap();
-    let request = json!({"operation":"readBackgroundBytes","rootDirectory":root,"directoryPath":root.join("nested"),"filePath":target,"legacyPath":legacy,"legacyRoot":legacy_root});
+    let request = json!({"operation":"readBackgroundRepresentation","rootDirectory":root,"directoryPath":root.join("nested"),"filePath":target,"legacyPath":legacy,"legacyRoot":legacy_root});
     let mut worker = Worker::new(false, None);
     let marker = fixture.path().join("cancel");
     worker.send(1, &marker, request.clone(), None);
-    assert_eq!(
-        worker.next(),
-        json!({"type":"binaryResult","requestId":1,"binaryBytes":payload.len()})
-    );
+    let migrated = worker.next();
+    assert_eq!(migrated["type"], "binaryResult");
+    assert_eq!(migrated["requestId"], 1);
+    assert_eq!(migrated["binaryBytes"], payload.len());
+    assert_eq!(migrated["version"].as_str().unwrap().len(), 64);
     let mut actual = vec![0; payload.len()];
     worker.output.read_exact(&mut actual).unwrap();
     assert_eq!(actual, payload);
@@ -333,35 +328,74 @@ fn background_binary_results_preserve_migration_empty_missing_and_legacy_json_re
     // Files are closed before the terminal header, including on Windows.
     std::fs::write(&target, b"").unwrap();
     worker.send(2, &marker, request.clone(), None);
+    let empty = worker.next();
+    assert_eq!(empty["type"], "binaryResult");
+    assert_eq!(empty["requestId"], 2);
+    assert_eq!(empty["binaryBytes"], 0);
+    assert_ne!(empty["version"], migrated["version"]);
+    std::fs::remove_file(&target).unwrap();
+    worker.send(3, &marker, request, None);
     assert_eq!(
         worker.next(),
-        json!({"type":"binaryResult","requestId":2,"binaryBytes":0})
+        json!({"type":"result","requestId":3,"result":null})
     );
+    std::fs::remove_dir_all(root).unwrap();
+    worker.finish(true);
+}
+
+#[test]
+fn background_metadata_and_versioned_binary_share_one_file_version() {
+    let fixture = tempfile::tempdir().unwrap();
+    let root = fixture.path().join("private");
+    let legacy_root = fixture.path().join("legacy");
+    std::fs::create_dir(&legacy_root).unwrap();
+    let legacy = legacy_root.join("background");
+    let target = root.join("nested/background");
+    let payload = b"abc\0";
+    std::fs::write(&legacy, payload).unwrap();
+    let mut request = json!({"operation":"statBackground","rootDirectory":root,"directoryPath":root.join("nested"),"filePath":target,"legacyPath":legacy,"legacyRoot":legacy_root});
+    let mut worker = Worker::new(false, None);
+    let marker = fixture.path().join("cancel");
+
+    worker.send(1, &marker, request.clone(), None);
+    let first = worker.next();
+    assert_eq!(first["type"], "result");
+    assert_eq!(first["result"]["size"], payload.len());
+    let version = first["result"]["version"].as_str().unwrap();
+    assert_eq!(version.len(), 64);
+    assert!(!legacy.exists());
+
+    request["operation"] = "readBackgroundRepresentation".into();
+    worker.send(2, &marker, request.clone(), None);
+    assert_eq!(
+        worker.next(),
+        json!({"type":"binaryResult","requestId":2,"binaryBytes":payload.len(),"version":version})
+    );
+    let mut actual = [0; 4];
+    worker.output.read_exact(&mut actual).unwrap();
+    assert_eq!(&actual, payload);
+
     worker.send(
         3,
         &marker,
-        json!({"operation":"readFile","rootDirectory":root,"filePath":target}),
-        None,
+        json!({"operation":"writeFile","rootDirectory":root,"filePath":target}),
+        Some(b"new\n"),
     );
-    assert_eq!(
-        worker.next(),
-        json!({"type":"result","requestId":3,"result":{"dataBase64":""}})
-    );
-    std::fs::remove_file(&target).unwrap();
+    assert_eq!(worker.next()["type"], "result");
     worker.send(4, &marker, request.clone(), None);
+    let second = worker.next();
+    let new_version = second["version"].as_str().unwrap();
+    assert_ne!(new_version, version);
+    assert_eq!(second["binaryBytes"], payload.len());
+    worker.output.read_exact(&mut actual).unwrap();
+    assert_eq!(&actual, b"new\n");
+
+    request["operation"] = "statBackground".into();
+    worker.send(5, &marker, request, None);
     assert_eq!(
         worker.next(),
-        json!({"type":"result","requestId":4,"result":null})
+        json!({"type":"result","requestId":5,"result":{"version":new_version,"size":payload.len()}})
     );
-    let mut old_request = request;
-    old_request["operation"] = "readBackground".into();
-    std::fs::write(&target, b"legacy").unwrap();
-    worker.send(5, &marker, old_request, None);
-    assert_eq!(
-        worker.next(),
-        json!({"type":"result","requestId":5,"result":{"dataBase64":"bGVnYWN5"}})
-    );
-    std::fs::remove_dir_all(root).unwrap();
     worker.finish(true);
 }
 

@@ -5,16 +5,16 @@ use super::{
 use crate::protocol::{CoreResult, OperationContext};
 use hkdf::Hkdf;
 use hmac::{Hmac, KeyInit, Mac};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::Sha256;
 use std::collections::{HashMap, HashSet};
-use std::io::{Read, Write};
+use std::io::{BufReader, Read, Write};
 use std::path::Path;
 use unicode_normalization::UnicodeNormalization;
 use zeroize::Zeroizing;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub(crate) struct Entry {
     pub path: String,
     pub size: u64,
@@ -262,10 +262,6 @@ fn pax_path(bytes: &[u8]) -> CoreResult<String> {
     path.ok_or_else(|| invalid("Der PAX-Pfad fehlt."))
 }
 pub(crate) fn validate_manifest(value: &Value) -> CoreResult<()> {
-    static TIMESTAMP: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
-        regex::Regex::new(r"^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?Z$")
-            .expect("Der statische ISO-Zeitstempel-Ausdruck ist gültig.")
-    });
     let object = value
         .as_object()
         .ok_or_else(|| invalid("Das Backup-Manifest ist ungültig."))?;
@@ -287,7 +283,7 @@ pub(crate) fn validate_manifest(value: &Value) -> CoreResult<()> {
         })
         || (version == 3 && includes && value["privateBackgroundsVersion"] != 1)
         || value["appVersion"].as_str().is_none_or(str::is_empty)
-        || !TIMESTAMP.is_match(created)
+        || !crate::validation::valid_iso_timestamp(created)
         || time::OffsetDateTime::parse(created, &time::format_description::well_known::Rfc3339)
             .is_err()
     {
@@ -299,8 +295,12 @@ pub(crate) fn validate_manifest(value: &Value) -> CoreResult<()> {
 }
 fn extracted_file(root: &cap_std::fs::Dir, path: &str) -> CoreResult<cap_std::fs::File> {
     let path = Path::new(path);
-    let parent =
-        crate::storage::files::descend(root, path.parent().unwrap_or(Path::new("")), true, true)?;
+    let parent = crate::storage::files::descend(
+        root,
+        path.parent().unwrap_or(Path::new("")),
+        true,
+        crate::storage::files::DirectoryPermissions::Private,
+    )?;
     crate::storage::files::create_file(
         &parent,
         Path::new(
@@ -321,6 +321,17 @@ pub(crate) fn process(
     })
 }
 
+pub(super) fn validate_stream(
+    source: impl Read,
+    size: u64,
+    key: &[u8],
+    context: &OperationContext,
+) -> CoreResult<Value> {
+    process_reader(source, size, key, None, context, || {
+        FileSync::new(|file: cap_std::fs::File| file.sync_all())
+    })
+}
+
 fn process_with_sync(
     source: &Path,
     key: &[u8],
@@ -329,11 +340,38 @@ fn process_with_sync(
     context: &OperationContext,
     start_sync: impl FnOnce() -> CoreResult<FileSync<cap_std::fs::File>>,
 ) -> CoreResult<Value> {
-    let mut file = files::open_source(source)?;
+    let file = files::open_source(source)?;
     let snapshot = files::identity(&file)?;
-    if snapshot.size < 1024 || snapshot.size > MAX_PLAINTEXT {
+    let manifest = process_reader(
+        BufReader::with_capacity(super::crypto::FILE_BUFFER_SIZE, &file),
+        snapshot.size,
+        key,
+        destination.map(|path| (path, request)),
+        context,
+        start_sync,
+    )?;
+    if files::identity(&file)? != snapshot {
+        return Err(invalid("Die Größe des Backup-Archivs hat sich verändert."));
+    }
+    context.check_now()?;
+    Ok(manifest)
+}
+
+fn process_reader(
+    mut file: impl Read,
+    source_size: u64,
+    key: &[u8],
+    extraction: Option<(&Path, &Value)>,
+    context: &OperationContext,
+    start_sync: impl FnOnce() -> CoreResult<FileSync<cap_std::fs::File>>,
+) -> CoreResult<Value> {
+    if !(1024..=MAX_PLAINTEXT).contains(&source_size) {
         return Err(invalid("Das TAR-Archiv überschreitet das Größenlimit."));
     }
+    let empty_request = Value::Null;
+    let (destination, request) = extraction.map_or((None, &empty_request), |(path, request)| {
+        (Some(path), request)
+    });
     let root = destination
         .map(|path| {
             let root = crate::storage::files::open_absolute(path, true)?;
@@ -355,6 +393,7 @@ fn process_with_sync(
     let mut zeros = 0;
     let mut pending_path = None;
     let mut consumed = 0u64;
+    let mut buffer = Zeroizing::new(vec![0; CHUNK]);
     loop {
         context.check()?;
         let mut header = [0; 512];
@@ -409,7 +448,7 @@ fn process_with_sync(
             ));
         }
         let padding = (512 - size % 512) % 512;
-        if size > snapshot.size.saturating_sub(consumed) {
+        if size > source_size.saturating_sub(consumed) {
             return Err(invalid("Das TAR-Archiv ist unvollständig."));
         }
         if pax {
@@ -460,11 +499,15 @@ fn process_with_sync(
             if entry.kind == "directory"
                 && let Some(root) = root.as_ref()
             {
-                crate::storage::files::descend(root, Path::new(&entry.path), true, true)?;
+                crate::storage::files::descend(
+                    root,
+                    Path::new(&entry.path),
+                    true,
+                    crate::storage::files::DirectoryPermissions::Private,
+                )?;
             }
             let mut metadata_bytes = Vec::new();
             let mut remaining = size;
-            let mut buffer = [0; CHUNK];
             while remaining > 0 {
                 context.check()?;
                 let length = remaining.min(CHUNK as u64) as usize;
@@ -522,15 +565,14 @@ fn process_with_sync(
             return Err(invalid("Das TAR-Padding ist ungültig."));
         }
     }
-    let mut tail = [0; CHUNK];
     loop {
         context.check()?;
-        let read = file.read(&mut tail)?;
+        let read = file.read(&mut buffer)?;
         if read == 0 {
             break;
         }
         consumed += read as u64;
-        if consumed > snapshot.size || tail[..read].iter().any(|b| *b != 0) {
+        if consumed > source_size || buffer[..read].iter().any(|b| *b != 0) {
             return Err(invalid(
                 "Das Backup enthält unerwartete Daten nach dem TAR-Ende.",
             ));
@@ -541,7 +583,7 @@ fn process_with_sync(
     if let Some(sync) = sync.take() {
         sync.finish()?;
     }
-    if consumed != snapshot.size || files::identity(&file)? != snapshot {
+    if consumed != source_size {
         return Err(invalid("Die Größe des Backup-Archivs hat sich verändert."));
     }
     let manifest = manifest.ok_or_else(|| invalid("Das Backup-Manifest fehlt."))?;
@@ -585,7 +627,7 @@ fn process_with_sync(
             "Die Integritätsprüfung des Backups ist fehlgeschlagen.",
         ));
     }
-    context.check()?;
+    context.check_now()?;
     Ok(manifest)
 }
 

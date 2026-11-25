@@ -1,6 +1,7 @@
 //! Bounded state validation and durable, handle-relative atomic publication.
 use super::{files, string, workflows};
 use crate::protocol::{CoreError, CoreResult, OperationContext};
+use crate::validation::valid_iso_timestamp;
 use cap_fs_ext::MetadataExt;
 use cap_std::fs::{Dir, Metadata};
 use serde::{Deserialize, Serialize};
@@ -8,17 +9,12 @@ use serde_json::Value;
 use std::{
     io::{Read, Write},
     path::Path,
-    sync::LazyLock,
 };
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 
 const NAME: &str = ".restore-state-v1.json";
 const MAX_BYTES: u64 = 64 * 1024;
 const MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
-static DATE_PATTERN: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-2][0-9]:[0-5][0-9]:[0-5][0-9](\.[0-9]+)?Z$")
-        .expect("Das feste ISO-Zeitformat ist gültig.")
-});
 
 #[cfg(test)]
 #[path = "../../tests/unit/storage_restore_state.rs"]
@@ -44,7 +40,7 @@ struct State {
     updated_at: String,
 }
 fn valid_date(value: &str) -> bool {
-    DATE_PATTERN.is_match(value) && OffsetDateTime::parse(value, &Rfc3339).is_ok()
+    valid_iso_timestamp(value) && OffsetDateTime::parse(value, &Rfc3339).is_ok()
 }
 fn validate(value: Value) -> CoreResult<State> {
     // `percent` is required even when null; Serde's Option alone accepts absence.
@@ -85,10 +81,13 @@ pub(crate) fn execute(request: &Value, context: &OperationContext) -> CoreResult
     } else {
         None
     };
-    let roots = workflows::backup_roots(request, context)?;
     if let Some(state) = state {
+        let roots = workflows::backup_roots(request, context)?;
         return write_state(state, &roots, context, files::sync_dir);
     }
+    let Some(roots) = workflows::read_backup_roots(request, context)? else {
+        return Ok(Value::Null);
+    };
     let Some((_, bytes)) = read_bytes(&roots, context)? else {
         return Ok(Value::Null);
     };
@@ -112,37 +111,31 @@ fn private(metadata: &Metadata) -> CoreResult<()> {
     Ok(())
 }
 
-fn assert_roots(roots: &workflows::BackupRoots) -> CoreResult<()> {
-    files::assert_location(&roots.backup_path, &roots.backup)?;
-    files::assert_location(&roots.storage_path, &roots.storage)
-}
-
 fn read_bytes(
     roots: &workflows::BackupRoots,
     context: &OperationContext,
 ) -> CoreResult<Option<(Metadata, Vec<u8>)>> {
     // Preflight rejects FIFOs/devices before opening. The nonblocking nofollow
     // open also remains bounded if the name changes after that preflight.
-    let mut file = match files::open_read(&roots.backup, Path::new(NAME)) {
+    let (mut file, before) = match files::open_read_with_metadata(&roots.backup, Path::new(NAME)) {
         Ok(file) => file,
         Err(error) if error.code == "ENOENT" => {
             context.check()?;
-            assert_roots(roots)?;
+            roots.assert_locations()?;
             return Ok(None);
         }
         Err(error) => return Err(error),
     };
-    let before = file.metadata()?;
     private(&before)?;
     if before.len() > MAX_BYTES {
         return Err(invalid());
     }
-    let mut bytes = Vec::new();
+    let mut bytes = Vec::with_capacity(before.len() as usize);
     (&mut file).take(MAX_BYTES + 1).read_to_end(&mut bytes)?;
     let after = file.metadata()?;
     let named = roots.backup.symlink_metadata(NAME)?;
     context.check()?;
-    assert_roots(roots)?;
+    roots.assert_locations()?;
     private(&after)?;
     private(&named)?;
     if bytes.len() as u64 != before.len()
@@ -169,14 +162,14 @@ fn write_state(
     let result = (|| {
         file.write_all(&serialized)?;
         file.sync_all()?;
-        context.check()?;
-        assert_roots(roots)?;
+        roots.assert_locations()?;
         let current = roots.backup.symlink_metadata(&temporary)?;
         private(&current)?;
         if !files::same(&owned, &current) || current.len() != serialized.len() as u64 {
             return Err(invalid());
         }
         drop(file);
+        context.check_now()?;
         super::recovery::rename_retry(
             &roots.backup,
             Path::new(&temporary),

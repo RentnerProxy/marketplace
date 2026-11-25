@@ -5,10 +5,10 @@ import { RATE_LIMITS } from '@/config/security.config.ts'
 import { publishCommittedAuditLogService } from '@/lib/AuditLogs/auditLogs.ts'
 import { applyBackupRetentionBestEffort } from '@/server/Admin/Backups/run-retention.service.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
-import { copyImportedBackup } from '@/server/Admin/Backups/archive-import.service.ts'
+import { prepareUploadedBackupImport } from '@/server/Admin/Backups/archive-import.service.ts'
 import { acquireBackupImportAdmissionService } from '@/server/Admin/Backups/import-admission.service.ts'
-import { BackupImportError } from '@/server/Admin/Backups/import.errors.ts'
-import type { BackupImportContext } from '@/server/Admin/Backups/import.types.ts'
+import { BackupImportError } from '@/server/Admin/Backups/backup.errors.ts'
+import type { BackupImportContext } from '@/server/Admin/Backups/Types/import.types.ts'
 import {
     BackupApiError,
     createBackupApiErrorResponse,
@@ -61,9 +61,12 @@ async function importAdmittedBackup(
     }
     try {
         context.assertActive()
-        let imported: Awaited<ReturnType<typeof copyImportedBackup>>
+        let imported: Awaited<ReturnType<typeof prepareUploadedBackupImport>>
         try {
-            imported = await copyImportedBackup(upload.filePath, context)
+            imported = await prepareUploadedBackupImport(
+                upload.filePath,
+                context,
+            )
         } catch (error) {
             normalizeImportError(
                 error,

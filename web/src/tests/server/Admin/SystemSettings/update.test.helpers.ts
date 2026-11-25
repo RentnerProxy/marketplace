@@ -40,6 +40,7 @@ export const imageMocks = {
         height: 100,
     })),
     getCrop: vi.fn(() => ({ left: 0, top: 0, width: 100, height: 100 })),
+    rawPixels: Buffer.from('synthetic raw pixels'),
     paths: {
         absoluteDir: 'C:/safe/public/images',
         absoluteLarge: 'C:/safe/public/images/logo.webp',
@@ -54,8 +55,20 @@ function createImageChain() {
     const chain = {
         extract: vi.fn(),
         resize: vi.fn(),
+        toColorspace: vi.fn(),
         webp: vi.fn(),
         png: vi.fn(),
+        raw: vi.fn(function () {
+            return {
+                toBuffer: async function () {
+                    recordEffect('image-buffer')
+                    return {
+                        data: imageMocks.rawPixels,
+                        info: { width: 512, height: 512, channels: 4 },
+                    }
+                },
+            }
+        }),
 
         toBuffer: vi.fn(async function () {
             recordEffect('image-buffer')
@@ -64,6 +77,7 @@ function createImageChain() {
     }
     chain.extract.mockReturnValue(chain)
     chain.resize.mockReturnValue(chain)
+    chain.toColorspace.mockReturnValue(chain)
     chain.webp.mockReturnValue(chain)
     chain.png.mockReturnValue(chain)
     return chain
@@ -91,6 +105,9 @@ export const systemSettingsExternal = {
     }),
     publishState: vi.fn(async function () {
         recordEffect('publish:state')
+    }),
+    invalidateMaintenance: vi.fn(function () {
+        recordEffect('invalidate:maintenance')
     }),
     getRequest: vi.fn(async function () {
         return null as Record<string, unknown> | null
@@ -200,6 +217,8 @@ export function installSystemSettingsTestMocks() {
         getSystemSettingsService: async () => defaultSystemSettings(),
     }))
     vi.mock('@/server/Maintenance/state.service.ts', () => ({
+        invalidateMaintenanceStateService:
+            systemSettingsExternal.invalidateMaintenance,
         publishMaintenanceStateService: systemSettingsExternal.publishState,
     }))
 }

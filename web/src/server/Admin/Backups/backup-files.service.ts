@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import { runCoreCommandService } from '@/server/Core/command.service.ts'
+import { coreSuccessSchema } from '@/server/Core/protocol.ts'
 import { getBackupStoragePaths } from './backup-directory.service.ts'
 
 export async function publishBackupFileService(
@@ -17,11 +17,21 @@ export async function publishBackupFileService(
         },
         {
             signal: options.signal,
-            validateResult: (value) =>
-                z
-                    .object({ ok: z.literal(true) })
-                    .strict()
-                    .parse(value),
+            validateResult: (value) => coreSuccessSchema.parse(value),
         },
+    )
+}
+
+export async function deleteBackupFilesService(
+    fileNames: readonly string[],
+): Promise<void> {
+    await runCoreCommandService(
+        'storage',
+        {
+            operation: 'backupDeleteFiles',
+            ...getBackupStoragePaths(),
+            fileNames,
+        },
+        { validateResult: (value) => coreSuccessSchema.parse(value) },
     )
 }

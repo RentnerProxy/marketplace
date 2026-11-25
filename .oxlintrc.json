@@ -25,7 +25,6 @@
         "build/**",
         ".output/**",
         ".tanstack/**",
-        ".vinxi/**",
         "node_modules/**",
         "web/src/routeTree.gen.ts"
     ],
@@ -89,47 +88,6 @@
         },
         {
             "files": [".forgejo/scripts/release-image-reader.ts"],
-            "rules": {
-                "no-await-in-loop": "off"
-            }
-        },
-        {
-            "files": [
-                "web/src/server/Admin/Backups/archive-encryption-reader.service.ts"
-            ],
-            "rules": {
-                "no-await-in-loop": "off"
-            }
-        },
-        {
-            "files": [
-                "web/src/server/Admin/Backups/archive-encryption-writable.service.ts"
-            ],
-            "rules": {
-                "promise/no-callback-in-promise": "off",
-                "promise/no-promise-in-callback": "off"
-            }
-        },
-        {
-            "files": [
-                "web/src/server/Admin/Backups/archive-staging.service.ts"
-            ],
-            "rules": {
-                "promise/no-callback-in-promise": "off"
-            }
-        },
-        {
-            "files": [
-                "web/src/server/Admin/Backups/archive-entry-transform.service.ts"
-            ],
-            "rules": {
-                "promise/no-callback-in-promise": "off"
-            }
-        },
-        {
-            "files": [
-                "web/src/server/Admin/Backups/restore-journal-io.service.ts"
-            ],
             "rules": {
                 "no-await-in-loop": "off"
             }

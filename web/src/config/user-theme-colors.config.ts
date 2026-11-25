@@ -1,3 +1,10 @@
+import type {
+    UserFontFamily,
+    UserFontSize,
+    UserThemeMode,
+    UserThemeColors,
+} from '@/lib/Theme/Types/userTheme.types.ts'
+
 export const DEFAULT_PRIMARY_COLOR = '#30ee61'
 export const DEFAULT_PRIMARY_COLOR_HOVER = '#65f586'
 export const DEFAULT_BACKGROUND_DARKNESS = 55
@@ -62,9 +69,3 @@ export const USER_PRIMARY_COLOR_PRESETS = [
     '#dc2626',
     '#d97706',
 ] as const
-import type {
-    UserFontFamily,
-    UserFontSize,
-    UserThemeMode,
-    UserThemeColors,
-} from '@/lib/Theme/Types/userTheme.types.ts'

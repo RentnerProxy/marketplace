@@ -1,10 +1,7 @@
 import { CORE_RUNTIME } from '@/config/core.config.ts'
 import { z } from 'zod'
 import { CoreCommandError } from './error.ts'
-import type {
-    CoreBinary,
-    CoreBrandingBinaryLengths,
-} from './Types/core.types.ts'
+import type { CoreBinary } from './Types/core.types.ts'
 
 const partLengthSchema = z
     .number()
@@ -23,7 +20,7 @@ export function validateCoreBinaryInputService(
     request: Record<string, unknown>,
     bytes: Uint8Array | undefined,
     code = 'CORE_INVALID_REQUEST',
-): CoreBrandingBinaryLengths | undefined {
+): void {
     const invalid = (): never => {
         throw new CoreCommandError(
             code,
@@ -32,7 +29,7 @@ export function validateCoreBinaryInputService(
     }
     if (bytes === undefined) {
         if ('binaryLengths' in request) invalid()
-        return undefined
+        return
     }
     if (!(bytes instanceof Uint8Array) || binary !== 'storage') invalid()
     if (request.operation === 'writeFile') {
@@ -42,7 +39,7 @@ export function validateCoreBinaryInputService(
             'binaryLengths' in request
         )
             invalid()
-        return undefined
+        return
     }
     const lengths = brandingLengthsSchema.safeParse(request.binaryLengths)
     if (
@@ -62,32 +59,4 @@ export function validateCoreBinaryInputService(
         total > CORE_RUNTIME.maxBrandingInputBytes
     )
         invalid()
-    return lengths.data
-}
-
-/** The isolated JSON adapter retains the legacy request format. No mutation is retried. */
-export function encodeIsolatedBinaryRequestService(
-    request: Record<string, unknown>,
-    bytes: Uint8Array,
-    lengths?: CoreBrandingBinaryLengths,
-): Record<string, unknown> {
-    if (request.operation === 'writeFile')
-        return { ...request, dataBase64: Buffer.from(bytes).toString('base64') }
-    if (!lengths)
-        throw new CoreCommandError(
-            'CORE_INVALID_REQUEST',
-            'Die binäre Core-Anfrage ist ungültig.',
-        )
-    const view = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-    const { binaryLengths: _lengths, ...legacy } = request
-    return {
-        ...legacy,
-        largeBase64: view.subarray(0, lengths[0]).toString('base64'),
-        smallBase64: view
-            .subarray(lengths[0], lengths[0] + lengths[1])
-            .toString('base64'),
-        faviconBase64: view
-            .subarray(lengths[0] + lengths[1])
-            .toString('base64'),
-    }
 }

@@ -54,6 +54,30 @@ fn log_redaction_preserves_umlauts_and_covers_native_database_output() {
     assert_eq!(astral.encode_utf16().count(), 4097);
 }
 
+#[test]
+fn lightweight_log_redaction_preserves_unicode_spacing_and_case_folds() {
+    for (line, expected) in [
+        ("Bearer\u{a0}synthetic-secret", "Bearer\u{a0}[REDACTED]"),
+        (
+            "token=synthetic-secret\u{2003}Überprüfung",
+            "token=[REDACTED]\u{2003}Überprüfung",
+        ),
+        ("ſecret=synthetic-secret", "ſecret=[REDACTED]"),
+        ("?toKen=synthetic-secret", "?toKen=[REDACTED]"),
+        (
+            "\"paſſword\"\u{2003}:\u{2003}\"synthetic-secret\"",
+            "\"paſſword\"\u{2003}:\u{2003}\"[REDACTED]\"",
+        ),
+        ("eyJabc.signed.lastſ", "[REDACTED]"),
+        (
+            "http://user:p@localhost/path",
+            "http://[REDACTED]@localhost/path",
+        ),
+    ] {
+        assert_eq!(redact_line(line), expected, "{line}");
+    }
+}
+
 fn production_environment() -> BTreeMap<String, String> {
     BTreeMap::from([
         ("POSTGRES_PASSWORD".into(), "synthetic-password".into()),
@@ -91,6 +115,32 @@ fn candidate_app_settings_reach_only_the_application_environment() {
         assert!(!maintenance.contains_key(key));
     }
     assert!(!application.contains_key("MARKETPLACE_CANDIDATE_GITHUB_APP_PEM"));
+}
+
+#[test]
+fn email_validation_preserves_the_previous_local_domain_and_dot_rules() {
+    let mut env = production_environment();
+    for email in ["a@example.test", " a@x.y ", "a+b@local..", "a@...", "ä@ö.ü"] {
+        env.insert("MAIL_FROM".into(), email.into());
+        assert!(create_environment(&env, false).is_ok(), "{email}");
+    }
+    for email in [
+        "a@example",
+        "a@.com",
+        "a@com.",
+        "@a.b",
+        "a@@a.b",
+        "a@..",
+        "a@x\u{a0}.y",
+        "a b@x.y",
+    ] {
+        env.insert("MAIL_FROM".into(), email.into());
+        assert_eq!(
+            create_environment(&env, false).unwrap_err(),
+            "appliance_configuration_invalid: MAIL_FROM",
+            "{email}"
+        );
+    }
 }
 
 #[test]

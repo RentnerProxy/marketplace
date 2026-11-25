@@ -1,10 +1,13 @@
 import type {
-    AssetFileReadResult,
     ByteRange,
     ProductionStorageAssetOptions,
 } from './Types/production-assets.types.ts'
+import { constants, type BigIntStats } from 'node:fs'
+import { open, stat, type FileHandle } from 'node:fs/promises'
 import path from 'node:path'
+import { Readable } from 'node:stream'
 import { IMAGE_UPLOAD_CONFIG } from '@/config/image-upload.config.ts'
+import { matchesIfNoneMatch } from '@/lib/Request/etag.ts'
 import { parsePublicStorageAssetPath } from '@/server/Request/storageAssetPath.service.ts'
 import {
     RestoreInProgressError,
@@ -83,35 +86,14 @@ function getAssetCacheControl(url: URL, isFallback: boolean) {
     return runtimeAssetCacheControl
 }
 
-async function readExistingFile(
-    absolutePath: string,
-    includeBytes: boolean,
-): Promise<AssetFileReadResult> {
-    const file = Bun.file(absolutePath)
-
-    if (!(await file.exists())) {
-        return { kind: 'missing' }
-    }
-
-    if (
-        !Number.isSafeInteger(file.size) ||
-        file.size < 0 ||
-        file.size > MAX_PRODUCTION_STORAGE_ASSET_BYTES
-    ) {
-        return { kind: 'too-large' }
-    }
-
-    if (!includeBytes) {
-        return { kind: 'found', bytes: null, size: file.size }
-    }
-
-    const bytes = new Uint8Array(await file.arrayBuffer())
-
-    if (bytes.byteLength > MAX_PRODUCTION_STORAGE_ASSET_BYTES) {
-        return { kind: 'too-large' }
-    }
-
-    return { kind: 'found', bytes, size: bytes.byteLength }
+function assetAbsent(error: unknown) {
+    return (
+        error instanceof Error &&
+        'code' in error &&
+        (error.code === 'ENOENT' ||
+            error.code === 'ENOTDIR' ||
+            error.code === 'ELOOP')
+    )
 }
 
 function parseByteRange(rangeHeader: string, size: number): ByteRange | null {
@@ -154,19 +136,41 @@ function createAssetResponse(
     request: Request,
     absolutePath: string,
     cacheControl: string,
-    file: AssetFileReadResult & { kind: 'found' },
+    file: BigIntStats,
+    body: (start: number, end: number) => BodyInit,
 ) {
+    if (!file.isFile()) return null
+    if (
+        file.size < 0n ||
+        file.size > BigInt(MAX_PRODUCTION_STORAGE_ASSET_BYTES)
+    ) {
+        return new Response('Asset too large', {
+            status: 413,
+            headers: { 'cache-control': 'no-store' },
+        })
+    }
+    const size = Number(file.size)
+    const version = new Bun.CryptoHasher('sha256')
+        .update(
+            `${file.dev}:${file.ino}:${file.size}:${file.mtimeNs}:${file.ctimeNs}`,
+        )
+        .digest('hex')
+    const etag = `W/"${version}"`
     const headers = new Headers({
         'accept-ranges': 'bytes',
         'cache-control': cacheControl,
         'content-type': getStorageAssetContentType(absolutePath),
+        etag,
     })
+    if (matchesIfNoneMatch(request.headers.get('if-none-match'), etag)) {
+        return new Response(null, { status: 304, headers })
+    }
     const rangeHeader =
         request.method === 'GET' ? request.headers.get('range') : null
-    const range = rangeHeader ? parseByteRange(rangeHeader, file.size) : null
+    const range = rangeHeader ? parseByteRange(rangeHeader, size) : null
 
     if (rangeHeader && !range) {
-        headers.set('content-range', `bytes */${file.size}`)
+        headers.set('content-range', `bytes */${size}`)
         headers.set('content-length', '0')
         return new Response(null, { status: 416, headers })
     }
@@ -175,40 +179,100 @@ function createAssetResponse(
         const contentLength = range.end - range.start + 1
         headers.set(
             'content-range',
-            `bytes ${range.start}-${range.end}/${file.size}`,
+            `bytes ${range.start}-${range.end}/${size}`,
         )
         headers.set('content-length', String(contentLength))
-        return new Response(file.bytes?.slice(range.start, range.end + 1), {
+        return new Response(body(range.start, range.end + 1), {
             status: 206,
             headers,
         })
     }
 
-    headers.set('content-length', String(file.size))
-    return new Response(request.method === 'HEAD' ? null : file.bytes, {
-        headers,
-    })
+    headers.set('content-length', String(size))
+    return new Response(
+        request.method === 'HEAD' || size === 0 ? null : body(0, size),
+        {
+            headers,
+        },
+    )
 }
 
-async function serveExistingFile(
+async function serveBundledFile(
     request: Request,
     absolutePath: string,
     cacheControl: string,
 ) {
-    const file = await readExistingFile(absolutePath, request.method !== 'HEAD')
-
-    if (file.kind === 'missing') {
-        return null
+    try {
+        const metadata = await stat(absolutePath, { bigint: true })
+        return createAssetResponse(
+            request,
+            absolutePath,
+            cacheControl,
+            metadata,
+            (start, end) => Bun.file(absolutePath).slice(start, end),
+        )
+    } catch (error) {
+        if (assetAbsent(error)) return null
+        throw error
     }
+}
 
-    if (file.kind === 'too-large') {
-        return new Response('Asset too large', {
-            status: 413,
-            headers: { 'cache-control': 'no-store' },
+async function openStorageFile(
+    absolutePath: string,
+    withStorageBarrier: typeof withSharedStorageMutationBarrier,
+) {
+    const opened: { file?: FileHandle } = {}
+    try {
+        return await withStorageBarrier(async function () {
+            try {
+                opened.file = await open(
+                    absolutePath,
+                    constants.O_RDONLY |
+                        constants.O_NOFOLLOW |
+                        constants.O_NONBLOCK,
+                )
+                return opened.file
+            } catch (error) {
+                if (assetAbsent(error)) return null
+                throw error
+            }
         })
+    } catch (error) {
+        await opened.file?.close()
+        throw error
     }
+}
 
-    return createAssetResponse(request, absolutePath, cacheControl, file)
+async function serveOpenedFile(
+    request: Request,
+    absolutePath: string,
+    cacheControl: string,
+    file: FileHandle,
+) {
+    let reader: ReturnType<FileHandle['createReadStream']> | undefined
+    try {
+        const metadata = await file.stat({ bigint: true })
+        return createAssetResponse(
+            request,
+            absolutePath,
+            cacheControl,
+            metadata,
+            function (start, end) {
+                reader = file.createReadStream({ start, end: end - 1 })
+                const stream = Readable.toWeb(reader, {
+                    strategy: { highWaterMark: 1 },
+                })
+                if (!(stream instanceof ReadableStream))
+                    throw new Error('Invalid runtime asset stream.')
+                return stream
+            },
+        )
+    } catch (error) {
+        reader?.destroy()
+        throw error
+    } finally {
+        if (!reader) await file.close()
+    }
 }
 
 export async function serveProductionStorageAssetService(
@@ -249,13 +313,17 @@ export async function serveProductionStorageAssetService(
     let storageAssetResponse: Response | null = null
 
     try {
-        storageAssetResponse = await withStorageBarrier(function () {
-            return serveExistingFile(
+        // Keep admission through the open. Later renames cannot change the
+        // representation streamed from the admitted file descriptor.
+        const file = await openStorageFile(absolutePath, withStorageBarrier)
+        if (file) {
+            storageAssetResponse = await serveOpenedFile(
                 request,
                 absolutePath,
                 getAssetCacheControl(url, false),
+                file,
             )
-        })
+        }
     } catch (error) {
         if (
             !(error instanceof RestoreInProgressError) &&
@@ -285,7 +353,7 @@ export async function serveProductionStorageAssetService(
             : null
     }
 
-    return serveExistingFile(
+    return serveBundledFile(
         request,
         path.resolve(config.defaultPublicRoot, fallbackPath),
         getAssetCacheControl(url, true),

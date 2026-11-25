@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { z } from 'zod'
 import {
+    BACKUP_ARCHIVE_OVERHEAD_BYTES,
     BACKUP_LIMITS,
     BACKUP_LEGACY_MANIFEST_VERSION,
     BACKUP_MANIFEST_VERSION,
@@ -70,7 +71,7 @@ export const archiveManifestSchema = z.union([
 ])
 const encryptionMetadata = z
     .object({
-        archiveSize: bytes.min(70),
+        archiveSize: bytes.min(BACKUP_ARCHIVE_OVERHEAD_BYTES),
         plaintextSize: z
             .number()
             .int()
@@ -79,71 +80,28 @@ const encryptionMetadata = z
         checksumSha256: checksum,
     })
     .strict()
-    .refine((value) => value.archiveSize === value.plaintextSize + 70)
+    .refine(
+        (value) =>
+            value.archiveSize ===
+            value.plaintextSize + BACKUP_ARCHIVE_OVERHEAD_BYTES,
+    )
 const validatedArchive = z
     .object({
-        archiveSize: bytes.min(70),
+        archiveSize: bytes.min(BACKUP_ARCHIVE_OVERHEAD_BYTES),
         checksumSha256: checksum,
         manifest: archiveManifestSchema,
     })
     .strict()
-const entry = z.discriminatedUnion('type', [
-    z
-        .object({
-            path: relativePath,
-            size: z
-                .number()
-                .int()
-                .nonnegative()
-                .max(BACKUP_LIMITS.maxExtractedBytes),
-            type: z.literal('file'),
-        })
-        .strict(),
-    z
-        .object({
-            path: relativePath,
-            size: z.literal(0),
-            type: z.literal('directory'),
-        })
-        .strict(),
-])
-const collectionEntry = z.discriminatedUnion('type', [
-    z
-        .object({
-            path: relativePath,
-            size: z
-                .number()
-                .int()
-                .nonnegative()
-                .max(BACKUP_LIMITS.maxExtractedBytes),
-            type: z.literal('file'),
-            absolutePath,
-        })
-        .strict(),
-    z
-        .object({
-            path: relativePath,
-            size: z.literal(0),
-            type: z.literal('directory'),
-            absolutePath: z.null(),
-        })
-        .strict(),
-])
 export const archiveAdmissionSchema = z
     .object({ token: z.string().regex(/^[a-f0-9]{64}$/) })
     .strict()
 const schemas = {
     validateKey: z.null(),
-    encrypt: encryptionMetadata,
-    decrypt: encryptionMetadata,
     authenticate: encryptionMetadata,
     create: encryptionMetadata,
     validate: validatedArchive,
     extract: validatedArchive,
     copy: z.object({ archiveSize: bytes, checksumSha256: checksum }).strict(),
-    collect: z.array(collectionEntry).max(BACKUP_LIMITS.maxArchiveEntries),
-    validateEntry: entry,
-    processTar: archiveManifestSchema,
     backgroundAssertRoots: z.null(),
     backgroundCollect: z
         .array(

@@ -1,10 +1,14 @@
 import { getRequiredServerEnvironment } from '@/server/Runtime/environment.service.ts'
 
-async function getEncryptionKey() {
-    const keyBytes = Buffer.from(
-        getRequiredServerEnvironment('AUTH_ENCRYPTION_KEY'),
-        'base64',
-    )
+const encoder = new TextEncoder()
+const decoder = new TextDecoder('utf-8', { fatal: true })
+let cachedKey: { encoded: string; key: Promise<CryptoKey> } | undefined
+
+function getEncryptionKey() {
+    const encoded = getRequiredServerEnvironment('AUTH_ENCRYPTION_KEY')
+    if (cachedKey?.encoded === encoded) return cachedKey.key
+
+    const keyBytes = Buffer.from(encoded, 'base64')
 
     if (keyBytes.byteLength !== 32) {
         throw new Error(
@@ -12,10 +16,15 @@ async function getEncryptionKey() {
         )
     }
 
-    return crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, [
+    const key = crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, [
         'encrypt',
         'decrypt',
     ])
+    cachedKey = { encoded, key }
+    void key.catch(function () {
+        if (cachedKey?.key === key) cachedKey = undefined
+    })
+    return key
 }
 
 export async function encryptAuthSecret(secret: string) {
@@ -27,7 +36,7 @@ export async function encryptAuthSecret(secret: string) {
             tagLength: 16 * 8,
         },
         await getEncryptionKey(),
-        new TextEncoder().encode(secret),
+        encoder.encode(secret),
     )
 
     return [
@@ -72,5 +81,5 @@ export async function decryptAuthSecret(value: string) {
         encrypted,
     )
 
-    return new TextDecoder('utf-8', { fatal: true }).decode(decrypted)
+    return decoder.decode(decrypted)
 }

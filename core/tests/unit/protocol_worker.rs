@@ -69,7 +69,12 @@ fn empty_reads_do_not_touch_the_source_or_consume_read_ahead() {
 
 #[test]
 fn large_reads_write_directly_to_the_destination_at_the_buffer_threshold() {
-    for length in [8191, 8192, 8193, MAX_BINARY as usize] {
+    for length in [
+        READ_BUFFER_BYTES - 1,
+        READ_BUFFER_BYTES,
+        READ_BUFFER_BYTES + 1,
+        MAX_BINARY as usize,
+    ] {
         let payload = vec![b'x'; length + 1];
         let mut reader = WipingReader::new(ObservedReader::new(payload));
         let mut output = Zeroizing::new(vec![0; length]);
@@ -77,9 +82,9 @@ fn large_reads_write_directly_to_the_destination_at_the_buffer_threshold() {
         assert_eq!(reader.read(&mut output).unwrap(), length);
         assert!(output.iter().all(|byte| *byte == b'x'));
         assert_eq!(reader.source.calls.len(), 1);
-        if length < 8192 {
+        if length < READ_BUFFER_BYTES {
             assert_ne!(reader.source.calls[0].0, destination);
-            assert_eq!(reader.source.calls[0].1, 8192);
+            assert_eq!(reader.source.calls[0].1, READ_BUFFER_BYTES);
             assert_eq!(reader.fill_buf().unwrap(), b"x");
             assert!(reader.bytes[..length].iter().all(|byte| *byte == 0));
         } else {
@@ -89,36 +94,42 @@ fn large_reads_write_directly_to_the_destination_at_the_buffer_threshold() {
         let mut next = [0];
         reader.read_exact(&mut next).unwrap();
         assert_eq!(next, [b'x']);
-        assert_eq!(reader.source.calls.len(), if length < 8192 { 1 } else { 2 });
+        assert_eq!(
+            reader.source.calls.len(),
+            if length < READ_BUFFER_BYTES { 1 } else { 2 }
+        );
     }
 }
 
 #[test]
 fn large_reads_consume_and_wipe_read_ahead_before_bypassing_the_buffer() {
-    let mut reader = WipingReader::new(ObservedReader::new(vec![b'x'; 3 * 8192]));
-    assert_eq!(reader.fill_buf().unwrap().len(), 8192);
-    reader.consume(8191);
-    let mut output = Zeroizing::new(vec![0; 8193]);
+    let mut reader = WipingReader::new(ObservedReader::new(vec![b'x'; 3 * READ_BUFFER_BYTES]));
+    assert_eq!(reader.fill_buf().unwrap().len(), READ_BUFFER_BYTES);
+    reader.consume(READ_BUFFER_BYTES - 1);
+    let mut output = Zeroizing::new(vec![0; READ_BUFFER_BYTES + 1]);
     assert_eq!(reader.read(&mut output).unwrap(), 1);
     assert_eq!(output[0], b'x');
     assert_eq!(reader.source.calls.len(), 1);
     assert!(reader.bytes.iter().all(|byte| *byte == 0));
-    assert_eq!(reader.read(&mut output).unwrap(), 8193);
-    assert_eq!(reader.source.calls[1], (output.as_ptr() as usize, 8193));
+    assert_eq!(reader.read(&mut output).unwrap(), READ_BUFFER_BYTES + 1);
+    assert_eq!(
+        reader.source.calls[1],
+        (output.as_ptr() as usize, READ_BUFFER_BYTES + 1)
+    );
     assert!(reader.bytes.iter().all(|byte| *byte == 0));
 }
 
 #[test]
 fn direct_reads_preserve_short_reads_interruptions_and_eof() {
-    let mut reader = WipingReader::new(ObservedReader::new(vec![b'x'; 8193]));
-    reader.source.chunk = 8192;
+    let mut reader = WipingReader::new(ObservedReader::new(vec![b'x'; READ_BUFFER_BYTES + 1]));
+    reader.source.chunk = READ_BUFFER_BYTES;
     reader.source.interrupted = true;
-    let mut output = Zeroizing::new(vec![0; 8193]);
+    let mut output = Zeroizing::new(vec![0; READ_BUFFER_BYTES + 1]);
     assert_eq!(
         reader.read(&mut output).unwrap_err().kind(),
         io::ErrorKind::Interrupted
     );
-    assert_eq!(reader.read(&mut output).unwrap(), 8192);
+    assert_eq!(reader.read(&mut output).unwrap(), READ_BUFFER_BYTES);
     assert_eq!(reader.read(&mut output).unwrap(), 1);
     assert_eq!(reader.read(&mut output).unwrap(), 0);
     assert!(reader.bytes.iter().all(|byte| *byte == 0));
@@ -128,15 +139,18 @@ fn direct_reads_preserve_short_reads_interruptions_and_eof() {
             .source
             .calls
             .iter()
-            .all(|call| *call == (output.as_ptr() as usize, 8193))
+            .all(|call| *call == (output.as_ptr() as usize, READ_BUFFER_BYTES + 1))
     );
 
-    let mut reader = WipingReader::new(ObservedReader::new(vec![b'x'; 8193]));
+    let mut reader = WipingReader::new(ObservedReader::new(vec![b'x'; READ_BUFFER_BYTES + 1]));
     reader.source.interrupted = true;
     reader.source.chunk = 1024;
     reader.read_exact(&mut output).unwrap();
     assert!(output.iter().all(|byte| *byte == b'x'));
-    assert_eq!(reader.source.source.position(), 8193);
+    assert_eq!(
+        reader.source.source.position(),
+        (READ_BUFFER_BYTES + 1) as u64
+    );
     assert!(reader.bytes.iter().all(|byte| *byte == 0));
     assert_eq!(
         reader.read_exact(&mut [0]).unwrap_err().kind(),
@@ -173,19 +187,22 @@ fn consumed_buffer_bytes_are_erased_and_reads_preserve_read_ahead() {
 }
 
 #[test]
-fn exact_request_span_accounts_for_nested_json_escaping_and_whitespace() {
-    let header = br#"{"cancellationPath":"/request", "reque\u0073t" : { "nested": ["}\\\"",{}] }, "requestId":1}"#;
-    let start = header.windows(2).position(|bytes| bytes == b"{ ").unwrap();
-    let end = header
-        .windows(4)
-        .position(|bytes| bytes == b"] },")
+fn borrowed_request_handles_an_escaped_key_and_nested_escaped_strings() {
+    let directory = tempfile::tempdir().unwrap();
+    let expected = json!({"nested": ["} \\\"", {"request": [1,2,3]}]});
+    let raw = serde_json::to_string_pretty(&expected)
         .unwrap()
-        + 3;
-    assert_eq!(embedded_request_size(header).unwrap(), end - start);
-    assert!(embedded_request_size(b"{}").is_err());
-    assert!(embedded_request_size(br#"{"request":[]} "#).is_err());
-    assert!(embedded_request_size(br#"{"request":{ "a":"unterminated}"#).is_err());
-    assert!(string_end(b"\"bad\\", 0).is_err());
+        .replace('\n', " ");
+    let header = format!(
+        "{{\"cancellationPath\":{},\"reque\\u0073t\":  {raw},\"requestId\":1}}\n",
+        serde_json::to_string(directory.path()).unwrap(),
+    );
+    let parsed: RequestHeader<'_> = serde_json::from_str(&header).unwrap();
+    assert_eq!(parsed.request.get(), raw);
+    let request = read_request(&mut Cursor::new(&header), 1, true)
+        .unwrap()
+        .unwrap();
+    assert_eq!(request.request, expected);
 }
 
 #[test]
@@ -205,7 +222,7 @@ fn strict_headers_reject_invalid_ids_fields_lengths_and_payload_modes() {
         json!({"binaryBytes":-1}),
         json!({"binaryBytes":MAX_BINARY+1}),
         json!({"binaryBytes":0,"request":{"operation":"writeFile","dataBase64":""}}),
-        json!({"binaryBytes":0,"request":{"operation":"readFile"}}),
+        json!({"binaryBytes":0,"request":{"operation":"statBackground"}}),
     ] {
         let mut malformed = valid.clone();
         for (key, value) in update.as_object().unwrap() {
@@ -257,8 +274,11 @@ fn frame_and_embedded_request_limits_reject_before_execution() {
         serde_json::to_string(directory.path()).unwrap()
     )
     .into_bytes();
-    bytes.resize(bytes.len() + MAX_REQUEST, b' ');
+    let prefix = bytes.len();
+    bytes.resize(prefix + MAX_REQUEST - 2, b' ');
     bytes.extend_from_slice(b"}}\n");
+    assert!(read_request(&mut Cursor::new(&bytes), 1, true).is_ok());
+    bytes.insert(prefix, b' ');
     assert!(read_request(&mut Cursor::new(bytes), 1, true).is_err());
 }
 
@@ -313,7 +333,12 @@ fn serial_session_resets_cancellation_progress_and_preserves_binary_boundaries()
 #[test]
 fn binary_payload_sizes_preserve_nuls_newlines_and_the_next_frame() {
     let directory = tempfile::tempdir().unwrap();
-    for length in [8191, 8192, 8193, MAX_BINARY as usize] {
+    for length in [
+        READ_BUFFER_BYTES - 1,
+        READ_BUFFER_BYTES,
+        READ_BUFFER_BYTES + 1,
+        MAX_BINARY as usize,
+    ] {
         let payload: Vec<_> = (0..length)
             .map(|index| [0, b'\n', b'x'][index % 3])
             .collect();
@@ -353,7 +378,13 @@ fn binary_payload_sizes_preserve_nuls_newlines_and_the_next_frame() {
         assert_eq!(calls.get(), 2);
         assert!(reader.bytes.iter().all(|byte| *byte == 0));
         if length == MAX_BINARY as usize {
-            assert!(reader.source.calls.iter().any(|(_, length)| *length > 8192));
+            assert!(
+                reader
+                    .source
+                    .calls
+                    .iter()
+                    .any(|(_, length)| *length > READ_BUFFER_BYTES)
+            );
         }
     }
 }
@@ -365,9 +396,9 @@ fn truncated_direct_payload_never_activates_or_executes_the_handler() {
         1,
         directory.path(),
         json!({"operation":"writeFile"}),
-        Some(3 * 8192),
+        Some(3 * READ_BUFFER_BYTES as u64),
     );
-    bytes.extend(vec![b'x'; 2 * 8192]);
+    bytes.extend(vec![b'x'; 2 * READ_BUFFER_BYTES]);
     let signals = Signals::default();
     let calls = std::cell::Cell::new(0);
     let replies = std::cell::Cell::new(0);
@@ -391,7 +422,13 @@ fn truncated_direct_payload_never_activates_or_executes_the_handler() {
     assert_eq!(calls.get(), 0);
     assert_eq!(replies.get(), 1);
     assert!(signals.active.lock().unwrap().is_none());
-    assert!(reader.source.calls.iter().any(|(_, length)| *length > 8192));
+    assert!(
+        reader
+            .source
+            .calls
+            .iter()
+            .any(|(_, length)| *length > READ_BUFFER_BYTES)
+    );
     assert!(reader.bytes.iter().all(|byte| *byte == 0));
 }
 
@@ -568,7 +605,7 @@ fn branding_metadata_is_bounded_and_unambiguous_before_binary_reads() {
     for operation in [
         "brandingPublish",
         "writeFile",
-        "readBackgroundBytes",
+        "readBackgroundRepresentation",
         "unknown",
     ] {
         assert!(
@@ -625,6 +662,7 @@ fn fragmented_branding_payload_keeps_binary_delimiters_and_the_following_frame()
 #[test]
 fn binary_responses_have_exact_headers_and_no_trailing_separator() {
     let directory = tempfile::tempdir().unwrap();
+    let version = "a".repeat(64);
     for payload in [
         vec![],
         b"private\n\0data\n".to_vec(),
@@ -633,7 +671,7 @@ fn binary_responses_have_exact_headers_and_no_trailing_separator() {
         let mut input = frame(
             1,
             directory.path(),
-            json!({"operation":"readBackgroundBytes"}),
+            json!({"operation":"readBackgroundRepresentation"}),
             None,
         );
         input.extend(frame(
@@ -648,8 +686,11 @@ fn binary_responses_have_exact_headers_and_no_trailing_separator() {
             &Signals::default(),
             true,
             |request, _, _| {
-                Ok(if request["operation"] == "readBackgroundBytes" {
-                    WorkerResponse::Binary(Zeroizing::new(payload.clone()))
+                Ok(if request["operation"] == "readBackgroundRepresentation" {
+                    WorkerResponse::VersionedBinary {
+                        bytes: Zeroizing::new(payload.clone()),
+                        version: version.clone(),
+                    }
                 } else {
                     WorkerResponse::Json(Value::Null)
                 })
@@ -661,7 +702,7 @@ fn binary_responses_have_exact_headers_and_no_trailing_separator() {
         expected.push(b'\n');
         expected.extend(
             serde_json::to_vec(
-                &json!({"type":"binaryResult","requestId":1,"binaryBytes":payload.len()}),
+                &json!({"type":"binaryResult","requestId":1,"binaryBytes":payload.len(),"version":version}),
             )
             .unwrap(),
         );
@@ -676,36 +717,12 @@ fn binary_responses_have_exact_headers_and_no_trailing_separator() {
 }
 
 #[test]
-fn binary_output_is_scoped_bounded_and_stops_after_an_output_failure() {
+fn binary_output_stops_after_an_output_failure() {
     let directory = tempfile::tempdir().unwrap();
-    for (operation, length) in [
-        ("other", 1),
-        ("readBackgroundBytes", MAX_BINARY as usize + 1),
-    ] {
-        let mut replies = Vec::new();
-        worker_session(
-            &mut Cursor::new(frame(
-                1,
-                directory.path(),
-                json!({"operation":operation}),
-                None,
-            )),
-            &Signals::default(),
-            true,
-            |_, _, _| Ok(WorkerResponse::Binary(Zeroizing::new(vec![0; length]))),
-            |header, raw| {
-                assert!(raw.is_none());
-                replies.push(header.clone());
-                Ok(())
-            },
-        )
-        .unwrap();
-        assert_eq!(replies[1]["error"]["code"], "CORE_PROTOCOL_ERROR");
-    }
     let mut input = frame(
         1,
         directory.path(),
-        json!({"operation":"readBackgroundBytes"}),
+        json!({"operation":"readBackgroundRepresentation"}),
         None,
     );
     input.extend(frame(2, directory.path(), json!({}), None));
@@ -718,7 +735,10 @@ fn binary_output_is_scoped_bounded_and_stops_after_an_output_failure() {
             true,
             |_, _, _| {
                 calls.set(calls.get() + 1);
-                Ok(WorkerResponse::Binary(Zeroizing::new(vec![1])))
+                Ok(WorkerResponse::VersionedBinary {
+                    bytes: Zeroizing::new(vec![1]),
+                    version: "a".repeat(64),
+                })
             },
             |_, raw| if raw.is_some() {
                 Err(invalid())
@@ -733,7 +753,47 @@ fn binary_output_is_scoped_bounded_and_stops_after_an_output_failure() {
 }
 
 #[test]
-fn binary_response_writer_propagates_header_separator_payload_and_flush_failures() {
+fn versioned_binary_output_requires_the_exact_operation_and_a_bounded_version() {
+    let directory = tempfile::tempdir().unwrap();
+    for (operation, version, length) in [
+        ("statBackground", "a".repeat(64), 1),
+        ("readBackgroundRepresentation", "a".repeat(63), 1),
+        ("readBackgroundRepresentation", "A".repeat(64), 1),
+        (
+            "readBackgroundRepresentation",
+            "a".repeat(64),
+            MAX_BINARY as usize + 1,
+        ),
+    ] {
+        let mut replies = Vec::new();
+        worker_session(
+            &mut Cursor::new(frame(
+                1,
+                directory.path(),
+                json!({"operation":operation}),
+                None,
+            )),
+            &Signals::default(),
+            true,
+            |_, _, _| {
+                Ok(WorkerResponse::VersionedBinary {
+                    bytes: Zeroizing::new(vec![0; length]),
+                    version: version.clone(),
+                })
+            },
+            |header, raw| {
+                assert!(raw.is_none());
+                replies.push(header.clone());
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert_eq!(replies[1]["error"]["code"], "CORE_PROTOCOL_ERROR");
+    }
+}
+
+#[test]
+fn binary_response_writer_propagates_header_payload_and_flush_failures() {
     struct FailingWriter {
         remaining: usize,
         fail_flush: bool,
@@ -781,4 +841,30 @@ fn binary_response_writer_propagates_header_separator_payload_and_flush_failures
         )
         .is_err()
     );
+}
+
+#[test]
+fn response_writer_emits_one_json_line_and_then_the_raw_bytes() {
+    #[derive(Default)]
+    struct ObservedWriter(Vec<Vec<u8>>);
+    impl Write for ObservedWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.0.push(bytes.to_vec());
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let header = json!({"type":"binaryResult","requestId":1,"binaryBytes":3});
+    let mut writer = ObservedWriter::default();
+    write_response(&mut writer, &header, Some(b"a\0\n")).unwrap();
+    assert_eq!(writer.0.len(), 2);
+    assert_eq!(writer.0[0].last(), Some(&b'\n'));
+    assert_eq!(
+        serde_json::from_slice::<Value>(&writer.0[0]).unwrap(),
+        header
+    );
+    assert_eq!(writer.0[1], b"a\0\n");
 }

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
+import { BACKUP_POSTGRES_TIMEOUT_SECONDS } from '@/config/backup.config.ts'
 
 const originalTimeout = process.env.BACKUP_POSTGRES_TIMEOUT_SECONDS
 const originalPassword = process.env.PGPASSWORD
@@ -62,6 +63,17 @@ describe('PostgreSQL-Core-Prozessgrenze', function () {
         await restorePostgresDump('/synthetic/database.dump')
         expect(command.mock.calls[0]?.[1].operation).toBe('postgresRestore')
     })
+
+    it.each(['', '  '])(
+        'uses the default timeout for a blank setting (%j)',
+        async function (value) {
+            process.env.BACKUP_POSTGRES_TIMEOUT_SECONDS = value
+            await createPostgresDump('/synthetic/database.dump')
+            expect(command.mock.calls[0]?.[1]).toMatchObject({
+                timeoutMs: BACKUP_POSTGRES_TIMEOUT_SECONDS.default * 1000,
+            })
+        },
+    )
 
     it('startet bei ungültigem Zeitlimit keinen Prozess', async function () {
         process.env.BACKUP_POSTGRES_TIMEOUT_SECONDS = 'not-a-timeout'

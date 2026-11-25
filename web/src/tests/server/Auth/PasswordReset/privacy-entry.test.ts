@@ -349,6 +349,7 @@ describe('password-reset privacy before the Start server entry', () => {
     })
 
     it('binds simultaneous SSR bodies to distinct server-generated nonces', async () => {
+        process.env.VITE_REALTIME_WS_URL = 'wss://realtime.example.test/socket'
         delegate.mockImplementation(async function () {
             const nonce = getCurrentCspNonceService()
             await Promise.resolve()
@@ -381,6 +382,9 @@ describe('password-reset privacy before the Start server entry', () => {
             expect(nonce).not.toBe('caller-controlled-value')
             expect(result.headers.get('content-security-policy')).toContain(
                 `'nonce-${nonce}'`,
+            )
+            expect(result.headers.get('content-security-policy')).toContain(
+                'wss://realtime.example.test',
             )
             expect(result.headers.get('cache-control')).toBe(
                 'private, no-store, max-age=0',

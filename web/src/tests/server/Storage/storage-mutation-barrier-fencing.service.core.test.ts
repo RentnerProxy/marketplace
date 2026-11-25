@@ -13,6 +13,7 @@ import {
 import {
     cleanupStorageMutationTestDirectoryService,
     createStorageMutationTestDirectoryService,
+    STORAGE_FENCE_TEST_PROTOCOL,
 } from './storageMutationFence.test.helpers.ts'
 import type { StorageMutationTestDirectory } from './storageMutationFence.test.types.ts'
 import { RestoreRollbackError } from '@/server/Admin/Backups/archive-restore.errors.ts'
@@ -20,6 +21,7 @@ import { STORAGE_MUTATION_BARRIER_CONFIG as config } from '@/config/storage-muta
 import { StorageMutationFenceUnavailableError } from '@/server/Storage/storage-mutation-fence.errors.ts'
 
 const {
+    drainSharedStorageMutationBarrierService: drainShared,
     RestoreInProgressError,
     StorageMutationBarrierUnavailableError,
     withSharedStorageMutationBarrier: shared,
@@ -48,9 +50,17 @@ beforeEach(async function () {
 })
 
 afterEach(async function () {
-    vi.restoreAllMocks()
-    expect(sqlModel.waiters).toHaveLength(0)
-    await cleanupStorageMutationTestDirectoryService(fixture)
+    try {
+        if (sqlModel.healthy) await drainShared()
+        else
+            await expect(drainShared()).rejects.toBeInstanceOf(
+                StorageMutationBarrierUnavailableError,
+            )
+        expect(sqlModel.waiters).toHaveLength(0)
+    } finally {
+        vi.restoreAllMocks()
+        await cleanupStorageMutationTestDirectoryService(fixture)
+    }
 })
 
 describe('filesystem fencing across SQL session loss', function () {
@@ -122,9 +132,12 @@ describe('filesystem fencing across SQL session loss', function () {
         ).toHaveLength(1)
         dropSession(session())
         const restored = exclusive(async () => 2)
-        await waitFor(exclusivePublished)
-        expect(reserve).toHaveBeenCalledTimes(1)
-        continueReservation.resolve()
+        try {
+            await waitFor(exclusivePublished)
+            expect(reserve).toHaveBeenCalledTimes(1)
+        } finally {
+            continueReservation.resolve()
+        }
         expect(await rejected).toBeInstanceOf(Error)
         expect(await restored).toBe(2)
         expect(operation).not.toHaveBeenCalled()
@@ -152,7 +165,7 @@ describe('filesystem fencing across SQL session loss', function () {
         expect(await exclusivePublished()).toBe(false)
     })
 
-    it('does not release a lease before an in-flight SQL discard finishes', async function () {
+    it('waits for an idle SQL discard before releasing the shared lease and admitting restore', async function () {
         const started = Promise.withResolvers<void>()
         const finish = Promise.withResolvers<void>()
         const discarding = Promise.withResolvers<void>()
@@ -170,12 +183,15 @@ describe('filesystem fencing across SQL session loss', function () {
         finish.resolve()
         await discarding.promise
         const restored = exclusive(async () => 3)
-        await waitFor(exclusivePublished)
-        expect(reserve).toHaveBeenCalledTimes(1)
-        expect(
-            await readdir(path.join(fixture.rootDirectory, 'shared')),
-        ).toHaveLength(1)
-        discardFinished.resolve()
+        try {
+            expect(
+                await readdir(path.join(fixture.rootDirectory, 'shared')),
+            ).toHaveLength(1)
+            expect(await exclusivePublished()).toBe(false)
+            expect(reserve).toHaveBeenCalledTimes(1)
+        } finally {
+            discardFinished.resolve()
+        }
         await current
         expect(await restored).toBe(3)
     })
@@ -207,6 +223,8 @@ describe('filesystem fencing across SQL session loss', function () {
         ).toHaveLength(1)
         secondFinish.resolve()
         await second
+        expect(session().released).toBe(false)
+        await drainShared()
         expect(session().released).toBe(true)
         expect(
             await readdir(path.join(fixture.rootDirectory, 'shared')),
@@ -332,7 +350,9 @@ describe('filesystem fencing across SQL session loss', function () {
         const bytes = await readFile(
             path.join(fixture.rootDirectory, config.exclusiveFileName),
         )
-        expect(bytes.length).toBeLessThanOrEqual(config.maxMetadataBytes)
+        expect(bytes.length).toBeLessThanOrEqual(
+            STORAGE_FENCE_TEST_PROTOCOL.maxMetadataBytes,
+        )
         expect(markUnhealthy).toHaveBeenCalledTimes(1)
     })
 
@@ -463,7 +483,8 @@ describe('filesystem fencing across SQL session loss', function () {
         await started.promise
         dropSession(session())
         finish.resolve()
-        expect(await current).toBeInstanceOf(Error)
+        await current
+        await expect(drainShared()).rejects.toThrow()
         expect(
             await readdir(path.join(fixture.rootDirectory, 'shared')),
         ).toHaveLength(1)

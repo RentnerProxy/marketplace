@@ -20,8 +20,9 @@ export const RUNTIME_LOGS = {
 } as const
 
 export const CONTAINER_LOGS = {
-    port: 3004,
     requestTimeoutMs: 2500,
+    // Fit the native snapshot even when message code units expand to JSON escapes.
+    maxResponseBytes: 8 * 1024 * 1024,
     maxLineLength: 4096,
 } as const
 
@@ -155,6 +156,7 @@ export const LOG_NUMBER_FIELDS = [
     'uptimeSeconds',
     'syncedPermissions',
     'grantedAssignments',
+    'closedConnections',
 ] as const
 export const LOG_BOOLEAN_FIELDS = ['valkey', 'isActive', 'isReady'] as const
 export const LOG_ID_FIELDS = [
@@ -188,7 +190,6 @@ export const LOG_ALLOWED_VALUES = {
         'publish',
         'cleanup',
     ],
-    command: ['pg_dump', 'pg_restore'],
     phase: [
         'queued',
         'preparing',

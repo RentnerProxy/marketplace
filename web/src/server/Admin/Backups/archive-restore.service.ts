@@ -1,4 +1,3 @@
-import { stageBackup } from './archive-staging.service.ts'
 import { preparePrivateStorageDirectoryService } from '@/server/Storage/private-files.service.ts'
 import { RestoreRollbackError } from './archive-restore.errors.ts'
 import {
@@ -41,14 +40,17 @@ import {
     syncDirectory,
     syncFile,
 } from './archive-files.service.ts'
-import { extractBackupArchive } from './archive-validation.service.ts'
+import {
+    extractBackupArchive,
+    stageBackup,
+} from './archive-validation.service.ts'
 import type { ValidatedBackupArchive } from './Types/archive-validation.types.ts'
 import type { RestoreExtractedBackupArchiveInput } from './Types/archive-restore.types.ts'
 import { withBackupArchiveSourceService } from './archive-plaintext.service.ts'
 import type {
     BackupProgressReporter,
     RestoreBackupArchiveInput,
-} from './backup-service.types.ts'
+} from './Types/backup-service.types.ts'
 const RESTORE_PROGRESS_RETRY_DELAY_MS = 5_000
 function getScaledPercent(
     start: number,
@@ -440,12 +442,13 @@ export async function restoreBackupArchive(input: RestoreBackupArchiveInput) {
     const emitProgress = createRestoreProgressEmitter(input.onProgress)
     let stagingDirectory: string | undefined
     let preserveStagingDirectory = false
-    let restoreFailure: unknown
+    let restoreFailure: { error: unknown } | undefined
     try {
         await emitProgress('preparing', 0)
         const prepared = await withBackupArchiveSourceService(
             {
                 filePath: input.filePath,
+                forRestore: true,
             },
             async function ({ source, context }) {
                 let resourcesClosed = true
@@ -461,8 +464,7 @@ export async function restoreBackupArchive(input: RestoreBackupArchiveInput) {
                     context.temporaryDirectory,
                     'restore-source-',
                 )
-                let extracted = false
-                try {
+                async function prepareSource() {
                     const storageRoot = path.resolve(
                         getRequiredServerEnvironment('APP_STORAGE_DIR'),
                     )
@@ -556,43 +558,43 @@ export async function restoreBackupArchive(input: RestoreBackupArchiveInput) {
                                 stagingDirectory,
                             )
                     }
-                    extracted = true
                     return {
                         validatedSource,
                         storageRoot,
                         privateStorageRoot,
                         privateBackgrounds,
                     }
-                } finally {
-                    if (resourcesClosed) {
-                        const sourceRemoved = await removePathBestEffort(
-                            sourceDirectory,
-                            'backup.restore.source_cleanup_failed',
-                        )
-                        if (!sourceRemoved)
-                            operationContext.markCleanupIncomplete()
-                    }
-                    if (!extracted && stagingDirectory && resourcesClosed) {
-                        const extractedRemoved = await removePathBestEffort(
-                            stagingDirectory,
-                            'backup.restore.staging_cleanup_failed',
-                        )
-                        if (extractedRemoved) stagingDirectory = undefined
-                        else operationContext.markCleanupIncomplete()
-                    }
-                    if (!resourcesClosed)
-                        // oxlint-disable-next-line no-unsafe-finally -- Ungeschlossene Restore-Ressourcen dürfen keinen erfolgreichen Abschluss erlauben.
-                        throw normalizeError(
-                            new Error(
-                                'Die Restore-Vorbereitung konnte nicht sicher bereinigt werden.',
-                            ),
-                        )
                 }
+                const outcome = await prepareSource().then(
+                    (value) => ({ prepared: value }),
+                    (error: unknown) => ({ error }),
+                )
+                if (resourcesClosed) {
+                    const sourceRemoved = await removePathBestEffort(
+                        sourceDirectory,
+                        'backup.restore.source_cleanup_failed',
+                    )
+                    if (!sourceRemoved) operationContext.markCleanupIncomplete()
+                }
+                if ('error' in outcome && stagingDirectory && resourcesClosed) {
+                    const extractedRemoved = await removePathBestEffort(
+                        stagingDirectory,
+                        'backup.restore.staging_cleanup_failed',
+                    )
+                    if (extractedRemoved) stagingDirectory = undefined
+                    else operationContext.markCleanupIncomplete()
+                }
+                if (!resourcesClosed)
+                    throw new Error(
+                        'Die Restore-Vorbereitung konnte nicht sicher bereinigt werden.',
+                    )
+                if ('error' in outcome) throw outcome.error
+                return outcome.prepared
             },
         )
         if (!stagingDirectory)
             throw new Error('Der geprüfte Restore-Inhalt fehlt.')
-        return await restoreExtractedBackupArchive({
+        await restoreExtractedBackupArchive({
             validated: prepared.validatedSource,
             restoreDirectory: stagingDirectory,
             storageRoot: prepared.storageRoot,
@@ -605,33 +607,25 @@ export async function restoreBackupArchive(input: RestoreBackupArchiveInput) {
             storageMutationBarrierHeld: input.storageMutationBarrierHeld,
         })
     } catch (error) {
-        restoreFailure = error
+        restoreFailure = { error }
         if (error instanceof RestoreRollbackError)
             preserveStagingDirectory = true
-        throw error
-    } finally {
-        if (stagingDirectory && !preserveStagingDirectory) {
-            const removed = await removePathBestEffort(
-                stagingDirectory,
-                'backup.restore.staging_cleanup_failed',
+    }
+    if (stagingDirectory && !preserveStagingDirectory) {
+        const removed = await removePathBestEffort(
+            stagingDirectory,
+            'backup.restore.staging_cleanup_failed',
+        )
+        if (!removed) {
+            const cleanupError = new Error(
+                'Der extrahierte Backup-Klartext konnte nicht vollständig bereinigt werden.',
             )
-            if (!removed) {
-                const cleanupError = new Error(
-                    'Der extrahierte Backup-Klartext konnte nicht vollständig bereinigt werden.',
-                )
-                if (restoreFailure instanceof RestoreRollbackError) {
-                    restoreFailure.rollbackErrors.push(cleanupError)
-                } else {
-                    // oxlint-disable-next-line no-unsafe-finally -- Fehlgeschlagene Klartext-Bereinigung erfordert sichere manuelle Wiederherstellung.
-                    throw normalizeError(
-                        new RestoreRollbackError(
-                            'Der Restore-Abschluss benötigt eine sichere manuelle Bereinigung.',
-                            [cleanupError],
-                            restoreFailure ?? cleanupError,
-                        ),
-                    )
-                }
-            }
+            throw new RestoreRollbackError(
+                'Der Restore-Abschluss benötigt eine sichere manuelle Bereinigung.',
+                [cleanupError],
+                restoreFailure?.error ?? cleanupError,
+            )
         }
     }
+    if (restoreFailure) throw restoreFailure.error
 }

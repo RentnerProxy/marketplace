@@ -27,13 +27,13 @@ const displayText = z
     .refine((value) =>
         Array.from(value).every((character) => {
             const code = character.charCodeAt(0)
-            return code >= 32 && code !== 127
+            return code >= 0x20 && (code < 0x7f || code > 0x9f)
         }),
     )
     .refine((value) => value === value.trim())
 
 const projectConfigSchema = z.strictObject({
-    defaultName: displayText,
+    defaultName: displayText.refine((value) => !value.includes('"')),
     id: z
         .string()
         .regex(/^[a-z][a-z0-9_-]{0,39}$/)

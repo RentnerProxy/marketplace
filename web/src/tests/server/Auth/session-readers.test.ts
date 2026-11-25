@@ -301,6 +301,22 @@ describe('passive permission access', () => {
 })
 
 describe('read-only public session validation', () => {
+    it('starts maintenance and permission reads concurrently', async () => {
+        const permissionRead = Promise.withResolvers<void>()
+        const maintenanceReadStarted = Promise.withResolvers<void>()
+        state.beforePermissions = () => permissionRead.promise
+        state.beforeMaintenance = async () => maintenanceReadStarted.resolve()
+
+        const validation = validateSessionService()
+        await maintenanceReadStarted.promise
+        try {
+            expect(services.permissions).toHaveBeenCalledWith(state.user.id)
+        } finally {
+            permissionRead.resolve()
+        }
+        expect((await validation).user).not.toBeNull()
+    })
+
     it('keeps email proof available to server policy and exposes bounded client deadlines', async () => {
         expect(await getActiveCurrentSessionUser()).toMatchObject({
             accountType: 'public',

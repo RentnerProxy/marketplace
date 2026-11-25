@@ -1,5 +1,6 @@
 import { LOGIN_ATTEMPT_SCRIPT } from '@/server/RateLimit/login-attempt.script.ts'
 import { forEachSequentially } from '@/lib/Promise/forEachSequentially.ts'
+import { mockValkeyDefineCommand } from '@/tests/shared/valkey-script.test.helpers.ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import {
     finishLoginAttemptService,
@@ -28,18 +29,20 @@ let evalError: Error | null = null
 const getClientIp = vi.fn(function () {
     return '203.0.113.10'
 })
+const evalScript = vi.fn(async function (
+    script: string,
+    keyCount: number,
+    ...values: Array<string>
+): Promise<unknown> {
+    if (evalError) throw evalError
+    if (forcedReply !== NO_OVERRIDE) return forcedReply
+    if (script !== LOGIN_ATTEMPT_SCRIPT)
+        throw new Error('Unexpected login script boundary')
+    return evaluateLoginAttemptModel(model, keyCount, values)
+})
 const valkey = {
-    eval: vi.fn(async function (
-        script: string,
-        keyCount: number,
-        ...values: Array<string>
-    ): Promise<unknown> {
-        if (evalError) throw evalError
-        if (forcedReply !== NO_OVERRIDE) return forcedReply
-        if (script !== LOGIN_ATTEMPT_SCRIPT)
-            throw new Error('Unexpected login script boundary')
-        return evaluateLoginAttemptModel(model, keyCount, values)
-    }),
+    eval: evalScript,
+    defineCommand: mockValkeyDefineCommand(evalScript),
 }
 const getValkeyConnection = vi.fn(function () {
     if (connectionError) throw connectionError

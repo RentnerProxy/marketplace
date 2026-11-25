@@ -30,7 +30,7 @@ it('beendet eine natürliche Bun-CLI mit unbenutztem Core-Pool und bereinigt des
                 return directory
             },
         }))
-        mock.module('@/server/Logging/logger.ts', () => ({ logInfo() {}, logError() {} }))
+        mock.module('@/server/Logging/logger.ts', () => ({ logInfo() {}, logWarn() {}, logError() {} }))
         const { runCoreCommandService } = await import('@/server/Core/command.service.ts')
         for (let count = 0; count < 3; count++) {
             await runCoreCommandService('storage', { operation: 'permissions', path: ${JSON.stringify(directory)} })
@@ -41,6 +41,7 @@ it('beendet eine natürliche Bun-CLI mit unbenutztem Core-Pool und bereinigt des
         [process.execPath, '--no-env-file', '-e', program],
         {
             cwd: process.cwd(),
+            env: { ...process.env, CORE_STORAGE_FFI: 'disabled' },
             stdin: 'ignore',
             stdout: 'pipe',
             stderr: 'pipe',

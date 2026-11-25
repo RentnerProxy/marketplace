@@ -1,11 +1,7 @@
-export async function createTokenHash(token: string) {
-    const tokenBytes = new TextEncoder().encode(token)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', tokenBytes)
-    const hashBytes = Array.from(new Uint8Array(hashBuffer))
+export function createTokenHashSync(token: string) {
+    return new Bun.CryptoHasher('sha256').update(token, 'utf8').digest('hex')
+}
 
-    return hashBytes
-        .map(function (byte) {
-            return byte.toString(16).padStart(2, '0')
-        })
-        .join('')
+export async function createTokenHash(token: string) {
+    return createTokenHashSync(token)
 }

@@ -3,6 +3,7 @@ import {
     boolean,
     check,
     foreignKey,
+    index,
     primaryKey,
     text,
     timestamp,
@@ -60,7 +61,12 @@ export const staffUserPermissions = appSchema.table(
             .defaultNow()
             .notNull(),
     },
-    (table) => [primaryKey({ columns: [table.userId, table.permissionId] })],
+    (table) => [
+        primaryKey({ columns: [table.userId, table.permissionId] }),
+        index('staff_user_permissions_permission_id_idx').on(
+            table.permissionId,
+        ),
+    ],
 )
 
 export const publicUserPermissions = appSchema.table(
@@ -77,6 +83,9 @@ export const publicUserPermissions = appSchema.table(
     },
     (table) => [
         primaryKey({ columns: [table.userId, table.permissionId] }),
+        index('public_user_permissions_permission_id_idx').on(
+            table.permissionId,
+        ),
         check(
             'public_user_permissions_scope_check',
             sql`${table.publicEligible}`,
@@ -164,5 +173,10 @@ export const permissionPresetPermissions = appSchema.table(
             .defaultNow()
             .notNull(),
     },
-    (table) => [primaryKey({ columns: [table.presetId, table.permissionId] })],
+    (table) => [
+        primaryKey({ columns: [table.presetId, table.permissionId] }),
+        index('permission_preset_permissions_permission_id_idx').on(
+            table.permissionId,
+        ),
+    ],
 )

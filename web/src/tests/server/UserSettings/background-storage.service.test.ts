@@ -6,7 +6,7 @@ const command = vi.fn(async function (
     _binary: string,
     _request: Record<string, unknown>,
     _options?: CoreCommandOptions,
-): Promise<Buffer | null> {
+): Promise<unknown> {
     return null
 })
 vi.mock('@/server/Core/command.service.ts', function () {
@@ -38,7 +38,12 @@ vi.mock('@/lib/Images/publicImagePaths.ts', function () {
         },
     }
 })
-import { readCurrentUserBackgroundFileService } from '@/server/UserSettings/background-storage.service.ts'
+import {
+    readCurrentUserBackgroundFileService,
+    statCurrentUserBackgroundFileService,
+} from '@/server/UserSettings/background-storage.service.ts'
+
+const version = 'a'.repeat(64)
 
 beforeEach(function () {
     command.mockReset()
@@ -52,11 +57,17 @@ describe('private background native contract', function () {
         if (!validate) throw new Error('Missing result validator')
         expect(validate(null)).toBeNull()
         const bytes = Buffer.from([0, 10, 255])
-        expect(validate(bytes)).toBe(bytes)
-        expect(validate(Buffer.alloc(0))).toEqual(Buffer.alloc(0))
-        expect(validate(Buffer.alloc(8 * 1024 * 1024))).toHaveLength(
-            8 * 1024 * 1024,
-        )
+        const parsed = validate({ version, bytes }) as { bytes: Buffer }
+        expect(parsed.bytes).toBe(bytes)
+        expect(validate({ version, bytes: Buffer.alloc(0) })).toEqual({
+            version,
+            bytes: Buffer.alloc(0),
+        })
+        const maximum = Buffer.alloc(8 * 1024 * 1024)
+        expect(validate({ version, bytes: maximum })).toEqual({
+            version,
+            bytes: maximum,
+        })
         for (const result of [
             new Uint8Array([1, 2, 3]),
             'AQID',
@@ -65,7 +76,10 @@ describe('private background native contract', function () {
             { dataBase64: '%%%secret' },
             { dataBase64: 'AQI' },
             { dataBase64: 'AQID', extra: true },
-            Buffer.alloc(8 * 1024 * 1024 + 1),
+            { version, bytes: Buffer.alloc(8 * 1024 * 1024 + 1) },
+            { version: 'invalid', bytes },
+            { bytes },
+            { version, bytes, extra: true },
         ]) {
             expect(function () {
                 validate(result)
@@ -76,15 +90,36 @@ describe('private background native contract', function () {
         expect(await readCurrentUserBackgroundFileService('id')).toBeNull()
         expect(command.mock.calls[0]?.[0]).toBe('storage')
         const request = command.mock.calls[0]?.[1]
-        expect(request?.operation).toBe('readBackgroundBytes')
+        expect(request?.operation).toBe('readBackgroundRepresentation')
         expect(String(request?.filePath)).toContain('private')
         expect(String(request?.legacyPath)).toContain('public')
     })
 
     it('reicht die bestätigten Dateibytes ohne Base64 oder erneute Kopie weiter', async function () {
         const data = Buffer.from('synthetic-image')
-        command.mockResolvedValue(data)
-        expect(await readCurrentUserBackgroundFileService('id')).toBe(data)
+        command.mockResolvedValue({ version, bytes: data })
+        const result = await readCurrentUserBackgroundFileService('id')
+        expect(result?.bytes).toBe(data)
+        expect(result?.size).toBe(data.byteLength)
+    })
+
+    it('requests bounded metadata without binary output and accepts only the exact metadata shape', async function () {
+        await statCurrentUserBackgroundFileService('id')
+        expect(command.mock.calls[0]?.[1]?.operation).toBe('statBackground')
+        const validate = command.mock.calls[0]?.[2]?.validateResult
+        if (!validate) throw new Error('Missing metadata validator')
+        expect(validate(null)).toBeNull()
+        const metadata = { version, size: 8 * 1024 * 1024 }
+        expect(validate(metadata)).toEqual(metadata)
+        for (const invalid of [
+            { ...metadata, size: metadata.size + 1 },
+            { ...metadata, size: -1 },
+            { ...metadata, size: 0.5 },
+            { ...metadata, bytes: Buffer.alloc(0) },
+            { ...metadata, version: 'a'.repeat(64) + '\n' },
+        ]) {
+            expect(() => validate(invalid)).toThrow()
+        }
     })
 
     it('gibt fehlgeschlagene native Prüfungen weiter', async function () {
