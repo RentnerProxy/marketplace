@@ -157,7 +157,7 @@ impl ManagedChild {
                     "bun:bun",
                     "bun",
                     "--no-env-file",
-                    "runtime/productionEntrypoint.js",
+                    "web/src/server/productionEntrypoint.ts",
                 ]
             }
             Role::Worker => {
@@ -166,7 +166,7 @@ impl ManagedChild {
                     "bun:bun",
                     "bun",
                     "--no-env-file",
-                    "runtime/productionWorkerEntrypoint.js",
+                    "web/src/server/productionWorkerEntrypoint.ts",
                 ]
             }
         };

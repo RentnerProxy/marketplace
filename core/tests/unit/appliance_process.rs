@@ -307,9 +307,9 @@ fn production_commands_drop_privileges_and_scrub_database_and_cache_environments
             .collect();
         if role.consumer() {
             let script = if role == Role::Webserver {
-                "runtime/productionEntrypoint.js"
+                "web/src/server/productionEntrypoint.ts"
             } else {
-                "runtime/productionWorkerEntrypoint.js"
+                "web/src/server/productionWorkerEntrypoint.ts"
             };
             assert_eq!(args, ["bun:bun", "bun", "--no-env-file", script]);
             assert_eq!(child_env["POSTGRES_PASSWORD"], "synthetic-password");
