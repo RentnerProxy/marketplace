@@ -44,7 +44,7 @@ FROM oven/bun:${BUN_VERSION}-alpine AS base
 
 WORKDIR /app
 
-FROM postgres:18.7-alpine3.24 AS postgres-runtime
+FROM postgres:19.0-alpine3.24 AS postgres-runtime
 
 # Marketplace starts PostgreSQL through its own supervisor and su-exec.
 RUN rm -f /usr/local/bin/gosu \
