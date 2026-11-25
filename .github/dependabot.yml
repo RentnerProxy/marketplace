@@ -71,6 +71,11 @@ updates:
           include: 'scope'
       labels: ['dependencies', 'docker']
       open-pull-requests-limit: 10
+      ignore:
+          # The appliance keeps its PostgreSQL 18 cluster. A major upgrade needs its own
+          # plan with pg_upgrade and a tested rollback path; minor and patch updates still apply.
+          - dependency-name: 'postgres'
+            update-types: ['version-update:semver-major']
       groups:
           docker-by-dependency:
               applies-to: 'version-updates'
