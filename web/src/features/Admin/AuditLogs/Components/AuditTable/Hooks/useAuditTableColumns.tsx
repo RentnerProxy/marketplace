@@ -7,13 +7,13 @@ import useTranslationStore from '@/language/useTranslationStore.ts'
 const SYSTEM_ACTOR_FILTER_VALUE = 'system'
 
 export default function useAuditTableColumns() {
-    const { language, t } = useTranslationStore()
+    const { t } = useTranslationStore()
 
     return useMemo<Array<TableColumn<AuditLogEntry>>>(
         () => [
             {
                 accessorKey: 'action',
-                header: t('admin.auditLogs.action', { lng: language }),
+                header: t('admin.auditLogs.action'),
                 enableHiding: false,
                 meta: {
                     filter: {
@@ -137,6 +137,6 @@ export default function useAuditTableColumns() {
                 ),
             },
         ],
-        [language, t],
+        [t],
     )
 }

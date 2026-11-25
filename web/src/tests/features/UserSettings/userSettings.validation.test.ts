@@ -1,4 +1,3 @@
-import { faker } from '@faker-js/faker'
 import { describe, expect, it } from 'bun:test'
 import {
     beginCurrentUserPasskeyRegistrationInputSchema,
@@ -17,30 +16,20 @@ import {
     updateCurrentUserProfileImageInputSchema,
 } from '@/features/UserSettings/validation.ts'
 
-function createImageDataUrl() {
-    return `data:image/png;base64,${Buffer.from(
-        faker.string.alphanumeric(128),
-    ).toString('base64')}`
-}
-
-function createCropArea() {
-    return {
-        x: faker.number.int({ min: 0, max: 20 }),
-        y: faker.number.int({ min: 0, max: 20 }),
-        width: faker.number.int({ min: 50, max: 512 }),
-        height: faker.number.int({ min: 50, max: 512 }),
-    }
-}
+const imageDataUrl = `data:image/png;base64,${Buffer.alloc(128, 0x61).toString('base64')}`
+const crop = { x: 10, y: 20, width: 240, height: 200 }
+const tokenId = '11111111-1111-4111-8111-111111111111'
+const challengeId = '01941f29-7c00-7000-8000-000000000001'
 
 describe('UserSettings Validierung', function () {
     it('akzeptiert gültige persönliche Daten', function () {
         const result = updateCurrentUserPersonalInfoInputSchema.safeParse({
-            firstName: faker.person.firstName(),
-            lastName: faker.person.lastName(),
-            street: faker.location.street(),
-            houseNumber: faker.location.buildingNumber(),
-            postalCode: faker.location.zipCode(),
-            city: faker.location.city(),
+            firstName: 'Alex',
+            lastName: 'Example',
+            street: 'Example Street',
+            houseNumber: '12A',
+            postalCode: '12345',
+            city: 'Example City',
         })
 
         expect(result.success).toBe(true)
@@ -48,8 +37,8 @@ describe('UserSettings Validierung', function () {
 
     it('akzeptiert gültige Profilbild-Daten', function () {
         const result = updateCurrentUserProfileImageInputSchema.safeParse({
-            imageDataUrl: createImageDataUrl(),
-            crop: createCropArea(),
+            imageDataUrl,
+            crop,
         })
 
         expect(result.success).toBe(true)
@@ -57,8 +46,8 @@ describe('UserSettings Validierung', function () {
 
     it('akzeptiert gültige Hintergrundbild-Daten', function () {
         const result = updateCurrentUserBackgroundInputSchema.safeParse({
-            imageDataUrl: createImageDataUrl(),
-            crop: createCropArea(),
+            imageDataUrl,
+            crop,
         })
 
         expect(result.success).toBe(true)
@@ -68,8 +57,8 @@ describe('UserSettings Validierung', function () {
         'akzeptiert %s Prozent Abdunklung beim Hintergrund-Upload',
         function (customBackgroundDarkness) {
             const result = updateCurrentUserBackgroundInputSchema.parse({
-                imageDataUrl: createImageDataUrl(),
-                crop: createCropArea(),
+                imageDataUrl,
+                crop,
                 customBackgroundDarkness,
             })
 
@@ -84,8 +73,8 @@ describe('UserSettings Validierung', function () {
         function (customBackgroundDarkness) {
             expect(
                 updateCurrentUserBackgroundInputSchema.safeParse({
-                    imageDataUrl: createImageDataUrl(),
-                    crop: createCropArea(),
+                    imageDataUrl,
+                    crop,
                     customBackgroundDarkness,
                 }).success,
             ).toBe(false)
@@ -103,10 +92,7 @@ describe('UserSettings Validierung', function () {
     it('akzeptiert gültige Hintergrund-Abdunklung', function () {
         const result =
             updateCurrentUserBackgroundAppearanceInputSchema.safeParse({
-                customBackgroundDarkness: faker.number.int({
-                    min: 0,
-                    max: 95,
-                }),
+                customBackgroundDarkness: 55,
             })
 
         expect(result.success).toBe(true)
@@ -135,8 +121,8 @@ describe('UserSettings Validierung', function () {
 
     it('lehnt ungültige Zwei-Faktor-Codes ab', function () {
         const result = confirmCurrentUserTwoFactorSetupInputSchema.safeParse({
-            token: faker.string.alpha(6),
-            setupToken: faker.string.uuid(),
+            token: 'abcdef',
+            setupToken: tokenId,
         })
 
         expect(result.success).toBe(false)
@@ -183,7 +169,7 @@ describe('UserSettings Validierung', function () {
         ).toBe(true)
         expect(
             deleteCurrentUserPasskeyInputSchema.safeParse({
-                passkeyId: faker.string.uuid(),
+                passkeyId: tokenId,
             }).success,
         ).toBe(false)
     })
@@ -197,7 +183,7 @@ describe('UserSettings Validierung', function () {
         expect(
             confirmCurrentUserTwoFactorSetupInputSchema.safeParse({
                 token: '123456',
-                setupToken: faker.string.uuid(),
+                setupToken: tokenId,
             }).success,
         ).toBe(true)
     })
@@ -213,14 +199,14 @@ describe('UserSettings Validierung', function () {
 
         expect(
             finishCurrentUserPasskeyRegistrationInputSchema.safeParse({
-                challengeId: Bun.randomUUIDv7(),
+                challengeId,
                 response,
             }).success,
         ).toBe(false)
         expect(
             finishCurrentUserPasskeyRegistrationInputSchema.safeParse({
-                challengeId: Bun.randomUUIDv7(),
-                registrationToken: faker.string.uuid(),
+                challengeId,
+                registrationToken: tokenId,
                 response,
             }).success,
         ).toBe(true)

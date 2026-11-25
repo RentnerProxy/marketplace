@@ -1,9 +1,7 @@
-import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { toast } from '@rentnerkev/toasts'
-import useTranslationStore from '@/language/useTranslationStore.ts'
-import { getErrorMessage } from '@/lib/Errors/error.ts'
+import { translateCurrentLanguage } from '@/language/languageStore.ts'
 import { backupOverviewQueryOptions } from '@/lib/Backups/backupCache.ts'
+import { toastAppError } from '@/shared/Errors/toastAppError.ts'
 import type { BackupLogicReturn } from '../Types/backup-logic.types.ts'
 import type { BackupRun, BackupStats } from '../Types/backup-domain.types.ts'
 import useBackupImport from './useBackupImport.ts'
@@ -20,18 +18,13 @@ const EMPTY_BACKUP_STATS: BackupStats = {
     restored: 0,
 }
 
+function showError(error: unknown) {
+    toastAppError(error, translateCurrentLanguage('common.error'))
+}
+
 export default function useBackupsLogic(): BackupLogicReturn {
-    const { t } = useTranslationStore()
     const overviewQuery = useQuery(backupOverviewQueryOptions())
     const runs = overviewQuery.data?.runs ?? EMPTY_BACKUP_RUNS
-    const showError = useCallback(
-        function (error: unknown) {
-            toast.error(getErrorMessage(error, t('common.error')), {
-                title: t('common.error'),
-            })
-        },
-        [t],
-    )
     const settingsLogic = useBackupSettingsForm({
         storedSettings: overviewQuery.data?.settings,
         onError: showError,

@@ -1,13 +1,13 @@
 import type { LanguageSettingsLogicReturn } from '../Types/language-logic.types.ts'
 import { useState } from 'react'
 import { toast } from '@rentnerkev/toasts'
+import { translateCurrentLanguage } from '@/language/languageStore.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import type { AppLanguage } from '@/shared/Types/config.types.ts'
 import { toastAppError } from '@/shared/Errors/toastAppError.ts'
 
 export default function useLanguageSettingsLogic(): LanguageSettingsLogicReturn {
-    const { availableLanguages, language, setLanguage, t } =
-        useTranslationStore()
+    const { availableLanguages, language, setLanguage } = useTranslationStore()
 
     const [selectedLanguage, setSelectedLanguage] =
         useState<AppLanguage>(language)
@@ -30,9 +30,10 @@ export default function useLanguageSettingsLogic(): LanguageSettingsLogicReturn 
         try {
             setIsSavingLanguage(true)
             await setLanguage(selectedLanguage)
-            toast.success(t('language.savedDescription'), {
-                title: t('language.savedTitle'),
-            })
+            toast.success(
+                translateCurrentLanguage('language.savedDescription'),
+                { title: translateCurrentLanguage('language.savedTitle') },
+            )
         } catch (error: unknown) {
             toastAppError(error)
         } finally {

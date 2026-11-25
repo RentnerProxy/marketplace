@@ -1,23 +1,23 @@
 import { Layers3, ShieldAlert } from 'lucide-react'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import type { TranslationKey } from '@/language/translation.ts'
 import type { PermissionChecklistProps } from '../Types/permission-management-component-props.types.ts'
 
-const permissionTranslationKeyByPermissionKey: Record<string, string> = {
-    [PERMISSIONS.ADMIN_DASHBOARD]: 'admin.permissions.catalog.adminDashboard',
-    [PERMISSIONS.ADMIN_USER_MANAGEMENT]:
-        'admin.permissions.catalog.userManagement',
-    [PERMISSIONS.ADMIN_ACCOUNT_CONVERSION]:
-        'admin.permissions.catalog.accountConversion',
-    [PERMISSIONS.ADMIN_SYSTEM_SETTINGS]:
-        'admin.permissions.catalog.systemSettings',
-    [PERMISSIONS.ADMIN_MAINTENANCE_BYPASS]:
-        'admin.permissions.catalog.maintenanceBypass',
-    [PERMISSIONS.ADMIN_SUPER_USER]: 'admin.permissions.catalog.superUser',
-    [PERMISSIONS.USER_DASHBOARD]: 'admin.permissions.catalog.userDashboard',
-    [PERMISSIONS.ADMIN_AUDIT_LOGS]: 'admin.permissions.catalog.auditLogs',
-    [PERMISSIONS.ADMIN_BACKUPS]: 'admin.permissions.catalog.backups',
-}
+type PermissionCatalogEntry<Key = TranslationKey> =
+    Key extends `admin.permissions.catalog.${infer Entry}.name` ? Entry : never
+
+const permissionCatalogEntries = new Map<string, PermissionCatalogEntry>([
+    [PERMISSIONS.ADMIN_DASHBOARD, 'adminDashboard'],
+    [PERMISSIONS.ADMIN_USER_MANAGEMENT, 'userManagement'],
+    [PERMISSIONS.ADMIN_ACCOUNT_CONVERSION, 'accountConversion'],
+    [PERMISSIONS.ADMIN_SYSTEM_SETTINGS, 'systemSettings'],
+    [PERMISSIONS.ADMIN_MAINTENANCE_BYPASS, 'maintenanceBypass'],
+    [PERMISSIONS.ADMIN_SUPER_USER, 'superUser'],
+    [PERMISSIONS.USER_DASHBOARD, 'userDashboard'],
+    [PERMISSIONS.ADMIN_AUDIT_LOGS, 'auditLogs'],
+    [PERMISSIONS.ADMIN_BACKUPS, 'backups'],
+])
 const EMPTY_PRESET_PERMISSION_KEYS: Array<string> = []
 
 export default function PermissionChecklist({
@@ -57,13 +57,14 @@ export default function PermissionChecklist({
                 const isSelected = selectedPermissionKeys.includes(
                     permission.key,
                 )
-                const translationKey =
-                    permissionTranslationKeyByPermissionKey[permission.key]
-                const permissionName = translationKey
-                    ? t(`${translationKey}.name`)
+                const catalogEntry = permissionCatalogEntries.get(
+                    permission.key,
+                )
+                const permissionName = catalogEntry
+                    ? t(`admin.permissions.catalog.${catalogEntry}.name`)
                     : permission.name
-                const permissionDescription = translationKey
-                    ? t(`${translationKey}.description`)
+                const permissionDescription = catalogEntry
+                    ? t(`admin.permissions.catalog.${catalogEntry}.description`)
                     : permission.description
 
                 return (

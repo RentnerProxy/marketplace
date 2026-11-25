@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@rentnerkev/toasts'
 import { toastAppError } from '@/shared/Errors/toastAppError.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import type { TranslationKey } from '@/language/translation.ts'
 import {
     clearTransferTasks,
     finishExternalTransferTask,
@@ -20,7 +21,10 @@ import usePendingManualBackupIntent, {
     clearPendingManualBackupIntent,
 } from './usePendingManualBackupIntent.ts'
 
-const PHASE_TRANSLATION_KEYS: Record<BackupCreationProgressPhase, string> = {
+const PHASE_TRANSLATION_KEYS: Record<
+    BackupCreationProgressPhase,
+    TranslationKey
+> = {
     queued: 'admin.backups.progress.phaseQueued',
     preparing: 'admin.backups.progress.phasePreparing',
     collecting: 'admin.backups.progress.phaseCollecting',

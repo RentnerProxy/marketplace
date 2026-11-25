@@ -24,7 +24,7 @@ mock.module('@/language/useTranslationStore.ts', () => ({
     default: () => ({ t: (key: string) => key }),
 }))
 let mounted = true
-const body = { style: { overflow: 'unset' } }
+const body = { style: { overflow: 'auto' } }
 mock.module('react', () => hookReact)
 mock.module(
     '@/layouts/AuthenticatedLayout/Hooks/useAuthenticatedShellUiStore.ts',
@@ -40,7 +40,7 @@ beforeEach(() => {
     resetHooks()
     shell.state.isUserSettingsOpen = true
     mounted = true
-    body.style.overflow = 'unset'
+    body.style.overflow = 'auto'
     stubTestGlobal('document', { body })
     browser.location.hash = ''
     browser.history.replaceState.mockClear()
@@ -84,7 +84,7 @@ describe('User settings modal logic', () => {
         logic.handler.closeUserSettings()
         expect(shell.handler.closeUserSettings).toHaveBeenCalledTimes(1)
         cleanup()
-        expect(body.style.overflow).toBe('unset')
+        expect(body.style.overflow).toBe('auto')
     })
     it('keeps scrolling available while closed and reports the mount state', () => {
         shell.state.isUserSettingsOpen = false
@@ -94,7 +94,8 @@ describe('User settings modal logic', () => {
             mounted: false,
         })
         const cleanup = runEffects()
-        expect(body.style.overflow).toBe('unset')
+        expect(body.style.overflow).toBe('auto')
         cleanup()
+        expect(body.style.overflow).toBe('auto')
     })
 })

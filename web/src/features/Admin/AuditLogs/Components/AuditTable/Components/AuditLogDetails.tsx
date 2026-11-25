@@ -1,14 +1,17 @@
 import type { AuditLogDetailsProps } from '../Types/audit-table.types.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import useAuditLogDetailsLogic from '../Hooks/useAuditLogDetailsLogic.ts'
+import {
+    formatAuditValue,
+    getAuditCompareRows,
+} from '@/lib/AuditLogs/auditLogValues.ts'
 
 export function AuditLogDetails({ auditLog }: AuditLogDetailsProps) {
     const { t } = useTranslationStore()
-    const { state } = useAuditLogDetailsLogic(auditLog)
+    const rows = getAuditCompareRows(auditLog)
 
     return (
         <div className="overflow-hidden rounded-lg border border-border-dark bg-surface-dark">
-            {state.rows.length === 0 ? (
+            {rows.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-secondary-text">
                     {t('admin.auditLogs.emptyDiff')}
                 </div>
@@ -27,7 +30,7 @@ export function AuditLogDetails({ auditLog }: AuditLogDetailsProps) {
                             </div>
                         </div>
 
-                        {state.rows.map((row) => (
+                        {rows.map((row) => (
                             <div
                                 key={row.key}
                                 className="grid grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] border-b border-border-dark last:border-b-0"
@@ -45,7 +48,7 @@ export function AuditLogDetails({ auditLog }: AuditLogDetailsProps) {
                                         </span>
 
                                         <div className="min-w-0 whitespace-pre-wrap wrap-break-word font-mono text-xs leading-relaxed text-secondary-text">
-                                            {row.oldValue}
+                                            {formatAuditValue(row.oldValue)}
                                         </div>
                                     </div>
                                 </div>
@@ -57,7 +60,7 @@ export function AuditLogDetails({ auditLog }: AuditLogDetailsProps) {
                                         </span>
 
                                         <div className="min-w-0 whitespace-pre-wrap wrap-break-word font-mono text-xs leading-relaxed text-secondary-text">
-                                            {row.newValue}
+                                            {formatAuditValue(row.newValue)}
                                         </div>
                                     </div>
                                 </div>

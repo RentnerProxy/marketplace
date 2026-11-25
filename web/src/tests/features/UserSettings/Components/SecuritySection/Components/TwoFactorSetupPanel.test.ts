@@ -45,21 +45,29 @@ function props(): TwoFactorSetupPanelProps {
 }
 
 describe('TwoFactorSetupPanel', () => {
-    it('renders nothing before setup has returned an authenticator URL', () => {
+    it('keeps the closed panel inert and removes the setup controls and credentials', () => {
         const fixture = props()
         fixture.state.twoFactorOtpAuthUrl = null
-        expect(renderToStaticMarkup(TwoFactorSetupPanel(fixture))).toBe('')
+        const html = renderToStaticMarkup(TwoFactorSetupPanel(fixture))
+        expect(html).toContain('aria-hidden="true" inert="" data-open="false"')
+        expect(html).not.toContain('<svg')
+        expect(html).not.toContain('<input')
+        expect(html).not.toContain('<button')
+        expect(html).not.toContain('TESTSECRET')
     })
 
     it('renders QR setup, secret and numeric token entry and wires confirmation', () => {
         const fixture = props()
         const tree = TwoFactorSetupPanel(fixture)
         const html = renderToStaticMarkup(tree)
+        expect(html).toContain('aria-hidden="false" data-open="true"')
         expect(html).toContain('<svg')
         expect(html).toContain('TESTSECRET')
         expect(html).toContain('userSettings.security.2faScan')
         const input = findElement(tree, (element) => element.type === 'input')
         expect(input.props).toMatchObject({
+            'aria-label': 'auth.twoFactor.codeLabel',
+            autoComplete: 'one-time-code',
             inputMode: 'numeric',
             maxLength: 6,
             value: '123456',
@@ -74,14 +82,13 @@ describe('TwoFactorSetupPanel', () => {
             ),
             'onClick',
         )
-        invoke(
-            findElement(
-                tree,
-                (element) =>
-                    element.props.onClick === fixture.handler.handleCopySecret,
-            ),
-            'onClick',
+        const copyButton = findElement(
+            tree,
+            (element) =>
+                element.props.onClick === fixture.handler.handleCopySecret,
         )
+        expect(copyButton.type).toBe('button')
+        invoke(copyButton, 'onClick')
         expect(fixture.handler.handleTwoFactorTokenChange).toHaveBeenCalledWith(
             '654321',
         )
@@ -116,10 +123,10 @@ describe('TwoFactorSetupPanel', () => {
         ).toBe(true)
         const html = renderToStaticMarkup(tree)
         expect(html).toContain('userSettings.security.checking')
-        expect(html).toContain('lucide-check')
+        expect(html).toContain('data-copied="true"')
         fixture.state.twoFactorSecret = null
         expect(
             renderToStaticMarkup(TwoFactorSetupPanel(fixture)),
-        ).not.toContain('TESTSECRET</span>')
+        ).not.toContain('TESTSECRET')
     })
 })

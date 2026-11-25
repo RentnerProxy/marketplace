@@ -55,7 +55,7 @@ export type UseBackupScheduleSettingsParams = {
 
 export type BackupScheduleSettingsLogicReturn = {
     state: {
-        weekdays: ReadonlyArray<number>
+        weekdays: ReadonlyArray<0 | 1 | 2 | 3 | 4 | 5 | 6>
         selectedWeekdays: Array<number>
         timeValue: string
         intervalWeekday: string
