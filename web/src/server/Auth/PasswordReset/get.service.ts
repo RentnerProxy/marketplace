@@ -1,5 +1,5 @@
 import { db } from '@/db'
-import { passwordResetTokens, users } from '@/db/schema'
+import { passwordResetTokens, users } from '@/db/schema.ts'
 import { and, eq, gt } from 'drizzle-orm'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 

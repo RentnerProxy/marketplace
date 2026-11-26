@@ -16,6 +16,8 @@ COPY core/artifacts/Cargo.toml ./artifacts/
 COPY core/artifacts/src ./artifacts/src
 COPY core/tooling/Cargo.toml ./tooling/
 COPY core/tooling/src ./tooling/src
+COPY core/ffi/Cargo.toml ./ffi/Cargo.toml
+COPY core/ffi/src ./ffi/src
 COPY contracts/v1/contracts.schema.json /app/contracts/v1/contracts.schema.json
 
 FROM core-sources AS candidate-probe-builder
@@ -31,8 +33,10 @@ FROM core-sources AS core-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,id=rentnerproxy-marketplace-cargo-musl-release,target=/app/core/target,sharing=locked \
     cargo build --release --locked --bins -p marketplace-core -p marketplace-app-pipeline \
+    && RUSTFLAGS='-C target-feature=-crt-static' cargo build --locked --profile ffi -p marketplace-storage-ffi \
     && mkdir /native \
     && find target/release -maxdepth 1 -type f -name 'marketplace-*' ! -name '*.d' -exec cp '{}' /native/ ';' \
+    && cp target/ffi/libmarketplace_storage.so /native/ \
     && test -x /native/marketplace-appliance \
     && test -x /native/marketplace-archive \
     && test -x /native/marketplace-app-pipeline \
@@ -181,7 +185,8 @@ COPY --from=core-builder /native/ /usr/local/bin/
 COPY --from=integration-web ./src ./web/src
 COPY core/tests/fixtures ./core/tests/fixtures
 ENV NODE_ENV=test \
-    CORE_BINARY_DIR=/usr/local/bin
+    CORE_BINARY_DIR=/usr/local/bin \
+    CORE_STORAGE_FFI=required
 HEALTHCHECK NONE
 USER bun
 ENTRYPOINT ["bun", "--no-env-file", "test", "--isolate", "--timeout", "30000", "--path-ignore-patterns", "__no_ignore__", ".core.test.ts"]

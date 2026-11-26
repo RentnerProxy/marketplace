@@ -4,7 +4,7 @@ import type { Mock } from 'bun:test'
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { rm } from 'node:fs/promises'
 import { writeStandaloneAuditLogService } from '@/lib/AuditLogs/auditLogs.ts'
-import { copyImportedBackup } from '@/server/Admin/Backups/archive-import.service.ts'
+import { prepareUploadedBackupImport } from '@/server/Admin/Backups/archive-import.service.ts'
 import {
     createManualBackupForDownloadService,
     registerImportedBackupService,
@@ -17,7 +17,7 @@ import {
     validateBackupUploadRequest,
 } from '@/server/Admin/Backups/upload.service.ts'
 import { acquireBackupImportAdmissionService } from '@/server/Admin/Backups/import-admission.service.ts'
-import type { BackupImportAdmission } from '@/server/Admin/Backups/import.types.ts'
+import type { BackupImportAdmission } from '@/server/Admin/Backups/Types/import.types.ts'
 import { requirePermissionService } from '@/server/Auth/authorization.service.ts'
 import { logError } from '@/server/Logging/logger.ts'
 import { MaintenanceModeError } from '@/server/Maintenance/access.errors.ts'
@@ -81,7 +81,7 @@ vi.mock('@/server/Admin/Backups/run-retention.service.ts', function () {
 })
 
 vi.mock('@/server/Admin/Backups/archive-import.service.ts', function () {
-    return { copyImportedBackup: vi.fn() }
+    return { prepareUploadedBackupImport: vi.fn() }
 })
 
 vi.mock('@/server/Admin/Backups/run-create.service.ts', function () {
@@ -146,8 +146,8 @@ const mockedRm = rm as Mock<typeof rm>
 const mockedStandaloneAudit = writeStandaloneAuditLogService as Mock<
     typeof writeStandaloneAuditLogService
 >
-const mockedCopyImportedBackup = copyImportedBackup as Mock<
-    typeof copyImportedBackup
+const mockedPrepareUploadedBackupImport = prepareUploadedBackupImport as Mock<
+    typeof prepareUploadedBackupImport
 >
 const mockedCreateManualBackup = createManualBackupForDownloadService as Mock<
     typeof createManualBackupForDownloadService
@@ -204,13 +204,13 @@ describe('Backup-API-Routen', function () {
         }))
     })
 
-    it('entfernt die kopierte Importdatei bei einem DB-Registrierungsfehler', async function () {
+    it('cleans up the upload when database registration fails', async function () {
         const dispose = vi.fn(async function () {})
         mockedReceiveBackupUpload.mockResolvedValue({
             dispose,
-            filePath: 'C:\\Temp\\upload.tar',
+            filePath: 'C:\\Temp\\upload.partial',
         })
-        mockedCopyImportedBackup.mockResolvedValue({
+        mockedPrepareUploadedBackupImport.mockResolvedValue({
             checksumSha256: 'checksum',
             fileName: 'import-safe.tar',
             fileSize: 123,
@@ -229,8 +229,8 @@ describe('Backup-API-Routen', function () {
         })
 
         expect(response.status).toBe(500)
-        expect(mockedCopyImportedBackup).toHaveBeenCalledWith(
-            'C:\\Temp\\upload.tar',
+        expect(mockedPrepareUploadedBackupImport).toHaveBeenCalledWith(
+            'C:\\Temp\\upload.partial',
             admission,
         )
         expect(mockedRegisterImportedBackup).toHaveBeenCalledWith(
@@ -257,9 +257,9 @@ describe('Backup-API-Routen', function () {
         })
         mockedReceiveBackupUpload.mockResolvedValue({
             dispose,
-            filePath: 'C:\\Temp\\upload.tar',
+            filePath: 'C:\\Temp\\upload.partial',
         })
-        mockedCopyImportedBackup.mockResolvedValue({
+        mockedPrepareUploadedBackupImport.mockResolvedValue({
             checksumSha256: 'checksum',
             fileName: 'import-safe.tar',
             fileSize: 123,
@@ -487,7 +487,7 @@ describe('Backup-API-Routen', function () {
             expect(mockedValidateUpload).not.toHaveBeenCalled()
             expect(mockedAcquireAdmission).not.toHaveBeenCalled()
             expect(mockedReceiveBackupUpload).not.toHaveBeenCalled()
-            expect(mockedCopyImportedBackup).not.toHaveBeenCalled()
+            expect(mockedPrepareUploadedBackupImport).not.toHaveBeenCalled()
             expect(mockedRegisterImportedBackup).not.toHaveBeenCalled()
             expect(mockedCreateManualBackup).not.toHaveBeenCalled()
             expect(mockedGetBackupRunById).not.toHaveBeenCalled()
@@ -503,10 +503,10 @@ describe('Backup-API-Routen', function () {
         async function (failure) {
             const uploadDispose = vi.fn(async function () {})
             mockedReceiveBackupUpload.mockResolvedValue({
-                filePath: 'C:/Temp/upload.tar',
+                filePath: 'C:/Temp/upload.partial',
                 dispose: uploadDispose,
             })
-            mockedCopyImportedBackup.mockResolvedValue({
+            mockedPrepareUploadedBackupImport.mockResolvedValue({
                 fileName: 'import-safe.tar',
                 fileSize: 123,
                 checksumSha256: 'a'.repeat(64),
@@ -540,10 +540,10 @@ describe('Backup-API-Routen', function () {
 
     it('publiziert den bestätigten Importbeleg und schützt nur dessen Run vor Retention', async function () {
         mockedReceiveBackupUpload.mockResolvedValue({
-            filePath: 'C:/Temp/upload.tar',
+            filePath: 'C:/Temp/upload.partial',
             dispose: vi.fn(async function () {}),
         })
-        mockedCopyImportedBackup.mockResolvedValue({
+        mockedPrepareUploadedBackupImport.mockResolvedValue({
             fileName: 'import-safe.tar',
             fileSize: 123,
             checksumSha256: 'a'.repeat(64),

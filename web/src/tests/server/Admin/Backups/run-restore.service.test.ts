@@ -10,7 +10,7 @@ import {
     executeRestoreBackup,
 } from '@/server/Admin/Backups/run-restore.service.ts'
 import { RestoreRollbackError } from '@/server/Admin/Backups/archive-restore.errors.ts'
-import type { RestoreBackupArchiveInput } from '@/server/Admin/Backups/backup-service.types.ts'
+import type { RestoreBackupArchiveInput } from '@/server/Admin/Backups/Types/backup-service.types.ts'
 
 const auditMocks = createBackupAuditMocks()
 const mutationMocks = createBackupMutationMocks(auditMocks)

@@ -15,7 +15,7 @@ if [ "$1" = valkey-server ]; then
     set -- valkey-server /run/marketplace/valkey/valkey.conf \
         --bind 127.0.0.1 --protected-mode yes \
         --save "" \
-        --maxmemory 256mb "$@"
+        --maxmemory 256mb --maxmemory-policy noeviction "$@"
 fi
 
 exec "$@"

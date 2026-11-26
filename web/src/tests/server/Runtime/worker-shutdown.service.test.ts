@@ -39,6 +39,9 @@ describe('Background-Worker-Shutdown', function () {
             stopStatus: async function () {
                 order.push('status')
             },
+            closeConnections: async function () {
+                order.push('connections')
+            },
         })
         const stopping = shutdown.shutdown()
         expect(shutdown.signal.aborted).toBe(true)
@@ -47,7 +50,7 @@ describe('Background-Worker-Shutdown', function () {
         expect(order).toEqual([])
         ready.resolve()
         await expect(stopping).resolves.toBe(0)
-        expect(order).toEqual(['heartbeat', 'workers', 'status'])
+        expect(order).toEqual(['heartbeat', 'workers', 'status', 'connections'])
         expect(logInfo).toHaveBeenCalledWith(
             'background_worker.shutdown_started',
         )
@@ -66,11 +69,13 @@ describe('Background-Worker-Shutdown', function () {
         const jobsFinished = Promise.withResolvers<void>()
         const closeWorkers = vi.fn(() => jobsFinished.promise)
         const stopStatus = vi.fn(async function () {})
+        const closeConnections = vi.fn(async function () {})
         const shutdown = createWorkerShutdownService({
             ready: Promise.resolve(),
             stopHeartbeat: () => heartbeatStopped.promise,
             closeWorkers,
             stopStatus,
+            closeConnections,
         })
         const stopping = shutdown.shutdown()
         await flushPromises()
@@ -83,9 +88,11 @@ describe('Background-Worker-Shutdown', function () {
         vi.advanceTimersByTime(5 * 60_000)
         await flushPromises()
         expect(stopStatus).not.toHaveBeenCalled()
+        expect(closeConnections).not.toHaveBeenCalled()
         jobsFinished.resolve()
         await expect(stopping).resolves.toBe(1)
         expect(stopStatus).toHaveBeenCalledTimes(1)
+        expect(closeConnections).toHaveBeenCalledTimes(1)
         heartbeatStopped.resolve()
         expect(vi.getTimerCount()).toBe(0)
     })
@@ -102,6 +109,9 @@ describe('Background-Worker-Shutdown', function () {
                 throw failure
             },
             stopStatus,
+            closeConnections: async function () {
+                throw failure
+            },
         })
         await expect(shutdown.shutdown()).resolves.toBe(1)
         expect(stopStatus).toHaveBeenCalledTimes(1)
@@ -113,11 +123,15 @@ describe('Background-Worker-Shutdown', function () {
             'background_worker.shutdown_workers_failed',
             failure,
         )
+        expect(logError).toHaveBeenCalledWith(
+            'background_worker.shutdown_connections_failed',
+            failure,
+        )
         expect(logInfo).toHaveBeenCalledWith(
             'background_worker.shutdown_completed',
             {
                 durationMs: expect.any(Number),
-                count: 2,
+                count: 3,
             },
         )
         expect(vi.getTimerCount()).toBe(0)
@@ -125,16 +139,20 @@ describe('Background-Worker-Shutdown', function () {
 
     it('begrenzt ein hängendes Status-Cleanup und behandelt spätere Fehler ohne erneuten Shutdown', async function () {
         const statusStopped = Promise.withResolvers<void>()
+        const closeConnections = vi.fn(async function () {})
         const shutdown = createWorkerShutdownService({
             ready: Promise.resolve(),
             stopHeartbeat: async function () {},
             closeWorkers: async function () {},
             stopStatus: () => statusStopped.promise,
+            closeConnections,
         })
         const stopping = shutdown.shutdown()
         await flushPromises()
+        expect(closeConnections).not.toHaveBeenCalled()
         vi.advanceTimersByTime(WORKER_SHUTDOWN.cleanupTimeoutMs)
         await expect(stopping).resolves.toBe(1)
+        expect(closeConnections).toHaveBeenCalledTimes(1)
         expect(logWarn).toHaveBeenCalledWith(
             'background_worker.shutdown_status_timeout',
         )

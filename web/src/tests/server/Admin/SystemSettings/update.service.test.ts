@@ -43,9 +43,20 @@ function claimMaintenanceRequest() {
     return request
 }
 function expectNoDomainPublish() {
+    expect(systemSettingsExternal.invalidateMaintenance).not.toHaveBeenCalled()
     expect(systemSettingsExternal.publishSettings).not.toHaveBeenCalled()
     expect(systemSettingsExternal.publishState).not.toHaveBeenCalled()
     expect(systemSettingsExternal.publishResolution).not.toHaveBeenCalled()
+}
+function expectMaintenanceInvalidationBeforePublish(action: string) {
+    expect(effects[0]).toMatchObject({
+        kind: 'invalidate:maintenance',
+        activeTransaction: 0,
+        committedAuditActions: [action],
+    })
+    expect(systemSettingsExternal.invalidateMaintenance).toHaveBeenCalledTimes(
+        1,
+    )
 }
 function expectAllEffectsAfterCommit(action: string) {
     const published = effects.filter((effect) =>
@@ -170,11 +181,21 @@ describe('SystemSettings Update-Services', function () {
 
     it('erzeugt Logo-Varianten und Favicon ohne reale Dateizugriffe', async function () {
         const result = await updateSystemLogoService(logoInput, actor)
-        expect(systemSettingsExternal.sharp).toHaveBeenCalledTimes(3)
+        expect(systemSettingsExternal.sharp).toHaveBeenCalledTimes(4)
+        expect(imageInstances[0].extract).toHaveBeenCalledTimes(1)
+        expect(imageInstances[0].raw).toHaveBeenCalledTimes(1)
+        for (const [index, instance] of imageInstances.slice(1).entries()) {
+            expect(systemSettingsExternal.sharp).toHaveBeenNthCalledWith(
+                index + 2,
+                imageMocks.rawPixels,
+                { raw: { width: 512, height: 512, channels: 4 } },
+            )
+            expect(instance.extract).not.toHaveBeenCalled()
+        }
         expect(systemSettingsExternal.publishBranding).toHaveBeenCalledTimes(1)
         expect(systemSettingsExternal.publishBranding).toHaveBeenCalledWith(
-            await imageInstances[0].toBuffer.mock.results[0]?.value,
             await imageInstances[1].toBuffer.mock.results[0]?.value,
+            await imageInstances[2].toBuffer.mock.results[0]?.value,
             Buffer.from('ico'),
         )
         expect(imageMocks.createIco).toHaveBeenCalledWith(Buffer.from('png'))
@@ -284,6 +305,9 @@ describe('SystemSettings Update-Services', function () {
         expect(systemSettingsDb.state.rows.auditLogs[0].action).toBe(
             'admin.system.maintenance_updated',
         )
+        expectMaintenanceInvalidationBeforePublish(
+            'admin.system.maintenance_updated',
+        )
     })
 
     it('deaktiviert Wartung und lehnt einen offenen Antrag ab', async function () {
@@ -380,6 +404,9 @@ describe('SystemSettings Update-Services', function () {
             }),
         )
         expectAllEffectsAfterCommit(
+            'admin.system.maintenance_extension_resolved',
+        )
+        expectMaintenanceInvalidationBeforePublish(
             'admin.system.maintenance_extension_resolved',
         )
         expect(result).toEqual({ success: true })
@@ -655,7 +682,7 @@ describe('system settings mutation actor lifetime', function () {
         const preparation = effects.filter(
             (effect) => effect.kind === 'image-buffer',
         )
-        expect(preparation).toHaveLength(3)
+        expect(preparation).toHaveLength(4)
         expect(
             preparation.every(
                 (effect) =>

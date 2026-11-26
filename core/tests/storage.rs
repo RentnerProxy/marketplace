@@ -1,11 +1,42 @@
-use base64::{Engine, engine::general_purpose::STANDARD};
 use cap_fs_ext::MetadataExt;
-use marketplace_core::{protocol::OperationContext, storage::execute};
+use marketplace_core::{
+    protocol::{CoreResult, OperationContext, WorkerResponse},
+    storage::{execute, execute_worker},
+};
 use serde_json::{Value, json};
 use std::fs;
 
 fn run(request: Value) -> Value {
     execute(request, &OperationContext::default()).expect("synthetic operation must succeed")
+}
+
+fn write(
+    root: &std::path::Path,
+    file: &std::path::Path,
+    bytes: &[u8],
+    context: &OperationContext,
+) -> CoreResult<WorkerResponse> {
+    execute_worker(
+        &json!({"operation":"writeFile","rootDirectory":root,"filePath":file}),
+        Some(bytes),
+        context,
+    )
+}
+fn background_request(
+    root: &std::path::Path,
+    file: &std::path::Path,
+    legacy_root: &std::path::Path,
+    legacy_file: &std::path::Path,
+) -> Value {
+    json!({"operation":"readBackgroundRepresentation","rootDirectory":root,"directoryPath":file.parent().unwrap(),"filePath":file,"legacyRoot":legacy_root,"legacyPath":legacy_file})
+}
+fn read_background(request: &Value) -> CoreResult<Option<Vec<u8>>> {
+    let result = execute_worker(request, None, &OperationContext::cleanup())?;
+    match &result {
+        WorkerResponse::VersionedBinary { bytes, .. } => Ok(Some(bytes.to_vec())),
+        WorkerResponse::Json(Value::Null) => Ok(None),
+        _ => panic!("Expected a binary background or null"),
+    }
 }
 fn fixture() -> tempfile::TempDir {
     tempfile::tempdir().unwrap()
@@ -13,6 +44,11 @@ fn fixture() -> tempfile::TempDir {
 fn create_root(base: &std::path::Path, name: &str) -> std::path::PathBuf {
     let path = base.join(name);
     fs::create_dir(&path).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
+    }
     path
 }
 
@@ -26,18 +62,18 @@ fn private_publication_is_bounded_confined_and_replaces_atomically() {
         b"replacement".as_slice(),
         b"".as_slice(),
     ] {
-        run(
-            json!({"operation":"writeFile","rootDirectory":root,"filePath":file,"dataBase64":STANDARD.encode(payload)}),
-        );
-        let read = run(json!({"operation":"readFile","rootDirectory":root,"filePath":file}));
-        assert_eq!(
-            STANDARD
-                .decode(read["dataBase64"].as_str().unwrap())
-                .unwrap(),
-            payload
-        );
+        assert!(write(&root, &file, payload, &OperationContext::cleanup()).is_ok());
+        assert_eq!(fs::read(&file).unwrap(), payload);
     }
-    assert!(execute(json!({"operation":"writeFile","rootDirectory":root,"filePath":fixture.path().join("outside"),"dataBase64":"AA=="}),&OperationContext::default()).is_err());
+    assert!(
+        write(
+            &root,
+            &fixture.path().join("outside"),
+            &[0],
+            &OperationContext::cleanup()
+        )
+        .is_err()
+    );
     assert!(!fixture.path().join("outside").exists());
     assert_eq!(fs::read_dir(file.parent().unwrap()).unwrap().count(), 1);
     #[cfg(unix)]
@@ -56,24 +92,6 @@ fn private_publication_is_bounded_confined_and_replaces_atomically() {
             0o700
         );
     }
-}
-
-#[test]
-fn directory_snapshot_detects_replacement() {
-    let fixture = fixture();
-    let root = create_root(fixture.path(), "private");
-    let nested = root.join("images");
-    let snapshots =
-        run(json!({"operation":"prepareDirectories","rootDirectory":root,"directoryPath":nested}));
-    fs::rename(&nested, root.join("original-images")).unwrap();
-    fs::create_dir(&nested).unwrap();
-    assert!(
-        execute(
-            json!({"operation":"assertDirectories","directories":snapshots}),
-            &OperationContext::default()
-        )
-        .is_err()
-    );
 }
 
 #[test]
@@ -135,7 +153,7 @@ fn cancelled_operation_cannot_publish() {
     let root = create_root(fixture.path(), "private");
     let context = OperationContext::default();
     context.cancel();
-    assert!(execute(json!({"operation":"writeFile","rootDirectory":root,"filePath":root.join("new"),"dataBase64":"AA=="}),&context).is_err());
+    assert!(write(&root, &root.join("new"), &[0], &context).is_err());
     assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
 }
 
@@ -152,12 +170,12 @@ fn complete_private_background_recovery_restores_snapshot_and_rolls_back() {
         let root = create_root(fixture.path(), "private");
         let restored = create_root(fixture.path(), "restored");
         for name in ["existing", "deleted"] {
-            fs::create_dir(root.join(name)).unwrap();
-            fs::write(root.join(name).join("background.webp"), name.as_bytes()).unwrap();
+            let directory = create_root(&root, name);
+            fs::write(directory.join("background.webp"), name.as_bytes()).unwrap();
         }
         for name in ["existing", "new"] {
-            fs::create_dir(restored.join(name)).unwrap();
-            fs::write(restored.join(name).join("background.webp"), b"restored").unwrap();
+            let directory = create_root(&restored, name);
+            fs::write(directory.join("background.webp"), b"restored").unwrap();
         }
         let originals = ["existing/background.webp", "deleted/background.webp"]
             .map(|name| json!({"privateRelativePath":name,"identity":file_identity(&root,name)}));
@@ -218,8 +236,8 @@ fn utility_operations_are_private_durable_and_scoped() {
     run(json!({"operation":"syncFile","path":directory.join("child/file")}));
     run(json!({"operation":"syncDirectory","path":directory}));
     run(json!({"operation":"syncTree","path":directory}));
-    let target = root.join("renamed");
-    run(json!({"operation":"rename","path":directory,"destination":target}));
+    run(json!({"operation":"syncTree","path":directory,"directoriesOnly":true}));
+    let target = directory.to_owned();
     run(
         json!({"operation":"capacity","requests":[{"directoryPath":root,"sourcePaths":[target.clone(),target.join("child/file")],"additionalBytes":"0"}]}),
     );
@@ -234,13 +252,14 @@ fn storage_rejects_invalid_inputs_and_missing_backgrounds_without_side_effects()
     let fixture = fixture();
     let root = create_root(fixture.path(), "private");
     let public = create_root(fixture.path(), "public");
-    assert!(
-        run(json!({"operation":"readFile","rootDirectory":root,"filePath":root.join("missing") }))
-            .is_null()
-    );
-    assert!(run(json!({"operation":"readBackground","rootDirectory":root,"directoryPath":root.join("user"),"filePath":root.join("user/background"),"legacyRoot":public,"legacyPath":public.join("missing/background") })).is_null());
+
+    let target = root.join("user/background");
+    let request = background_request(&root, &target, &public, &public.join("missing/background"));
+    assert!(read_background(&request).unwrap().is_none());
+    assert!(!target.parent().unwrap().exists());
     let requests = [
         json!({"operation":"unknown"}),
+        json!({"operation":"syncTree","path":root,"directoriesOnly":null}),
         json!({"operation":"writeFile","rootDirectory":root,"filePath":root.join("bad"),"dataBase64":"%%%"}),
         json!({"operation":"prepareDirectories","rootDirectory":" ","directoryPath":root}),
         json!({"operation":"prepareDirectories","rootDirectory":root,"directoryPath":fixture.path()}),
@@ -253,13 +272,18 @@ fn storage_rejects_invalid_inputs_and_missing_backgrounds_without_side_effects()
     for request in requests {
         assert!(execute(request, &OperationContext::default()).is_err());
     }
-    let data = STANDARD.encode(vec![0; 8 * 1024 * 1024 + 1]);
-    assert!(execute(json!({"operation":"writeFile","rootDirectory":root,"filePath":root.join("large"),"dataBase64":data}),&OperationContext::default()).is_err());
-    assert!(!root.join("large").exists());
-    let snapshots = run(
-        json!({"operation":"prepareDirectories","rootDirectory":root,"directoryPath":root.join("nested")}),
+
+    let data = vec![0; 8 * 1024 * 1024 + 1];
+    assert!(
+        write(
+            &root,
+            &root.join("large"),
+            &data,
+            &OperationContext::cleanup()
+        )
+        .is_err()
     );
-    run(json!({"operation":"assertDirectories","directories":snapshots}));
+    assert!(!root.join("large").exists());
 }
 
 #[test]
@@ -271,6 +295,20 @@ fn failed_private_restore_rolls_back_moved_originals() {
     let original = json!({"privateRelativePath":"old","identity":file_identity(&root,"old")});
     assert!(execute(json!({"operation":"recoveryPrepare","private":true,"completeSnapshot":true,"storageRoot":root,"restoredStoragePath":restored,"originalEntries":[original],"restoredRelativeFilePaths":["missing"]}),&OperationContext::default()).is_err());
     assert_eq!(fs::read(root.join("old")).unwrap(), b"old");
+    assert_eq!(fs::read_dir(fixture.path()).unwrap().count(), 2);
+}
+
+#[test]
+fn duplicate_private_snapshot_paths_fail_before_recovery_preparation() {
+    let fixture = fixture();
+    let root = create_root(fixture.path(), "private");
+    let restored = create_root(fixture.path(), "restored");
+    fs::write(root.join("original"), b"keep").unwrap();
+    let entry =
+        json!({"privateRelativePath":"original","identity":file_identity(&root, "original")});
+    let request = json!({"operation":"recoveryPrepare","private":true,"storageRoot":root,"restoredStoragePath":restored,"originalEntries":[entry,entry],"restoredRelativeFilePaths":[]});
+    assert!(execute(request, &OperationContext::cleanup()).is_err());
+    assert_eq!(fs::read(root.join("original")).unwrap(), b"keep");
     assert_eq!(fs::read_dir(fixture.path()).unwrap().count(), 2);
 }
 
@@ -326,22 +364,48 @@ fn legacy_background_is_migrated_without_overwriting_current() {
     let legacy = public.join("background.webp");
     let target = private.join("user/background.webp");
     fs::write(&legacy, b"legacy").unwrap();
-    let request = json!({"operation":"readBackground","rootDirectory":private,"directoryPath":target.parent().unwrap(),"filePath":target,"legacyRoot":public,"legacyPath":legacy});
-    assert_eq!(
-        STANDARD
-            .decode(run(request.clone())["dataBase64"].as_str().unwrap())
-            .unwrap(),
-        b"legacy"
-    );
+
+    let request = background_request(&private, &target, &public, &legacy);
+    assert_eq!(read_background(&request).unwrap().unwrap(), b"legacy");
     assert!(!legacy.exists());
     fs::write(&legacy, b"new-legacy").unwrap();
-    assert_eq!(
-        STANDARD
-            .decode(run(request)["dataBase64"].as_str().unwrap())
-            .unwrap(),
-        b"legacy"
-    );
+    assert_eq!(read_background(&request).unwrap().unwrap(), b"legacy");
     assert_eq!(fs::read(legacy).unwrap(), b"new-legacy");
+}
+
+#[cfg(unix)]
+#[test]
+fn background_reads_only_verify_existing_private_permissions() {
+    use std::os::unix::fs::{MetadataExt as _, PermissionsExt};
+    let fixture = fixture();
+    let root = create_root(fixture.path(), "private");
+    let nested = create_root(&root, "nested");
+    let file = nested.join("background.webp");
+    fs::write(&file, b"private").unwrap();
+    fs::set_permissions(&file, fs::Permissions::from_mode(0o600)).unwrap();
+    let request = background_request(&root, &file, fixture.path(), &fixture.path().join("absent"));
+    let change_time = |path| {
+        let metadata = fs::metadata(path).unwrap();
+        (metadata.ctime(), metadata.ctime_nsec())
+    };
+    let directory_changed = change_time(&nested);
+    let file_changed = change_time(&file);
+    assert_eq!(read_background(&request).unwrap().unwrap(), b"private");
+    assert_eq!(change_time(&nested), directory_changed);
+    assert_eq!(change_time(&file), file_changed);
+    fs::set_permissions(&file, fs::Permissions::from_mode(0o644)).unwrap();
+    assert!(read_background(&request).is_err());
+    assert_eq!(
+        fs::metadata(&file).unwrap().permissions().mode() & 0o777,
+        0o644
+    );
+    fs::set_permissions(&file, fs::Permissions::from_mode(0o600)).unwrap();
+    fs::set_permissions(&nested, fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(read_background(&request).is_err());
+    assert_eq!(
+        fs::metadata(&nested).unwrap().permissions().mode() & 0o777,
+        0o755
+    );
 }
 
 #[cfg(unix)]
@@ -354,20 +418,22 @@ fn nofollow_rejects_symlinked_directory_and_file() {
     fs::write(outside.join("secret"), b"secret").unwrap();
     symlink(&outside, root.join("linked")).unwrap();
     symlink(outside.join("secret"), root.join("file")).unwrap();
-    assert!(execute(json!({"operation":"writeFile","rootDirectory":root,"filePath":root.join("linked/new"),"dataBase64":"AA=="}),&OperationContext::default()).is_err());
     assert!(
-        execute(
-            json!({"operation":"readFile","rootDirectory":root,"filePath":root.join("file")}),
-            &OperationContext::default()
+        write(
+            &root,
+            &root.join("linked/new"),
+            &[0],
+            &OperationContext::cleanup()
         )
         .is_err()
     );
     assert!(!outside.join("new").exists());
     for request in [
         json!({"operation":"syncTree","path":root}),
+        json!({"operation":"syncTree","path":root,"directoriesOnly":true}),
         json!({"operation":"remove","path":root.join("file")}),
         json!({"operation":"capacity","requests":[{"directoryPath":root,"sourcePaths":[root.join("file")]}]}),
-        json!({"operation":"readBackground","rootDirectory":root,"directoryPath":root,"filePath":root.join("file"),"legacyRoot":outside,"legacyPath":outside.join("secret")}),
+        json!({"operation":"statBackground","rootDirectory":root,"directoryPath":root,"filePath":root.join("file"),"legacyRoot":outside,"legacyPath":outside.join("secret")}),
     ] {
         assert!(execute(request, &OperationContext::default()).is_err());
     }
@@ -380,14 +446,16 @@ fn failed_publication_cleans_only_its_owned_stage_and_keeps_existing_directory()
     let root = create_root(fixture.path(), "private");
     let destination = create_root(&root, "destination");
     fs::write(destination.join("keep"), b"keep").unwrap();
-    assert!(execute(json!({"operation":"writeFile","rootDirectory":root,"filePath":destination,"dataBase64":"AA=="}),&OperationContext::default()).is_err());
+    assert!(write(&root, &destination, &[0], &OperationContext::cleanup()).is_err());
     assert_eq!(fs::read(destination.join("keep")).unwrap(), b"keep");
     assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
     assert!(
-        execute(
-            json!({"operation":"readFile","rootDirectory":root,"filePath":destination}),
-            &OperationContext::default()
-        )
+        read_background(&background_request(
+            &root,
+            &destination,
+            fixture.path(),
+            &fixture.path().join("absent")
+        ))
         .is_err()
     );
 }
@@ -398,11 +466,18 @@ fn oversized_background_reads_and_insufficient_recovery_capacity_are_rejected() 
     let root = create_root(fixture.path(), "private");
     let file = root.join("too-large");
     fs::write(&file, vec![0u8; 8 * 1024 * 1024 + 1]).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&file, fs::Permissions::from_mode(0o600)).unwrap();
+    }
     assert!(
-        execute(
-            json!({"operation":"readFile","rootDirectory":root,"filePath":file}),
-            &OperationContext::default()
-        )
+        read_background(&background_request(
+            &root,
+            &file,
+            fixture.path(),
+            &fixture.path().join("absent")
+        ))
         .is_err()
     );
     let error=execute(json!({"operation":"capacity","requests":[{"directoryPath":root,"sourcePaths":[],"additionalBytes":"1000000000000000000"}]}),&OperationContext::default()).unwrap_err();

@@ -1,6 +1,6 @@
 import { vi } from 'bun:test'
 import { BACKUP_LIMITS } from '@/config/backup.config.ts'
-import type { BackupImportContext } from '@/server/Admin/Backups/import.types.ts'
+import type { BackupImportContext } from '@/server/Admin/Backups/Types/import.types.ts'
 
 export function createBackupImportTestContext(
     temporaryDirectory: string,

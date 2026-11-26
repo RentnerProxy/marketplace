@@ -22,7 +22,6 @@ describe('self-contained appliance deployment', function () {
                 [project.id]: {
                     image: project.imageRepository + ':v1.0.0-alpha.1',
                     restart: 'unless-stopped',
-                    init: true,
                     stop_grace_period: '4h10m',
                     ports: ['${APP_PORT:-6600}:3000'],
                     env_file: ['.env'],
@@ -87,5 +86,8 @@ describe('self-contained appliance deployment', function () {
             expect(dockerfile).toContain(assignment)
         expect(JSON.stringify(compose)).not.toContain('docker.sock')
         expect(dockerfile).toContain('--start-period=5m')
+        expect(dockerfile).toContain(
+            'ENTRYPOINT ["tini", "--", "container-entrypoint.sh"]',
+        )
     })
 })

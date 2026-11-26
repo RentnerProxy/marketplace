@@ -11,31 +11,9 @@ pub(super) fn execute(request: &Value, context: &OperationContext) -> CoreResult
     let mut validated = Vec::with_capacity(names.len());
     // Validate the complete batch before opening or creating either root.
     for name in names {
-        let name = name
-            .as_str()
-            .filter(|name| {
-                !name.is_empty()
-                    && name.len() <= 255
-                    && *name != "."
-                    && *name != ".."
-                    && name
-                        .bytes()
-                        .all(|byte| byte.is_ascii_alphanumeric() || b"._-".contains(&byte))
-            })
-            .ok_or_else(invalid_name)?;
+        let name = backup_filename(name)?;
         #[cfg(windows)]
-        let key = {
-            let stem = name.split('.').next().unwrap_or("").to_ascii_lowercase();
-            if name.ends_with('.')
-                || ["con", "prn", "aux", "nul"].contains(&stem.as_str())
-                || (stem.len() == 4
-                    && (stem.starts_with("com") || stem.starts_with("lpt"))
-                    && matches!(stem.as_bytes()[3], b'1'..=b'9'))
-            {
-                return Err(invalid_name());
-            }
-            name.to_ascii_lowercase()
-        };
+        let key = name.to_ascii_lowercase();
         #[cfg(not(windows))]
         let key = name;
         if !seen.insert(key) {
@@ -70,8 +48,7 @@ pub(super) fn execute(request: &Value, context: &OperationContext) -> CoreResult
     let result = (|| {
         for (name, owned) in files {
             context.check()?;
-            assert_location(&roots.backup_path, &roots.backup)?;
-            assert_location(&roots.storage_path, &roots.storage)?;
+            roots.assert_locations()?;
             let current = match roots.backup.symlink_metadata(name) {
                 Ok(metadata) => metadata,
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
@@ -98,8 +75,7 @@ pub(super) fn execute(request: &Value, context: &OperationContext) -> CoreResult
             #[cfg(not(windows))]
             drop(file);
             sync_dir(&roots.backup)?;
-            assert_location(&roots.backup_path, &roots.backup)?;
-            assert_location(&roots.storage_path, &roots.storage)?;
+            roots.assert_locations()?;
             match roots.backup.symlink_metadata(name) {
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
                 Err(error) => return Err(error.into()),
@@ -107,8 +83,7 @@ pub(super) fn execute(request: &Value, context: &OperationContext) -> CoreResult
             }
         }
         context.check()?;
-        assert_location(&roots.backup_path, &roots.backup)?;
-        assert_location(&roots.storage_path, &roots.storage)?;
+        roots.assert_locations()?;
         Ok(super::super::success())
     })();
     result.map_err(|error: CoreError| {
@@ -121,8 +96,4 @@ pub(super) fn execute(request: &Value, context: &OperationContext) -> CoreResult
             error
         }
     })
-}
-
-fn invalid_name() -> CoreError {
-    CoreError::new("BACKUP_INVALID_NAME", "Ungültiger Backup-Dateiname.")
 }

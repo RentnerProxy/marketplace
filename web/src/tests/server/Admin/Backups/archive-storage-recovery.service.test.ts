@@ -155,6 +155,7 @@ describe('native storage recovery coordination', function () {
         expect(command.mock.calls[1]?.[1]).toEqual({
             operation: 'syncTree',
             path: '/synthetic/restored',
+            directoriesOnly: true,
         })
     })
 

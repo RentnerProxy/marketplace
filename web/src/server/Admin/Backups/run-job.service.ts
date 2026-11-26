@@ -1,4 +1,4 @@
-import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-job.types.ts'
+import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-worker.types.ts'
 import {
     backupFailureJobDataSchema,
     backupJobDataSchema,
@@ -7,7 +7,7 @@ import {
 import { executeCreateBackup } from './run-create.service.ts'
 import { executeRestoreBackup } from './run-restore.service.ts'
 import { markRunAsQueueFailed } from './run-registry.service.ts'
-import type { BackupJobExecutionOptions } from './backup-service.types.ts'
+import type { BackupJobExecutionOptions } from './Types/backup-service.types.ts'
 
 export async function processBackupJob(
     job: BackupJobData,

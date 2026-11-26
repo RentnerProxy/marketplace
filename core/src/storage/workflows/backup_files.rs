@@ -13,8 +13,18 @@ pub(super) fn publish(request: &Value, context: &OperationContext) -> CoreResult
     let destination_relative = relative(&roots.backup_path, &destination_path, false)?;
     let source_parent = source_relative.parent().unwrap_or(Path::new(""));
     let destination_parent = destination_relative.parent().unwrap_or(Path::new(""));
-    let source = descend(&roots.backup, source_parent, false, true)?;
-    let destination = descend(&roots.backup, destination_parent, false, true)?;
+    let source = descend(
+        &roots.backup,
+        source_parent,
+        false,
+        DirectoryPermissions::PreparePrivate,
+    )?;
+    let destination = descend(
+        &roots.backup,
+        destination_parent,
+        false,
+        DirectoryPermissions::PreparePrivate,
+    )?;
     let source_name = source_relative.file_name().ok_or_else(invalid)?;
     let destination_name = destination_relative.file_name().ok_or_else(invalid)?;
     let source_file = open_sync(&source, Path::new(source_name))?;
@@ -32,9 +42,7 @@ pub(super) fn publish(request: &Value, context: &OperationContext) -> CoreResult
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
         Err(error) => return Err(error.into()),
     }
-    context.check()?;
-    assert_location(&roots.backup_path, &roots.backup)?;
-    assert_location(&roots.storage_path, &roots.storage)?;
+    roots.assert_locations()?;
     assert_location(source_path.parent().ok_or_else(invalid)?, &source)?;
     assert_location(destination_path.parent().ok_or_else(invalid)?, &destination)?;
     let current = source.symlink_metadata(source_name)?;
@@ -48,6 +56,7 @@ pub(super) fn publish(request: &Value, context: &OperationContext) -> CoreResult
     // Close Windows no-delete-sharing handles only after the complete source
     // identity check. The rename stays relative to the validated parent handles.
     drop(source_file);
+    context.check_now()?;
     super::super::recovery::rename_retry(
         &source,
         Path::new(source_name),
@@ -58,8 +67,7 @@ pub(super) fn publish(request: &Value, context: &OperationContext) -> CoreResult
     let confirm = (|| {
         sync_dir(&source)?;
         sync_dir(&destination)?;
-        assert_location(&roots.backup_path, &roots.backup)?;
-        assert_location(&roots.storage_path, &roots.storage)?;
+        roots.assert_locations()?;
         assert_location(source_path.parent().ok_or_else(invalid)?, &source)?;
         assert_location(destination_path.parent().ok_or_else(invalid)?, &destination)?;
         let published = destination.symlink_metadata(destination_name)?;

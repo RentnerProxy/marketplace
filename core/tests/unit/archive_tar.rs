@@ -11,6 +11,36 @@ const TIMEOUT: Duration = Duration::from_secs(10);
 const KEY: [u8; 32] = [7; 32];
 const DATABASE: &[u8] = b"db";
 
+#[test]
+fn portable_paths_reject_traversal_windows_devices_and_ambiguous_segments() {
+    for path in [
+        "../database.dump",
+        "/storage/file",
+        "storage/../file",
+        "storage/./file",
+        "storage//file",
+        "storage/CON.txt",
+        "storage/com¹.txt",
+        "storage/LPT9",
+        "storage/file.",
+        "storage/file ",
+        "storage/a:b",
+        "storage/a\\b",
+        "storage/\u{fffd}",
+        "storage/a\0b",
+        "storage/a?b",
+        "unexpected",
+    ] {
+        assert!(
+            validate_entry(path, 0, "file").is_err(),
+            "accepted {path:?}"
+        );
+    }
+    let normalized = validate_entry("storage/O\u{308}lbild.txt", 0, "file").unwrap();
+    assert_eq!(normalized.path, "storage/Ölbild.txt");
+    assert!(validate_entry("storage", 1, "directory").is_err());
+}
+
 struct Fixture {
     _directory: tempfile::TempDir,
     source: PathBuf,
@@ -180,7 +210,7 @@ fn blocked_extraction(fixture: &Fixture, request: Value, context: OperationConte
                         return Err(io::ErrorKind::TimedOut.into());
                     }
                     drop(released);
-                    file.sync_all()?;
+                    // The gate models a pending sync while the worker owns the file.
                     drop(file);
                     Ok(())
                 })

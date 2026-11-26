@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
-    assertWorkerHeartbeatHealthyService,
     isBackgroundWorkerRuntimeHealthyService,
     startWorkerHeartbeatService,
 } from '@/server/Runtime/worker-health.service.ts'
@@ -132,96 +131,31 @@ describe('Worker-Heartbeat', function () {
         ).resolves.toBe(false)
     })
 
-    it('schreibt und validiert einen gesunden Heartbeat', async function () {
+    it.each([
+        [true, 'healthy'],
+        [false, 'unhealthy'],
+    ])('writes and reports probe result %s', async function (healthy, status) {
+        const onHeartbeat = vi.fn()
         const heartbeat = await startWorkerHeartbeatService({
             heartbeatPath,
             intervalMs: 60_000,
-            isHealthy: () => true,
+            isHealthy: () => healthy,
             now: () => 1_000,
+            onHeartbeat,
         })
 
-        await expect(
-            assertWorkerHeartbeatHealthyService({
-                heartbeatPath,
-                maxAgeMs: 500,
-                now: 1_400,
-            }),
-        ).resolves.toMatchObject({
-            status: 'healthy',
-            updatedAt: 1_000,
-            version: 1,
-        })
-
-        await heartbeat.stop()
-        await expect(
-            assertWorkerHeartbeatHealthyService({ heartbeatPath }),
-        ).rejects.toThrow()
-    })
-
-    it('lehnt einen ungesunden Worker-Zustand ab', async function () {
-        const heartbeat = await startWorkerHeartbeatService({
-            heartbeatPath,
-            intervalMs: 60_000,
-            isHealthy: async () => false,
-            now: () => 1_000,
-        })
-
-        await expect(
-            assertWorkerHeartbeatHealthyService({
-                heartbeatPath,
-                now: 1_100,
-            }),
-        ).rejects.toThrow('keinen gesunden Zustand')
-
-        await heartbeat.stop()
-    })
-
-    it('meldet den geprüften Zustand zusätzlich, ohne das lokale Heartbeat-Format zu ändern', async function () {
-        const reported: Array<boolean> = []
-        const heartbeat = await startWorkerHeartbeatService({
-            heartbeatPath,
-            intervalMs: 60_000,
-            isHealthy: () => true,
-            now: () => 1_000,
-            onHeartbeat: function (isHealthy) {
-                reported.push(isHealthy)
-            },
-        })
-
-        expect(reported).toEqual([true])
-        await expect(
-            assertWorkerHeartbeatHealthyService({ heartbeatPath, now: 1_100 }),
-        ).resolves.toMatchObject({
-            version: 1,
-            status: 'healthy',
-            updatedAt: 1_000,
-        })
-        await heartbeat.stop()
-    })
-
-    it('lehnt veraltete und ungültige Heartbeats ab', async function () {
-        await writeFile(
-            heartbeatPath,
-            JSON.stringify({
+        const heartbeatFile = Bun.file(heartbeatPath)
+        try {
+            expect(await heartbeatFile.json()).toEqual({
                 version: 1,
-                status: 'healthy',
+                status,
                 updatedAt: 1_000,
-                pid: 42,
-            }),
-        )
-
-        await expect(
-            assertWorkerHeartbeatHealthyService({
-                heartbeatPath,
-                maxAgeMs: 500,
-                now: 1_501,
-            }),
-        ).rejects.toThrow('veraltet')
-
-        await writeFile(heartbeatPath, '{ungueltig')
-
-        await expect(
-            assertWorkerHeartbeatHealthyService({ heartbeatPath }),
-        ).rejects.toThrow()
+                pid: process.pid,
+            })
+            expect(onHeartbeat).toHaveBeenCalledWith(healthy)
+        } finally {
+            await heartbeat.stop()
+        }
+        expect(await heartbeatFile.exists()).toBe(false)
     })
 })

@@ -21,8 +21,11 @@ vi.mock('@/server/Runtime/environment.service.ts', () => ({
     getRequiredServerEnvironment: requiredEnvironment,
 }))
 vi.mock('@/server/Logging/logger.ts', () => ({ logInfo: info, logWarn: warn }))
-const { createDedicatedValkeyConnection, getBullMqConnectionOptions } =
-    await import('@/server/Valkey/valkey.service.ts')
+const {
+    createDedicatedValkeyConnection,
+    getBullMqConnectionOptions,
+    getBullMqProducerConnectionOptions,
+} = await import('@/server/Valkey/valkey.service.ts')
 
 beforeEach(function () {
     connections.length = 0
@@ -41,6 +44,15 @@ afterEach(function () {
 })
 
 describe('Valkey connection error handling', function () {
+    it('keeps retrying producer connections with capped backoff and bounds individual commands', function () {
+        const options = getBullMqProducerConnectionOptions()
+        expect(options.maxRetriesPerRequest).toBe(1)
+        expect(options.commandTimeout).toBe(3_000)
+        expect([1, 3, 4, 10, 100].map(options.retryStrategy)).toEqual([
+            200, 600, 800, 2_000, 2_000,
+        ])
+    })
+
     it('uses the separate password for direct and queue connections in development', function () {
         process.env.VALKEY_PASSWORD = 'local:p@ss/#% word'
         const connection = createDedicatedValkeyConnection()

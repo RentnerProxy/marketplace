@@ -1,8 +1,4 @@
-use base64::{Engine, engine::general_purpose::STANDARD};
-use marketplace_core::{
-    protocol::OperationContext,
-    storage::{execute, execute_worker},
-};
+use marketplace_core::{protocol::OperationContext, storage::execute_worker};
 use serde_json::{Value, json};
 use std::{fs, path::Path};
 
@@ -22,23 +18,15 @@ fn request(root: &Path) -> Value {
 }
 
 #[test]
-fn binary_branding_matches_legacy_files_and_preserves_input() {
+fn binary_branding_publishes_all_files_and_preserves_input() {
     let temp = tempfile::tempdir().unwrap();
     let binary_root = temp.path().join("binary");
-    let legacy_root = temp.path().join("legacy");
     let inputs = payloads();
     let bytes = inputs.concat();
     let original = bytes.clone();
     execute_worker(
         &request(&binary_root),
         Some(&bytes),
-        &OperationContext::cleanup(),
-    )
-    .unwrap();
-    execute(
-        json!({"operation":"brandingPublish","rootDirectory":legacy_root,
-        "largeBase64":STANDARD.encode(&inputs[0]),"smallBase64":STANDARD.encode(&inputs[1]),
-        "faviconBase64":STANDARD.encode(&inputs[2])}),
         &OperationContext::cleanup(),
     )
     .unwrap();
@@ -52,10 +40,6 @@ fn binary_branding_matches_legacy_files_and_preserves_input() {
     .enumerate()
     {
         assert_eq!(fs::read(binary_root.join(name)).unwrap(), inputs[index]);
-        assert_eq!(
-            fs::read(binary_root.join(name)).unwrap(),
-            fs::read(legacy_root.join(name)).unwrap()
-        );
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;

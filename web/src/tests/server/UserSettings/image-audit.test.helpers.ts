@@ -40,19 +40,43 @@ export function installUserSettingsImageTestMocks(
     const toFile = vi.fn(async function (_path: string) {
         model.state.events.push('fs:write')
     })
+    const writeFile = vi.fn(async function (_data: Buffer) {
+        model.state.events.push('fs:write')
+    })
+    const close = vi.fn(async function () {
+        model.state.events.push('fs:close')
+    })
+    const open = vi.fn(async function (_path: string, _flags: string) {
+        return { writeFile, close }
+    })
+    const rename = vi.fn(async function (_source: string, _target: string) {
+        model.state.events.push('fs:rename')
+    })
+    const rawPixels = Buffer.from('synthetic raw pixels')
+    const decodePixels = vi.fn(async function () {
+        model.state.events.push('image:decode')
+        return {
+            data: rawPixels,
+            info: { width: 512, height: 512, channels: 4 },
+        }
+    })
     const extract = vi.fn()
     const resize = vi.fn()
+    const toColorspace = vi.fn()
     const webp = vi.fn()
     const sharp = vi.fn(function () {
         const chain = {
             extract,
             resize,
+            toColorspace,
             webp,
+            raw: () => ({ toBuffer: decodePixels }),
             toFile,
             toBuffer,
         }
         chain.extract.mockReturnValue(chain)
         chain.resize.mockReturnValue(chain)
+        chain.toColorspace.mockReturnValue(chain)
         chain.webp.mockReturnValue(chain)
         return chain
     })
@@ -61,7 +85,7 @@ export function installUserSettingsImageTestMocks(
         width: 100,
         height: 100,
     }))
-    vi.mock('node:fs/promises', () => ({ mkdir, rm, lstat }))
+    vi.mock('node:fs/promises', () => ({ mkdir, rm, lstat, open, rename }))
     vi.mock('sharp', () => ({ default: sharp }))
     vi.mock('@/server/Storage/private-files.service.ts', () => ({
         writePrivateStorageFileService: writePrivateFile,
@@ -87,10 +111,16 @@ export function installUserSettingsImageTestMocks(
         lstat,
         toFile,
         toBuffer,
+        decodePixels,
+        rawPixels,
+        writeFile,
+        open,
+        rename,
         writePrivateFile,
         sharp,
         extract,
         resize,
+        toColorspace,
         webp,
         getBuffer,
     }

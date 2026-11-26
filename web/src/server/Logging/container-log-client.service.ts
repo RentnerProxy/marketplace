@@ -1,4 +1,5 @@
 import { CONTAINER_LOGS } from '@/config/logging.config.ts'
+import { fetchLoopbackJsonService } from '@/server/Core/loopback-client.service.ts'
 import type {
     RuntimeLogServiceId,
     RuntimeLogSnapshot,
@@ -17,18 +18,18 @@ export async function getContainerLogsService(
     origin: string,
     service: RuntimeLogServiceId,
 ): Promise<RuntimeLogSnapshot> {
-    const url = new URL('/logs', origin)
-    url.searchParams.set('service', service)
     try {
-        const response = await fetch(url, {
-            signal: AbortSignal.timeout(
-                CONTAINER_LOGS.requestTimeoutMs * 2 + 1000,
-            ),
-            redirect: 'error',
-            cache: 'no-store',
-        })
-        if (!response.ok) throw new Error('container_logs_unavailable')
-        return containerLogSnapshotSchema.parse(await response.json())
+        const response = await fetchLoopbackJsonService(
+            origin,
+            '/logs',
+            new URLSearchParams({ service }),
+            {
+                timeoutMs: CONTAINER_LOGS.requestTimeoutMs,
+                maxResponseBytes: CONTAINER_LOGS.maxResponseBytes,
+                responseName: 'Container logs',
+            },
+        )
+        return containerLogSnapshotSchema.parse(response)
     } catch {
         throw new Error('container_logs_unavailable')
     }

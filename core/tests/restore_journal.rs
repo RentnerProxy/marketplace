@@ -1,6 +1,4 @@
 use base64::{Engine, engine::general_purpose::STANDARD};
-use hmac::{Hmac, KeyInit, Mac};
-use marketplace_core::{protocol::OperationContext, storage::execute};
 use serde_json::{Value, json};
 use std::{
     fs,
@@ -9,80 +7,28 @@ use std::{
     time::{Duration, Instant},
 };
 
-fn canonical_record(record: &Value) -> Vec<u8> {
-    let fields = [
-        "version",
-        "purpose",
-        "algorithm",
-        "restoreRunId",
-        "actorUserId",
-        "sourceBackupId",
-        "sourceChecksumSha256",
-        "includesStorage",
-        "sequence",
-        "event",
-        "occurredAt",
-        "previousHmacSha256",
-        "hmacSha256",
-    ];
-    format!(
-        "{{{}}}\n",
-        fields
-            .map(|field| format!("\"{field}\":{}", record[field]))
-            .join(",")
-    )
-    .into_bytes()
-}
-fn resign(record: &mut Value) {
-    let key = STANDARD
-        .decode(fixture()["keyBase64"].as_str().unwrap())
-        .unwrap();
-    let signed = json!([
-        record["purpose"],
-        record["version"],
-        record["algorithm"],
-        record["restoreRunId"],
-        record["actorUserId"],
-        record["sourceBackupId"],
-        record["sourceChecksumSha256"],
-        record["includesStorage"],
-        record["sequence"],
-        record["event"],
-        record["occurredAt"],
-        record["previousHmacSha256"]
-    ]);
-    let mut hmac = Hmac::<sha2::Sha256>::new_from_slice(&key).unwrap();
-    hmac.update(&serde_json::to_vec(&signed).unwrap());
-    record["hmacSha256"] = json!(
-        hmac.finalize()
-            .into_bytes()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>()
-    );
-}
-
 fn fixture() -> Value {
     serde_json::from_str(include_str!("fixtures/restore-journal-v1.json")).unwrap()
 }
-fn validate(
-    content: &[u8],
-    binding: Value,
-    key: Value,
-) -> Result<Value, marketplace_core::protocol::CoreError> {
-    execute(
-        json!({"operation":"journalValidate","binding":binding,"keyBase64":key,"contentBase64":STANDARD.encode(content)}),
-        &OperationContext::cleanup(),
-    )
-}
-fn content() -> Vec<u8> {
-    STANDARD
-        .decode(fixture()["contentBase64"].as_str().unwrap())
-        .unwrap()
-}
-fn check(bytes: &[u8]) -> bool {
-    let f = fixture();
-    validate(bytes, f["binding"].clone(), f["keyBase64"].clone()).is_ok()
+
+fn assert_events(path: &std::path::Path, expected: &[&str]) {
+    let source = fs::read_to_string(path).unwrap();
+    assert!(source.ends_with('\n'));
+    let entries: Vec<Value> = source
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert_eq!(entries.len(), expected.len());
+    for (index, (record, event)) in entries.iter().zip(expected).enumerate() {
+        assert_eq!(record["event"], *event);
+        assert_eq!(record["sequence"], index + 1);
+        if index > 0 {
+            assert_eq!(
+                record["previousHmacSha256"],
+                entries[index - 1]["hmacSha256"]
+            );
+        }
+    }
 }
 
 struct Session {
@@ -172,143 +118,6 @@ fn start(root: &std::path::Path) -> (Session, std::path::PathBuf) {
 }
 
 #[test]
-fn node_hkdf_hmac_fixture_is_canonically_compatible() {
-    assert!(check(&content()));
-}
-
-#[test]
-fn rejects_valid_macs_for_a_forged_predecessor_skipped_transition_and_noncanonical_time() {
-    let f = fixture();
-    let started = canonical_record(&f["records"][0]);
-    for (field, value) in [
-        ("previousHmacSha256", json!("f".repeat(64))),
-        ("event", json!("applied")),
-        ("occurredAt", json!("2026-09-06T10:20:30Z")),
-        ("occurredAt", json!("2026-09-06T11:20:30.123+01:00")),
-    ] {
-        let mut record = f["records"][1].clone();
-        record[field] = value;
-        resign(&mut record);
-        assert!(
-            !check(&[started.as_slice(), canonical_record(&record).as_slice()].concat()),
-            "{field}"
-        );
-    }
-}
-
-#[test]
-fn rejects_bounds_encoding_partial_and_noncanonical_json() {
-    let canonical = content();
-    let mut variants = vec![
-        vec![],
-        vec![b'\n'; 32769],
-        vec![255, b'\n'],
-        canonical[..canonical.len() - 1].to_vec(),
-        b"{\n".to_vec(),
-    ];
-    variants.push([b" ".as_slice(), &canonical].concat());
-    variants.push([&canonical, b"\n".as_slice()].concat());
-    variants.push([&[239, 187, 191], canonical.as_slice()].concat());
-    let text = String::from_utf8(canonical.clone()).unwrap();
-    variants.push(text.replace('\n', "\r\n").into_bytes());
-    variants.push(
-        text.replacen("restore-journal-v1", r"\u0072estore-journal-v1", 1)
-            .into_bytes(),
-    );
-    variants.push(
-        text.replacen("\"version\":1", "\"version\": 1", 1)
-            .into_bytes(),
-    );
-    variants.push(
-        text.replacen("{\"version\":1,", "{\"version\":1,\"version\":1,", 1)
-            .into_bytes(),
-    );
-    variants.push(
-        text.replacen(
-            "\"version\":1,\"purpose\":\"restore-journal-v1\",",
-            "\"purpose\":\"restore-journal-v1\",\"version\":1,",
-            1,
-        )
-        .into_bytes(),
-    );
-    for bytes in variants {
-        assert!(!check(&bytes));
-    }
-}
-
-#[test]
-fn rejects_foreign_binding_key_fields_chain_sequence_and_mac() {
-    let f = fixture();
-    let bytes = content();
-    for field in [
-        "restoreRunId",
-        "actorUserId",
-        "sourceBackupId",
-        "sourceChecksumSha256",
-        "includesStorage",
-    ] {
-        let mut binding = f["binding"].clone();
-        binding[field] = if field == "includesStorage" {
-            json!(false)
-        } else if field == "sourceChecksumSha256" {
-            json!("a".repeat(64))
-        } else {
-            json!("c680a997-88a0-492e-b55d-a794ba57cf43")
-        };
-        assert!(validate(&bytes, binding, f["keyBase64"].clone()).is_err());
-    }
-    assert!(
-        validate(
-            &bytes,
-            f["binding"].clone(),
-            json!(STANDARD.encode([24; 32]))
-        )
-        .is_err()
-    );
-    for (field, value) in [
-        ("version", json!(2)),
-        ("purpose", json!("other")),
-        ("algorithm", json!("sha256")),
-        ("sequence", json!(2)),
-        ("event", json!("completed")),
-        ("occurredAt", json!("2026-09-06T10:20:30Z")),
-        ("occurredAt", json!("2026-02-30T10:20:30.000Z")),
-        ("hmacSha256", json!("F".repeat(64))),
-        ("hmacSha256", json!("f".repeat(64))),
-        ("previousHmacSha256", json!("f".repeat(64))),
-        ("extra", json!(true)),
-    ] {
-        let mut record = f["records"][0].clone();
-        record[field] = value;
-        assert!(!check(format!("{record}\n").as_bytes()), "{field}");
-    }
-    let lines: Vec<_> = String::from_utf8(bytes)
-        .unwrap()
-        .lines()
-        .map(str::to_owned)
-        .collect();
-    for indices in [
-        vec![0, 0],
-        vec![1, 0],
-        vec![0, 1, 1],
-        vec![0, 2],
-        vec![0; 9],
-    ] {
-        assert!(!check(
-            format!(
-                "{}\n",
-                indices
-                    .iter()
-                    .map(|index| lines[*index].as_str())
-                    .collect::<Vec<_>>()
-                    .join("\n")
-            )
-            .as_bytes()
-        ));
-    }
-}
-
-#[test]
 fn malformed_binding_and_key_reject_before_resources() {
     let root = tempfile::tempdir().unwrap();
     let f = fixture();
@@ -341,11 +150,12 @@ fn malformed_binding_and_key_reject_before_resources() {
 fn retained_session_fsyncs_chained_events_and_exclusive_evidence() {
     let root = tempfile::tempdir().unwrap();
     let (mut session, path) = start(root.path());
-    let started = fs::read(&path).unwrap();
-    assert!(check(&started));
+    let mut events = vec!["started"];
+    assert_events(&path, &events);
     for event in ["rewind-ready", "applied", "completed", "recovery-required"] {
         assert_eq!(session.append(event)["type"], "result");
-        assert!(check(&fs::read(&path).unwrap()));
+        events.push(event);
+        assert_events(&path, &events);
     }
     assert_eq!(session.close()["type"], "result");
     let evidence = fs::read(&path).unwrap();
@@ -486,11 +296,11 @@ fn every_permitted_failure_and_recovery_transition_is_durable() {
     ] {
         let root = tempfile::tempdir().unwrap();
         let (mut session, path) = start(root.path());
-        for event in events {
+        for event in &events {
             assert_eq!(session.append(event)["type"], "result");
         }
         session.close();
-        assert!(check(&fs::read(path).unwrap()));
+        assert_events(&path, &[vec!["started"], events].concat());
     }
 }
 

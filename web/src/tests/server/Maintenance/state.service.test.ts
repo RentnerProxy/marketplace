@@ -10,7 +10,9 @@ import {
 import { publishMaintenanceModeChangedService } from '@/server/Realtime/publish.service.ts'
 import {
     deriveMaintenanceState,
+    getFreshMaintenanceStateService,
     getMaintenanceStateService,
+    invalidateMaintenanceStateService,
     publishMaintenanceStateService,
 } from '@/server/Maintenance/state.service.ts'
 
@@ -36,6 +38,7 @@ const dbMock = (function () {
             }),
         },
         state,
+        limit: selectChain.limit,
     }
 })()
 
@@ -60,6 +63,7 @@ describe('Maintenance-State-Service', function () {
         vi.useFakeTimers()
         setSystemTime(now)
         vi.clearAllMocks()
+        invalidateMaintenanceStateService()
         dbMock.state.settingsRows = []
     })
 
@@ -145,5 +149,53 @@ describe('Maintenance-State-Service', function () {
             maintenanceStartsAt: startsAt.toISOString(),
             updatedAt: now.toISOString(),
         })
+    })
+
+    it('coalesces concurrent reads and advances a scheduled start within the cache lifetime', async function () {
+        const startsAt = new Date(now.getTime() + 100)
+        dbMock.state.settingsRows = [
+            { isMaintenanceModeEnabled: true, maintenanceStartsAt: startsAt },
+        ]
+
+        const reads = await Promise.all([
+            getMaintenanceStateService(),
+            getMaintenanceStateService(),
+        ])
+        expect(reads.map((read) => read.isScheduled)).toEqual([true, true])
+        setSystemTime(startsAt)
+        expect((await getMaintenanceStateService()).isActive).toBe(true)
+        expect(dbMock.database.select).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps access checks fresh and retries a failed cache refresh after expiration', async function () {
+        expect((await getMaintenanceStateService()).isActive).toBe(false)
+        dbMock.state.settingsRows = [
+            { isMaintenanceModeEnabled: true, maintenanceStartsAt: now },
+        ]
+        expect((await getFreshMaintenanceStateService()).isActive).toBe(true)
+        expect((await getMaintenanceStateService()).isActive).toBe(false)
+
+        setSystemTime(new Date(now.getTime() + 1_000))
+        const failure = new Error('Synthetic unavailable database')
+        dbMock.limit.mockRejectedValueOnce(failure)
+        await expect(getMaintenanceStateService()).rejects.toBe(failure)
+        expect((await getMaintenanceStateService()).isActive).toBe(true)
+        expect(dbMock.database.select).toHaveBeenCalledTimes(4)
+    })
+
+    it('retries an in-flight read superseded by an invalidation', async function () {
+        const stale = Promise.withResolvers<typeof dbMock.state.settingsRows>()
+        dbMock.limit.mockReturnValueOnce(stale.promise)
+        const firstRead = getMaintenanceStateService()
+        invalidateMaintenanceStateService()
+        dbMock.state.settingsRows = [
+            { isMaintenanceModeEnabled: true, maintenanceStartsAt: now },
+        ]
+        expect((await getMaintenanceStateService()).isActive).toBe(true)
+
+        stale.resolve([])
+        expect((await firstRead).isActive).toBe(true)
+        expect((await getMaintenanceStateService()).isActive).toBe(true)
+        expect(dbMock.database.select).toHaveBeenCalledTimes(2)
     })
 })

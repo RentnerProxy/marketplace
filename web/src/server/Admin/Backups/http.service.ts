@@ -1,5 +1,5 @@
-import type { BackupApiErrorStatus } from '@/server/Admin/Backups/backup-service.types.ts'
-import { BackupImportError } from './import.errors.ts'
+import type { BackupApiErrorStatus } from '@/server/Admin/Backups/Types/backup-service.types.ts'
+import { BackupImportError } from './backup.errors.ts'
 import {
     AuthenticationRequiredError,
     PermissionDeniedError,

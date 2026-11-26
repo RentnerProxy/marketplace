@@ -3,8 +3,8 @@ import type { BackupRestoreProgress } from '@/lib/Backups/Types/backup.types.ts'
 import type { ValidatedBackupArchive } from './archive-validation.types.ts'
 import type { PreparedBackgroundStorage } from './archive-background-storage.types.ts'
 import type { FileHandle } from 'node:fs/promises'
-import type { BackupByteProgressReporter } from '../backup-service.types.ts'
-import type { BackupImportContext } from '../import.types.ts'
+import type { BackupByteProgressReporter } from './backup-service.types.ts'
+import type { BackupImportContext } from './import.types.ts'
 
 export type StageBackupArchiveInput = {
     source: FileHandle

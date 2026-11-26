@@ -1,49 +1,18 @@
 import {
     closeRealtimeSession,
-    enforceRealtimeSessionDeadline,
+    expireRealtimeSessions,
     invalidateRealtimeRevocationEpoch,
     suspendRealtimeSessionForRevalidation,
 } from './realtimeSessionValidation.ts'
-import type {
-    BunRealtimeServer,
-    BunRealtimeWebSocket,
-} from '@/websockets/Types/bun.ts'
+import type { BunRealtimeServer } from '@/websockets/Types/bun.ts'
 import type { RealtimeEvent } from '@/websockets/Types/events.ts'
+import { invalidateMaintenanceStateService } from '@/server/Maintenance/state.service.ts'
+import { getRealtimeConnections } from './realtimeConnections.ts'
 
-const MAX_REALTIME_CONNECTIONS_PER_USER = 10
-
-declare global {
-    var appRealtimeConnections:
-        Map<string, Set<BunRealtimeWebSocket>> | undefined
-}
-
-function getRealtimeConnections() {
-    globalThis.appRealtimeConnections ??= new Map()
-    return globalThis.appRealtimeConnections
-}
-
-export function registerRealtimeConnection(websocket: BunRealtimeWebSocket) {
-    const connections = getRealtimeConnections()
-    const userConnections = connections.get(websocket.data.userId) ?? new Set()
-
-    if (userConnections.size >= MAX_REALTIME_CONNECTIONS_PER_USER) {
-        return false
-    }
-
-    userConnections.add(websocket)
-    connections.set(websocket.data.userId, userConnections)
-    return true
-}
-
-export function unregisterRealtimeConnection(websocket: BunRealtimeWebSocket) {
-    const connections = getRealtimeConnections()
-    const userConnections = connections.get(websocket.data.userId)
-
-    userConnections?.delete(websocket)
-    if (userConnections?.size === 0) {
-        connections.delete(websocket.data.userId)
-    }
-}
+export {
+    registerRealtimeConnection,
+    unregisterRealtimeConnection,
+} from './realtimeConnections.ts'
 
 function closeUserRealtimeConnections(userId: string) {
     for (const websocket of getRealtimeConnections().get(userId) ?? []) {
@@ -52,7 +21,6 @@ function closeUserRealtimeConnections(userId: string) {
             4001,
             'Berechtigungen oder Sitzung wurden geändert.',
         )
-        unregisterRealtimeConnection(websocket)
     }
 }
 
@@ -66,7 +34,6 @@ function closeSessionRealtimeConnections(userId: string, sessionHash: string) {
     for (const websocket of getRealtimeConnections().get(userId) ?? []) {
         if (websocket.data.sessionHash === sessionHash) {
             closeRealtimeSession(websocket, 4001, 'Die Sitzung wurde beendet.')
-            unregisterRealtimeConnection(websocket)
         }
     }
 }
@@ -85,13 +52,14 @@ export function dispatchRealtimeEvent(
     )
         invalidateRealtimeRevocationEpoch()
 
-    for (const userConnections of getRealtimeConnections().values()) {
-        for (const websocket of userConnections) {
-            if (!enforceRealtimeSessionDeadline(websocket)) {
-                unregisterRealtimeConnection(websocket)
-            }
-        }
-    }
+    if (
+        event.type === 'maintenance-mode.changed' ||
+        event.type === 'system-settings.updated' ||
+        event.type === 'system-restore.changed'
+    )
+        invalidateMaintenanceStateService()
+
+    expireRealtimeSessions()
     if (event.type === 'user.sessions-revoked') {
         for (const websocket of getRealtimeConnections().get(
             event.payload.userId,

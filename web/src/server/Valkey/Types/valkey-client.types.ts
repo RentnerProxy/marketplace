@@ -1,4 +1,6 @@
-export interface AppValkeyClient {
+import type Valkey from 'ioredis'
+
+export interface AppValkeyClient extends Pick<Valkey, 'defineCommand'> {
     readonly status: string
     get(key: string): Promise<string | null>
     set(key: string, value: string, condition: 'NX'): Promise<'OK' | null>

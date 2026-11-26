@@ -1,5 +1,3 @@
-import { db } from '@/db'
-import { systemSettings } from '@/db/schema.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import {
     getDefaultRouteForPermissions,
@@ -8,18 +6,7 @@ import {
 import { getUserPermissionKeys } from '@/lib/Permissions/userPermissions.ts'
 import { getActiveCurrentSessionUser } from '@/server/Auth/currentSession.ts'
 import { getPendingMaintenanceExtensionRequest } from './requestStore.ts'
-import { deriveMaintenanceState } from './state.service.ts'
-
-async function getEnabledMaintenanceSettings() {
-    const rows = await db.select().from(systemSettings).limit(1)
-    const settings = rows.at(0)
-
-    if (!settings?.isMaintenanceModeEnabled || !settings.maintenanceStartsAt) {
-        return null
-    }
-
-    return settings
-}
+import { getMaintenanceStateService } from './state.service.ts'
 
 function getOwnPendingExtensionRequest(
     request: Awaited<ReturnType<typeof getPendingMaintenanceExtensionRequest>>,
@@ -40,15 +27,20 @@ function getOwnPendingExtensionRequest(
 }
 
 export async function getMaintenancePageStatusService() {
-    const user = await getActiveCurrentSessionUser()
-    const settings = await getEnabledMaintenanceSettings()
-    const maintenanceState = deriveMaintenanceState(settings, new Date())
-    const pendingRequest = await getPendingMaintenanceExtensionRequest()
+    const currentUser = getActiveCurrentSessionUser()
+    const [user, maintenanceState, pendingRequest, permissionKeys] =
+        await Promise.all([
+            currentUser,
+            getMaintenanceStateService(),
+            getPendingMaintenanceExtensionRequest(),
+            currentUser.then((current) =>
+                current ? getUserPermissionKeys(current.id) : [],
+            ),
+        ])
     const ownPendingRequest = getOwnPendingExtensionRequest(
         pendingRequest,
         user?.id,
     )
-    const permissionKeys = user ? await getUserPermissionKeys(user.id) : []
     const canBypassMaintenance = hasPermission(
         permissionKeys,
         PERMISSIONS.ADMIN_MAINTENANCE_BYPASS,
@@ -63,7 +55,10 @@ export async function getMaintenancePageStatusService() {
             : null,
         isMaintenanceActive: maintenanceState.isActive,
         isMaintenanceScheduled: maintenanceState.isScheduled,
-        maintenanceStartsAt: maintenanceState.startsAt,
+        maintenanceStartsAt:
+            maintenanceState.isActive || maintenanceState.isScheduled
+                ? maintenanceState.startsAt
+                : null,
         canBypassMaintenance,
         redirectTo: user
             ? getDefaultRouteForPermissions(permissionKeys)

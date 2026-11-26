@@ -8,6 +8,11 @@ const ownedDirectories = new Map<string, PrivateStorageFileIdentity>()
 const temporaryRoot = path.resolve(tmpdir())
 const prefix = 'storage-fence-test-'
 
+export const STORAGE_FENCE_TEST_PROTOCOL = {
+    admissionDirectoryName: 'admission',
+    maxMetadataBytes: 256,
+} as const
+
 export async function createStorageMutationTestDirectoryService(): Promise<StorageMutationTestDirectory> {
     const temporaryDirectory = await mkdtemp(path.join(temporaryRoot, prefix))
     const identity = await lstat(temporaryDirectory, { bigint: true })

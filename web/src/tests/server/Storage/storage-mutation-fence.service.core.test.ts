@@ -27,6 +27,7 @@ import { preparePrivateStorageDirectoryService } from '@/server/Storage/private-
 import {
     cleanupStorageMutationTestDirectoryService,
     createStorageMutationTestDirectoryService,
+    STORAGE_FENCE_TEST_PROTOCOL,
 } from './storageMutationFence.test.helpers.ts'
 import type { StorageMutationTestDirectory } from './storageMutationFence.test.types.ts'
 
@@ -46,7 +47,9 @@ describe('persistent storage fence', function () {
             rootDirectory: fixture.rootDirectory,
         })
         const bytes = await readFile(lease.file.path)
-        expect(bytes.length).toBeLessThanOrEqual(config.maxMetadataBytes)
+        expect(bytes.length).toBeLessThanOrEqual(
+            STORAGE_FENCE_TEST_PROTOCOL.maxMetadataBytes,
+        )
         expect(JSON.parse(bytes.toString())).toEqual(lease.file.metadata)
         expect(lease.file.metadata.kind).toBe('shared')
         expect(lease.file.metadata.owner).toMatch(/^[0-9a-f-]{36}$/)
@@ -99,7 +102,10 @@ describe('persistent storage fence', function () {
             rootDirectory: fixture.rootDirectory,
         })
         await mkdir(
-            path.join(fixture.rootDirectory, config.admissionDirectoryName),
+            path.join(
+                fixture.rootDirectory,
+                STORAGE_FENCE_TEST_PROTOCOL.admissionDirectoryName,
+            ),
             { mode: 0o700 },
         )
         await release(lease)
@@ -109,7 +115,7 @@ describe('persistent storage fence', function () {
                 await lstat(
                     path.join(
                         fixture.rootDirectory,
-                        config.admissionDirectoryName,
+                        STORAGE_FENCE_TEST_PROTOCOL.admissionDirectoryName,
                     ),
                 )
             ).isDirectory(),
@@ -161,7 +167,7 @@ describe('persistent storage fence', function () {
         )
         const gate = path.join(
             fixture.rootDirectory,
-            config.admissionDirectoryName,
+            STORAGE_FENCE_TEST_PROTOCOL.admissionDirectoryName,
         )
         await mkdir(gate, { mode: 0o700 })
         expect(
@@ -200,7 +206,7 @@ describe('persistent storage fence', function () {
             owner: '00000000-0000-4000-8000-000000000001',
         }),
         JSON.stringify({ version: 1, kind: 'exclusive', owner: 'invalid' }),
-        'x'.repeat(config.maxMetadataBytes + 1),
+        'x'.repeat(STORAGE_FENCE_TEST_PROTOCOL.maxMetadataBytes + 1),
     ])('fails closed for invalid foreign metadata', async function (value) {
         await preparePrivateStorageDirectoryService(
             fixture.rootDirectory,

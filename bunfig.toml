@@ -37,7 +37,6 @@ ignorePatterns = [
     "core/target/",
     ".tools/",
     "web/drizzle/",
-    "drizzle.config.ts",
     ".output/",
     "node_modules/",
     "web/src/routeTree.gen.ts",

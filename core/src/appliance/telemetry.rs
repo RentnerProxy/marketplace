@@ -7,22 +7,52 @@ use super::{
 use serde_json::json;
 use std::{
     io::{Read, Write},
-    net::{TcpListener, TcpStream},
+    net::{SocketAddr, TcpListener, TcpStream},
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicBool, Ordering},
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
 
+#[cfg(target_os = "linux")]
+fn set_accept_timeout(listener: &TcpListener) -> std::io::Result<()> {
+    use std::os::fd::AsRawFd;
+
+    // Bound shutdown even if resource exhaustion prevents the wake connection.
+    let timeout = libc::timeval {
+        tv_sec: 1,
+        tv_usec: 0,
+    };
+    // SAFETY: The socket is live and timeout points to an initialized timeval of the supplied size.
+    let result = unsafe {
+        libc::setsockopt(
+            listener.as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::SO_RCVTIMEO,
+            std::ptr::from_ref(&timeout).cast(),
+            std::mem::size_of_val(&timeout) as libc::socklen_t,
+        )
+    };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
+}
+
 pub struct Runtime {
     shutdown: Arc<AtomicBool>,
+    address: SocketAddr,
     thread: JoinHandle<()>,
 }
 impl Runtime {
     pub fn stop(self) {
         self.shutdown.store(true, Ordering::SeqCst);
+        // The accept loop checks the flag again after each connection. If the
+        // backlog is already full, its queued connections also wake the loop.
+        let _ = TcpStream::connect_timeout(&self.address, Duration::from_secs(1));
         let _ = self.thread.join();
     }
 }
@@ -57,56 +87,35 @@ fn start_with_listener(
     maintenance: bool,
     standalone: bool,
 ) -> Result<Runtime> {
-    listener
-        .set_nonblocking(true)
+    #[cfg(target_os = "linux")]
+    set_accept_timeout(&listener).map_err(|_| "appliance_telemetry_failed")?;
+    let address = listener
+        .local_addr()
         .map_err(|_| "appliance_telemetry_failed")?;
     let shutdown = Arc::new(AtomicBool::new(false));
     let done = shutdown.clone();
     let start = Instant::now();
     let env = Arc::new(env);
     let thread = thread::spawn(move || {
-        let active = Arc::new(AtomicUsize::new(0));
         let mut workers: Vec<JoinHandle<()>> = Vec::new();
         while !done.load(Ordering::SeqCst) {
-            match listener.accept() {
-                Ok((socket, _)) if active.load(Ordering::SeqCst) < 8 => {
-                    let active = active.clone();
-                    let logs = logs.clone();
-                    let ready = ready.clone();
-                    let stopping = stopping.clone();
-                    let env = env.clone();
-                    active.fetch_add(1, Ordering::SeqCst);
-                    workers.push(thread::spawn(move || {
-                        handle(socket, &logs, start, || {
-                            if !ready.load(Ordering::SeqCst) || stopping.load(Ordering::SeqCst) {
-                                return false;
-                            }
-                            if standalone {
-                                return true;
-                            }
-                            thread::scope(|scope| {
-                                Role::startup_order(maintenance)
-                                    .into_iter()
-                                    .map(|role| {
-                                        let env = &env;
-                                        scope.spawn(move || process::probe(role, env))
-                                    })
-                                    .collect::<Vec<_>>()
-                                    .into_iter()
-                                    .all(|worker| worker.join().unwrap_or(false))
-                            })
-                        });
-                        active.fetch_sub(1, Ordering::SeqCst);
-                    }));
-                }
-                Ok(_) => (),
-                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                    thread::sleep(Duration::from_millis(20))
+            let socket = match listener.accept() {
+                Ok((socket, _)) => socket,
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::Interrupted | std::io::ErrorKind::WouldBlock
+                    ) =>
+                {
+                    continue;
                 }
                 Err(_) => {
                     stopping.store(true, Ordering::SeqCst);
                     break;
                 }
+            };
+            if done.load(Ordering::SeqCst) {
+                break;
             }
             let mut index = 0;
             while index < workers.len() {
@@ -116,12 +125,44 @@ fn start_with_listener(
                     index += 1;
                 }
             }
+            if workers.len() >= 8 {
+                continue;
+            }
+            let logs = logs.clone();
+            let ready = ready.clone();
+            let stopping = stopping.clone();
+            let env = env.clone();
+            workers.push(thread::spawn(move || {
+                handle(socket, &logs, start, || {
+                    if !ready.load(Ordering::SeqCst) || stopping.load(Ordering::SeqCst) {
+                        return false;
+                    }
+                    if standalone {
+                        return true;
+                    }
+                    thread::scope(|scope| {
+                        Role::startup_order(maintenance)
+                            .into_iter()
+                            .map(|role| {
+                                let env = &env;
+                                scope.spawn(move || process::probe(role, env))
+                            })
+                            .collect::<Vec<_>>()
+                            .into_iter()
+                            .all(|worker| worker.join().unwrap_or(false))
+                    })
+                });
+            }));
         }
         for worker in workers {
             let _ = worker.join();
         }
     });
-    Ok(Runtime { shutdown, thread })
+    Ok(Runtime {
+        shutdown,
+        address,
+        thread,
+    })
 }
 
 fn handle(mut socket: TcpStream, logs: &LogStore, start: Instant, healthy: impl FnOnce() -> bool) {

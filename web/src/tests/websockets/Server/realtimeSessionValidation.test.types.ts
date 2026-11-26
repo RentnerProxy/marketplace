@@ -20,6 +20,7 @@ export type SessionValidationTestUpgradeConnection = {
 export type SessionValidationTestPredicate = { column: unknown; value: unknown }
 export type SessionValidationTestTimer = {
     handle: ReturnType<typeof setTimeout>
-    delay: number | undefined
+    wakeAt: number
+    hasRun: boolean
     run: () => void
 }

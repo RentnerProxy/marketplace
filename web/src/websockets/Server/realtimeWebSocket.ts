@@ -79,10 +79,7 @@ export const realtimeWebSocketHandler = {
             return
         }
 
-        if (!startRealtimeValidation(websocket)) {
-            unregisterRealtimeConnection(websocket)
-            return
-        }
+        startRealtimeValidation(websocket)
     },
     message(websocket, message) {
         if (!isRealtimeSessionActive(websocket)) return

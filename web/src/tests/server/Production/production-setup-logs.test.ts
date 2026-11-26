@@ -13,7 +13,7 @@ const subscriber = {
     quit: vi.fn(async function () {}),
     disconnect: vi.fn(),
 }
-const server = { stop: vi.fn(async function () {}) }
+const server = { pendingRequests: 0, stop: vi.fn(async function () {}) }
 const child = {
     exited: childExit.promise,
     kill: vi.fn(function () {
@@ -26,6 +26,9 @@ const syntheticEnvironment = {
     INTERNAL_APP_PORT: '3002',
     HOST: '127.0.0.1',
     TRUST_PROXY_HEADERS: 'false',
+    CI: 'true',
+    TEST: 'true',
+    SERVER_SHUTDOWN_TIMEOUT: '5',
 }
 const previousEnvironment = new Map(
     Object.keys(syntheticEnvironment).map(
@@ -75,6 +78,14 @@ afterEach(function () {
 
 it('starts the setup-log lifecycle in the app process before the child server and stops it on shutdown', async function () {
     Object.assign(process.env, syntheticEnvironment)
+    const barrierHealth =
+        await import('@/server/Storage/storage-mutation-barrier-health.service.ts')
+    const installFatalHandler = vi
+        .spyOn(
+            barrierHealth,
+            'installStorageMutationBarrierFatalExitHandlerService',
+        )
+        .mockImplementation(function () {})
     vi.spyOn(console, 'log').mockImplementation(function () {})
     const serve = vi
         .spyOn(Bun, 'serve')
@@ -99,12 +110,17 @@ it('starts the setup-log lifecycle in the app process before the child server an
     }
 
     expect(serve).toHaveBeenCalledTimes(1)
+    expect(installFatalHandler).toHaveBeenCalledTimes(1)
     expect(spawn).toHaveBeenCalledTimes(1)
     expect(spawn.mock.calls[0]?.[0]).toEqual([
         process.execPath,
         '--no-env-file',
         '.output/server/index.mjs',
     ])
+    const childEnvironment = spawn.mock.calls[0]?.[1]?.env
+    expect(childEnvironment?.SERVER_SHUTDOWN_TIMEOUT).toBe('3660')
+    expect(childEnvironment).not.toHaveProperty('CI')
+    expect(childEnvironment).not.toHaveProperty('TEST')
     expect(stopSetupLog).not.toHaveBeenCalled()
     const shutdown = process
         .rawListeners('SIGTERM')

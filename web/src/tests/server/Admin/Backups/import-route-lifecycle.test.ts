@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { BACKUP_LIMITS } from '@/config/backup.config.ts'
-import { BackupImportError } from '@/server/Admin/Backups/import.errors.ts'
+import { BackupImportError } from '@/server/Admin/Backups/backup.errors.ts'
 import {
     AuthenticationRequiredError,
     PermissionDeniedError,
@@ -47,7 +47,7 @@ function createUploadRequest(
 
 function expectNoImportWork() {
     expect(harness.receive).not.toHaveBeenCalled()
-    expect(harness.copy).not.toHaveBeenCalled()
+    expect(harness.stageBackup).not.toHaveBeenCalled()
     expect(harness.register).not.toHaveBeenCalled()
     expect(harness.publishAudit).not.toHaveBeenCalled()
     expect(harness.retention).not.toHaveBeenCalled()
@@ -74,7 +74,7 @@ describe('Backup import admission route lifecycle', function () {
             'validate-request',
             'acquire',
             'upload',
-            'copy',
+            'stage',
             'register',
             'publish-archive',
             'commit',
@@ -88,8 +88,8 @@ describe('Backup import admission route lifecycle', function () {
             maximumUploadBytes: 4,
         })
         expect(harness.receive).toHaveBeenCalledWith(request, harness.context)
-        expect(harness.copy).toHaveBeenCalledWith(
-            '/synthetic-backups/.import-admission/upload.enc',
+        expect(harness.stageBackup).toHaveBeenCalledWith(
+            '/synthetic-backups/.import-admission/upload.partial',
             harness.context,
         )
         expect(harness.register).toHaveBeenCalledWith(
@@ -193,8 +193,8 @@ describe('Backup import admission route lifecycle', function () {
         },
     )
 
-    it.each(['upload', 'copy'] as const)(
-        'preserves a disk error in the %s stage and releases admission after cleanup',
+    it.each(['upload', 'stage'] as const)(
+        'preserves a disk error during %s and releases admission after cleanup',
         async function (stage) {
             harness.state.failures.set(
                 stage,
@@ -205,13 +205,13 @@ describe('Backup import admission route lifecycle', function () {
             expect(harness.register).not.toHaveBeenCalled()
             expect(harness.context.release).toHaveBeenCalledTimes(1)
             expect(harness.uploadDispose).toHaveBeenCalledTimes(
-                stage === 'copy' ? 1 : 0,
+                stage === 'stage' ? 1 : 0,
             )
             expect(harness.state.events.at(-1)).toBe('release')
             expect(harness.state.marker).toBe(false)
         },
     )
-    it.each(['upload', 'copy'] as const)(
+    it.each(['upload', 'stage'] as const)(
         'preserves the primary disk status when %s cleanup also fails',
         async function (stage) {
             const controller = new AbortController()
@@ -221,7 +221,7 @@ describe('Backup import admission route lifecycle', function () {
                 'Speicherbudget erschöpft.',
             )
             const failingOperation =
-                stage === 'upload' ? harness.receive : harness.copy
+                stage === 'upload' ? harness.receive : harness.stageBackup
             failingOperation.mockImplementationOnce(async function () {
                 controller.abort()
                 harness.context.markCleanupIncomplete()
@@ -245,14 +245,14 @@ describe('Backup import admission route lifecycle', function () {
             )
             expect(harness.context.release).toHaveBeenCalledTimes(1)
             expect(harness.uploadDispose).toHaveBeenCalledTimes(
-                stage === 'copy' ? 1 : 0,
+                stage === 'stage' ? 1 : 0,
             )
             expect(harness.state.marker).toBe(true)
         },
     )
     it.each([
         'after-upload',
-        'after-copy',
+        'after-stage',
         'before-publish',
         'after-publish',
     ] as const)(
@@ -282,7 +282,7 @@ describe('Backup import admission route lifecycle', function () {
 
     it('checks the admission deadline independently of the HTTP AbortSignal', async function () {
         const { request } = createUploadRequest()
-        harness.state.hooks.set('after-copy', () => {
+        harness.state.hooks.set('after-stage', () => {
             harness.state.expired = true
         })
         const response = await handleBackupImport({ request })
@@ -451,7 +451,7 @@ describe('Backup import admission route lifecycle', function () {
         const response = await handleBackupImport({ request })
         expect(response.status).toBe(403)
         expect(harness.receive).toHaveBeenCalledTimes(1)
-        expect(harness.copy).toHaveBeenCalledTimes(1)
+        expect(harness.stageBackup).toHaveBeenCalledTimes(1)
         expect(harness.publish).not.toHaveBeenCalled()
         expect(harness.publishAudit).not.toHaveBeenCalled()
         expect(harness.retention).not.toHaveBeenCalled()

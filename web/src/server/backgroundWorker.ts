@@ -10,7 +10,6 @@ import {
 import { createWorkerStatusReporterService } from '@/server/Runtime/worker-status.service.ts'
 import { logError, logInfo, logWarn } from '@/server/Logging/logger.ts'
 import { closeCoreWorkerPoolsService } from '@/server/Core/worker-pool.service.ts'
-import { closePrivateStorageWritesService } from '@/server/Storage/private-write-queue.service.ts'
 import { setRuntimeLogProcessService } from '@/server/Logging/runtime-log-history.service.ts'
 import { getValkeyConnection } from '@/server/Valkey/valkey.service.ts'
 import { waitForValkeyReadyService } from '@/server/Valkey/valkey-availability.service.ts'
@@ -26,6 +25,7 @@ import {
 import { assertRuntimeDatabaseRolePolicyService } from '@/server/Runtime/database-role-policy.service.ts'
 import { createWorkerShutdownService } from '@/server/Runtime/worker-shutdown.service.ts'
 import { waitForWorkerCleanupService } from '@/server/Runtime/worker-cleanup.service.ts'
+import { closeAppConnectionsService } from '@/server/Runtime/app-connections.service.ts'
 import type { startMailWorker } from '@/server/Queues/mail.worker.ts'
 import { candidateBuildsConfigured } from '@/server/Marketplace/Submissions/github-credentials.service.ts'
 
@@ -77,7 +77,9 @@ const shutdown = createWorkerShutdownService({
                 })
             } finally {
                 try {
-                    await closePrivateStorageWritesService()
+                    const { drainSharedStorageMutationBarrierService } =
+                        await import('@/server/Storage/storage-mutation-barrier.service.ts')
+                    await drainSharedStorageMutationBarrierService()
                 } finally {
                     await closeCoreWorkerPoolsService()
                 }
@@ -85,6 +87,7 @@ const shutdown = createWorkerShutdownService({
         }
     },
     stopStatus: () => workerStatusReporter.stop(),
+    closeConnections: closeAppConnectionsService,
 })
 
 let shutdownWasRequested = false

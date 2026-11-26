@@ -222,6 +222,9 @@ vi.mock('@/server/Valkey/valkey-availability.service.ts', function () {
         },
     }
 })
+vi.mock('@/server/Storage/storage-mutation-barrier.service.ts', () => ({
+    drainSharedStorageMutationBarrierService: async () => undefined,
+}))
 vi.mock(
     '@/server/Storage/storage-mutation-barrier-health.service.ts',
     function () {

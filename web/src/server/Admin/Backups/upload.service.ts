@@ -1,15 +1,13 @@
-import { createBoundedBackupStreamService } from './backup-bounded-stream.service.ts'
+import { writeBoundedBackupStreamService } from './backup-bounded-stream.service.ts'
 import path from 'node:path'
 import { open } from 'node:fs/promises'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
 import {
     BACKUP_FILE_PERMISSIONS,
     BACKUP_LIMITS,
     BACKUP_UPLOAD_CONTENT_TYPE,
 } from '@/config/backup.config.ts'
 import { removePathBestEffort } from './archive-files.service.ts'
-import type { BackupImportContext } from './import.types.ts'
+import type { BackupImportContext } from './Types/import.types.ts'
 
 export function validateBackupUploadRequest(request: Request): number | null {
     if (
@@ -70,7 +68,10 @@ export async function receiveBackupUpload(
     if (!requestBody) {
         throw new Error('Es wurde kein gültiger Backup-Upload übermittelt.')
     }
-    const temporaryFile = path.join(context.temporaryDirectory, 'upload.enc')
+    const temporaryFile = path.join(
+        context.temporaryDirectory,
+        'upload.partial',
+    )
     let ownsFile = false
 
     try {
@@ -80,36 +81,30 @@ export async function receiveBackupUpload(
             BACKUP_FILE_PERMISSIONS.file,
         )
         ownsFile = true
-        const limit = createBoundedBackupStreamService(context, {
-            getMaximumBytes: () =>
-                Math.min(
-                    context.maximumUploadBytes,
-                    BACKUP_LIMITS.maxArchiveBytes,
-                ),
-            invalidChunkMessage: 'Der Backup-Upload ist ungültig.',
-            sizeLimitMessage:
-                'Der Backup-Upload überschreitet das Größenlimit.',
-        })
+        let writtenBytes: number
         try {
-            context.assertActive()
-            await pipeline(
-                Readable.from(requestBody),
-                limit.stream,
-                fileHandle.createWriteStream(),
-                { signal: context.signal },
+            writtenBytes = await writeBoundedBackupStreamService(
+                requestBody,
+                fileHandle,
+                context,
+                {
+                    maximumBytes: Math.min(
+                        context.maximumUploadBytes,
+                        BACKUP_LIMITS.maxArchiveBytes,
+                    ),
+                    invalidChunkMessage: 'Der Backup-Upload ist ungültig.',
+                    sizeLimitMessage:
+                        'Der Backup-Upload überschreitet das Größenlimit.',
+                },
             )
         } finally {
-            await limit.settle()
             await fileHandle.close().catch(function (error) {
                 context.markCleanupIncomplete()
                 throw error
             })
         }
         context.assertActive()
-        if (
-            declaredBytes !== null &&
-            limit.getObservedBytes() !== declaredBytes
-        ) {
+        if (declaredBytes !== null && writtenBytes !== declaredBytes) {
             throw new Error(
                 'Die Uploadgröße stimmt nicht mit der Deklaration überein.',
             )

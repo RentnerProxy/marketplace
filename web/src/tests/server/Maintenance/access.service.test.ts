@@ -5,7 +5,7 @@ import { requireMaintenanceAccessService } from '@/server/Maintenance/access.ser
 
 const getMaintenanceState = vi.fn()
 vi.mock('@/server/Maintenance/state.service.ts', () => ({
-    getMaintenanceStateService: getMaintenanceState,
+    getFreshMaintenanceStateService: getMaintenanceState,
 }))
 
 describe('Maintenance access for authenticated features', function () {

@@ -67,6 +67,51 @@ fn canonical_metadata_rejects_every_noncanonical_representation() {
 }
 
 #[test]
+fn shared_reuse_revalidates_ownership_without_publishing_or_syncing_a_gate() {
+    let (_temporary, root) = fixture();
+    let lease = shared(&root);
+    let revalidate =
+        json!({"operation":"fenceAdmitShared","rootDirectory":root,"currentLease":lease});
+    let guard = inject(|point| {
+        assert!(!matches!(
+            point,
+            "beforeCreate" | "write" | "fileSync" | "directorySync" | "gateUnlink" | "gateRemove"
+        ));
+        Ok(())
+    });
+    assert_eq!(run(revalidate.clone()), lease);
+    drop(guard);
+    let admission = root.join(ADMISSION);
+    let fence = Fence::open(&root, Some(&lease["context"])).unwrap();
+    files::create_directory(&fence.root.handle, Path::new(ADMISSION)).unwrap();
+    assert_eq!(error(revalidate.clone()), "STORAGE_MUTATION_ADMISSION_BUSY");
+    fs::remove_dir(admission).unwrap();
+    fs::remove_file(path(&lease)).unwrap();
+    assert_eq!(error(revalidate), "STORAGE_MUTATION_FENCE_UNAVAILABLE");
+}
+
+#[test]
+fn only_disappearance_of_the_admission_entry_is_retryable() {
+    let missing = || std::io::Error::from(std::io::ErrorKind::NotFound);
+    assert_eq!(
+        assert_entry_type(ADMISSION, Err(missing()))
+            .unwrap_err()
+            .code,
+        "STORAGE_MUTATION_ADMISSION_BUSY"
+    );
+    assert_eq!(
+        assert_entry_type(SHARED, Err(missing())).unwrap_err().code,
+        "ENOENT"
+    );
+    assert_eq!(
+        assert_entry_type(ADMISSION, Err(std::io::ErrorKind::PermissionDenied.into()))
+            .unwrap_err()
+            .code,
+        "EACCES"
+    );
+}
+
+#[test]
 fn uncertain_publications_preserve_gate_and_any_created_lease() {
     for kind in [SHARED, "exclusive"] {
         for phase in [

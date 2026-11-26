@@ -18,7 +18,7 @@ vi.mock('@/server/Realtime/publish.service.ts', function () {
         }),
     }
 })
-import { deleteBackupFilesService } from '@/server/Admin/Backups/backup-delete.service.ts'
+import { deleteBackupFilesService } from '@/server/Admin/Backups/backup-files.service.ts'
 import { deleteBackupService } from '@/server/Admin/Backups/run-retention.service.ts'
 import { getBackupRunById } from '@/server/Admin/Backups/run-registry.service.ts'
 
@@ -164,7 +164,7 @@ vi.mock('drizzle-orm', function () {
     }
 })
 
-vi.mock('@/server/Admin/Backups/backup-delete.service.ts', function () {
+vi.mock('@/server/Admin/Backups/backup-files.service.ts', function () {
     return {
         deleteBackupFilesService: vi.fn(async function () {
             auditMocks.state.events.push('core-delete')

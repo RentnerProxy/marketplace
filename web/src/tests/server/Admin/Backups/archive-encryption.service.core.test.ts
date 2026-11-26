@@ -15,7 +15,7 @@ vi.mock('@/server/Runtime/environment.service.ts', () => ({
     getRequiredServerEnvironment: () => fixtureKey,
 }))
 const { authenticateBackupArchiveService } =
-    await import('@/server/Admin/Backups/archive-encryption.service.ts')
+    await import('@/server/Admin/Backups/archive-core.service.ts')
 let directory = ''
 beforeEach(async () => {
     directory = await mkdtemp(path.join(os.tmpdir(), 'archive-cross-language-'))
@@ -43,16 +43,21 @@ describe('Node/Rust archive envelope compatibility', () => {
     })
     it('decrypts a streaming Rust envelope with the independent Node reader', async () => {
         const plaintext = Buffer.alloc(300003, 43)
-        const sourcePath = path.join(directory, 'plain.tar')
+        const databaseDumpPath = path.join(directory, 'database.dump')
         const destinationPath = path.join(directory, 'rust.enc')
-        await writeFile(sourcePath, plaintext)
+        await writeFile(databaseDumpPath, plaintext)
         const result = await runCoreCommandService('archive', {
-            operation: 'encrypt',
-            sourcePath,
+            operation: 'create',
+            databaseDumpPath,
             destinationPath,
             key: fixtureKey,
+            manifest: {
+                version: 3,
+                createdAt: '2026-11-10T09:00:00.000Z',
+                appVersion: 'test',
+                includesStorage: false,
+            },
         })
-        expect(result).toMatchObject({ plaintextSize: plaintext.length })
         const handle = await open(destinationPath, 'r')
         try {
             const chunks: Buffer[] = []
@@ -66,8 +71,8 @@ describe('Node/Rust archive envelope compatibility', () => {
                 source: handle,
                 destination,
             })
-            expect(verified.plaintextSize).toBe(plaintext.length)
-            expect(Buffer.concat(chunks)).toEqual(plaintext)
+            expect(result).toEqual(verified)
+            expect(Buffer.concat(chunks).includes(plaintext)).toBe(true)
         } finally {
             await handle.close()
         }

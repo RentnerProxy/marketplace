@@ -1,9 +1,6 @@
 import type { PrivateStorageFileWriteInput } from './Types/private-files.types.ts'
-import { PRIVATE_STORAGE_WRITE } from '@/config/private-storage.config.ts'
 import { CORE_RUNTIME } from '@/config/core.config.ts'
 import { runCoreCommandService } from '@/server/Core/command.service.ts'
-import { isLinuxPrivateStorageWriteSupportedService } from './linux-private-write.service.ts'
-import { runPrivateStorageWriteService } from './private-write-queue.service.ts'
 
 export async function preparePrivateStorageDirectoryService(
     rootDirectory: string,
@@ -24,13 +21,6 @@ export async function writePrivateStorageFileService(
         input.data.byteLength > CORE_RUNTIME.maxBinaryInputBytes
     )
         throw new Error('Private storage operation failed.')
-    if (
-        input.data.byteLength >= PRIVATE_STORAGE_WRITE.directMinimumBytes &&
-        isLinuxPrivateStorageWriteSupportedService()
-    ) {
-        await runPrivateStorageWriteService(input)
-        return
-    }
     await runCoreCommandService(
         'storage',
         {

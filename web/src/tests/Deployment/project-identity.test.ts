@@ -133,6 +133,29 @@ describe('central project identity', () => {
         )
     })
 
+    it('rejects double quotes in the default mail sender name', () => {
+        const defaultName = 'Example "Portal"'
+        expect(() =>
+            validateProjectIdentity({ ...renamed, defaultName }),
+        ).toThrow('defaultName')
+        expect(
+            validateProjectIdentity({ ...renamed, description: defaultName })
+                .description,
+        ).toBe(defaultName)
+    })
+
+    it('rejects C1 control characters in project display text', () => {
+        for (const code of [0x80, 0x85, 0x9f]) {
+            const text = `Example${String.fromCharCode(code)}Portal`
+            expect(() =>
+                validateProjectIdentity({ ...renamed, defaultName: text }),
+            ).toThrow('defaultName')
+            expect(() =>
+                validateProjectIdentity({ ...renamed, description: text }),
+            ).toThrow('description')
+        }
+    })
+
     it.each([
         'public',
         'drizzle',

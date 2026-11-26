@@ -1,6 +1,5 @@
-import { mkdir } from 'node:fs/promises'
+import { mkdir, open, rename, rm } from 'node:fs/promises'
 import { eq } from 'drizzle-orm'
-import sharp from 'sharp'
 import { user_profiles } from '@/db/schema.ts'
 import {
     prepareAuditContextService,
@@ -13,12 +12,33 @@ import {
 } from '@/lib/Images/imageDataUrl.ts'
 import { IMAGE_UPLOAD_CONFIG } from '@/config/image-upload.config.ts'
 import { getUserPublicImagePaths } from '@/lib/Images/publicImagePaths.ts'
+import { prepareImageVariantSource } from '@/lib/Images/prepareImageVariantSource.ts'
 import { getCurrentUserSettingsSession } from '@/server/Auth/currentSession.ts'
 import { withSharedStorageMutationBarrier } from '@/server/Storage/storage-mutation-barrier.service.ts'
 import type {
     UpdateCurrentUserPersonalInfoInput,
     UpdateCurrentUserProfileImageInput,
 } from '@/features/UserSettings/Types/user-settings-server-input.types.ts'
+
+async function replaceProfileImageFile(
+    filePath: string,
+    image: Buffer,
+    operationId: string,
+) {
+    const temporaryPath = `${filePath}.${operationId}.tmp`
+    const file = await open(temporaryPath, 'wx')
+    try {
+        try {
+            await file.writeFile(image)
+        } finally {
+            await file.close()
+        }
+        await rename(temporaryPath, filePath)
+    } catch (error) {
+        await rm(temporaryPath, { force: true }).catch(() => undefined)
+        throw error
+    }
+}
 
 export async function updateCurrentUserProfileImageService(
     data: UpdateCurrentUserProfileImageInput,
@@ -30,19 +50,8 @@ export async function updateCurrentUserProfileImageService(
     }
 
     const image = await getImageBufferFromDataUrl(data.imageDataUrl)
-    const imageBuffer = image.buffer
     const paths = getUserPublicImagePaths(currentUser.id)
     const crop = getSafeImageCrop(data.crop, image)
-
-    const croppedImage = sharp(imageBuffer, {
-        limitInputPixels: IMAGE_UPLOAD_CONFIG.maxInputPixels,
-    })
-        .extract(crop)
-        .resize(
-            IMAGE_UPLOAD_CONFIG.profile.width,
-            IMAGE_UPLOAD_CONFIG.profile.height,
-            { fit: 'cover' },
-        )
 
     const operationId = Bun.randomUUIDv7()
     const auditContext = prepareAuditContextService(currentUser.id)
@@ -53,21 +62,31 @@ export async function updateCurrentUserProfileImageService(
             message: 'Änderung des Profilbilds wurde begonnen.',
             newValues: { operationId },
         })
+        const config = IMAGE_UPLOAD_CONFIG.profile
+        const createVariant = await prepareImageVariantSource(
+            image.buffer,
+            crop,
+            config.width,
+            config.height,
+        )
+        const [profileImage, thumbnail] = await Promise.all([
+            createVariant().webp({ quality: config.quality }).toBuffer(),
+            createVariant()
+                .resize(config.thumbnailWidth, config.thumbnailHeight)
+                .webp({ quality: config.thumbnailQuality })
+                .toBuffer(),
+        ])
         await mkdir(paths.absoluteDir, { recursive: true })
-        await croppedImage
-            .webp({ quality: IMAGE_UPLOAD_CONFIG.profile.quality })
-            .toFile(paths.absoluteProfile)
-        await sharp(imageBuffer, {
-            limitInputPixels: IMAGE_UPLOAD_CONFIG.maxInputPixels,
-        })
-            .extract(crop)
-            .resize(
-                IMAGE_UPLOAD_CONFIG.profile.thumbnailWidth,
-                IMAGE_UPLOAD_CONFIG.profile.thumbnailHeight,
-                { fit: 'cover' },
-            )
-            .webp({ quality: IMAGE_UPLOAD_CONFIG.profile.thumbnailQuality })
-            .toFile(paths.absoluteProfileSmall)
+        await replaceProfileImageFile(
+            paths.absoluteProfile,
+            profileImage,
+            operationId,
+        )
+        await replaceProfileImageFile(
+            paths.absoluteProfileSmall,
+            thumbnail,
+            operationId,
+        )
 
         const profileImageUpdatedAt = new Date()
         const version = profileImageUpdatedAt.getTime()

@@ -205,21 +205,6 @@ impl JournalSession {
     }
 }
 
-pub(crate) fn execute(request: &Value, context: &OperationContext) -> CoreResult<Value> {
-    context.check()?;
-    let binding = format::parse_binding(&request["binding"])?;
-    let key = Zeroizing::new(
-        STANDARD
-            .decode(string(request, "keyBase64")?)
-            .map_err(|_| invalid())?,
-    );
-    if key.len() != 32 {
-        return Err(invalid());
-    }
-    let content = STANDARD
-        .decode(string(request, "contentBase64")?)
-        .map_err(|_| invalid())?;
-    Ok(serde_json::to_value(format::validate(
-        &content, &binding, &key,
-    )?)?)
-}
+#[cfg(test)]
+#[path = "../../tests/unit/storage_restore_journal.rs"]
+mod tests;

@@ -104,7 +104,7 @@ describe('profile mutations and mandatory audits', function () {
             updateCurrentUserProfileImageService(imageInput),
         ).rejects.toThrow('synthetic audit failure')
         expect(image.mkdir).not.toHaveBeenCalled()
-        expect(image.toFile).not.toHaveBeenCalled()
+        expect(image.writeFile).not.toHaveBeenCalled()
         expect(model.state.rows.get('user_profiles')).toEqual(previous)
     })
 
@@ -113,7 +113,7 @@ describe('profile mutations and mandatory audits', function () {
         await expect(
             updateCurrentUserProfileImageService(imageInput),
         ).rejects.toThrow('synthetic audit failure')
-        expect(image.toFile).toHaveBeenCalledTimes(2)
+        expect(image.writeFile).toHaveBeenCalledTimes(2)
         expect(model.state.rows.get('user_profiles')).toEqual(previous)
         expect(model.state.audits).toEqual([
             expect.objectContaining({
@@ -148,6 +148,93 @@ describe('profile mutations and mandatory audits', function () {
         ).toBeInstanceOf(Date)
     })
 
+    it('decodes and crops the upload once and encodes both variants before writing', async function () {
+        await updateCurrentUserProfileImageService(imageInput)
+
+        expect(image.extract).toHaveBeenCalledTimes(1)
+        expect(image.toColorspace).toHaveBeenCalledWith('srgb')
+        expect(image.decodePixels).toHaveBeenCalledTimes(1)
+        expect(image.toBuffer).toHaveBeenCalledTimes(2)
+        for (const callNumber of [2, 3]) {
+            expect(image.sharp).toHaveBeenNthCalledWith(
+                callNumber,
+                image.rawPixels,
+                { raw: { width: 512, height: 512, channels: 4 } },
+            )
+        }
+        expect(image.writeFile.mock.calls).toEqual([
+            [image.encodedImage],
+            [image.encodedImage],
+        ])
+        expect(model.state.events.lastIndexOf('image:encode')).toBeLessThan(
+            model.state.events.indexOf('fs:write'),
+        )
+    })
+
+    it('publishes each complete variant by renaming a closed temporary file in the same directory', async function () {
+        await updateCurrentUserProfileImageService(imageInput)
+
+        const operationId = model.state.audits[0]?.newValues?.operationId
+        if (typeof operationId !== 'string')
+            throw new Error('Missing profile image operation ID.')
+        const full = image.paths.absoluteProfile
+        const small = image.paths.absoluteProfileSmall
+        const fullTemporary = `${full}.${operationId}.tmp`
+        const smallTemporary = `${small}.${operationId}.tmp`
+        expect(image.open.mock.calls).toEqual([
+            [fullTemporary, 'wx'],
+            [smallTemporary, 'wx'],
+        ])
+        expect(image.rename.mock.calls).toEqual([
+            [fullTemporary, full],
+            [smallTemporary, small],
+        ])
+        expect(
+            model.state.events.filter((event) => event.startsWith('fs:')),
+        ).toEqual([
+            'fs:mkdir',
+            'fs:write',
+            'fs:close',
+            'fs:rename',
+            'fs:write',
+            'fs:close',
+            'fs:rename',
+        ])
+    })
+
+    it('removes the temporary variant and skips the result audit when publication fails', async function () {
+        const failure = new Error('Synthetic profile rename failure')
+        image.rename.mockRejectedValueOnce(failure)
+
+        await expect(
+            updateCurrentUserProfileImageService(imageInput),
+        ).rejects.toBe(failure)
+
+        expect(image.open).toHaveBeenCalledTimes(1)
+        expect(image.rm).toHaveBeenCalledWith(image.open.mock.calls[0]?.[0], {
+            force: true,
+        })
+        expect(model.state.audits.map((entry) => entry.action)).toEqual([
+            'user.profile_image_update_started',
+        ])
+        expect(model.state.rows.get('user_profiles')).toEqual(previous)
+    })
+
+    it('leaves both profile files untouched when a variant cannot be encoded', async function () {
+        const failure = new Error('Synthetic image encoding failure')
+        image.toBuffer
+            .mockResolvedValueOnce(image.encodedImage)
+            .mockRejectedValueOnce(failure)
+
+        await expect(
+            updateCurrentUserProfileImageService(imageInput),
+        ).rejects.toBe(failure)
+        expect(image.writeFile).not.toHaveBeenCalled()
+        expect(model.state.audits.map((entry) => entry.action)).toEqual([
+            'user.profile_image_update_started',
+        ])
+    })
+
     it('rejects unauthenticated profile writes before transactions or image parsing', async function () {
         getSession.mockResolvedValue(null)
         expect(
@@ -175,7 +262,7 @@ describe('profile mutations and mandatory audits', function () {
         expect(model.state.events).not.toContain('insert:auditLogs')
         expect(model.state.audits).toEqual([])
         expect(model.publish).not.toHaveBeenCalled()
-        expect(image.toFile).not.toHaveBeenCalled()
+        expect(image.writeFile).not.toHaveBeenCalled()
         expect(
             model.state.events.indexOf(
                 'lock:users:' + AUDIT_TEST_ACTOR + ':update',
@@ -276,7 +363,7 @@ describe('profile mutations and mandatory audits', function () {
         await updateCurrentUserProfileImageService(imageInput)
         await updateCurrentUserProfileImageService(imageInput)
 
-        expect(image.toFile).toHaveBeenCalledTimes(4)
+        expect(image.writeFile).toHaveBeenCalledTimes(4)
         expect(model.state.audits.map((entry) => entry.action)).toEqual([
             'user.profile_image_update_started',
             'user.profile_image_updated',

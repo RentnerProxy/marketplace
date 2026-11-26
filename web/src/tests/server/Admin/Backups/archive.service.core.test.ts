@@ -6,16 +6,20 @@ import {
     readFile,
     readdir,
     rm,
+    stat,
     writeFile,
 } from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { createHash } from 'node:crypto'
 import { getUserPublicImagePaths } from '@/lib/Images/publicImagePaths.ts'
-import { BACKUP_IMPORT_LIMITS } from '@/config/backup.config.ts'
+import {
+    BACKUP_IMPORT_LIMITS,
+    BACKUP_UPLOAD_CONTENT_TYPE,
+} from '@/config/backup.config.ts'
 import { createTestBackupArchive } from './backupTarTestUtils.ts'
 import { readTestBackupTar } from './backup-encryption.test.helpers.ts'
-import { createBackupImportTestContext } from './import-context.test.helpers.ts'
+import type { BackupImportContext } from '@/server/Admin/Backups/Types/import.types.ts'
 import type { BackupCreationProgress } from '@/lib/Backups/Types/backup.types.ts'
 import { CoreCommandError } from '@/server/Core/error.ts'
 import { RestoreRollbackError } from '@/server/Admin/Backups/archive-restore.errors.ts'
@@ -37,6 +41,8 @@ let failure:
     | 'private-commit'
     | 'private-rollback'
     | 'capacity'
+    | 'source-cleanup'
+    | 'staging-cleanup'
     | 'dump-cleanup' = 'none'
 const core = vi.fn(
     async (...args: Parameters<typeof nativeCore.runCoreCommandService>) => {
@@ -57,6 +63,16 @@ const core = vi.fn(
                 privateFinish &&
                 request.action === 'rollback') ||
             (failure === 'capacity' && operation === 'capacity') ||
+            (failure === 'source-cleanup' &&
+                operation === 'remove' &&
+                path
+                    .basename(String(request.path))
+                    .startsWith('restore-source-')) ||
+            (failure === 'staging-cleanup' &&
+                operation === 'remove' &&
+                path
+                    .basename(String(request.path))
+                    .startsWith('.restore-extracted-')) ||
             (failure === 'dump-cleanup' &&
                 operation === 'remove' &&
                 path
@@ -134,8 +150,12 @@ vi.mock('@/server/Storage/storage-mutation-barrier.service.ts', () => ({
 }))
 const { createBackupArchive } =
     await import('@/server/Admin/Backups/archive-create.service.ts')
-const { copyImportedBackup } =
+const { prepareUploadedBackupImport } =
     await import('@/server/Admin/Backups/archive-import.service.ts')
+const { acquireBackupImportAdmissionService } =
+    await import('@/server/Admin/Backups/import-admission.service.ts')
+const { receiveBackupUpload } =
+    await import('@/server/Admin/Backups/upload.service.ts')
 const { restoreBackupArchive } =
     await import('@/server/Admin/Backups/archive-restore.service.ts')
 const { validateBackupArchive, extractBackupArchive } =
@@ -147,7 +167,7 @@ beforeEach(async () => {
     privateRoot = path.join(root, 'private')
     backupRoot = path.join(root, 'backups')
     await mkdir(publicRoot)
-    await mkdir(backupRoot)
+    await mkdir(backupRoot, { mode: 0o700 })
     key = Buffer.alloc(32, 7).toString('base64')
     process.env.APP_PRIVATE_STORAGE_DIR = privateRoot
     process.env.APP_STORAGE_DIR = publicRoot
@@ -174,7 +194,7 @@ afterEach(async () => {
     delete process.env.VITE_APP_VERSION
 })
 async function writeOwned(filePath: string, content: string) {
-    await mkdir(path.dirname(filePath), { recursive: true })
+    await mkdir(path.dirname(filePath), { recursive: true, mode: 0o700 })
     await writeFile(filePath, content)
 }
 async function source(includesStorage = true) {
@@ -187,6 +207,37 @@ async function source(includesStorage = true) {
         .update(await readFile(filePath))
         .digest('hex')
     return { filePath, expectedChecksumSha256 }
+}
+async function withAdmittedUpload(
+    filePath: string,
+    operation: (
+        partialPath: string,
+        context: BackupImportContext,
+    ) => Promise<void>,
+) {
+    const { size } = await stat(filePath)
+    const request = new Request('http://localhost/api/admin/backups/import', {
+        method: 'POST',
+        headers: {
+            'content-type': BACKUP_UPLOAD_CONTENT_TYPE,
+            'content-length': String(size),
+        },
+        body: Bun.file(filePath),
+    })
+    const context = await acquireBackupImportAdmissionService({
+        maximumUploadBytes: size,
+        requestSignal: request.signal,
+    })
+    try {
+        const upload = await receiveBackupUpload(request, context)
+        try {
+            await operation(upload.filePath, context)
+        } finally {
+            await upload.dispose()
+        }
+    } finally {
+        await context.release()
+    }
 }
 async function snapshot() {
     await writeOwned(path.join(publicRoot, 'asset.txt'), 'snapshot-public')
@@ -289,19 +340,49 @@ describe('Native archive workflows', () => {
         ).toBe(false)
         expect(await readdir(backupRoot)).toEqual([])
     })
-    it('imports and publishes only authenticated files and disposes only its own paths', async () => {
+    it('validates, publishes and rolls back the same file received from the upload', async () => {
         const original = await source(false)
-        const context = createBackupImportTestContext(backupRoot).context
-        const imported = await copyImportedBackup(original.filePath, context)
-        await expect(
-            readFile(path.join(backupRoot, imported.fileName)),
-        ).rejects.toMatchObject({ code: 'ENOENT' })
-        await imported.publish()
-        expect(
-            await readFile(path.join(backupRoot, imported.fileName)),
-        ).toEqual(await readFile(original.filePath))
-        await imported.dispose()
-        expect(await readFile(original.filePath)).toBeDefined()
+        const originalBytes = await readFile(original.filePath)
+        await withAdmittedUpload(
+            original.filePath,
+            async (partialPath, context) => {
+                const uploaded = await stat(partialPath, { bigint: true })
+                const imported = await prepareUploadedBackupImport(
+                    partialPath,
+                    context,
+                )
+                const destination = path.join(backupRoot, imported.fileName)
+                expect(requests).toContainEqual(
+                    expect.objectContaining({
+                        operation: 'validate',
+                        sourcePath: partialPath,
+                    }),
+                )
+                expect(
+                    requests.some((request) => request.operation === 'copy'),
+                ).toBe(false)
+                expect(
+                    (await readdir(context.temporaryDirectory)).toSorted(),
+                ).toEqual(['admission.json', 'upload.partial'])
+                await expect(stat(destination)).rejects.toMatchObject({
+                    code: 'ENOENT',
+                })
+
+                await imported.publish()
+                const published = await stat(destination, { bigint: true })
+                expect(published.ino).toBe(uploaded.ino)
+                expect(published.dev).toBe(uploaded.dev)
+                expect(await readFile(destination)).toEqual(originalBytes)
+                await expect(stat(partialPath)).rejects.toMatchObject({
+                    code: 'ENOENT',
+                })
+                await imported.dispose()
+                await expect(stat(destination)).rejects.toMatchObject({
+                    code: 'ENOENT',
+                })
+            },
+        )
+        expect(await readFile(original.filePath)).toEqual(originalBytes)
         expect(await readdir(backupRoot)).toEqual([])
     })
     it('rejects corrupted ciphertext before import publication or restore mutations', async () => {
@@ -310,12 +391,15 @@ describe('Native archive workflows', () => {
         const bytes = await readFile(original.filePath)
         bytes[54] ^= 1
         await writeFile(original.filePath, bytes)
-        await expect(
-            copyImportedBackup(
-                original.filePath,
-                createBackupImportTestContext(backupRoot).context,
-            ),
-        ).rejects.toMatchObject({ code: 'ARCHIVE_INVALID' })
+        await withAdmittedUpload(
+            original.filePath,
+            async (partialPath, context) => {
+                await expect(
+                    prepareUploadedBackupImport(partialPath, context),
+                ).rejects.toMatchObject({ code: 'ARCHIVE_INVALID' })
+            },
+        )
+        expect(await readdir(backupRoot)).toEqual([])
         await expect(restoreBackupArchive(original)).rejects.toMatchObject({
             code: 'ARCHIVE_INVALID',
         })
@@ -551,5 +635,42 @@ describe('Native archive workflows', () => {
             }),
         ).rejects.toThrow('Storage-Umfang')
         expect(restore).not.toHaveBeenCalled()
+    })
+
+    it('preserves staging and marks admission incomplete when source cleanup cannot be confirmed', async () => {
+        const original = await source(false)
+        failure = 'source-cleanup'
+
+        await expect(restoreBackupArchive(original)).rejects.toMatchObject({
+            status: 503,
+            message: expect.stringContaining(
+                'Importbereinigung ist unvollständig',
+            ),
+        })
+        expect(restore).not.toHaveBeenCalled()
+        const staging = [...ownedTemporaryDirectories].find((directory) =>
+            path.basename(directory).startsWith('.restore-extracted-'),
+        )
+        if (!staging) throw new Error('Missing restore staging directory')
+        expect(
+            await readFile(path.join(staging, 'database.dump'), 'utf8'),
+        ).toBe('source-database')
+        expect(requests.map((request) => request.operation)).toContain(
+            'admissionMarkIncomplete',
+        )
+    })
+
+    it('reports recovery required when plaintext cleanup fails after a successful restore', async () => {
+        const original = await source(false)
+        failure = 'staging-cleanup'
+
+        await expect(restoreBackupArchive(original)).rejects.toMatchObject({
+            name: 'RestoreRollbackError',
+            cause: expect.objectContaining({
+                message: expect.stringContaining('Backup-Klartext'),
+            }),
+            rollbackErrors: [expect.any(Error)],
+        })
+        expect(restore).toHaveBeenCalledTimes(1)
     })
 })

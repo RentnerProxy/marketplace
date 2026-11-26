@@ -1,9 +1,11 @@
 import type { Header } from 'tar-stream'
-import type { backupArchiveIntegritySchema } from '@/server/Admin/Backups/archive-integrity.schema.ts'
-import type { z } from 'zod'
-export type BackupArchiveIntegrity = z.infer<
-    typeof backupArchiveIntegritySchema
->
+export type BackupArchiveIntegrity = {
+    version: 2
+    algorithm: 'hmac-sha256'
+    entryCount: number
+    totalBytes: number
+    hmacSha256: string
+}
 
 export type BackupTarEntry = {
     path: string

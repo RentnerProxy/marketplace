@@ -1,4 +1,4 @@
-import type { backupSettings } from '@/db/schema'
+import type { backupSettings } from '@/db/schema.ts'
 import type { Database } from '@/lib/Database/Types/database.types.ts'
 
 export type BackupSettingsDatabase = Pick<
