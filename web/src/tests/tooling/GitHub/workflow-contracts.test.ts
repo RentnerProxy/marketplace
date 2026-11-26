@@ -72,10 +72,11 @@ test('autofix uses the real pinned service with a narrow formatter path list and
     expect(steps[apply]?.uses).toMatch(/^autofix-ci\/action@[a-f0-9]{40}$/)
 })
 
-test('CI preserves language, coverage and native contract checks without prepared database actions', async () => {
+test('CI preserves language, coverage and native contract checks and isolates PostgreSQL tests', async () => {
     const ci = await workflow('ci')
     expect(ci.permissions).toEqual({ contents: 'read' })
-    const commands = Object.values(ci.jobs)
+    const { database, ...jobs } = ci.jobs
+    const commands = Object.values(jobs)
         .flatMap((job) => job.steps.map((step) => step.run ?? ''))
         .join('\n')
     for (const command of [
@@ -98,6 +99,46 @@ test('CI preserves language, coverage and native contract checks without prepare
     expect(commands).not.toMatch(
         /test:db|db:prepare|db:push|db:pull|permissions:sync|\.env(?:\s|$)/,
     )
+
+    // Only the dedicated job migrates and tests a disposable PostgreSQL service.
+    const databaseJob = z
+        .object({
+            services: z.object({
+                postgres: z.object({
+                    image: z.string(),
+                    env: z.object({
+                        POSTGRES_DB: z.string(),
+                        POSTGRES_HOST_AUTH_METHOD: z.literal('trust'),
+                    }),
+                    ports: z.array(z.string()),
+                }),
+            }),
+            env: z.object({ TEST_DATABASE_URL: z.string() }),
+        })
+        .parse(database)
+    const { postgres } = databaseJob.services
+    expect(await read('Dockerfile')).toContain(
+        `FROM ${postgres.image} AS postgres-runtime`,
+    )
+    expect(postgres.ports).toEqual(['127.0.0.1:5432:5432'])
+    const testDatabase = new URL(databaseJob.env.TEST_DATABASE_URL)
+    expect(testDatabase.hostname).toBe('127.0.0.1')
+    expect(testDatabase.password).toBe('')
+    expect(testDatabase.pathname).toBe('/' + postgres.env.POSTGRES_DB)
+    expect(postgres.env.POSTGRES_DB).toMatch(/_test$/)
+    const databaseCommands = (database?.steps ?? []).map(
+        (step) => step.run ?? '',
+    )
+    expect(
+        databaseCommands.filter((command) => command.includes('db')),
+    ).toEqual([
+        'bun --no-env-file run test:db:prepare',
+        'bun --no-env-file run test:db',
+    ])
+    expect(databaseCommands.join('\n')).not.toMatch(
+        /db:push|db:pull|permissions:sync|\.env(?:\s|$)/,
+    )
+    expect(JSON.stringify(database)).not.toContain('secrets.')
     expect(ci.jobs.image?.uses).toBe('./.github/workflows/image.yml')
     const integration = await read('.github/scripts/ci/core-integration.sh')
     expect(integration).toContain('--target core-integration')
