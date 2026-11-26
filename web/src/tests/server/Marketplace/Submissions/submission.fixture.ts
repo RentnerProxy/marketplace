@@ -85,10 +85,11 @@ export function fixtureSubmission(
 export async function fixtureCandidate(
     row: Submission,
     claim: typeof marketplaceRepositoryClaims.$inferSelect,
+    runId = buildId,
 ) {
     const request = row.request
     const run: CandidateRun = {
-        id: buildId,
+        id: runId,
         workflow_id: pipeline.workflowId,
         run_attempt: 1,
         event: 'workflow_dispatch',

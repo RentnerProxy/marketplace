@@ -782,6 +782,51 @@ test('continues with the next approval when a distribution read fails', async ()
     expect(fixture.events).toContain('recorded:2.0.0')
 })
 
+test.each([
+    {
+        name: 'another approval',
+        substitute: (_work: Work, other: Work) => other.approval,
+    },
+    {
+        name: 'another approval revision',
+        substitute: (work: Work) => ({
+            ...work.approval,
+            revision: work.approval.revision + 1,
+        }),
+    },
+])(
+    'defers queued work when the Marketplace returns $name',
+    async ({ substitute }) => {
+        const fixture = await publicationFixture(['1.0.0', '2.0.0'])
+        const [queued, other] = fixture.approvals
+        if (!queued || !other) throw new Error('Expected two approvals')
+        const marketplace = fixture.options.marketplace as (
+            input: Request,
+        ) => Promise<unknown>
+        fixture.options.marketplace = (async (input: Request) =>
+            input.operation === 'get' &&
+            input.submissionId === queued.approval.id
+                ? {
+                      ...queued,
+                      approval: substitute(queued, other),
+                      revision: queued.revision + 5,
+                  }
+                : marketplace(input)) as PublisherOptions['marketplace']
+        await expectFailure(
+            publishCatalogQueue(fixture.options),
+            'Marketplace returned a different approval',
+        )
+        // The answer is not authorized or released, and its revision is not trusted.
+        expect(fixture.deferrals).toEqual([queued.revision])
+        expect(
+            fixture.events.filter((entry) => entry.endsWith(':1.0.0')),
+        ).toEqual([])
+        expect(
+            fixture.catalog().releases.map(({ version }) => version),
+        ).toEqual(['2.0.0'])
+    },
+)
+
 test('publisher refresh atomically rotates an expired installed root before ordinary reads resume', async () => {
     const fixture = await publicationFixture([], {
         createdAt: new Date(Date.now() - 366 * day),
