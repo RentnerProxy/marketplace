@@ -12,8 +12,12 @@ import type {
     RestoreProgressCardProps,
 } from '../Types/restore-progress.types.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import type { TranslationKey } from '@/language/translation.ts'
 
-const PHASE_TRANSLATION_KEYS: Record<BackupRestoreProgressPhase, string> = {
+const PHASE_TRANSLATION_KEYS: Record<
+    BackupRestoreProgressPhase,
+    TranslationKey
+> = {
     preparing: 'restoreProgress.phase.preparing',
     validating: 'restoreProgress.phase.validating',
     'creating-recovery': 'restoreProgress.phase.creatingRecovery',
@@ -40,7 +44,7 @@ export default function useRestoreProgressCardLogic({
     const showIndeterminateProgress =
         !hasExactPercent && (isLoading || status === 'running')
 
-    let phaseKey = 'restoreProgress.status.idle'
+    let phaseKey: TranslationKey = 'restoreProgress.status.idle'
     if (restoreStatus?.phase)
         phaseKey = PHASE_TRANSLATION_KEYS[restoreStatus.phase]
     else if (isLoading || !restoreStatus) phaseKey = 'restoreProgress.loading'

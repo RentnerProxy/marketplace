@@ -1,5 +1,4 @@
 import { expect, test } from 'bun:test'
-import { createInstance } from 'i18next'
 import { z } from 'zod'
 import { AVAILABLE_LANGUAGES } from '@/config/language.config.ts'
 import {
@@ -8,6 +7,7 @@ import {
     SELECT_LOCALES,
     TOAST_LOCALES,
 } from '@/config/language-library.config.ts'
+import { createTranslator, isTranslationKey } from '@/language/translation.ts'
 
 function flatten(value: unknown, path = ''): Record<string, string> {
     const result: Record<string, string> = {}
@@ -57,29 +57,17 @@ test('every advertised language covers public/account/shared labels and preserve
     }
 })
 
-test('untranslated inherited administrative details fall back explicitly to English', async () => {
+test('untranslated inherited administrative details fall back explicitly to English', () => {
     const spanish = flatten(documents.es)
     const fallbackKey = Object.keys(english).find(
         (key) => key.startsWith('admin.') && spanish[key] === undefined,
     )
     expect(fallbackKey).toBeDefined()
-    if (!fallbackKey)
+    if (!fallbackKey || !isTranslationKey(fallbackKey))
         throw new Error('Expected a documented administrative fallback')
-    const instance = createInstance()
-    await instance.init({
-        lng: 'es',
-        fallbackLng: 'en',
-        resources: Object.fromEntries(
-            AVAILABLE_LANGUAGES.map((language) => [
-                language,
-                { translation: documents[language] },
-            ]),
-        ),
-    })
-    expect(instance.t(fallbackKey)).toBe(english[fallbackKey])
-    expect(instance.t('marketplace.tagline')).toBe(
-        spanish['marketplace.tagline'],
-    )
+    const t = createTranslator(documents.es)
+    expect(t(fallbackKey)).toBe(english[fallbackKey])
+    expect(t('marketplace.tagline')).toBe(spanish['marketplace.tagline'])
 })
 
 test('library locale adapters only select catalogs actually shipped by each package', () => {

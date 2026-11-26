@@ -27,11 +27,15 @@ export default function useUserSettingsModalLogic(): UserSettingsModalLogicRetur
     }, [openUserSettings, t])
 
     useEffect(() => {
-        document.body.style.overflow = state.isUserSettingsOpen
-            ? 'hidden'
-            : 'unset'
+        if (!state.isUserSettingsOpen) {
+            return undefined
+        }
+
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+
         return () => {
-            document.body.style.overflow = 'unset'
+            document.body.style.overflow = previousOverflow
         }
     }, [state.isUserSettingsOpen])
 

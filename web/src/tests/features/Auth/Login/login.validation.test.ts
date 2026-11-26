@@ -1,14 +1,14 @@
-import { faker } from '@faker-js/faker'
 import { describe, expect, it } from 'bun:test'
 import { loginInputSchema } from '@/features/Auth/Login/validation.ts'
+
+const credentials = { username: 'fixture-user', password: 'fixture-password' }
 
 describe('loginInputSchema', function () {
     it('akzeptiert gültige Login-Daten', function () {
         const result = loginInputSchema.safeParse({
-            username: faker.internet.username().slice(0, 50),
-            password: faker.internet.password({ length: 16 }),
-            twoFactorCode: faker.string.numeric(6),
-            trustThisDevice: faker.datatype.boolean(),
+            ...credentials,
+            twoFactorCode: '012345',
+            trustThisDevice: true,
         })
 
         expect(result.success).toBe(true)
@@ -16,9 +16,8 @@ describe('loginInputSchema', function () {
 
     it('lehnt ungültige Zwei-Faktor-Codes ab', function () {
         const result = loginInputSchema.safeParse({
-            username: faker.internet.username(),
-            password: faker.internet.password({ length: 16 }),
-            twoFactorCode: faker.string.alpha(6),
+            ...credentials,
+            twoFactorCode: 'abcdef',
         })
 
         expect(result.success).toBe(false)
@@ -26,8 +25,8 @@ describe('loginInputSchema', function () {
 
     it('trimmt den Benutzernamen vor der Prüfung', function () {
         const result = loginInputSchema.safeParse({
-            username: `  ${faker.internet.username().slice(0, 46)}  `,
-            password: faker.internet.password({ length: 16 }),
+            ...credentials,
+            username: `  ${credentials.username}  `,
         })
 
         expect(result.success).toBe(true)
@@ -36,13 +35,13 @@ describe('loginInputSchema', function () {
             return
         }
 
-        expect(result.data.username).toBe(result.data.username.trim())
+        expect(result.data.username).toBe(credentials.username)
     })
 
     it('lehnt leere Benutzernamen nach dem Trimmen ab', function () {
         const result = loginInputSchema.safeParse({
+            ...credentials,
             username: '   ',
-            password: faker.internet.password({ length: 16 }),
         })
 
         expect(result.success).toBe(false)
@@ -50,7 +49,7 @@ describe('loginInputSchema', function () {
 
     it('akzeptiert Passwörter ohne Mindestlänge', function () {
         const result = loginInputSchema.safeParse({
-            username: faker.internet.username(),
+            username: credentials.username,
             password: '1',
         })
 

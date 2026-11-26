@@ -97,7 +97,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                                     ({ name, value, required, maxLength }) => (
                                         <TextInput
                                             key={name}
-                                            label={t('submissions.' + name)}
+                                            label={t(`submissions.${name}`)}
                                             value={value}
                                             disabled={editingDisabled}
                                             required={required}

@@ -12,7 +12,7 @@ let requesting = false
 let minimized = false
 let publicRegistrationEnabled = false
 const navItems: AuthenticatedNavItem[] = [
-    { labelKey: 'nav.home', to: '/user/dashboard', icon: Home },
+    { labelKey: 'nav.dashboard', to: '/user/dashboard', icon: Home },
 ]
 vi.mock('@tanstack/react-router', () => ({
     Outlet: () => createElement('article', null, 'Route content'),
@@ -51,10 +51,6 @@ vi.mock(
             },
         }),
     }),
-)
-vi.mock(
-    '@/layouts/AuthenticatedLayout/Hooks/useSidebarNavigationItems.ts',
-    () => ({ default: () => ({ state: { navigationItems: navItems } }) }),
 )
 vi.mock(
     '@/layouts/AuthenticatedLayout/Hooks/useAuthenticatedTopbarLogic.ts',
@@ -221,13 +217,16 @@ it.each([false, true])(
                 subtitle: 'Overview',
                 logoSrc: '/logo.png',
                 homeTo: '/user/dashboard',
-                navItems,
+                navItems: [
+                    { labelKey: 'nav.user', icon: Home, children: navItems },
+                ],
                 username: 'Kevin',
                 userIconSrc: '/profile.png',
             }),
         )
         expect(html).toContain(isCollapsed ? 'w-20' : 'w-72')
         expect(html).toContain('href="/user/dashboard"')
+        expect(html.includes('nav.user')).toBe(!isCollapsed)
         expect(html).toContain('alt="Kevin"')
         expect(html).toContain(isCollapsed ? 'nav.expand' : 'nav.collapse')
         expect(html.includes('userSettings.settingsLabel')).toBe(!isCollapsed)
@@ -237,17 +236,17 @@ it.each([false, true])(
 
 it('renders expanded nested navigation and only toggles groups when expanded', () => {
     const item: AuthenticatedNavItem = {
-        labelKey: 'nav.group',
+        labelKey: 'nav.user',
         icon: Home,
         children: navItems,
     }
     const props = { item, isCollapsed: false, openGroups: {} }
     expect(
         renderToStaticMarkup(createElement(NavigationItem, props)),
-    ).toContain('nav.home')
+    ).toContain('nav.dashboard')
     const tree = NavigationItem(props)
     callbacks(tree, 'onClick')[0]?.()
-    expect(action).toHaveBeenCalledWith('nav.group')
+    expect(action).toHaveBeenCalledWith('nav.user')
     vi.clearAllMocks()
     callbacks(NavigationItem({ ...props, isCollapsed: true }), 'onClick')[0]?.()
     expect(action).not.toHaveBeenCalled()
@@ -255,12 +254,15 @@ it('renders expanded nested navigation and only toggles groups when expanded', (
         renderToStaticMarkup(
             createElement(NavigationItem, {
                 ...props,
-                openGroups: { 'nav.group': false },
+                openGroups: { 'nav.user': false },
             }),
         ),
-    ).not.toContain('nav.home')
+    ).not.toContain('nav.dashboard')
     expect(
-        NavigationItem({ ...props, item: { labelKey: 'hidden', icon: Home } }),
+        NavigationItem({
+            ...props,
+            item: { labelKey: 'nav.overview', icon: Home },
+        }),
     ).toBeNull()
 })
 

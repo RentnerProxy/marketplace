@@ -168,6 +168,10 @@ describe('Security sections', () => {
         expect(renderToStaticMarkup(tree)).toContain(
             'userSettings.security.2faEnable',
         )
+        expect(
+            findElement(tree, (element) => element.props['data-open'] === false)
+                .props,
+        ).toMatchObject({ 'aria-hidden': true, inert: true })
         const reauthentication = findElement(
             tree,
             (element) =>
@@ -207,6 +211,10 @@ describe('Security sections', () => {
         const tree = TwoFactorSection()
         const html = renderToStaticMarkup(tree)
         expect(html).toContain('userSettings.security.2faActive')
+        expect(
+            findElement(tree, (element) => element.props['data-open'] === true)
+                .props,
+        ).toMatchObject({ 'aria-hidden': false, inert: false })
         expect(
             findElement(
                 tree,
@@ -311,7 +319,9 @@ describe('Security sections', () => {
         ])
             expect(html).toContain(text)
         const remove = elements(tree).filter(
-            (element) => element.type === 'button',
+            (element) =>
+                element.type === 'button' &&
+                element.props.onClick !== passkey.handler.handleAddPasskey,
         )
         expect(remove).toHaveLength(2)
         invoke(remove[1]!, 'onClick')

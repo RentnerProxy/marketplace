@@ -1,11 +1,12 @@
 import type { AuthenticatedSessionQueryData } from '@/lib/Auth/Types/authenticated-session.types.ts'
 import type { LucideIcon } from 'lucide-react'
+import type { TranslationKey } from '@/language/translation.ts'
 
 export type UserSettingsTab = 'account' | 'appearance' | 'security'
 
 export type UserSettingsTabConfig = {
     key: UserSettingsTab
-    labelKey: string
+    labelKey: TranslationKey
     icon: LucideIcon
 }
 

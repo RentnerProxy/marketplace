@@ -24,7 +24,7 @@ function CandidateDetails({
                     {request.appId} {request.version}
                 </h2>
                 <p className="text-sm text-primary">
-                    {t('submissions.status.' + detail.status)}
+                    {t(`submissions.status.${detail.status}`)}
                 </p>
             </div>
             <dl className="space-y-3 text-sm [&_dd]:wrap-anywhere [&_dt]:text-secondary-text">
@@ -91,7 +91,7 @@ function CandidateDetails({
                     {detail.history.toReversed().map((event) => (
                         <li key={event.revision} className="space-y-1">
                             <p>
-                                {t('submissions.status.' + event.status)} ·{' '}
+                                {t(`submissions.status.${event.status}`)} ·{' '}
                                 <time
                                     dateTime={event.at}
                                     className="text-secondary-text"
@@ -113,7 +113,7 @@ function CandidateDetails({
                             )}
                             {event.failure && (
                                 <p className="text-secondary-text">
-                                    {t('submissions.failure.' + event.failure)}
+                                    {t(`submissions.failure.${event.failure}`)}
                                 </p>
                             )}
                         </li>
@@ -167,7 +167,7 @@ export function SubmissionQueue({
                                     {row.appId} {row.version}
                                 </span>
                                 <span className="text-xs text-secondary-text">
-                                    {t('submissions.status.' + row.status)}
+                                    {t(`submissions.status.${row.status}`)}
                                 </span>
                             </button>
                         </li>

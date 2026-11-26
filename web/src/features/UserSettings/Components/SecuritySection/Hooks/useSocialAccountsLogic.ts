@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef } from 'react'
 import { toast } from '@rentnerkev/toasts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import { isTranslationKey } from '@/language/translation.ts'
 import { authenticatedSessionQueryOptions } from '@/lib/Queries/appQueries.ts'
 import {
     beginSocialLinkHandler,
@@ -64,7 +65,8 @@ export default function useSocialAccountsLogic(): SocialAccountsLogicReturn {
             })
             if (!result.success)
                 throw new AppError(
-                    result.error.startsWith('auth.social.')
+                    result.error.startsWith('auth.social.') &&
+                        isTranslationKey(result.error)
                         ? t(result.error)
                         : result.error,
                 )

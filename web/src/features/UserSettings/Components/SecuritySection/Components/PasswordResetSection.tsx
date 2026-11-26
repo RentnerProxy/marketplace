@@ -1,4 +1,3 @@
-import { motion } from 'motion/react'
 import { KeyRound, LoaderCircle, MailCheck } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import usePasswordResetLogic from '@/features/UserSettings/Components/SecuritySection/Hooks/usePasswordResetLogic.ts'
@@ -8,25 +7,13 @@ export default function PasswordResetSection() {
     const { state, handler } = usePasswordResetLogic()
 
     return (
-        <motion.section
-            layout
-            className="relative overflow-hidden rounded-lg border border-border-dark bg-input-dark/50 p-4"
-        >
+        <section className="relative overflow-hidden rounded-lg border border-border-dark bg-input-dark/50 p-4">
             <div className="relative">
                 <div className="flex items-center gap-2">
-                    <motion.span
-                        animate={{
-                            rotate: state.isRequestingPasswordReset ? -8 : 0,
-                            scale: state.isRequestingPasswordReset ? 1.08 : 1,
-                        }}
-                        transition={{
-                            type: 'spring',
-                            stiffness: 360,
-                            damping: 22,
-                        }}
-                    >
-                        <KeyRound className="h-4 w-4 text-primary" />
-                    </motion.span>
+                    <KeyRound
+                        data-pending={state.isRequestingPasswordReset}
+                        className="h-4 w-4 text-primary motion-safe:transition-transform motion-safe:duration-200 motion-safe:data-[pending=true]:rotate-[-8deg] motion-safe:data-[pending=true]:scale-[1.08]"
+                    />
 
                     <h3 className="text-sm font-semibold text-white">
                         {t('userSettings.security.passwordTitle')}
@@ -37,55 +24,23 @@ export default function PasswordResetSection() {
                     {t('userSettings.security.passwordDescription')}
                 </p>
 
-                <motion.button
+                <button
                     type="button"
                     disabled={state.isRequestingPasswordReset}
                     onClick={handler.handleRequestPasswordReset}
-                    whileTap={
-                        state.isRequestingPasswordReset
-                            ? undefined
-                            : {
-                                  scale: 0.97,
-                              }
-                    }
-                    className="mt-3 flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-3 flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-[background-color,scale] hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 motion-safe:enabled:active:scale-[0.97]"
                 >
-                    <motion.span
-                        animate={
-                            state.isRequestingPasswordReset
-                                ? {
-                                      rotate: 360,
-                                  }
-                                : {
-                                      rotate: 0,
-                                  }
-                        }
-                        transition={
-                            state.isRequestingPasswordReset
-                                ? {
-                                      duration: 1,
-                                      repeat: Infinity,
-                                      ease: 'linear',
-                                  }
-                                : {
-                                      type: 'spring',
-                                      stiffness: 360,
-                                      damping: 22,
-                                  }
-                        }
-                    >
-                        {state.isRequestingPasswordReset ? (
-                            <LoaderCircle className="h-4 w-4" />
-                        ) : (
-                            <MailCheck className="h-4 w-4" />
-                        )}
-                    </motion.span>
+                    {state.isRequestingPasswordReset ? (
+                        <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
+                    ) : (
+                        <MailCheck className="h-4 w-4" />
+                    )}
 
                     {state.isRequestingPasswordReset
                         ? t('userSettings.security.passwordSending')
                         : t('userSettings.security.passwordReset')}
-                </motion.button>
+                </button>
             </div>
-        </motion.section>
+        </section>
     )
 }

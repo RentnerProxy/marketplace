@@ -147,8 +147,8 @@ mock.module('@tanstack/react-router-devtools', () => ({
 mock.module('@tanstack/react-devtools', () => ({
     TanStackDevtools: () => null,
 }))
-mock.module('@/integrations/TanstackQuery/devtools.tsx', () => ({
-    default: { name: 'Query tools' },
+mock.module('@tanstack/react-query-devtools', () => ({
+    ReactQueryDevtoolsPanel: () => null,
 }))
 mock.module('@rentnerkev/calendar', () => ({ CalendarProvider: Provider }))
 mock.module('@rentnerkev/inputs', () => ({ InputProvider: Provider }))
