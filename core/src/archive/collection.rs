@@ -1,14 +1,15 @@
 use super::{CHUNK, MAX_CONTENT, MAX_ENTRIES, MAX_METADATA, files, invalid, root_key, tar, text};
 use crate::protocol::{CoreResult, OperationContext};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::collections::btree_map::Entry;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use zeroize::Zeroizing;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Source {
     #[serde(flatten)]
@@ -88,7 +89,7 @@ fn collect(request: &Value, context: &OperationContext) -> CoreResult<Vec<Source
     if let Some(private_entries) = request.get("privateEntries").and_then(Value::as_array) {
         let mut preferred = BTreeMap::new();
         for value in private_entries {
-            let mut source: Source = serde_json::from_value(value.clone())?;
+            let mut source = Source::deserialize(value)?;
             source.entry =
                 tar::validate_entry(&source.entry.path, source.entry.size, &source.entry.kind)?;
             if source.entry.kind != "file" || source.absolute_path.is_none() {
@@ -153,9 +154,6 @@ fn collect(request: &Value, context: &OperationContext) -> CoreResult<Vec<Source
         return Err(invalid("Der Storage enthält zu viele Backup-Einträge."));
     }
     Ok(entries)
-}
-pub(crate) fn collect_request(request: &Value, context: &OperationContext) -> CoreResult<Value> {
-    Ok(serde_json::to_value(collect(request, context)?)?)
 }
 fn buffer_entry(
     writer: &mut impl Write,
@@ -244,6 +242,7 @@ pub(crate) fn create(request: &Value, context: &OperationContext) -> CoreResult<
         let mut processed = manifest_bytes.len() as u64;
         context
             .progress(json!({"phase":"archiving","processedBytes":processed,"totalBytes":total}))?;
+        let mut buffer = Zeroizing::new(vec![0; CHUNK]);
         for source in entries {
             context.check()?;
             paths.register(&source.entry)?;
@@ -263,7 +262,6 @@ pub(crate) fn create(request: &Value, context: &OperationContext) -> CoreResult<
                     ));
                 }
                 let mut read = 0;
-                let mut buffer = [0; CHUNK];
                 loop {
                     context.check()?;
                     let count = file.read(&mut buffer)?;

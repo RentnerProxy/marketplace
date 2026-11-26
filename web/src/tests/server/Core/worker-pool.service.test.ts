@@ -8,6 +8,7 @@ const spawn = vi.fn()
 const binary = vi.fn(async () => '/synthetic/core')
 const info = vi.fn()
 const failure = vi.fn()
+const version = 'a'.repeat(64)
 const originalRuntime = {
     ...(await import('@/config/core.config.ts')).CORE_RUNTIME,
 }
@@ -18,6 +19,7 @@ const runtime = {
     workerMaxQueuedBytes: 512,
     workerReadyTimeoutMs: 50,
     workerIdleTimeoutMs: 1000,
+    workerExitTimeoutMs: 25,
     maxBinaryInputBytes: 256,
     maxRequestBytes: 256,
     maxRecordBytes: 256,
@@ -48,7 +50,7 @@ async function until(check: () => boolean) {
     while (!check()) {
         if (Date.now() > deadline)
             throw new Error('Fixture wurde nicht rechtzeitig bereit.')
-        // eslint-disable-next-line no-await-in-loop -- Each observation depends on the previous asynchronous process event.
+        // oxlint-disable-next-line no-await-in-loop -- Each observation depends on the previous asynchronous process event.
         await new Promise<void>((resolve) => setTimeout(resolve, 1))
     }
 }
@@ -102,6 +104,7 @@ describe('Persistenter Core-Pool', () => {
                             type: 'binaryResult',
                             requestId: 1,
                             binaryBytes: data.length,
+                            version,
                         }) + '\n',
                     )
                     fixture.child.stdout.write(frame.subarray(0, 5))
@@ -119,17 +122,17 @@ describe('Persistenter Core-Pool', () => {
             })
         const result = await run(
             'storage',
-            { operation: 'readBackgroundBytes' },
+            { operation: 'readBackgroundRepresentation' },
             {
                 validateResult(value) {
-                    expect(Buffer.isBuffer(value)).toBe(true)
+                    expect(value).toEqual({ version, bytes: data })
                     return value
                 },
             },
         )
-        expect(result).toEqual(data)
+        expect(result).toEqual({ version, bytes: data })
         await expect(
-            run('storage', { operation: 'readBackgroundBytes' }),
+            run('storage', { operation: 'readBackgroundRepresentation' }),
         ).resolves.toBeNull()
         expect(spawn).toHaveBeenCalledTimes(1)
         expect(fixtures[0]!.child.kill).not.toHaveBeenCalled()
@@ -140,7 +143,12 @@ describe('Persistenter Core-Pool', () => {
             fixture.setHandler((header) =>
                 fixture.send(
                     header.requestId === 1
-                        ? { type: 'binaryResult', requestId: 1, binaryBytes: 0 }
+                        ? {
+                              type: 'binaryResult',
+                              requestId: 1,
+                              binaryBytes: 0,
+                              version,
+                          }
                         : {
                               type: 'result',
                               requestId: header.requestId,
@@ -148,17 +156,20 @@ describe('Persistenter Core-Pool', () => {
                           },
                 ),
             )
-        const empty = await run('storage', { operation: 'readBackgroundBytes' })
-        expect(Buffer.isBuffer(empty)).toBe(true)
-        expect(empty).toEqual(Buffer.alloc(0))
+        const empty = await run('storage', {
+            operation: 'readBackgroundRepresentation',
+        })
+        expect(empty).toEqual({ version, bytes: Buffer.alloc(0) })
         await expect(
-            run('storage', { operation: 'readBackgroundBytes' }),
+            run('storage', { operation: 'readBackgroundRepresentation' }),
         ).resolves.toBeNull()
     })
 
     it('bestätigt eine binäre Antwort erst nach vollständigem Payload und hochgeladenem Auftrag', async () => {
         setup = () => {}
-        const promise = run('storage', { operation: 'readBackgroundBytes' })
+        const promise = run('storage', {
+            operation: 'readBackgroundRepresentation',
+        })
         let settled = false
         void promise.then(() => {
             settled = true
@@ -166,33 +177,55 @@ describe('Persistenter Core-Pool', () => {
         })
         await until(() => fixtures[0]?.requests.length === 1)
         const fixture = fixtures[0]!
-        fixture.send({ type: 'binaryResult', requestId: 1, binaryBytes: 3 })
+        fixture.send({
+            type: 'binaryResult',
+            requestId: 1,
+            binaryBytes: 3,
+            version,
+        })
         fixture.child.stdout.write(Buffer.from([1, 10]))
         await new Promise<void>((resolve) => setTimeout(resolve, 2))
         expect(settled).toBe(false)
         fixture.child.stdout.write(Buffer.from([255]))
-        expect(await promise).toEqual(Buffer.from([1, 10, 255]))
+        expect(await promise).toEqual({
+            version,
+            bytes: Buffer.from([1, 10, 255]),
+        })
     })
 
     it.each([
-        { type: 'binaryResult', requestId: 2, binaryBytes: 0 },
-        { type: 'binaryResult', requestId: 1, binaryBytes: -1 },
-        { type: 'binaryResult', requestId: 1, binaryBytes: 0.5 },
-        { type: 'binaryResult', requestId: 1, binaryBytes: null },
-        { type: 'binaryResult', requestId: 1 },
+        { type: 'binaryResult', requestId: 2, binaryBytes: 0, version },
+        { type: 'binaryResult', requestId: 1, binaryBytes: -1, version },
+        { type: 'binaryResult', requestId: 1, binaryBytes: 0.5, version },
+        { type: 'binaryResult', requestId: 1, binaryBytes: null, version },
+        { type: 'binaryResult', requestId: 1, version },
+        { type: 'binaryResult', requestId: 1, binaryBytes: 0 },
+        {
+            type: 'binaryResult',
+            requestId: 1,
+            binaryBytes: 0,
+            version: 'A'.repeat(64),
+        },
         {
             type: 'binaryResult',
             requestId: 1,
             binaryBytes: 8 * 1024 * 1024 + 1,
+            version,
         },
-        { type: 'binaryResult', requestId: 1, binaryBytes: 0, extra: true },
+        {
+            type: 'binaryResult',
+            requestId: 1,
+            binaryBytes: 0,
+            version,
+            extra: true,
+        },
         { type: 'result', requestId: 1, result: { dataBase64: 'AQID' } },
     ])(
         'verwirft ungültige binäre Antwortheader ohne Wiederholung (%j)',
         async (frame) => {
             setup = (fixture) => fixture.setHandler(() => fixture.send(frame))
             await expect(
-                run('storage', { operation: 'readBackgroundBytes' }),
+                run('storage', { operation: 'readBackgroundRepresentation' }),
             ).rejects.toMatchObject({
                 code: 'CORE_PROTOCOL_ERROR',
                 isUncertain: true,
@@ -209,10 +242,11 @@ describe('Persistenter Core-Pool', () => {
                     type: 'binaryResult',
                     requestId: 1,
                     binaryBytes: 0,
+                    version,
                 }),
             )
         await expect(
-            run('storage', { operation: 'readBackground' }),
+            run('storage', { operation: 'statBackground' }),
         ).rejects.toMatchObject({
             code: 'CORE_PROTOCOL_ERROR',
             isUncertain: true,
@@ -225,7 +259,7 @@ describe('Persistenter Core-Pool', () => {
             setup = (fixture) =>
                 fixture.setHandler(() => {
                     const header = Buffer.from(
-                        '{"type":"binaryResult","requestId":1,"binaryBytes":3}\n',
+                        `{"type":"binaryResult","requestId":1,"binaryBytes":3,"version":"${version}"}\n`,
                     )
                     const data = Buffer.from([0, 255, 10])
                     if (kind === 'truncated') {
@@ -247,7 +281,7 @@ describe('Persistenter Core-Pool', () => {
                         )
                 })
             await expect(
-                run('storage', { operation: 'readBackgroundBytes' }),
+                run('storage', { operation: 'readBackgroundRepresentation' }),
             ).rejects.toMatchObject({ isUncertain: true })
             expect(spawn).toHaveBeenCalledTimes(1)
         },
@@ -259,7 +293,7 @@ describe('Persistenter Core-Pool', () => {
                 fixture.child.stdout.write(
                     Buffer.concat([
                         Buffer.from(
-                            '{"type":"binaryResult","requestId":1,"binaryBytes":3}\n',
+                            `{"type":"binaryResult","requestId":1,"binaryBytes":3,"version":"${version}"}\n`,
                         ),
                         Buffer.from([1, 10, 255]),
                     ]),
@@ -267,8 +301,8 @@ describe('Persistenter Core-Pool', () => {
                 queueMicrotask(() => fixture.finish())
             })
         await expect(
-            run('storage', { operation: 'readBackgroundBytes' }),
-        ).resolves.toEqual(Buffer.from([1, 10, 255]))
+            run('storage', { operation: 'readBackgroundRepresentation' }),
+        ).resolves.toEqual({ version, bytes: Buffer.from([1, 10, 255]) })
     })
 
     it('reapt bei abgebrochenem unvollständigem Binärpayload vor der Ablehnung und wiederholt nicht', async () => {
@@ -278,13 +312,14 @@ describe('Persistenter Core-Pool', () => {
                     type: 'binaryResult',
                     requestId: 1,
                     binaryBytes: 3,
+                    version,
                 })
                 fixture.child.stdout.write(Buffer.from([1]))
             })
         const controller = new AbortController()
         const result = run(
             'storage',
-            { operation: 'readBackgroundBytes' },
+            { operation: 'readBackgroundRepresentation' },
             { signal: controller.signal, timeoutMs: 10000 },
         )
         // Observe rejection without invoking Bun's async matcher before aborting.
@@ -442,8 +477,10 @@ describe('Persistenter Core-Pool', () => {
             'Path',
             'SystemRoot',
             'WINDIR',
+            'ProgramFiles',
             'TEMP',
             'TMP',
+            'TMPDIR',
             'LANG',
             'LC_ALL',
             'USERPROFILE',
@@ -821,7 +858,8 @@ describe('Persistenter Core-Pool', () => {
             expect(fixtures[0]!.child.kill).not.toHaveBeenCalled()
             fixtures[0]!.send({ type: 'result', requestId: 1, result: 1 })
             await expect(previous).resolves.toBe(1)
-            await until(() => fixtures[0]!.child.kill.mock.calls.length > 0)
+            await until(() => fixtures[0]!.child.stdin.writableFinished)
+            expect(fixtures[0]!.child.kill).not.toHaveBeenCalled()
             expect(spawn).toHaveBeenCalledTimes(2)
             expect(binary).toHaveBeenCalledTimes(2)
         } finally {
@@ -873,7 +911,8 @@ describe('Persistenter Core-Pool', () => {
         fixtures[0]!.send({ type: 'ready', protocol: 1 })
         await closing
         expect(fixtures[0]!.requests).toHaveLength(0)
-        expect(fixtures[0]!.child.kill).toHaveBeenCalled()
+        expect(fixtures[0]!.child.stdin.writableFinished).toBe(true)
+        expect(fixtures[0]!.child.kill).not.toHaveBeenCalled()
         expect(bytes).toEqual(new Uint8Array([9, 8, 7]))
     })
 
@@ -941,9 +980,19 @@ describe('Persistenter Core-Pool', () => {
         ready = true
         runtime.workerIdleTimeoutMs = 5
         await run('storage', {})
-        await until(() => fixtures[1]!.child.kill.mock.calls.length > 0)
+        await until(() => fixtures[1]!.child.stdin.writableFinished)
+        expect(fixtures[1]!.child.kill).not.toHaveBeenCalled()
         await run('storage', {})
         expect(spawn).toHaveBeenCalledTimes(3)
+    })
+
+    it('kills a worker that stays alive after closing stdin', async function () {
+        await run('storage', {})
+        const fixture = fixtures[0]!
+        fixture.stallOnEof()
+        await close()
+        expect(fixture.child.stdin.writableFinished).toBe(true)
+        expect(fixture.child.kill).toHaveBeenCalledWith('SIGKILL')
     })
 
     it('prüft Ergebnisse und beendet bei ungültigen Resultaten den Worker', async () => {
@@ -961,7 +1010,8 @@ describe('Persistenter Core-Pool', () => {
             code: 'CORE_PROTOCOL_ERROR',
             isUncertain: true,
         })
-        expect(fixtures[0]!.child.kill).toHaveBeenCalled()
+        expect(fixtures[0]!.child.stdin.writableFinished).toBe(true)
+        expect(fixtures[0]!.child.kill).not.toHaveBeenCalled()
     })
 
     it('beendet Wartende und aktive Aufträge beim expliziten Herunterfahren', async () => {

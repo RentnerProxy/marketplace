@@ -11,7 +11,7 @@ const cookie = vi.fn()
 const hash = vi.fn()
 vi.mock('@/db', () => ({ db: read.db }))
 vi.mock('drizzle-orm', () => operators)
-vi.mock('@/db/schema', () => ({
+vi.mock('@/db/schema.ts', () => ({
     trustedDevices: table('trustedDevices', [
         'expiresAt',
         'deviceTokenHash',

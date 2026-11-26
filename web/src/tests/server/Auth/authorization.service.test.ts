@@ -30,7 +30,7 @@ vi.mock('@/lib/Permissions/userPermissions.ts', function () {
 
 vi.mock('@/server/Maintenance/state.service.ts', function () {
     return {
-        getMaintenanceStateService: authMocks.getMaintenanceStateService,
+        getFreshMaintenanceStateService: authMocks.getMaintenanceStateService,
     }
 })
 

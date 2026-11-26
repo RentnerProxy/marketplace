@@ -1,8 +1,8 @@
 //! Private, serial stdin/stdout workers. A framing failure ends the stream;
 //! there is no retry or resynchronization after potentially mutating work.
-use super::{CoreError, CoreResult, OperationContext};
+use super::{CoreError, CoreResult, OperationContext, json_line};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{Value, json, value::RawValue};
 use std::io::{self, BufRead, Read, Write};
 use std::path::Path;
 use std::sync::{
@@ -14,11 +14,15 @@ use zeroize::{Zeroize, Zeroizing};
 const MAX_REQUEST: usize = 64 * 1024 * 1024;
 const MAX_HEADER: usize = MAX_REQUEST + 64 * 1024;
 const MAX_BINARY: u64 = 8 * 1024 * 1024;
+const READ_BUFFER_BYTES: usize = 64 * 1024;
 
 /// Owned terminal data, erased after its complete publication or on failure.
 pub enum WorkerResponse {
     Json(Value),
-    Binary(Zeroizing<Vec<u8>>),
+    VersionedBinary {
+        bytes: Zeroizing<Vec<u8>>,
+        version: String,
+    },
 }
 
 impl Drop for WorkerResponse {
@@ -69,7 +73,7 @@ impl<R: Read> WipingReader<R> {
     fn new(source: R) -> Self {
         Self {
             source,
-            bytes: Zeroizing::new(vec![0; 8192]),
+            bytes: Zeroizing::new(vec![0; READ_BUFFER_BYTES]),
             start: 0,
             end: 0,
         }
@@ -110,11 +114,25 @@ impl<R: Read> BufRead for WipingReader<R> {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct RequestHeader<'a> {
+    request_id: u64,
+    cancellation_path: String,
+    #[serde(borrow)]
+    request: &'a RawValue,
+    #[serde(default, deserialize_with = "binary_length")]
+    binary_bytes: Option<u64>,
+}
+
+impl Drop for RequestHeader<'_> {
+    fn drop(&mut self) {
+        self.cancellation_path.zeroize();
+    }
+}
+
 struct Request {
     request_id: u64,
     cancellation_path: String,
     request: Value,
-    #[serde(default, deserialize_with = "binary_length")]
     binary_bytes: Option<u64>,
 }
 
@@ -168,15 +186,23 @@ fn read_request(
     if length > MAX_HEADER || header.last() != Some(&b'\n') {
         return Err(invalid());
     }
-    let request: Request = serde_json::from_slice(&header)?;
-    if request.request_id != expected
-        || !Path::new(&request.cancellation_path).is_absolute()
-        || request.cancellation_path.contains('\0')
-        || !request.request.is_object()
-        || embedded_request_size(&header)? > MAX_REQUEST
+    let mut header: RequestHeader<'_> = serde_json::from_slice(&header)?;
+    let raw = header.request.get();
+    if header.request_id != expected
+        || !Path::new(&header.cancellation_path).is_absolute()
+        || header.cancellation_path.contains('\0')
+        || !raw.starts_with('{')
+        || raw.len() > MAX_REQUEST
     {
         return Err(invalid());
     }
+    let request_value = serde_json::from_str(raw)?;
+    let request = Request {
+        request_id: header.request_id,
+        cancellation_path: std::mem::take(&mut header.cancellation_path),
+        request: request_value,
+        binary_bytes: header.binary_bytes,
+    };
     match request.binary_bytes {
         Some(_) if !binary_allowed => return Err(invalid()),
         Some(length) if request.request["operation"] == "writeFile" => {
@@ -194,72 +220,6 @@ fn read_request(
         None => (),
     }
     Ok(Some(request))
-}
-
-// The whole header has already passed Serde validation. Locate the exact
-// request value span so whitespace/escaped strings cannot bypass its byte cap.
-fn embedded_request_size(header: &[u8]) -> CoreResult<usize> {
-    let mut depth = 0_usize;
-    let mut index = 0;
-    while index < header.len() {
-        match header[index] {
-            b'{' | b'[' => depth += 1,
-            b'}' | b']' => depth -= 1,
-            b'"' => {
-                let start = index;
-                index = string_end(header, index)?;
-                let mut after = index + 1;
-                while header.get(after).is_some_and(u8::is_ascii_whitespace) {
-                    after += 1;
-                }
-                if depth == 1
-                    && header.get(after) == Some(&b':')
-                    && Zeroizing::new(serde_json::from_slice::<String>(&header[start..=index])?)
-                        .as_str()
-                        == "request"
-                {
-                    let mut value_start = after + 1;
-                    while header
-                        .get(value_start)
-                        .is_some_and(|byte| byte.is_ascii_whitespace() || *byte == b':')
-                    {
-                        value_start += 1;
-                    }
-                    if header.get(value_start) != Some(&b'{') {
-                        return Err(invalid());
-                    }
-                    let mut nested = 1;
-                    let mut end = value_start + 1;
-                    while nested > 0 {
-                        match header.get(end).ok_or_else(invalid)? {
-                            b'"' => end = string_end(header, end)?,
-                            b'{' | b'[' => nested += 1,
-                            b'}' | b']' => nested -= 1,
-                            _ => (),
-                        }
-                        end += 1;
-                    }
-                    return Ok(end - value_start);
-                }
-            }
-            _ => (),
-        }
-        index += 1;
-    }
-    Err(invalid())
-}
-
-fn string_end(bytes: &[u8], start: usize) -> CoreResult<usize> {
-    let mut index = start + 1;
-    while let Some(byte) = bytes.get(index) {
-        match byte {
-            b'"' => return Ok(index),
-            b'\\' => index += 1,
-            _ => (),
-        }
-        index += 1;
-    }
-    Err(invalid())
 }
 
 #[derive(Default)]
@@ -294,11 +254,10 @@ fn worker_session(
         let Some(request) = read_request(input, expected, binary_allowed)? else {
             return Ok(());
         };
-        let context = OperationContext {
-            cancellation_path: Some(request.cancellation_path.clone().into()),
-            request_id: Some(request.request_id),
-            ..OperationContext::cleanup()
-        };
+        let context = OperationContext::new(
+            Some(request.cancellation_path.clone().into()),
+            Some(request.request_id),
+        );
         let mut binary = request
             .binary_bytes
             .map(|length| Zeroizing::new(vec![0; length as usize]));
@@ -319,9 +278,13 @@ fn worker_session(
         // Binary output is a capability of this one operation, never an
         // alternative representation for arbitrary JSON results.
         let result = result.and_then(|response| match &response {
-            WorkerResponse::Binary(bytes)
-                if request.request["operation"] != "readBackgroundBytes"
-                    || bytes.len() as u64 > MAX_BINARY =>
+            WorkerResponse::VersionedBinary { bytes, version }
+                if request.request["operation"] != "readBackgroundRepresentation"
+                    || bytes.len() as u64 > MAX_BINARY
+                    || version.len() != 64
+                    || !version
+                        .bytes()
+                        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)) =>
             {
                 Err(invalid())
             }
@@ -337,13 +300,13 @@ fn worker_session(
             Ok(WorkerResponse::Json(value)) => {
                 json!({"type":"result","requestId":request_id,"result":std::mem::take(value)})
             }
-            Ok(WorkerResponse::Binary(bytes)) => {
-                json!({"type":"binaryResult","requestId":request_id,"binaryBytes":bytes.len()})
+            Ok(WorkerResponse::VersionedBinary { bytes, version }) => {
+                json!({"type":"binaryResult","requestId":request_id,"binaryBytes":bytes.len(),"version":version})
             }
             Err(error) => json!({"type":"error","requestId":request_id,"error":error}),
         };
         let binary = match &result {
-            Ok(WorkerResponse::Binary(bytes)) => Some(bytes.as_slice()),
+            Ok(WorkerResponse::VersionedBinary { bytes, .. }) => Some(bytes.as_slice()),
             _ => None,
         };
         let emitted = output(&response, binary);
@@ -371,8 +334,7 @@ fn write_response(
     header: &Value,
     binary: Option<&[u8]>,
 ) -> CoreResult<()> {
-    serde_json::to_writer(&mut *output, header)?;
-    output.write_all(b"\n")?;
+    output.write_all(&json_line(header)?)?;
     if let Some(bytes) = binary {
         output.write_all(bytes)?;
     }

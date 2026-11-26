@@ -35,6 +35,12 @@ export function createWorkerShutdownService(options: WorkerShutdownOptions) {
             logError('background_worker.shutdown_workers_failed', error)
         }
         await cleanup('status', options.stopStatus)
+        try {
+            await options.closeConnections()
+        } catch (error) {
+            failures += 1
+            logError('background_worker.shutdown_connections_failed', error)
+        }
         logInfo('background_worker.shutdown_completed', {
             durationMs: Date.now() - startedAt,
             count: failures,

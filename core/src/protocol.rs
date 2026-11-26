@@ -4,8 +4,9 @@ use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
+use zeroize::Zeroizing;
 
 mod worker;
 pub(crate) use worker::branding_lengths;
@@ -71,39 +72,90 @@ impl From<serde_json::Error> for CoreError {
 #[derive(Clone)]
 pub struct OperationContext {
     cancelled: Arc<AtomicBool>,
-    cancellation_path: Option<PathBuf>,
+    cancellation_marker: Option<Arc<CancellationMarker>>,
     last_progress: Arc<Mutex<Option<(String, Instant)>>>,
     request_id: Option<u64>,
 }
 
+struct CancellationMarker {
+    path: PathBuf,
+    started: Instant,
+    next_poll_ms: AtomicU64,
+}
+
+impl CancellationMarker {
+    const POLL_INTERVAL_MS: u64 = 25;
+
+    fn new(path: PathBuf) -> Self {
+        Self {
+            path,
+            started: Instant::now(),
+            next_poll_ms: AtomicU64::new(0),
+        }
+    }
+
+    fn poll(&self) -> bool {
+        let now = self.started.elapsed().as_millis() as u64;
+        let next = self.next_poll_ms.load(Ordering::Relaxed);
+        now >= next
+            && self
+                .next_poll_ms
+                .compare_exchange(
+                    next,
+                    now + Self::POLL_INTERVAL_MS,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                )
+                .is_ok()
+            && self.path.exists()
+    }
+
+    fn poll_now(&self) -> bool {
+        let now = self.started.elapsed().as_millis() as u64;
+        self.next_poll_ms
+            .store(now + Self::POLL_INTERVAL_MS, Ordering::Relaxed);
+        self.path.exists()
+    }
+}
+
 impl Default for OperationContext {
     fn default() -> Self {
-        Self {
-            cancelled: Arc::new(AtomicBool::new(false)),
-            cancellation_path: std::env::var_os("MARKETPLACE_CORE_CANCEL_FILE").map(PathBuf::from),
-            last_progress: Arc::new(Mutex::new(None)),
-            request_id: None,
-        }
+        Self::new(
+            std::env::var_os("MARKETPLACE_CORE_CANCEL_FILE").map(PathBuf::from),
+            None,
+        )
     }
 }
 
 impl OperationContext {
-    pub fn cleanup() -> Self {
+    fn new(cancellation_path: Option<PathBuf>, request_id: Option<u64>) -> Self {
         Self {
             cancelled: Arc::new(AtomicBool::new(false)),
-            cancellation_path: None,
+            cancellation_marker: cancellation_path
+                .map(|path| Arc::new(CancellationMarker::new(path))),
             last_progress: Arc::new(Mutex::new(None)),
-            request_id: None,
+            request_id,
         }
     }
 
+    pub fn cleanup() -> Self {
+        Self::new(None, None)
+    }
+
     pub fn check(&self) -> CoreResult<()> {
-        if self.cancelled.load(Ordering::Acquire)
-            || self
-                .cancellation_path
-                .as_ref()
-                .is_some_and(|path| path.exists())
+        self.check_cancellation(CancellationMarker::poll)
+    }
+
+    /// Check for cancellation immediately before committing or finishing work.
+    pub fn check_now(&self) -> CoreResult<()> {
+        self.check_cancellation(CancellationMarker::poll_now)
+    }
+
+    fn check_cancellation(&self, poll: impl FnOnce(&CancellationMarker) -> bool) -> CoreResult<()> {
+        if self.cancelled.load(Ordering::Relaxed)
+            || self.cancellation_marker.as_deref().is_some_and(poll)
         {
+            self.cancel();
             Err(CoreError::new(
                 "CORE_CANCELLED",
                 "Der Core-Auftrag wurde abgebrochen.",
@@ -114,7 +166,7 @@ impl OperationContext {
     }
 
     pub fn cancel(&self) {
-        self.cancelled.store(true, Ordering::Release);
+        self.cancelled.store(true, Ordering::Relaxed);
     }
 
     pub fn progress(&self, progress: Value) -> CoreResult<()> {
@@ -157,11 +209,18 @@ impl OperationContext {
 }
 
 pub fn emit(value: &Value) -> CoreResult<()> {
+    let line = json_line(value)?;
     let mut output = io::stdout().lock();
-    serde_json::to_writer(&mut output, value)?;
-    output.write_all(b"\n")?;
+    output.write_all(&line)?;
     output.flush()?;
     Ok(())
+}
+
+fn json_line(value: &Value) -> CoreResult<Zeroizing<Vec<u8>>> {
+    let mut line = Zeroizing::new(Vec::with_capacity(1024));
+    serde_json::to_writer(&mut *line, value)?;
+    line.push(b'\n');
+    Ok(line)
 }
 
 pub fn run_command(handler: impl FnOnce(Value, &OperationContext) -> CoreResult<Value>) {
@@ -175,7 +234,7 @@ pub fn run_command(handler: impl FnOnce(Value, &OperationContext) -> CoreResult<
     }
     let result = (|| {
         const MAXIMUM_REQUEST_BYTES: u64 = 64 * 1024 * 1024;
-        let mut input = Vec::new();
+        let mut input = Zeroizing::new(Vec::new());
         io::stdin()
             .take(MAXIMUM_REQUEST_BYTES + 1)
             .read_to_end(&mut input)?;

@@ -66,14 +66,18 @@ const row = {
     username: 'synthetic-user',
     isActive: true,
     isDeleted: false,
-    expiresAt: new Date(NOW + 60_000),
+    expiresAt: new Date(NOW + 120_000),
 }
 const beforePermissions = vi.fn(async function () {})
 const state = {
     present: true,
     permissions: ['user.dashboard'],
     acceptedHash: sessionHash,
+    extraSessions: new Map<string, typeof row>(),
+    userPermissions: new Map<string, Array<string>>(),
 }
+const sessionQueries = vi.fn()
+const permissionQueries = vi.fn()
 const select = vi.fn(function () {
     let table: unknown
     let predicate: SessionValidationTestPredicate | undefined
@@ -92,26 +96,38 @@ const select = vi.fn(function () {
 
         ...createLazyTestQuery(() =>
             (async function () {
-                if (table !== schema.accountPermissions)
-                    throw new Error(
-                        'Unexpected unbounded synthetic session query',
-                    )
+                if (
+                    table === schema.sessions &&
+                    predicate?.column === schema.sessions.id
+                ) {
+                    if (!Array.isArray(predicate.value))
+                        throw new Error('Expected a bounded session query')
+                    sessionQueries(predicate.value)
+                    return predicate.value.flatMap(function (hash) {
+                        const session =
+                            state.present && hash === state.acceptedHash
+                                ? row
+                                : state.extraSessions.get(hash)
+                        return session
+                            ? [{ ...session, sessionHash: hash }]
+                            : []
+                    })
+                }
+                if (
+                    table !== schema.accountPermissions ||
+                    predicate?.column !== schema.accountPermissions.userId ||
+                    !Array.isArray(predicate.value)
+                )
+                    throw new Error('Expected a bounded permission query')
+                permissionQueries(predicate.value)
                 await beforePermissions()
-                return state.permissions.map((key) => ({ key }))
+                return predicate.value.flatMap(function (userId) {
+                    const keys =
+                        state.userPermissions.get(userId) ?? state.permissions
+                    return keys.map((key) => ({ userId, key }))
+                })
             })(),
         ),
-        async limit() {
-            if (table === schema.sessions) {
-                return state.present && predicate?.value === state.acceptedHash
-                    ? [{ ...row }]
-                    : []
-            }
-            if (table === schema.accountPermissions) {
-                await beforePermissions()
-                return state.permissions.map((key) => ({ key }))
-            }
-            throw new Error('Unexpected synthetic session query')
-        },
     }
     return query
 })
@@ -134,42 +150,48 @@ vi.mock('@/server/Admin/Backups/restore-state.service.ts', () => ({
 }))
 vi.mock('drizzle-orm', () => ({
     eq: (column: unknown, value: unknown) => ({ column, value }),
+    inArray: (column: unknown, value: unknown) => ({ column, value }),
 }))
 vi.mock('@/server/Logging/logger.ts', () => ({ logError }))
 
-const timerDescriptors = {
-    setTimeout: Object.getOwnPropertyDescriptor(globalThis, 'setTimeout'),
-    setInterval: Object.getOwnPropertyDescriptor(globalThis, 'setInterval'),
-}
+const timerDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'setTimeout',
+)
 const realSetTimeout = globalThis.setTimeout.bind(globalThis)
 const realClearTimeout = globalThis.clearTimeout.bind(globalThis)
 const timeouts: Array<SessionValidationTestTimer> = []
-const intervals: Array<SessionValidationTestTimer> = []
 const sockets: Array<BunRealtimeWebSocket> = []
 
 function installTimers() {
-    for (const [name, scheduled] of [
-        ['setTimeout', timeouts],
-        ['setInterval', intervals],
-    ] as const) {
-        Object.defineProperty(globalThis, name, {
-            configurable: true,
-            writable: true,
-            value(callback: unknown, delay?: number) {
-                const handle = realSetTimeout(function () {}, 600_000)
-                handle.unref()
-                scheduled.push({
-                    handle,
-                    delay,
-                    run() {
-                        if (typeof callback !== 'function')
-                            throw new Error('Expected callback')
-                        callback()
-                    },
-                })
-                return handle
-            },
-        })
+    Object.defineProperty(globalThis, 'setTimeout', {
+        configurable: true,
+        writable: true,
+        value(callback: unknown, delay = 0) {
+            const handle = realSetTimeout(function () {}, 600_000)
+            handle.unref()
+            timeouts.push({
+                handle,
+                wakeAt: Date.now() + delay,
+                hasRun: false,
+                run() {
+                    this.hasRun = true
+                    if (typeof callback !== 'function')
+                        throw new Error('Expected callback')
+                    callback()
+                },
+            })
+            return handle
+        },
+    })
+}
+
+function advanceRealtimeTo(timestamp: number) {
+    setSystemTime(timestamp)
+    const scheduled = timeouts.length
+    for (let index = 0; index < scheduled; index += 1) {
+        const timer = timeouts[index]
+        if (!timer.hasRun && timer.wakeAt <= timestamp) timer.run()
     }
 }
 
@@ -177,7 +199,7 @@ async function flushReads() {
     await new Promise<void>((resolve) => realSetTimeout(resolve, 0))
 }
 
-function socket() {
+function socket(data: Partial<RealtimeConnectionData> = {}) {
     const websocket = {
         data: {
             userId: row.userId,
@@ -189,6 +211,7 @@ function socket() {
             absoluteExpiresAt: new Date(
                 NOW + sessionConfig.absoluteDurationMs,
             ).toISOString(),
+            ...data,
         },
         close: vi.fn(),
         subscribe: vi.fn(),
@@ -213,24 +236,22 @@ beforeEach(function () {
     Object.assign(row, {
         isActive: true,
         isDeleted: false,
-        expiresAt: new Date(NOW + 60_000),
+        expiresAt: new Date(NOW + 120_000),
     })
     state.present = true
     state.acceptedHash = sessionHash
     state.permissions = ['user.dashboard']
+    state.extraSessions.clear()
+    state.userPermissions.clear()
 })
 afterEach(function () {
     for (const websocket of sockets.splice(0)) {
         clearRealtimeValidation(websocket)
         unregisterRealtimeConnection(websocket)
     }
-    for (const timer of [...timeouts.splice(0), ...intervals.splice(0)])
-        realClearTimeout(timer.handle)
-    for (const name of ['setTimeout', 'setInterval'] as const) {
-        const descriptor = timerDescriptors[name]
-        if (!descriptor) throw new Error('Missing original timer descriptor')
-        Object.defineProperty(globalThis, name, descriptor)
-    }
+    for (const timer of timeouts.splice(0)) realClearTimeout(timer.handle)
+    if (!timerDescriptor) throw new Error('Missing original timer descriptor')
+    Object.defineProperty(globalThis, 'setTimeout', timerDescriptor)
     vi.restoreAllMocks()
     setSystemTime()
     if (previousOrigin === undefined) delete process.env.ORIGIN
@@ -276,7 +297,7 @@ describe('read-only bounded WebSocket sessions', function () {
 
     it('rechecks expiry after a slow permission read', async function () {
         beforePermissions.mockImplementationOnce(async function () {
-            setSystemTime(NOW + 60_000)
+            setSystemTime(NOW + 120_000)
         })
         expect(await getRealtimeConnectionData(request())).toBeNull()
         expect(mutation).not.toHaveBeenCalled()
@@ -284,13 +305,12 @@ describe('read-only bounded WebSocket sessions', function () {
 
     it('closes a connection at the absolute deadline even when the database has a later idle value', async function () {
         installTimers()
+        const deadline = NOW + sessionConfig.absoluteDurationMs
+        row.expiresAt = new Date(deadline + 60_000)
         const websocket = socket()
+        setSystemTime(deadline - 60_000)
         startRealtimeValidation(websocket)
-        row.expiresAt = new Date(
-            NOW + sessionConfig.absoluteDurationMs + 60_000,
-        )
-        setSystemTime(NOW + sessionConfig.absoluteDurationMs)
-        intervals[0].run()
+        advanceRealtimeTo(deadline)
         await flushReads()
         expect(websocket.close).toHaveBeenCalledWith(4001, expect.any(String))
         expect(select).not.toHaveBeenCalled()
@@ -303,27 +323,27 @@ describe('read-only bounded WebSocket sessions', function () {
         startRealtimeValidation(websocket)
         const oldTimer = timeouts[0]
         row.expiresAt = new Date(NOW + 15 * 60_000)
-        setSystemTime(NOW + 59_000)
-        intervals[0].run()
+        advanceRealtimeTo(NOW + 60_000)
         await flushReads()
         expect(websocket.close).not.toHaveBeenCalled()
         expect(websocket.data.expiresAt).toBe(row.expiresAt.toISOString())
-        setSystemTime(NOW + 60_000)
+        setSystemTime(NOW + 120_000)
         oldTimer.run()
         expect(websocket.close).not.toHaveBeenCalled()
-        expect(timeouts.at(-1)?.delay).toBe(14 * 60_000)
+        expect(
+            timeouts.some((timer) => timer.wakeAt === row.expiresAt.getTime()),
+        ).toBe(true)
         expect(mutation).not.toHaveBeenCalled()
     })
 
     it('closes before subscribing when connection setup has crossed its confirmed deadline', function () {
         installTimers()
         const websocket = socket()
-        setSystemTime(NOW + 60_000)
+        setSystemTime(NOW + 120_000)
         row.expiresAt = new Date(NOW + 15 * 60_000)
         expect(startRealtimeValidation(websocket)).toBe(false)
         expect(websocket.close).toHaveBeenCalledWith(4001, expect.any(String))
         expect(timeouts).toHaveLength(0)
-        expect(intervals).toHaveLength(0)
         expect(select).not.toHaveBeenCalled()
     })
 
@@ -335,24 +355,23 @@ describe('read-only bounded WebSocket sessions', function () {
                 NOW +
                 (kind === 'absolute'
                     ? sessionConfig.absoluteDurationMs
-                    : 60_000)
+                    : 120_000)
             const websocket = socket()
             websocket.data.expiresAt = new Date(deadline).toISOString()
             row.expiresAt = new Date(
                 NOW + sessionConfig.absoluteDurationMs + 60_000,
             )
-            setSystemTime(deadline - 1)
+            setSystemTime(deadline - 60_001)
             startRealtimeValidation(websocket)
             const pending = Promise.withResolvers<void>()
             beforePermissions.mockImplementationOnce(async function () {
                 await pending.promise
             })
-            intervals[0].run()
+            advanceRealtimeTo(deadline - 1)
             await flushReads()
             expect(beforePermissions).toHaveBeenCalledTimes(1)
             expect(websocket.close).not.toHaveBeenCalled()
-            setSystemTime(deadline)
-            timeouts[0].run()
+            advanceRealtimeTo(deadline)
             expect(websocket.close).toHaveBeenCalledTimes(1)
             expect(websocket.close).toHaveBeenCalledWith(
                 4001,
@@ -383,15 +402,15 @@ describe('read-only bounded WebSocket sessions', function () {
         row.expiresAt = new Date(NOW + 15 * 60_000)
         startRealtimeValidation(websocket)
         beforePermissions.mockImplementationOnce(async function () {
-            setSystemTime(NOW + 60_000)
+            setSystemTime(NOW + 120_000)
         })
-        intervals[0].run()
+        advanceRealtimeTo(NOW + 60_000)
         await flushReads()
         expect(websocket.close).toHaveBeenCalledWith(4001, expect.any(String))
         expect(websocket.data.expiresAt).toBe(
-            new Date(NOW + 60_000).toISOString(),
+            new Date(NOW + 120_000).toISOString(),
         )
-        expect(timeouts).toHaveLength(1)
+        expect(timeouts).toHaveLength(2)
     })
 
     it('does not revive a revoked connection during periodic validation', async function () {
@@ -399,7 +418,7 @@ describe('read-only bounded WebSocket sessions', function () {
         const websocket = socket()
         startRealtimeValidation(websocket)
         state.present = false
-        intervals[0].run()
+        advanceRealtimeTo(NOW + 60_000)
         await flushReads()
         expect(websocket.close).toHaveBeenCalledWith(4001, expect.any(String))
         expect(mutation).not.toHaveBeenCalled()
@@ -410,7 +429,7 @@ describe('read-only bounded WebSocket sessions', function () {
         const websocket = socket()
         startRealtimeValidation(websocket)
         state.permissions = []
-        intervals[0].run()
+        advanceRealtimeTo(NOW + 60_000)
         await flushReads()
         expect(websocket.close).toHaveBeenCalledWith(4001, expect.any(String))
         expect(mutation).not.toHaveBeenCalled()
@@ -424,7 +443,7 @@ describe('read-only bounded WebSocket sessions', function () {
             clearRealtimeValidation(websocket)
         })
         const initialTimeouts = timeouts.length
-        intervals[0].run()
+        advanceRealtimeTo(NOW + 60_000)
         await flushReads()
         expect(timeouts).toHaveLength(initialTimeouts)
         expect(websocket.close).not.toHaveBeenCalled()
@@ -437,7 +456,7 @@ describe('read-only bounded WebSocket sessions', function () {
         beforePermissions.mockRejectedValueOnce(
             new Error('Synthetic database failure'),
         )
-        intervals[0].run()
+        advanceRealtimeTo(NOW + 60_000)
         await flushReads()
         expect(websocket.close).toHaveBeenCalledWith(1011, expect.any(String))
         expect(logError).toHaveBeenCalledTimes(1)
@@ -468,8 +487,8 @@ function publishRevocation(userId = row.userId, observe = function () {}) {
     return event
 }
 
-function trackedSocket() {
-    const websocket = socket()
+function trackedSocket(data?: Partial<RealtimeConnectionData>) {
+    const websocket = socket(data)
     const topics = new Set<string>()
     websocket.subscribe.mockImplementation((topic: string) => {
         topics.add(topic)
@@ -482,15 +501,168 @@ function trackedSocket() {
     return { websocket, topics }
 }
 
+describe('central WebSocket session scheduling', function () {
+    it('shares a session read across tabs and reads each user’s permissions once per batch', async function () {
+        installTimers()
+        const secondHash = 'b'.repeat(64)
+        const foreignHash = 'c'.repeat(64)
+        state.extraSessions.set(secondHash, row)
+        state.extraSessions.set(foreignHash, { ...row, userId: 'other-user' })
+        state.userPermissions.set('other-user', ['admin.audit-logs'])
+        const tabs = Array.from({ length: 9 }, () => trackedSocket().websocket)
+        setSystemTime(NOW + 500)
+        tabs.push(trackedSocket({ sessionHash: secondHash }).websocket)
+        const foreign = trackedSocket({
+            sessionHash: foreignHash,
+            userId: 'other-user',
+            permissions: ['admin.audit-logs'],
+        }).websocket
+        expect(timeouts).toHaveLength(2)
+
+        row.expiresAt = new Date(NOW + 15 * 60_000)
+        advanceRealtimeTo(NOW + 60_000)
+        await flushReads()
+
+        expect(sessionQueries).toHaveBeenCalledTimes(1)
+        expect(sessionQueries).toHaveBeenCalledWith(
+            expect.arrayContaining([sessionHash, secondHash, foreignHash]),
+        )
+        expect(sessionQueries.mock.calls[0][0]).toHaveLength(3)
+        expect(permissionQueries).toHaveBeenCalledTimes(1)
+        expect(permissionQueries).toHaveBeenCalledWith(
+            expect.arrayContaining([row.userId, 'other-user']),
+        )
+        expect(permissionQueries.mock.calls[0][0]).toHaveLength(2)
+        for (const tab of tabs) {
+            expect(tab.close).not.toHaveBeenCalled()
+            expect(tab.data.expiresAt).toBe(row.expiresAt.toISOString())
+        }
+        expect(foreign.close).not.toHaveBeenCalled()
+    })
+
+    it('bounds batch size and concurrent reads when many distinct sessions become due', async function () {
+        installTimers()
+        const totalSessions = 521
+        for (let index = 0; index < totalSessions; index += 1) {
+            const userId = 'user-' + (index + 2)
+            const hash = index.toString(16).padStart(64, '0')
+            state.extraSessions.set(hash, { ...row, userId })
+            trackedSocket({ userId, sessionHash: hash })
+        }
+        expect(timeouts).toHaveLength(2)
+        const pending = Promise.withResolvers<void>()
+        beforePermissions.mockImplementation(() => pending.promise)
+
+        advanceRealtimeTo(NOW + 60_000)
+        await flushReads()
+        expect(sessionQueries).toHaveBeenCalledTimes(4)
+        expect(permissionQueries).toHaveBeenCalledTimes(4)
+        pending.resolve()
+        await flushReads()
+
+        const sessionBatchSizes = sessionQueries.mock.calls.map(
+            ([hashes]) => hashes.length,
+        )
+        const permissionBatchSizes = permissionQueries.mock.calls.map(
+            ([userIds]) => userIds.length,
+        )
+        expect(sessionBatchSizes).toEqual([128, 128, 128, 128, 9])
+        expect(permissionBatchSizes).toEqual(sessionBatchSizes)
+        expect(mutation).not.toHaveBeenCalled()
+    })
+
+    it('keeps an independent confirmed deadline for each socket sharing an in-flight read', async function () {
+        installTimers()
+        row.expiresAt = new Date(NOW + 10 * 60_000)
+        const earlyDeadline = new Date(NOW + 70_000).toISOString()
+        const early = trackedSocket({ expiresAt: earlyDeadline }).websocket
+        const laterDeadline = new Date(NOW + 5 * 60_000).toISOString()
+        const later = trackedSocket({
+            absoluteExpiresAt: laterDeadline,
+        }).websocket
+        const pending = Promise.withResolvers<void>()
+        beforePermissions.mockImplementationOnce(() => pending.promise)
+
+        advanceRealtimeTo(NOW + 60_000)
+        await flushReads()
+        expect(sessionQueries).toHaveBeenCalledTimes(1)
+        expect(sessionQueries).toHaveBeenCalledWith([sessionHash])
+        advanceRealtimeTo(NOW + 70_000)
+        expect(early.close).toHaveBeenCalledTimes(1)
+        expect(later.close).not.toHaveBeenCalled()
+
+        pending.resolve()
+        await flushReads()
+        expect(early.data.expiresAt).toBe(earlyDeadline)
+        expect(later.data.expiresAt).toBe(laterDeadline)
+        expect(later.close).not.toHaveBeenCalled()
+    })
+
+    it('only visits due deadlines before publishing across many unrelated connections', function () {
+        installTimers()
+        const expired = trackedSocket({
+            expiresAt: new Date(NOW + 1_000).toISOString(),
+        })
+        const live = Array.from({ length: 350 }, (_, index) =>
+            trackedSocket({
+                userId: 'live-' + index,
+                sessionHash: index.toString(16).padStart(64, '0'),
+            }),
+        )
+        setSystemTime(NOW + 1_000)
+        const clock = vi.spyOn(Date, 'now')
+        const publish = vi.fn(function () {
+            expect(expired.topics.size).toBe(0)
+            return 0
+        })
+        dispatchRealtimeEvent({ publish, async stop() {} }, 'admin-backups', {
+            type: 'admin-backups.changed',
+            payload: { updatedAt: new Date().toISOString() },
+        })
+        expect(publish).toHaveBeenCalledTimes(1)
+        expect(clock.mock.calls.length).toBeLessThan(10)
+        for (const { websocket } of live) {
+            expect(websocket.unsubscribe).not.toHaveBeenCalled()
+            expect(websocket.close).not.toHaveBeenCalled()
+        }
+        expect(select).not.toHaveBeenCalled()
+    })
+
+    it('waits for a fresh read when a stale upgrade joins a session with a pending read', async function () {
+        installTimers()
+        const { websocket } = trackedSocket()
+        const oldEpoch = getRealtimeRevocationEpoch()
+        const pending = Promise.withResolvers<void>()
+        beforePermissions.mockImplementationOnce(() => pending.promise)
+        advanceRealtimeTo(NOW + 60_000)
+        await flushReads()
+        publishRevocation()
+        const late = socket({ revocationEpoch: oldEpoch })
+        realtimeWebSocketHandler.open(late)
+        expect(late.subscribe).not.toHaveBeenCalled()
+        expect(sessionQueries).toHaveBeenCalledTimes(1)
+
+        state.present = false
+        pending.resolve()
+        await flushReads()
+        expect(sessionQueries).toHaveBeenCalledTimes(2)
+        expect(late.subscribe).not.toHaveBeenCalled()
+        expect(late.send).not.toHaveBeenCalled()
+        expect(late.close).toHaveBeenCalledWith(4001, expect.any(String))
+        expect(websocket.close).toHaveBeenCalledWith(4001, expect.any(String))
+    })
+})
+
 describe('generation-bound factor-change session revocation', function () {
     it('suspends all affected sockets before publish, closes the old hash, and preserves a newer login and another user', async function () {
         installTimers()
         const old = trackedSocket()
-        const current = trackedSocket()
-        current.websocket.data.sessionHash = 'b'.repeat(64)
+        const current = trackedSocket({ sessionHash: 'b'.repeat(64) })
         state.acceptedHash = current.websocket.data.sessionHash
-        const foreign = socket()
-        foreign.data.userId = 'other-user'
+        const foreign = socket({
+            userId: 'other-user',
+            sessionHash: 'c'.repeat(64),
+        })
         registerRealtimeConnection(foreign)
         startRealtimeValidation(foreign)
         old.websocket.send.mockClear()
@@ -511,7 +683,7 @@ describe('generation-bound factor-change session revocation', function () {
         expect(current.websocket.send).not.toHaveBeenCalled()
         expect(current.topics.has('user:user-1')).toBe(true)
         expect(foreign.close).not.toHaveBeenCalled()
-        expect(select).toHaveBeenCalledTimes(3)
+        expect(select).toHaveBeenCalledTimes(2)
         expect(mutation).not.toHaveBeenCalled()
     })
 
@@ -522,7 +694,7 @@ describe('generation-bound factor-change session revocation', function () {
         websocket.send.mockClear()
         const pending = Promise.withResolvers<void>()
         beforePermissions.mockImplementationOnce(() => pending.promise)
-        intervals[0].run()
+        advanceRealtimeTo(NOW + 60_000)
         await flushReads()
         expect(select).toHaveBeenCalledTimes(2)
         state.present = false
@@ -548,7 +720,7 @@ describe('generation-bound factor-change session revocation', function () {
             const { websocket, topics } = trackedSocket()
             const pending = Promise.withResolvers<void>()
             beforePermissions.mockImplementationOnce(() => pending.promise)
-            intervals[0].run()
+            advanceRealtimeTo(NOW + 60_000)
             await flushReads()
             publishRevocation()
             websocket.subscribe.mockClear()
@@ -563,7 +735,7 @@ describe('generation-bound factor-change session revocation', function () {
             expect(websocket.send).not.toHaveBeenCalled()
             expect(logError).not.toHaveBeenCalled()
             expect(websocket.data.expiresAt).toBe(
-                new Date(NOW + 60_000).toISOString(),
+                new Date(NOW + 120_000).toISOString(),
             )
             realtimeWebSocketHandler.message(websocket, 'ping')
             expect(websocket.send).toHaveBeenCalledWith('pong')
@@ -597,8 +769,7 @@ describe('generation-bound factor-change session revocation', function () {
         await flushReads()
         websocket.send.mockClear()
         websocket.subscribe.mockClear()
-        setSystemTime(NOW + 60_000)
-        timeouts[0].run()
+        advanceRealtimeTo(NOW + 120_000)
         expect(topics.size).toBe(0)
         expect(websocket.close).toHaveBeenCalledTimes(1)
         expect(websocket.send).not.toHaveBeenCalled()
@@ -975,7 +1146,7 @@ describe('all revocation types invalidate unregistered upgrade snapshots', funct
             )
             expect(websocket.close).not.toHaveBeenCalled()
             expect(websocket.data.sessionHash).toBe(sessionHash)
-            intervals[0].run()
+            advanceRealtimeTo(NOW + 60_000)
             await flushReads()
             expect(websocket.send).toHaveBeenCalledTimes(1)
             expect(websocket.subscribe).toHaveBeenCalledTimes(3)

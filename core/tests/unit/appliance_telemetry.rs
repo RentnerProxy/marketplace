@@ -172,3 +172,41 @@ fn loopback_runtime_owns_its_listener_and_joins_connections_on_stop() {
         production.stop();
     }
 }
+
+#[test]
+fn stop_wakes_accept_even_with_no_telemetry_requests() {
+    for delay in [Duration::ZERO, Duration::from_millis(25)] {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let address = listener.local_addr().unwrap();
+        let runtime = start_with_listener(
+            listener,
+            Arc::new(LogStore::new(Vec::new())),
+            Arc::new(AtomicBool::new(true)),
+            Arc::new(AtomicBool::new(false)),
+            Environment::new(),
+            false,
+            true,
+        )
+        .unwrap();
+        thread::sleep(delay);
+        let (finished, completion) = std::sync::mpsc::channel();
+        let shutdown = thread::spawn(move || {
+            runtime.stop();
+            finished.send(()).unwrap();
+        });
+        completion.recv_timeout(Duration::from_secs(2)).unwrap();
+        shutdown.join().unwrap();
+        wait_for_listener_refusal(address, Duration::from_secs(3)).unwrap();
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn telemetry_accept_times_out_without_a_wake_connection() {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    set_accept_timeout(&listener).unwrap();
+    assert_eq!(
+        listener.accept().unwrap_err().kind(),
+        std::io::ErrorKind::WouldBlock
+    );
+}

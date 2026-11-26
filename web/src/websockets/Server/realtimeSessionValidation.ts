@@ -1,26 +1,41 @@
-import { eq } from 'drizzle-orm'
-import { db } from '@/db'
-import {
-    permissions,
-    sessions,
-    accountPermissions,
-    users,
-} from '@/db/schema.ts'
 import { SESSION_COOKIE_NAME } from '@/config/session.config.ts'
 import { getSessionTokenCandidateService } from '@/server/Auth/session-token.service.ts'
-import type { RealtimeValidationState } from '@/websockets/Types/realtime-validation.types.ts'
 import { logError } from '@/server/Logging/logger.ts'
 import type { BunRealtimeWebSocket } from '@/websockets/Types/bun.ts'
 import type { UserSessionsRevokedEvent } from '@/websockets/Types/events.ts'
+import type {
+    RealtimeSessionGroup,
+    RealtimeSessionSnapshot,
+    RealtimeValidationState,
+    RealtimeValidationSubject,
+} from '@/websockets/Types/realtime-validation.types.ts'
+import { unregisterRealtimeConnection } from './realtimeConnections.ts'
+import { RealtimeDeadlineQueue } from './realtimeDeadlineQueue.ts'
+import { readRealtimeSessionSnapshots } from './realtimeSessionSnapshots.ts'
 import { getRealtimeConnectionTopics } from './realtimeTopics.ts'
 
 const REALTIME_REVALIDATION_INTERVAL_MS = 60_000
+const REALTIME_VALIDATION_LOOKAHEAD_MS = 1_000
+const REALTIME_SESSION_BATCH_SIZE = 128
+const MAX_CONCURRENT_VALIDATION_BATCHES = 4
 const MAX_TIMER_DELAY_MS = 2_147_000_000
+
+const validationStates = new WeakMap<
+    BunRealtimeWebSocket,
+    RealtimeValidationState
+>()
+const sessionGroups = new Map<string, RealtimeSessionGroup>()
+const expiryDeadlines = new RealtimeDeadlineQueue<BunRealtimeWebSocket>()
+const validationDeadlines = new RealtimeDeadlineQueue<RealtimeSessionGroup>()
+let expiryTimer: ReturnType<typeof setTimeout> | undefined
+let expiryWakeAt: number | undefined
+let validationTimer: ReturnType<typeof setTimeout> | undefined
+let validationWakeAt: number | undefined
+let validationQueued = false
+let inFlightBatches = 0
 
 declare global {
     var appRealtimeRevocationEpoch: symbol | undefined
-    var appRealtimeValidationStates:
-        WeakMap<BunRealtimeWebSocket, RealtimeValidationState> | undefined
 }
 
 export function getRealtimeRevocationEpoch(): symbol {
@@ -30,11 +45,6 @@ export function getRealtimeRevocationEpoch(): symbol {
 
 export function invalidateRealtimeRevocationEpoch() {
     globalThis.appRealtimeRevocationEpoch = Symbol()
-}
-
-function getRealtimeValidationStates() {
-    globalThis.appRealtimeValidationStates ??= new WeakMap()
-    return globalThis.appRealtimeValidationStates
 }
 
 function getCookieValue(request: Request, name: string) {
@@ -61,69 +71,35 @@ function getCookieValue(request: Request, name: string) {
     return null
 }
 
-async function getRealtimeSessionData(
-    sessionHash: string,
-    absoluteExpiresAt: string,
-) {
-    const absoluteDeadline = Date.parse(absoluteExpiresAt)
-    if (!Number.isFinite(absoluteDeadline) || absoluteDeadline <= Date.now())
-        return null
-    const sessionRows = await db
-        .select({
-            userId: users.id,
-            username: users.username,
-            isActive: users.isActive,
-            isDeleted: users.isDeleted,
-            expiresAt: sessions.expiresAt,
-        })
-        .from(sessions)
-        .innerJoin(users, eq(users.id, sessions.userId))
-        .where(eq(sessions.id, sessionHash))
-        .limit(1)
-    const session = sessionRows.at(0)
-
-    if (
-        !session ||
-        !session.isActive ||
-        session.isDeleted ||
-        Date.now() >= Math.min(session.expiresAt.getTime(), absoluteDeadline)
-    ) {
-        return null
-    }
-
-    const permissionRows = await db
-        .select({ key: permissions.key })
-        .from(accountPermissions)
-        .innerJoin(
-            permissions,
-            eq(permissions.id, accountPermissions.permissionId),
-        )
-        .where(eq(accountPermissions.userId, session.userId))
-
-    const expiresAt = Math.min(session.expiresAt.getTime(), absoluteDeadline)
-    if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) return null
-
-    return {
-        userId: session.userId,
-        username: session.username,
-        permissions: permissionRows.map((permission) => permission.key),
-        sessionHash,
-        expiresAt: new Date(expiresAt).toISOString(),
-        absoluteExpiresAt: new Date(absoluteDeadline).toISOString(),
-    }
-}
-
 export async function getRealtimeConnectionData(request: Request) {
     const revocationEpoch = getRealtimeRevocationEpoch()
     const candidate = await getSessionTokenCandidateService(
         getCookieValue(request, SESSION_COOKIE_NAME),
     )
     if (!candidate) return null
-    const data = await getRealtimeSessionData(
-        candidate.sessionHash,
-        candidate.absoluteExpiresAt.toISOString(),
+
+    const { sessionHash, absoluteExpiresAt } = candidate
+    const absoluteDeadline = absoluteExpiresAt.getTime()
+    if (!(absoluteDeadline > Date.now())) return null
+
+    const snapshots = await readRealtimeSessionSnapshots(
+        new Map([[sessionHash, absoluteDeadline]]),
     )
-    return data ? { ...data, revocationEpoch } : null
+    const snapshot = snapshots.get(sessionHash)
+    if (!snapshot) return null
+
+    const expiresAtMs = Math.min(snapshot.expiresAtMs, absoluteDeadline)
+    if (!(expiresAtMs > Date.now())) return null
+
+    return {
+        userId: snapshot.userId,
+        username: snapshot.username,
+        permissions: snapshot.permissions,
+        sessionHash,
+        expiresAt: new Date(expiresAtMs).toISOString(),
+        absoluteExpiresAt: absoluteExpiresAt.toISOString(),
+        revocationEpoch,
+    }
 }
 
 function haveEqualPermissions(left: Array<string>, right: Array<string>) {
@@ -135,18 +111,89 @@ function haveEqualPermissions(left: Array<string>, right: Array<string>) {
     return left.every((permission) => rightPermissions.has(permission))
 }
 
+function scheduleExpiryWake() {
+    const deadline = expiryDeadlines.peek()?.deadline
+    if (deadline === expiryWakeAt) return
+    clearTimeout(expiryTimer)
+    expiryWakeAt = deadline
+    if (deadline === undefined) {
+        expiryTimer = undefined
+        return
+    }
+    const timer = setTimeout(
+        function () {
+            if (expiryTimer !== timer) return
+            expiryTimer = undefined
+            expiryWakeAt = undefined
+            expireRealtimeSessions()
+        },
+        Math.min(deadline - Date.now(), MAX_TIMER_DELAY_MS),
+    )
+    expiryTimer = timer
+    timer.unref()
+}
+
+export function expireRealtimeSessions() {
+    let entry = expiryDeadlines.peek()
+    while (entry && entry.deadline <= Date.now()) {
+        expiryDeadlines.delete(entry.key)
+        closeRealtimeSession(entry.key)
+        entry = expiryDeadlines.peek()
+    }
+    scheduleExpiryWake()
+}
+
+function scheduleValidationWake() {
+    const deadline =
+        inFlightBatches < MAX_CONCURRENT_VALIDATION_BATCHES
+            ? validationDeadlines.peek()?.deadline
+            : undefined
+    const now = Date.now()
+    if (deadline !== undefined && deadline <= now) {
+        clearTimeout(validationTimer)
+        validationTimer = undefined
+        validationWakeAt = undefined
+        if (!validationQueued) {
+            validationQueued = true
+            queueMicrotask(drainValidationBatch)
+        }
+        return
+    }
+    if (deadline === validationWakeAt) return
+    clearTimeout(validationTimer)
+    validationWakeAt = deadline
+    if (deadline === undefined) {
+        validationTimer = undefined
+        return
+    }
+    const timer = setTimeout(function () {
+        if (validationTimer !== timer) return
+        validationTimer = undefined
+        validationWakeAt = undefined
+        drainValidationBatch()
+    }, deadline - now)
+    validationTimer = timer
+    timer.unref()
+}
+
+function queueSessionValidation(group: RealtimeSessionGroup) {
+    if (group.isValidating || group.sockets.size === 0) return
+    validationDeadlines.set(group, group.dueAtMs)
+    scheduleValidationWake()
+}
+
 export function clearRealtimeValidation(websocket: BunRealtimeWebSocket) {
-    const states = getRealtimeValidationStates()
-    const state = states.get(websocket)
+    const state = validationStates.get(websocket)
+    if (!state) return
 
-    if (state?.expiryTimer) {
-        clearTimeout(state.expiryTimer)
+    validationStates.delete(websocket)
+    if (expiryDeadlines.delete(websocket)) scheduleExpiryWake()
+    const { group } = state
+    group.sockets.delete(websocket)
+    if (group.sockets.size === 0) {
+        sessionGroups.delete(group.sessionHash)
+        if (validationDeadlines.delete(group)) scheduleValidationWake()
     }
-    if (state?.revalidationTimer) {
-        clearInterval(state.revalidationTimer)
-    }
-
-    states.delete(websocket)
 }
 
 export function closeRealtimeSession(
@@ -155,16 +202,15 @@ export function closeRealtimeSession(
     reason = 'Die Sitzung konnte nicht weiter bestätigt werden.',
 ) {
     clearRealtimeValidation(websocket)
+    unregisterRealtimeConnection(websocket)
     for (const topic of getRealtimeConnectionTopics(websocket.data)) {
         websocket.unsubscribe(topic)
     }
     websocket.close(code, reason)
 }
 
-export function enforceRealtimeSessionDeadline(
-    websocket: BunRealtimeWebSocket,
-): boolean {
-    const state = getRealtimeValidationStates().get(websocket)
+function enforceRealtimeSessionDeadline(websocket: BunRealtimeWebSocket) {
+    const state = validationStates.get(websocket)
     if (!state || !(state.expiresAtMs > Date.now())) {
         closeRealtimeSession(websocket)
         return false
@@ -175,13 +221,13 @@ export function enforceRealtimeSessionDeadline(
 export function isRealtimeSessionActive(websocket: BunRealtimeWebSocket) {
     return (
         enforceRealtimeSessionDeadline(websocket) &&
-        getRealtimeValidationStates().get(websocket)?.isSuspended === false
+        validationStates.get(websocket)?.isSuspended === false
     )
 }
 
 function resumeRealtimeConnection(websocket: BunRealtimeWebSocket) {
-    if (!isRealtimeSessionActive(websocket)) return
-    const state = getRealtimeValidationStates().get(websocket)
+    if (!enforceRealtimeSessionDeadline(websocket)) return
+    const state = validationStates.get(websocket)
     if (!state) return
     for (const topic of getRealtimeConnectionTopics(websocket.data)) {
         websocket.subscribe(topic)
@@ -197,90 +243,140 @@ function resumeRealtimeConnection(websocket: BunRealtimeWebSocket) {
     }
 }
 
-function scheduleRealtimeExpiry(websocket: BunRealtimeWebSocket) {
-    const state = getRealtimeValidationStates().get(websocket)
-    if (!state || !enforceRealtimeSessionDeadline(websocket)) return
-    if (state.expiryTimer) clearTimeout(state.expiryTimer)
-    state.expiryTimer = setTimeout(
-        function () {
-            if (getRealtimeValidationStates().get(websocket) !== state) return
-            if (enforceRealtimeSessionDeadline(websocket))
-                scheduleRealtimeExpiry(websocket)
-        },
-        Math.min(state.expiresAtMs - Date.now(), MAX_TIMER_DELAY_MS),
+function isCurrentValidation({
+    websocket,
+    state,
+    generation,
+}: RealtimeValidationSubject) {
+    return (
+        validationStates.get(websocket) === state &&
+        enforceRealtimeSessionDeadline(websocket) &&
+        state.generation === generation
     )
 }
 
-async function revalidateRealtimeConnection(websocket: BunRealtimeWebSocket) {
-    const state = getRealtimeValidationStates().get(websocket)
-    if (
-        !state ||
-        !enforceRealtimeSessionDeadline(websocket) ||
-        state.isValidating
+function applyRealtimeSessionSnapshot(
+    { websocket, state }: RealtimeValidationSubject,
+    snapshot: RealtimeSessionSnapshot | undefined,
+) {
+    const expiresAtMs = Math.min(
+        snapshot?.expiresAtMs ?? 0,
+        state.absoluteExpiresAtMs,
     )
+    if (
+        !snapshot ||
+        !(expiresAtMs > Date.now()) ||
+        snapshot.userId !== websocket.data.userId ||
+        !haveEqualPermissions(snapshot.permissions, websocket.data.permissions)
+    ) {
+        if (state.pendingRevocation) {
+            websocket.send(JSON.stringify(state.pendingRevocation))
+        }
+        closeRealtimeSession(websocket)
         return
-    state.isValidating = true
-    const generation = state.generation
-    let needsFreshRead = false
-    try {
-        const current = await getRealtimeSessionData(
-            websocket.data.sessionHash,
-            new Date(state.absoluteExpiresAtMs).toISOString(),
-        )
-        if (getRealtimeValidationStates().get(websocket) !== state) return
-        if (!enforceRealtimeSessionDeadline(websocket)) return
-
-        if (state.generation !== generation) {
-            needsFreshRead = true
-            return
-        }
-        if (
-            !current ||
-            current.userId !== websocket.data.userId ||
-            !haveEqualPermissions(
-                current.permissions,
-                websocket.data.permissions,
-            )
-        ) {
-            if (state.pendingRevocation) {
-                websocket.send(JSON.stringify(state.pendingRevocation))
-            }
-            closeRealtimeSession(websocket)
-            return
-        }
-        state.expiresAtMs = Math.min(
-            Date.parse(current.expiresAt),
-            state.absoluteExpiresAtMs,
-        )
-        websocket.data.expiresAt = new Date(state.expiresAtMs).toISOString()
-        scheduleRealtimeExpiry(websocket)
-        if (state.isSuspended) {
-            state.isSuspended = false
-            state.pendingRevocation = null
-            resumeRealtimeConnection(websocket)
-        }
-    } catch (error) {
-        if (getRealtimeValidationStates().get(websocket) !== state) return
-        if (!enforceRealtimeSessionDeadline(websocket)) return
-        if (state.generation !== generation) {
-            needsFreshRead = true
-            return
-        }
-        closeRealtimeSession(websocket, 1011)
-        logError('realtime.session_revalidation_failed', error, {
-            userId: websocket.data.userId,
-        })
-    } finally {
-        state.isValidating = false
-        if (needsFreshRead) void revalidateRealtimeConnection(websocket)
     }
+
+    state.expiresAtMs = expiresAtMs
+    websocket.data.expiresAt = new Date(expiresAtMs).toISOString()
+    expiryDeadlines.set(websocket, expiresAtMs)
+    scheduleExpiryWake()
+    if (state.isSuspended) {
+        state.isSuspended = false
+        state.pendingRevocation = null
+        resumeRealtimeConnection(websocket)
+    }
+}
+
+async function revalidateSessionBatch(
+    subjects: Array<RealtimeValidationSubject>,
+    deadlines: Map<string, number>,
+) {
+    let snapshots
+    try {
+        snapshots = await readRealtimeSessionSnapshots(deadlines)
+    } catch (error) {
+        let closedConnections = 0
+        for (const subject of subjects) {
+            if (!isCurrentValidation(subject)) continue
+            closeRealtimeSession(subject.websocket, 1011)
+            closedConnections += 1
+        }
+        if (closedConnections > 0) {
+            logError('realtime.session_revalidation_failed', error, {
+                closedConnections,
+            })
+        }
+        return
+    }
+
+    for (const subject of subjects) {
+        if (!isCurrentValidation(subject)) continue
+        applyRealtimeSessionSnapshot(
+            subject,
+            snapshots.get(subject.state.group.sessionHash),
+        )
+    }
+}
+
+function drainValidationBatch() {
+    validationQueued = false
+    if (inFlightBatches >= MAX_CONCURRENT_VALIDATION_BATCHES) return
+
+    const now = Date.now()
+    const earliest = validationDeadlines.peek()
+    if (!earliest || earliest.deadline > now) {
+        scheduleValidationWake()
+        return
+    }
+
+    const groups: Array<RealtimeSessionGroup> = []
+    const subjects: Array<RealtimeValidationSubject> = []
+    const deadlines = new Map<string, number>()
+    while (groups.length < REALTIME_SESSION_BATCH_SIZE) {
+        const entry = validationDeadlines.peek()
+        // Once a read is due, include nearby sessions without delaying the first one.
+        if (!entry || entry.deadline > now + REALTIME_VALIDATION_LOOKAHEAD_MS)
+            break
+
+        const group = entry.key
+        validationDeadlines.delete(group)
+        group.isValidating = true
+        group.dueAtMs =
+            Math.max(entry.deadline, now) + REALTIME_REVALIDATION_INTERVAL_MS
+        groups.push(group)
+        let absoluteDeadline = 0
+        for (const websocket of group.sockets) {
+            const state = validationStates.get(websocket)
+            if (!state || !enforceRealtimeSessionDeadline(websocket)) continue
+            subjects.push({ websocket, state, generation: state.generation })
+            absoluteDeadline = Math.max(
+                absoluteDeadline,
+                state.absoluteExpiresAtMs,
+            )
+        }
+        if (absoluteDeadline > now)
+            deadlines.set(group.sessionHash, absoluteDeadline)
+    }
+
+    if (groups.length > 0) {
+        inFlightBatches += 1
+        void revalidateSessionBatch(subjects, deadlines).finally(function () {
+            inFlightBatches -= 1
+            for (const group of groups) {
+                group.isValidating = false
+                queueSessionValidation(group)
+            }
+            scheduleValidationWake()
+        })
+    }
+    scheduleValidationWake()
 }
 
 export function suspendRealtimeSessionForRevalidation(
     websocket: BunRealtimeWebSocket,
     event: UserSessionsRevokedEvent,
 ) {
-    const state = getRealtimeValidationStates().get(websocket)
+    const state = validationStates.get(websocket)
     if (!state || !enforceRealtimeSessionDeadline(websocket)) return
     state.generation = Symbol()
     state.pendingRevocation = event
@@ -290,13 +386,21 @@ export function suspendRealtimeSessionForRevalidation(
             websocket.unsubscribe(topic)
         }
     }
-    void revalidateRealtimeConnection(websocket)
+    state.group.dueAtMs = Date.now()
+    queueSessionValidation(state.group)
 }
 
 export function startRealtimeValidation(
     websocket: BunRealtimeWebSocket,
 ): boolean {
     clearRealtimeValidation(websocket)
+    const { sessionHash } = websocket.data
+    const group = sessionGroups.get(sessionHash) ?? {
+        sessionHash,
+        sockets: new Set<BunRealtimeWebSocket>(),
+        dueAtMs: Date.now() + REALTIME_REVALIDATION_INTERVAL_MS,
+        isValidating: false,
+    }
     const absoluteExpiresAtMs = Date.parse(websocket.data.absoluteExpiresAt)
     const state: RealtimeValidationState = {
         expiresAtMs: Math.min(
@@ -304,22 +408,21 @@ export function startRealtimeValidation(
             absoluteExpiresAtMs,
         ),
         absoluteExpiresAtMs,
-        expiryTimer: null,
-        revalidationTimer: null,
-        isValidating: false,
+        group,
         generation: Symbol(),
         isSuspended:
             websocket.data.revocationEpoch !== getRealtimeRevocationEpoch(),
         hasAnnouncedReady: false,
         pendingRevocation: null,
     }
-    getRealtimeValidationStates().set(websocket, state)
+    group.sockets.add(websocket)
+    sessionGroups.set(sessionHash, group)
+    validationStates.set(websocket, state)
     if (!enforceRealtimeSessionDeadline(websocket)) return false
-    scheduleRealtimeExpiry(websocket)
-    state.revalidationTimer = setInterval(function () {
-        void revalidateRealtimeConnection(websocket)
-    }, REALTIME_REVALIDATION_INTERVAL_MS)
-    if (state.isSuspended) void revalidateRealtimeConnection(websocket)
-    else resumeRealtimeConnection(websocket)
+    expiryDeadlines.set(websocket, state.expiresAtMs)
+    scheduleExpiryWake()
+    if (state.isSuspended) group.dueAtMs = Date.now()
+    queueSessionValidation(group)
+    if (!state.isSuspended) resumeRealtimeConnection(websocket)
     return true
 }

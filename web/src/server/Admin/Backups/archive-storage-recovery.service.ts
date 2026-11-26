@@ -54,6 +54,8 @@ export async function syncRestoredStorageTree(directoryPath: string) {
     await runCoreCommandService('storage', {
         operation: 'syncTree',
         path: directoryPath,
+        // Archive extraction has already synced regular files.
+        directoriesOnly: true,
     })
 }
 

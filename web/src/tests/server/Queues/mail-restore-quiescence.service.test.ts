@@ -466,6 +466,37 @@ describe('Globaler Mail-Quiesce für Restore', function () {
         }
     })
 
+    it('retries an expired empty unknown pause when the exclusive fence is busy', async function () {
+        vi.useFakeTimers()
+        const record = setUnknownEmptyQuiescence()
+        const queue = quiescenceMocks.getQueueState(MAIL_QUEUE_NAME)
+        const service = createService({ queueNames: [MAIL_QUEUE_NAME] })
+        try {
+            quiescenceMocks.setTryLockAcquired(false)
+            await service.reconcileStartup()
+            expect(quiescenceMocks.tryExclusiveBarrier).toHaveBeenCalledTimes(1)
+            expect(quiescenceMocks.getStoredQuiescence()).toBe(
+                JSON.stringify(record),
+            )
+            expect(queue.isPaused).toBe(true)
+            expect(queue.resume).not.toHaveBeenCalled()
+            expect(quiescenceMocks.valkey.eval).not.toHaveBeenCalled()
+
+            quiescenceMocks.setTryLockAcquired(true)
+            vi.advanceTimersByTime(1_000)
+            vi.useRealTimers()
+            await waitForAssertion(function () {
+                expect(quiescenceMocks.getStoredQuiescence()).toBeNull()
+            })
+            expect(quiescenceMocks.tryExclusiveBarrier).toHaveBeenCalledTimes(2)
+            expect(queue.resume).toHaveBeenCalledTimes(1)
+            expect(queue.isPaused).toBe(false)
+        } finally {
+            vi.useRealTimers()
+            await service.close()
+        }
+    })
+
     it.each([
         'active',
         'waitIds',
@@ -511,25 +542,6 @@ describe('Globaler Mail-Quiesce für Restore', function () {
                 'unbekannten Restore-Zustand',
             )
             expect(quiescenceMocks.tryExclusiveBarrier).not.toHaveBeenCalled()
-            expect(
-                quiescenceMocks.getQueueState(MAIL_QUEUE_NAME).resume,
-            ).not.toHaveBeenCalled()
-        } finally {
-            await service.close()
-        }
-    })
-
-    it('behält die unbekannte Pause bei belegter exklusiver Sperre bei', async function () {
-        const record = setUnknownEmptyQuiescence()
-        quiescenceMocks.setTryLockAcquired(false)
-        const service = createService({ queueNames: [MAIL_QUEUE_NAME] })
-        try {
-            await expect(service.reconcileStartup()).rejects.toThrow(
-                'unbekannten Restore-Zustand',
-            )
-            expect(quiescenceMocks.getStoredQuiescence()).toBe(
-                JSON.stringify(record),
-            )
             expect(
                 quiescenceMocks.getQueueState(MAIL_QUEUE_NAME).resume,
             ).not.toHaveBeenCalled()

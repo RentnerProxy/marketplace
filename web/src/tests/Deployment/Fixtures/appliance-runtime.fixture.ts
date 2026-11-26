@@ -1,4 +1,4 @@
-import { appendFile, access, writeFile } from 'node:fs/promises'
+import { appendFile, access, rename, writeFile } from 'node:fs/promises'
 
 // Diese Fixture ersetzt ausschließlich App und Worker: keine App-Imports, kein Drizzle.
 const worker = process.argv[1].includes('productionWorkerEntrypoint')
@@ -35,12 +35,27 @@ const server = worker
               return new Response('fixture-ready')
           },
       })
+const heartbeatPath = '/tmp/rentnerproxy-marketplace-worker-heartbeat.json'
+async function writeHeartbeat() {
+    // Older images probe the plain timestamp; current images read the Rust-checked JSON heartbeat.
+    await writeFile(
+        '/data/storage/fixture-worker-heartbeat',
+        String(Date.now()),
+    )
+    const temporary = `${heartbeatPath}.${crypto.randomUUID()}.tmp`
+    const body = JSON.stringify({
+        version: 1,
+        status: 'healthy',
+        updatedAt: Date.now(),
+        pid: process.pid,
+    })
+    await writeFile(temporary, body, { flag: 'wx', mode: 0o600 })
+    await rename(temporary, heartbeatPath)
+}
+if (worker) await writeHeartbeat()
 const heartbeat = worker
     ? setInterval(async function () {
-          await writeFile(
-              '/data/storage/fixture-worker-heartbeat',
-              String(Date.now()),
-          )
+          await writeHeartbeat()
           try {
               await access('/data/storage/fixture-worker-crash')
           } catch {

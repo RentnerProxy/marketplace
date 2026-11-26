@@ -1,17 +1,13 @@
 export const STORAGE_MUTATION_BARRIER_CONFIG = {
     sqlKey: 'rentnerproxy-marketplace:storage:mutation-barrier',
     directoryName: '.storage-mutation-barrier-v1',
-    admissionDirectoryName: 'admission',
     sharedDirectoryName: 'shared',
-    ownerFileName: 'owner.json',
     exclusiveFileName: 'exclusive.json',
     version: 1,
-    maxMetadataBytes: 256,
-    maxScanEntries: 1024,
     maxErrorNodes: 64,
     admissionWaitMs: 1_000,
     admissionPollMs: 25,
-    drainPollMs: 50,
+    sharedIdleHoldMs: 1_500,
     sqlEvents: {
         shared: {
             unlockFailed: 'storage.mutation_barrier.shared_unlock_failed',

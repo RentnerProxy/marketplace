@@ -1,8 +1,8 @@
-import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-job.types.ts'
+import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-worker.types.ts'
 import { publishAdminBackupsChangedService } from '@/server/Realtime/publish.service.ts'
 import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
-import type { ExecuteCreateBackupOptions } from './Types/run-create.types.ts'
+import type { ExecuteCreateBackupOptions } from './Types/backup-run.types.ts'
 import type { AuditReceipt } from '@/lib/AuditLogs/Types/audit.types.ts'
 import {
     prepareAuditContextService,
@@ -24,14 +24,14 @@ import {
     getOrCreateBackupSettings,
     serializeBackupSettings,
 } from './settings.service.ts'
-import { BACKUP_FAILURE_MESSAGE } from './error.service.ts'
+import { BACKUP_FAILURE_MESSAGE } from './backup.errors.ts'
 import {
     createRun,
     getBackupRunById,
     markRunAsQueueFailed,
 } from './run-registry.service.ts'
 import { applyBackupRetentionBestEffort } from './run-retention.service.ts'
-import type { RegisterImportedBackupInput } from './backup-service.types.ts'
+import type { RegisterImportedBackupInput } from './Types/backup-service.types.ts'
 
 export async function createManualBackupForDownloadService(userId: string) {
     const auditContext = prepareAuditContextService(userId, {

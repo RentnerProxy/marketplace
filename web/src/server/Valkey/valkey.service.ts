@@ -10,7 +10,10 @@ import { attachRuntimeLogConnectionService } from '@/server/Logging/runtime-log-
 
 declare global {
     var appValkeyConnection: AppValkeyClient | undefined
-    var appValkeyPublisher: AppValkeyClient | undefined
+}
+
+function getReconnectDelay(attempt: number) {
+    return Math.min(attempt * 200, 2_000)
 }
 
 export function createDedicatedValkeyConnection(): AppValkeyClient {
@@ -19,9 +22,7 @@ export function createDedicatedValkeyConnection(): AppValkeyClient {
         connectTimeout: 5_000,
         lazyConnect: true,
         maxRetriesPerRequest: 1,
-        retryStrategy(attempt) {
-            return Math.min(attempt * 200, 2_000)
-        },
+        retryStrategy: getReconnectDelay,
     })
     let isUnavailable = false
     connection.on('error', function () {
@@ -41,11 +42,6 @@ export function getValkeyConnection() {
     globalThis.appValkeyConnection ??= createDedicatedValkeyConnection()
     attachRuntimeLogConnectionService(globalThis.appValkeyConnection)
     return globalThis.appValkeyConnection
-}
-
-export function getValkeyPublisher() {
-    globalThis.appValkeyPublisher ??= createDedicatedValkeyConnection()
-    return globalThis.appValkeyPublisher
 }
 
 function getValkeyUrl() {
@@ -89,8 +85,6 @@ export function getBullMqProducerConnectionOptions() {
         commandTimeout: 3_000,
         connectTimeout: 5_000,
         maxRetriesPerRequest: 1,
-        retryStrategy(attempt: number) {
-            return attempt > 2 ? null : Math.min(attempt * 200, 1_000)
-        },
+        retryStrategy: getReconnectDelay,
     }
 }

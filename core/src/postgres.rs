@@ -105,19 +105,33 @@ fn executable(command: &str, directory: Option<&str>) -> PathBuf {
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("C:\\Program Files"))
             .join("PostgreSQL");
-        if let Ok(entries) = std::fs::read_dir(root) {
-            let mut candidates = entries
-                .filter_map(Result::ok)
-                .map(|entry| entry.path().join("bin").join(&name))
-                .filter(|path| path.is_file())
-                .collect::<Vec<_>>();
-            candidates.sort();
-            if let Some(path) = candidates.pop() {
-                return path;
-            }
+        if let Some(path) = find_windows_executable(&root, &name) {
+            return path;
         }
     }
     PathBuf::from(name)
+}
+
+#[cfg(any(windows, test))]
+fn find_windows_executable(root: &Path, name: &str) -> Option<PathBuf> {
+    std::fs::read_dir(root)
+        .ok()?
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let path = entry.path().join("bin").join(name);
+            if !path.is_file() {
+                return None;
+            }
+            let major = entry
+                .file_name()
+                .to_str()
+                .and_then(|version| version.split('.').next())
+                .filter(|major| major.bytes().all(|byte| byte.is_ascii_digit()))
+                .and_then(|major| major.parse::<u32>().ok());
+            Some((major, path))
+        })
+        .max()
+        .map(|(_, path)| path)
 }
 fn capture(mut stream: impl Read + Send + 'static) -> thread::JoinHandle<std::io::Result<Vec<u8>>> {
     thread::spawn(move || {

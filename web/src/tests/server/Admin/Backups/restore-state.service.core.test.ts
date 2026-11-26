@@ -83,6 +83,7 @@ describe('persistierter Restore-Status', function () {
         await writeFile(
             path.join(stateMocks.backupDirectory, '.restore-state-v1.json'),
             JSON.stringify({ version: 99, status: 'running' }),
+            { mode: 0o600 },
         )
 
         await expect(getRestoreStateService()).rejects.toThrow(

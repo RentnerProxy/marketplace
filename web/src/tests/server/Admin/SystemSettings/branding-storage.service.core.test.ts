@@ -7,7 +7,11 @@ let directory = ''
 vi.mock('@/lib/Images/publicImagePaths.ts', () => ({
     getPublicStorageRoot: () => path.join(directory, 'public'),
 }))
-vi.mock('@/server/Logging/logger.ts', () => ({ logInfo() {}, logError() {} }))
+vi.mock('@/server/Logging/logger.ts', () => ({
+    logInfo() {},
+    logWarn() {},
+    logError() {},
+}))
 const { publishSystemBrandingStorageService: publish } =
     await import('@/server/Admin/SystemSettings/branding-storage.service.ts')
 const { closeCoreWorkerPoolsService: close } =

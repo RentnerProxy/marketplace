@@ -13,8 +13,3 @@ export type PrivateStorageDirectorySnapshot = {
     path: string
     identity: PrivateStorageFileIdentity
 }
-
-export type NativeDirectorySnapshot = {
-    path: string
-    identity: { dev: string; ino: string }
-}

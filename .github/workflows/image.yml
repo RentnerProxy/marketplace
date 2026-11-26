@@ -43,6 +43,11 @@ jobs:
                   load: true
                   tags: marketplace-ci:test
                   build-args: APP_VERSION=ci-test
+            - &storage-abi
+              name: Verify the native storage ABI from the runtime config
+              env:
+                  RUNTIME_IMAGE_ID: ${{ steps.build.outputs.imageid }}
+              run: bash .github/scripts/ci/verify-storage-abi.sh
             - name: Install checksum-verified image scanner
               run: bash .github/scripts/security/install-trivy.sh
             - name: Scan the exact built appliance for vulnerabilities
@@ -99,6 +104,7 @@ jobs:
             - *native-tools
             - *buildx
             - *build
+            - *storage-abi
             - *previous-checkout
             - *previous-build
             - *lifecycle

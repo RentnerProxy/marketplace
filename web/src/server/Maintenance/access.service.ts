@@ -1,7 +1,7 @@
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { hasPermission } from '@/lib/Permissions/permissions.ts'
 import { MaintenanceModeError } from './access.errors.ts'
-import { getMaintenanceStateService } from './state.service.ts'
+import { getFreshMaintenanceStateService } from './state.service.ts'
 
 export async function requireMaintenanceAccessService(
     permissionKeys: Array<string>,
@@ -10,7 +10,7 @@ export async function requireMaintenanceAccessService(
         return
     }
 
-    const maintenance = await getMaintenanceStateService()
+    const maintenance = await getFreshMaintenanceStateService()
 
     if (maintenance.isActive) {
         throw new MaintenanceModeError()

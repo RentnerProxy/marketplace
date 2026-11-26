@@ -18,6 +18,7 @@ import {
 import {
     cleanupStorageMutationTestDirectoryService,
     createStorageMutationTestDirectoryService,
+    STORAGE_FENCE_TEST_PROTOCOL,
 } from './storageMutationFence.test.helpers.ts'
 import type { StorageMutationTestDirectory } from './storageMutationFence.test.types.ts'
 
@@ -30,7 +31,10 @@ afterEach(async function () {
     await cleanupStorageMutationTestDirectoryService(fixture)
 })
 function gatePath() {
-    return path.join(fixture.rootDirectory, config.admissionDirectoryName)
+    return path.join(
+        fixture.rootDirectory,
+        STORAGE_FENCE_TEST_PROTOCOL.admissionDirectoryName,
+    )
 }
 function wire(value: unknown): unknown {
     return JSON.parse(
@@ -146,6 +150,8 @@ describe('native fence adapter ownership and uncertainty', function () {
     })
 
     it.each([
+        ['CORE_BUSY', false, StorageMutationAdmissionBusyError],
+        ['CORE_BUSY', true, StorageMutationFenceUnavailableError],
         [
             'STORAGE_MUTATION_ADMISSION_BUSY',
             false,
@@ -180,6 +186,27 @@ describe('native fence adapter ownership and uncertainty', function () {
             ).rejects.toBeInstanceOf(expected)
         },
     )
+
+    it('falls back to isolated release only if the full pool rejected admission', async function () {
+        const lease = await admitShared({
+            rootDirectory: fixture.rootDirectory,
+        })
+        const commands = vi
+            .spyOn(core, 'runCoreCommandService')
+            .mockRejectedValueOnce(
+                new CoreCommandError('CORE_BUSY', 'Synthetic full pool.'),
+            )
+        await release(lease)
+        expect(
+            commands.mock.calls.map(([, request, options]) => [
+                request.operation,
+                options?.environment,
+            ]),
+        ).toEqual([
+            ['fenceRelease', undefined],
+            ['fenceRelease', {}],
+        ])
+    })
 
     it.each([
         'context',
@@ -248,7 +275,7 @@ describe('native fence adapter ownership and uncertainty', function () {
             tryOnly: false,
         })
         if (!lease) throw new Error('Missing test lease.')
-        /* eslint-disable no-await-in-loop -- Each malformed reply has a separate command spy restored before the next reply. */
+        /* oxlint-disable no-await-in-loop -- Each malformed reply has a separate command spy restored before the next reply. */
         for (const value of [
             null,
             {},
@@ -264,7 +291,7 @@ describe('native fence adapter ownership and uncertainty', function () {
             )
             command.mockRestore()
         }
-        /* eslint-enable no-await-in-loop */
+        /* oxlint-enable no-await-in-loop */
         const command = vi
             .spyOn(core, 'runCoreCommandService')
             .mockRejectedValue(

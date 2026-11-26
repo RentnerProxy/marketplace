@@ -3,7 +3,7 @@ import { constants } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 
 import {
-    BACKUP_ARCHIVE_ENCRYPTION_CONFIG,
+    BACKUP_ARCHIVE_OVERHEAD_BYTES,
     BACKUP_LIMITS,
 } from '@/config/backup.config.ts'
 import { acquireBackupImportAdmissionService } from './import-admission.service.ts'
@@ -11,7 +11,7 @@ import { acquireBackupImportAdmissionService } from './import-admission.service.
 import type {
     BackupImportAdmission,
     BackupImportContext,
-} from './import.types.ts'
+} from './Types/import.types.ts'
 import type {
     BackupArchiveSourceInput,
     BackupArchiveSourceOperation,
@@ -22,15 +22,12 @@ export async function withBackupArchiveSourceService<T>(
     operation: BackupArchiveSourceOperation<T>,
 ): Promise<T> {
     input.importContext?.assertActive()
-    const minimumSize =
-        BACKUP_ARCHIVE_ENCRYPTION_CONFIG.headerBytes +
-        BACKUP_ARCHIVE_ENCRYPTION_CONFIG.tagBytes
     const before = await lstat(input.filePath, { bigint: true })
     if (
         !before.isFile() ||
         before.isSymbolicLink() ||
         before.nlink !== 1n ||
-        before.size < BigInt(minimumSize) ||
+        before.size < BigInt(BACKUP_ARCHIVE_OVERHEAD_BYTES) ||
         before.size > BigInt(BACKUP_LIMITS.maxArchiveBytes)
     )
         throw new Error(
@@ -58,6 +55,7 @@ export async function withBackupArchiveSourceService<T>(
             ownedAdmission = await acquireBackupImportAdmissionService({
                 requestSignal: input.signal ?? new AbortController().signal,
                 maximumUploadBytes: Number(opened.size),
+                forRestore: input.forRestore,
             })
             context = ownedAdmission
         }

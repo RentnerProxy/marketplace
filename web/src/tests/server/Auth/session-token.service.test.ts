@@ -142,27 +142,15 @@ describe('bounded authenticated session token', function () {
         },
     )
 
-    it('rechecks the absolute deadline after asynchronous hashing', async function () {
-        vi.spyOn(crypto.subtle, 'digest').mockImplementationOnce(
-            async function () {
-                setSystemTime(NOW + sessionConfig.absoluteDurationMs)
-                return new Uint8Array(32).buffer
-            },
-        )
-        expect(
-            await getSessionTokenCandidateService(syntheticToken()),
-        ).toBeNull()
+    it('rechecks the absolute deadline before accepting the hashed token', async function () {
+        const candidate = getSessionTokenCandidateService(syntheticToken())
+        setSystemTime(NOW + sessionConfig.absoluteDurationMs)
+        expect(await candidate).toBeNull()
     })
 
-    it('rejects a clock moved before the issue time during hashing', async function () {
-        vi.spyOn(crypto.subtle, 'digest').mockImplementationOnce(
-            async function () {
-                setSystemTime(NOW - 1)
-                return new Uint8Array(32).buffer
-            },
-        )
-        expect(
-            await getSessionTokenCandidateService(syntheticToken()),
-        ).toBeNull()
+    it('rejects a clock moved before the issue time while validating a token', async function () {
+        const candidate = getSessionTokenCandidateService(syntheticToken())
+        setSystemTime(NOW - 1)
+        expect(await candidate).toBeNull()
     })
 })

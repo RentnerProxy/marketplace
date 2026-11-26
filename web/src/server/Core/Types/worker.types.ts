@@ -1,13 +1,7 @@
-import type { CoreCommandOptions } from './core.types.ts'
-
 export type CoreWorkerInput = {
     payload: string
     binaryInput?: Buffer
-    binaryOutput?: boolean
-}
-
-export type CoreWorkerOptions = CoreCommandOptions & {
-    binaryInput?: Uint8Array
+    binaryOutput: boolean
 }
 
 export type CoreWorkerTerminal =

@@ -99,7 +99,7 @@ export async function requestPasswordResetService(
 
     await publishCommittedAuditLogService(lockedUser.auditReceipt)
 
-    const origin = process.env.ORIGIN ?? 'http://localhost:3000'
+    const origin = process.env.ORIGIN?.trim() || 'http://localhost:3000'
     const resetLink = createPasswordResetLinkService(origin, token)
 
     try {

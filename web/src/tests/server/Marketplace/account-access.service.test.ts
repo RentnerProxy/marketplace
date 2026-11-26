@@ -30,6 +30,7 @@ vi.mock('@/lib/Permissions/userPermissions.ts', () => ({
 }))
 vi.mock('@/server/Maintenance/state.service.ts', () => ({
     getMaintenanceStateService: access.maintenance,
+    getFreshMaintenanceStateService: access.maintenance,
 }))
 
 function publicSession(overrides: Partial<SessionUser> = {}): SessionUser {

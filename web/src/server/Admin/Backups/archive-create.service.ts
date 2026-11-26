@@ -19,13 +19,10 @@ import {
     assertBackgroundStoragePathsService,
     collectBackgroundStorageFilesService,
 } from './archive-background-storage.service.ts'
-import {
-    runArchiveCoreService,
-    readArchiveProgressService,
-} from './archive-core.service.ts'
+import { runArchiveCoreService } from './archive-core.service.ts'
 import { validateBackupArchive } from './archive-validation.service.ts'
 import type { BackupManifest } from './Types/archive-validation.types.ts'
-import type { CreateBackupArchiveInput } from './backup-service.types.ts'
+import type { CreateBackupArchiveInput } from './Types/backup-service.types.ts'
 import type { BackupCreationProgress } from '@/lib/Backups/Types/backup.types.ts'
 import { getOrCreateSystemSettingsService } from '@/server/Admin/SystemSettings/settings.service.ts'
 import { createBackupFileNameService } from './backup-name.service.ts'
@@ -129,14 +126,9 @@ export async function createBackupArchive(input: CreateBackupArchiveInput) {
                 storageRoot,
                 privateEntries,
             },
-            undefined,
-            async (progress) => {
-                const bytes = readArchiveProgressService(progress)
-                await report(
-                    'archiving',
-                    bytes.processedBytes,
-                    bytes.totalBytes,
-                )
+            {
+                onProgress: (processedBytes, totalBytes) =>
+                    report('archiving', processedBytes, totalBytes),
             },
         )
         await report('verifying')

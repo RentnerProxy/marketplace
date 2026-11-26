@@ -1,8 +1,14 @@
 import type { ReservedSQL } from 'bun'
+import { watch } from 'node:fs'
+import { lstat } from 'node:fs/promises'
+import path from 'node:path'
 import { setTimeout as wait } from 'node:timers/promises'
 import { db } from '@/db'
 import { STORAGE_MUTATION_BARRIER_CONFIG as config } from '@/config/storage-mutation-barrier.config.ts'
-import { getBackupFilePath } from '@/server/Admin/Backups/backup-directory.service.ts'
+import {
+    getBackupFilePath,
+    getBackupStoragePaths,
+} from '@/server/Admin/Backups/backup-directory.service.ts'
 import { isRestoreStateActiveService } from '@/server/Admin/Backups/restore-state.service.ts'
 import { logError } from '@/server/Logging/logger.ts'
 import { hasUncertainStorageMutationFailureService } from './storage-mutation-failure.service.ts'
@@ -37,6 +43,13 @@ import type { StorageMutationScopeLease } from './Types/storage-mutation-scope.t
 
 let sharedLease: SharedStorageMutationLease | null = null
 let stateTransition = Promise.resolve()
+let idleLeaseRelease: Promise<void> | undefined
+let exclusiveAdmissions = 0
+let sharedFenceRoot:
+    | (ReturnType<typeof getBackupStoragePaths> & {
+          path: Promise<string>
+      })
+    | undefined
 
 export class StorageMutationBarrierUnavailableError extends Error {
     constructor() {
@@ -56,7 +69,8 @@ export class RestoreInProgressError extends Error {
 
 function unavailable(error: unknown): never {
     const failure = new StorageMutationBarrierUnavailableError()
-    markStorageMutationBarrierUnhealthyService(error)
+    if (isStorageMutationBarrierHealthyService())
+        markStorageMutationBarrierUnhealthyService(error)
     throw failure
 }
 
@@ -157,24 +171,83 @@ function runStateTransition<TResult>(
     return result
 }
 
+function getSharedFenceRoot() {
+    const roots = getBackupStoragePaths()
+    if (
+        sharedFenceRoot?.backupDirectory === roots.backupDirectory &&
+        sharedFenceRoot.storageDirectory === roots.storageDirectory
+    ) {
+        return sharedFenceRoot.path
+    }
+    const validation = {
+        ...roots,
+        path: getBackupFilePath(config.directoryName),
+    }
+    sharedFenceRoot = validation
+    void validation.path.catch(() => {
+        if (sharedFenceRoot === validation) sharedFenceRoot = undefined
+    })
+    return validation.path
+}
+
+function retainSharedLease(rootDirectory: string) {
+    if (
+        sharedLease?.activeOperations === 0 &&
+        sharedLease.fence.context.rootDirectory !== rootDirectory
+    )
+        return null
+    if (sharedLease) {
+        clearTimeout(sharedLease.idleTimer)
+        sharedLease.idleTimer = undefined
+        sharedLease.activeOperations += 1
+    }
+    return sharedLease
+}
+
+async function revalidateSharedLease(
+    lease: SharedStorageMutationLease,
+    rootDirectory: string,
+) {
+    try {
+        await admitSharedStorageMutationFenceService({
+            rootDirectory,
+            currentLease: lease.fence,
+        })
+        assertHealthy()
+        return lease
+    } catch (error) {
+        if (error instanceof StorageMutationFenceUnavailableError) {
+            lease.scopeLease.uncertain = true
+            if (isStorageMutationBarrierHealthyService())
+                markStorageMutationBarrierUnhealthyService(error)
+        }
+        await releaseSharedBarrier(lease, error)
+        throw error
+    }
+}
+
 async function acquireSharedBarrier(
     deadline = performance.now() + config.admissionWaitMs,
 ): Promise<SharedStorageMutationLease> {
     try {
         assertHealthy()
-        if (await isRestoreStateActiveService())
+        if (await isRestoreStateActiveService()) {
+            await requestSharedLeaseRelease()
             throw new RestoreInProgressError()
-        const rootDirectory = await getBackupFilePath(config.directoryName)
-        return await runStateTransition(async function () {
+        }
+        const rootDirectory = await getSharedFenceRoot()
+        assertHealthy()
+        const current = retainSharedLease(rootDirectory)
+        if (current) return await revalidateSharedLease(current, rootDirectory)
+
+        const admission = await runStateTransition(async function () {
             assertHealthy()
+            const existing = retainSharedLease(rootDirectory)
+            if (existing) return { lease: existing, reused: true }
+            if (sharedLease) await dropSharedLease(sharedLease)
             const fence = await admitSharedStorageMutationFenceService({
                 rootDirectory,
-                currentLease: sharedLease?.fence,
             })
-            if (sharedLease) {
-                sharedLease.activeOperations += 1
-                return sharedLease
-            }
             let connection: ReservedSQL | null = null
             let state: StorageMutationSqlLockState = 'unconfirmed'
             try {
@@ -196,6 +269,7 @@ async function acquireSharedBarrier(
                     throw new RestoreInProgressError()
                 }
                 state = 'locked'
+                assertHealthy()
                 sharedLease = {
                     connection,
                     fence,
@@ -206,7 +280,7 @@ async function acquireSharedBarrier(
                     },
                     activeOperations: 1,
                 }
-                return sharedLease
+                return { lease: sharedLease, reused: false }
             } catch (error) {
                 if (connection)
                     await releaseSqlBarrier(connection, 'shared', state, error)
@@ -214,6 +288,9 @@ async function acquireSharedBarrier(
                 throw error
             }
         })
+        return admission.reused
+            ? await revalidateSharedLease(admission.lease, rootDirectory)
+            : admission.lease
     } catch (error) {
         if (
             error instanceof StorageMutationAdmissionBusyError &&
@@ -226,29 +303,155 @@ async function acquireSharedBarrier(
     }
 }
 
+async function dropSharedLease(
+    lease: SharedStorageMutationLease,
+    primaryError?: unknown,
+) {
+    sharedLease = null
+    lease.scopeLease.active = false
+    clearTimeout(lease.idleTimer)
+    lease.exclusiveWatcher?.close()
+    try {
+        await releaseSqlBarrier(
+            lease.connection,
+            'shared',
+            'locked',
+            primaryError,
+        )
+        if (lease.scopeLease.uncertain)
+            unavailable(
+                new Error('Storage operation cleanup was not confirmed.'),
+            )
+        await releaseStorageMutationFenceService(lease.fence)
+        lease.drainCompletion?.resolve()
+    } catch (error) {
+        lease.drainCompletion?.reject(error)
+        throw error
+    }
+}
+
+function releaseIdleSharedLease(
+    lease: SharedStorageMutationLease,
+    timer?: ReturnType<typeof setTimeout>,
+) {
+    return runStateTransition(async function () {
+        if (sharedLease !== lease || lease.activeOperations !== 0) return
+        if (timer && lease.idleTimer !== timer) return
+        const release = dropSharedLease(lease)
+        idleLeaseRelease = release
+        try {
+            await release
+        } finally {
+            idleLeaseRelease = undefined
+        }
+    }).catch(throwMappedFenceError)
+}
+
+async function requestSharedLeaseRelease(lease = sharedLease): Promise<void> {
+    if (!lease) {
+        // A pending shared admission can coexist with exclusive fence publication.
+        await idleLeaseRelease
+        return
+    }
+    lease.releaseRequested = true
+    if (lease.activeOperations === 0) await releaseIdleSharedLease(lease)
+}
+
+/** Call after stopping admission of HTTP requests and background jobs. */
+export async function drainSharedStorageMutationBarrierService(): Promise<void> {
+    try {
+        const completion = await runStateTransition(async function () {
+            const lease = sharedLease
+            if (!lease) return undefined
+            if (lease.activeOperations === 0) {
+                await dropSharedLease(lease)
+                return undefined
+            }
+            lease.releaseRequested = true
+            lease.drainCompletion ??= Promise.withResolvers<void>()
+            return lease.drainCompletion
+        })
+        await completion?.promise
+    } catch (error) {
+        throwMappedFenceError(error)
+    }
+    assertHealthy()
+}
+
+function reportDeferredReleaseFailure(error: unknown) {
+    logError('storage.mutation_barrier.idle_release_failed', error)
+    if (isStorageMutationBarrierHealthyService())
+        markStorageMutationBarrierUnhealthyService(error)
+}
+
+function holdSharedLease(lease: SharedStorageMutationLease) {
+    // Keep the process alive until its durable fence can be released.
+    const timer = setTimeout(function () {
+        void releaseIdleSharedLease(lease, timer).catch(
+            reportDeferredReleaseFailure,
+        )
+    }, config.sharedIdleHoldMs)
+    lease.idleTimer = timer
+    if (lease.exclusiveWatcher) return
+
+    function requestRelease() {
+        void requestSharedLeaseRelease(lease).catch(
+            reportDeferredReleaseFailure,
+        )
+    }
+    const root = lease.fence.context.rootDirectory
+    try {
+        lease.exclusiveWatcher = watch(
+            root,
+            { persistent: false },
+            (_, name) => {
+                if (name === config.exclusiveFileName || name === null)
+                    requestRelease()
+            },
+        ).on('error', requestRelease)
+    } catch {
+        requestRelease()
+        return
+    }
+    // Catch a restore that published its fence before the watcher started.
+    void lstat(path.join(root, config.exclusiveFileName)).then(
+        requestRelease,
+        (error: unknown) => {
+            if (!(
+                error instanceof Error &&
+                'code' in error &&
+                error.code === 'ENOENT'
+            ))
+                requestRelease()
+        },
+    )
+}
+
 async function releaseSharedBarrier(
     lease: SharedStorageMutationLease,
     primaryError?: unknown,
 ): Promise<void> {
     try {
+        if (primaryError !== undefined) lease.releaseRequested = true
+        if (sharedLease === lease && lease.activeOperations > 1) {
+            lease.activeOperations -= 1
+            return
+        }
         await runStateTransition(async function () {
             if (sharedLease !== lease || lease.activeOperations <= 0)
                 unavailable(new Error('Storage lease accounting failed.'))
             lease.activeOperations -= 1
             if (lease.activeOperations > 0) return
-            sharedLease = null
-            lease.scopeLease.active = false
-            await releaseSqlBarrier(
-                lease.connection,
-                'shared',
-                'locked',
-                primaryError,
-            )
-            if (lease.scopeLease.uncertain)
-                unavailable(
-                    new Error('Storage operation cleanup was not confirmed.'),
-                )
-            await releaseStorageMutationFenceService(lease.fence)
+            if (
+                lease.releaseRequested ||
+                lease.scopeLease.uncertain ||
+                exclusiveAdmissions > 0 ||
+                !isStorageMutationBarrierHealthyService()
+            ) {
+                await dropSharedLease(lease, primaryError)
+            } else {
+                holdSharedLease(lease)
+            }
         })
     } catch (error) {
         throwMappedFenceError(error)
@@ -264,6 +467,9 @@ export async function withSharedStorageMutationBarrier<TResult>(
     const lease = await acquireSharedBarrier()
     let primaryError: unknown
     try {
+        assertHealthy()
+        if (lease.scopeLease.uncertain)
+            throw new StorageMutationBarrierUnavailableError()
         return await runInStorageMutationScopeService(
             lease.scopeLease,
             operation,
@@ -273,6 +479,20 @@ export async function withSharedStorageMutationBarrier<TResult>(
         throw error
     } finally {
         await releaseSharedBarrier(lease, primaryError)
+    }
+}
+
+async function admitExclusiveBarrier(tryOnly: boolean) {
+    exclusiveAdmissions += 1
+    try {
+        await requestSharedLeaseRelease()
+        const rootDirectory = await getBackupFilePath(config.directoryName)
+        return await acquireExclusiveStorageMutationFenceService({
+            rootDirectory,
+            tryOnly,
+        })
+    } finally {
+        exclusiveAdmissions -= 1
     }
 }
 
@@ -297,11 +517,7 @@ async function runExclusiveBarrier<TResult>(
     let outcome: StorageMutationOperationOutcome<
         StorageMutationTryResult<TResult>
     >
-    const rootDirectory = await getBackupFilePath(config.directoryName)
-    const fence = await acquireExclusiveStorageMutationFenceService({
-        rootDirectory,
-        tryOnly,
-    })
+    const fence = await admitExclusiveBarrier(tryOnly)
     if (!fence) return { acquired: false }
 
     try {
@@ -320,6 +536,7 @@ async function runExclusiveBarrier<TResult>(
                 outcome = { ok: true, value: { acquired: false } }
             } else {
                 state = 'locked'
+                assertHealthy()
                 callbackStarted = true
                 outcome = {
                     ok: true,
@@ -339,6 +556,7 @@ async function runExclusiveBarrier<TResult>(
                 )
             `
             state = 'locked'
+            assertHealthy()
             callbackStarted = true
             outcome = {
                 ok: true,

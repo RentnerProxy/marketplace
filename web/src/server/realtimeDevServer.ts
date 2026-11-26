@@ -3,6 +3,7 @@ import {
     REALTIME_WS_PATH,
 } from '@/lib/Realtime/realtimeProtocol.ts'
 import {
+    DEV_REALTIME_PUBLISH_SECRET,
     getRealtimeHostnameService,
     getRealtimePortService,
 } from '@/server/Realtime/environment.service.ts'
@@ -14,15 +15,6 @@ const environment = parseDevelopmentSetupEnvironmentService(process.env)
 process.env.DATABASE_URL = environment.DATABASE_URL
 process.env.VALKEY_URL = environment.VALKEY_URL
 const setupAbort = new AbortController()
-
-const { handleRealtimePublishBridge, setRealtimeServer } =
-    await import('@/websockets/Server/realtimeServer.ts')
-const { handleRealtimeUpgrade, realtimeWebSocketHandler } =
-    await import('@/websockets/Server/realtimeWebSocket.ts')
-const { startRealtimeValkeySubscriber } =
-    await import('@/websockets/Server/realtimeValkey.ts')
-
-const DEV_REALTIME_PUBLISH_SECRET = 'xwf'
 
 const hostname = getRealtimeHostnameService()
 const port = getRealtimePortService()
@@ -42,7 +34,17 @@ if (
 }
 
 const publishSecret =
-    process.env.REALTIME_PUBLISH_SECRET ?? DEV_REALTIME_PUBLISH_SECRET
+    process.env.REALTIME_PUBLISH_SECRET?.trim() || DEV_REALTIME_PUBLISH_SECRET
+
+const [
+    { handleRealtimePublishBridge, setRealtimeServer },
+    { handleRealtimeUpgrade, realtimeWebSocketHandler },
+    { startRealtimeValkeySubscriber },
+] = await Promise.all([
+    import('@/websockets/Server/realtimeServer.ts'),
+    import('@/websockets/Server/realtimeWebSocket.ts'),
+    import('@/websockets/Server/realtimeValkey.ts'),
+])
 
 const server = Bun.serve({
     hostname,

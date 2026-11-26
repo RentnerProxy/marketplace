@@ -1,5 +1,4 @@
 export type CoreBinary = 'archive' | 'storage'
-export type CoreBrandingBinaryLengths = readonly [number, number, number]
 
 export type CoreCommandOptions<TResult = unknown> = {
     signal?: AbortSignal

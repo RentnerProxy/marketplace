@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop -- Recheck processors before each bounded cleanup attempt. */
+/* oxlint-disable no-await-in-loop -- Recheck processors before each bounded cleanup attempt. */
 import { WORKER_SHUTDOWN } from '@/config/health.config.ts'
 import { logInfo, logWarn } from '@/server/Logging/logger.ts'
 import { waitForWorkerCleanupService } from './worker-cleanup.service.ts'

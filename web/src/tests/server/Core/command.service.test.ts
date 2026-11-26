@@ -73,8 +73,8 @@ describe('Rust-Prozessgrenze', () => {
 
     it.each([
         ['storage', 'prepareDirectories'],
-        ['storage', 'assertDirectories'],
-        ['storage', 'readBackground'],
+        ['storage', 'restoreStateGet'],
+        ['storage', 'statBackground'],
         ['archive', 'admissionReserve'],
     ] as const)(
         'hält erfolgreiche Routineaufrufe ohne Konsolenausgabe (%s/%s)',
@@ -98,7 +98,7 @@ describe('Rust-Prozessgrenze', () => {
             processFixture.finish(1)
         })
         await expect(
-            run('storage', { operation: 'assertDirectories' }),
+            run('storage', { operation: 'restoreStateGet' }),
         ).rejects.toMatchObject({ code: 'EACCES' })
         expect(started).not.toHaveBeenCalled()
         expect(failed).toHaveBeenCalledTimes(1)

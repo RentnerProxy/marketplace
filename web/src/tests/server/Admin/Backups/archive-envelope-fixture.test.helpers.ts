@@ -1,5 +1,5 @@
 // Independent Node envelope implementation for small compatibility fixtures only.
-/* eslint-disable no-await-in-loop -- Fixture encryption consumes ordered stream chunks before authenticating the tag. */
+/* oxlint-disable no-await-in-loop -- Fixture encryption consumes ordered stream chunks before authenticating the tag. */
 import {
     createCipheriv,
     createDecipheriv,

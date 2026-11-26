@@ -1,23 +1,14 @@
 import { z } from 'zod'
 import { CONTAINER_LOGS, RUNTIME_LOGS } from '@/config/logging.config.ts'
+import { parseLoopbackOriginService } from '@/server/Core/loopback-client.service.ts'
 import { runtimeLogEntrySchema } from './runtime-log.validation.ts'
 
 export const containerLogReaderOriginSchema = z
     .string()
     .trim()
     .refine(function (value) {
-        try {
-            const url = new URL(value)
-            return (
-                ['http:', 'https:'].includes(url.protocol) &&
-                url.origin === value &&
-                !url.username &&
-                !url.password
-            )
-        } catch {
-            return false
-        }
-    }, 'CONTAINER_LOG_READER_URL muss eine http(s)-Origin ohne Pfad oder Zugangsdaten sein.')
+        return parseLoopbackOriginService(value)?.origin === value
+    }, 'CONTAINER_LOG_READER_URL muss eine lokale HTTP(S)-Origin ohne Pfad oder Zugangsdaten sein.')
 
 export const containerLogSnapshotSchema = z
     .object({

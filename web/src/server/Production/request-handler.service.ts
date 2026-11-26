@@ -3,11 +3,12 @@ import {
     serveProductionStorageAssetService,
 } from './assets.service.ts'
 import {
-    BACKUP_IMPORT_PATH,
+    BACKUP_REQUEST_IDLE_TIMEOUT_SECONDS,
     getRequestProxyMetadataService,
     isLocalProductionHealthcheckService,
     isLocalRealtimeHealthProbeService,
     proxyToInternalAppService,
+    usesBackupStreamingPolicyService,
 } from './proxy.service.ts'
 import { addProductionSecurityHeadersService } from './security-headers.service.ts'
 import type { ProductionRequestHandlerConfig } from './production.types.ts'
@@ -94,8 +95,11 @@ export function createProductionRequestHandlerService(
             )
         }
 
-        if (url.pathname === BACKUP_IMPORT_PATH) {
-            upgradeServer.timeout?.(request, 255)
+        if (usesBackupStreamingPolicyService(request.method, url.pathname)) {
+            upgradeServer.timeout?.(
+                request,
+                BACKUP_REQUEST_IDLE_TIMEOUT_SECONDS,
+            )
         }
         if (url.pathname === REALTIME_WS_PATH) {
             return handleRealtimeUpgrade(request, upgradeServer)

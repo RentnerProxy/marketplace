@@ -3,13 +3,16 @@ import { WORKER_SHUTDOWN } from '@/config/health.config.ts'
 import { closeAppConnectionsService } from '@/server/Runtime/app-connections.service.ts'
 
 const logWarn = vi.fn()
+const closeDatabase = vi.fn<() => Promise<void>>()
+const loadDatabase = vi.fn(() => ({ closeDatabaseConnection: closeDatabase }))
 vi.mock('@/server/Logging/logger.ts', () => ({ logWarn }))
+vi.mock('@/db/index.ts', loadDatabase)
 
 const names = [
     'appMailQueueV2',
     'appBackupQueue',
     'appValkeyConnection',
-    'appValkeyPublisher',
+    'appDatabaseConnection',
 ] as const
 const originalGlobals = names.map((name) =>
     Object.getOwnPropertyDescriptor(globalThis, name),
@@ -49,6 +52,7 @@ async function flushPromises() {
 beforeEach(function () {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    closeDatabase.mockResolvedValue(undefined)
     for (const name of names) install(name, undefined)
 })
 
@@ -65,6 +69,8 @@ describe('Anwendungsverbindungen beim Shutdown', function () {
     it('erzeugt bei unbenutzten Verbindungen keine Ressourcen', async function () {
         await closeAppConnectionsService()
         for (const name of names) expect(globalThis[name]).toBeUndefined()
+        expect(loadDatabase).not.toHaveBeenCalled()
+        expect(closeDatabase).not.toHaveBeenCalled()
         expect(logWarn).not.toHaveBeenCalled()
         expect(vi.getTimerCount()).toBe(0)
     })
@@ -75,11 +81,10 @@ describe('Anwendungsverbindungen beim Shutdown', function () {
         mail.close.mockReturnValueOnce(queueClosed.promise)
         const backup = createQueue()
         const connection = createClient()
-        const publisher = createClient()
         install('appMailQueueV2', mail)
         install('appBackupQueue', backup)
         install('appValkeyConnection', connection)
-        install('appValkeyPublisher', publisher)
+        install('appDatabaseConnection', { close: closeDatabase })
 
         const stopping = closeAppConnectionsService()
         const repeated = closeAppConnectionsService()
@@ -87,14 +92,38 @@ describe('Anwendungsverbindungen beim Shutdown', function () {
         expect(mail.close).toHaveBeenCalledTimes(1)
         expect(backup.close).toHaveBeenCalledTimes(1)
         expect(connection.quit).not.toHaveBeenCalled()
+        expect(closeDatabase).not.toHaveBeenCalled()
         queueClosed.resolve()
         await Promise.all([stopping, repeated])
         await closeAppConnectionsService()
         expect(connection.quit).toHaveBeenCalledTimes(1)
-        expect(publisher.quit).toHaveBeenCalledTimes(1)
+        expect(closeDatabase).toHaveBeenCalledTimes(1)
+        expect(loadDatabase).not.toHaveBeenCalled()
         expect(connection.disconnect).not.toHaveBeenCalled()
         expect(Object.is(globalThis.appMailQueueV2, mail)).toBe(true)
         expect(Object.is(globalThis.appValkeyConnection, connection)).toBe(true)
+        expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('bounds a stalled database close and still disconnects Valkey', async function () {
+        const database = Promise.withResolvers<void>()
+        const connection = createClient()
+        install('appValkeyConnection', connection)
+        closeDatabase.mockReturnValueOnce(database.promise)
+        install('appDatabaseConnection', { close: closeDatabase })
+        const outcome = closeAppConnectionsService().catch(
+            (error: unknown) => error,
+        )
+        await flushPromises()
+        expect(closeDatabase).toHaveBeenCalledTimes(1)
+        expect(connection.quit).toHaveBeenCalledTimes(1)
+        vi.advanceTimersByTime(WORKER_SHUTDOWN.cleanupTimeoutMs)
+        expect(await outcome).toBeInstanceOf(AggregateError)
+        expect(logWarn).toHaveBeenCalledWith(
+            'runtime.connections.database_close_timeout',
+        )
+        database.reject(new Error('Late synthetic database error'))
+        await flushPromises()
         expect(vi.getTimerCount()).toBe(0)
     })
 
@@ -164,11 +193,13 @@ describe('Anwendungsverbindungen beim Shutdown', function () {
         connection.disconnect.mockImplementationOnce(function () {
             throw new Error('synthetic private error')
         })
-        const publisher = createClient()
+        closeDatabase.mockRejectedValueOnce(
+            new Error('synthetic private database error'),
+        )
+        install('appDatabaseConnection', { close: closeDatabase })
         install('appMailQueueV2', mail)
         install('appBackupQueue', backup)
         install('appValkeyConnection', connection)
-        install('appValkeyPublisher', publisher)
         const outcome = closeAppConnectionsService().catch(
             (error: unknown) => error,
         )
@@ -182,8 +213,14 @@ describe('Anwendungsverbindungen beim Shutdown', function () {
         expect(error).toBeInstanceOf(AggregateError)
         if (!(error instanceof AggregateError))
             throw new Error('AggregateError erwartet')
-        expect(error.errors).toHaveLength(2)
-        expect(publisher.quit).toHaveBeenCalledTimes(1)
+        expect(error.errors).toHaveLength(3)
+        expect(closeDatabase).toHaveBeenCalledTimes(1)
+        expect(logWarn).toHaveBeenCalledWith(
+            'runtime.connections.database_close_failed',
+        )
+        expect(JSON.stringify(logWarn.mock.calls)).not.toContain(
+            'synthetic private database error',
+        )
         expect(connection.disconnect).toHaveBeenCalledTimes(1)
         expect(vi.getTimerCount()).toBe(0)
         close.resolve()

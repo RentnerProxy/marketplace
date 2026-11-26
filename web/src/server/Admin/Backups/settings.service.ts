@@ -11,7 +11,7 @@ import {
     publishCommittedAuditLogService,
     writeAuditLogInTransactionService,
 } from '@/lib/AuditLogs/auditLogs.ts'
-import { getStoredBackupErrorMessageService } from './error.service.ts'
+import { getStoredBackupErrorMessageService } from './backup.errors.ts'
 import { desc, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { backupRuns, backupSettings } from '@/db/schema.ts'

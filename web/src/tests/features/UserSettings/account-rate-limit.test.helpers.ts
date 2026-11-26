@@ -1,4 +1,5 @@
 import { vi } from 'bun:test'
+import { mockValkeyDefineCommand } from '@/tests/shared/valkey-script.test.helpers.ts'
 import {
     enforceRateLimit,
     RateLimitError,
@@ -33,6 +34,7 @@ export function createAccountRateLimitTestHarness(onEnforce: () => void) {
         return [counter.count, counter.expiresAt - state.now]
     }
     const evalScript = vi.fn(evaluate)
+    const connection = { defineCommand: mockValkeyDefineCommand(evalScript) }
     const getClientIp = vi.fn(() => state.clientIp)
     async function enforce(options: AccountRateLimitTestOptions) {
         onEnforce()
@@ -43,7 +45,7 @@ export function createAccountRateLimitTestHarness(onEnforce: () => void) {
     function install() {
         vi.mock('@/lib/Request/clientRequestMeta.ts', () => ({ getClientIp }))
         vi.mock('@/server/Valkey/valkey.service.ts', () => ({
-            getValkeyConnection: () => ({ eval: evalScript }),
+            getValkeyConnection: () => connection,
         }))
         vi.mock('@/server/RateLimit/rateLimit.service.ts', () => ({
             enforceRateLimit: enforceSpy,

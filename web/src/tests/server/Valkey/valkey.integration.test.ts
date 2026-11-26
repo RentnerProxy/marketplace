@@ -7,7 +7,6 @@ import {
     getBullMqConnectionOptions,
     getBullMqProducerConnectionOptions,
     getValkeyConnection,
-    getValkeyPublisher,
 } from '@/server/Valkey/valkey.service.ts'
 import { parseValkeyUrl } from '@/server/Valkey/valkeyUrl.ts'
 import {
@@ -29,7 +28,6 @@ const keyPrefix = `rentnerproxy-marketplace:test:valkey:${runId}`
 const queueName = `rentnerproxy-marketplace-valkey-test-${runId}`
 const previousValkeyUrl = process.env.VALKEY_URL
 const previousConnection = globalThis.appValkeyConnection
-const previousPublisher = globalThis.appValkeyPublisher
 const ownedKeys: Array<string> = []
 let control: Valkey | undefined
 let subscriber: ReturnType<typeof createDedicatedValkeyConnection> | undefined
@@ -73,7 +71,6 @@ describe.skipIf(!testUrl)(
 
             process.env.VALKEY_URL = testUrl
             delete globalThis.appValkeyConnection
-            delete globalThis.appValkeyPublisher
         })
 
         afterAll(async function () {
@@ -88,11 +85,8 @@ describe.skipIf(!testUrl)(
                 subscriber?.disconnect()
                 control?.disconnect()
                 const connection = globalThis.appValkeyConnection
-                const publisher = globalThis.appValkeyPublisher
                 if (connection !== previousConnection) connection?.disconnect()
-                if (publisher !== previousPublisher) publisher?.disconnect()
                 globalThis.appValkeyConnection = previousConnection
-                globalThis.appValkeyPublisher = previousPublisher
                 if (previousValkeyUrl === undefined) {
                     delete process.env.VALKEY_URL
                 } else {
@@ -259,7 +253,7 @@ describe.skipIf(!testUrl)(
             expect(await connection.get(key)).toBeNull()
         })
 
-        it('delivers Pub/Sub messages through dedicated and publisher clients', async function () {
+        it('publishes through the shared command connection and receives through a dedicated subscriber', async function () {
             const channel = `${keyPrefix}:realtime`
             const message = JSON.stringify({ type: 'synthetic', runId })
             subscriber = createDedicatedValkeyConnection()
@@ -273,10 +267,10 @@ describe.skipIf(!testUrl)(
             })
 
             try {
-                expect(
-                    await getValkeyPublisher().publish(channel, message),
-                ).toBe(1)
+                const connection = getValkeyConnection()
+                expect(await connection.publish(channel, message)).toBe(1)
                 expect(await received.promise).toBe(message)
+                expect(await connection.ping()).toBe('PONG')
             } finally {
                 clearTimeout(timeout)
             }

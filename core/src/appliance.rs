@@ -5,6 +5,8 @@ mod logs;
 mod process;
 mod storage;
 mod telemetry;
+#[cfg(unix)]
+mod worker_health;
 
 use environment::Environment;
 use lifecycle::{Driver, Timing};

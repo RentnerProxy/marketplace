@@ -1,16 +1,6 @@
 use super::*;
-use base64::{Engine, engine::general_purpose::STANDARD};
 use cap_fs_ext::DirExt;
 use std::{io::Write, path::Path};
-
-fn payload(request: &Value, field: &str) -> CoreResult<Vec<u8>> {
-    let encoded = string(request, field)?;
-    if encoded.len() > MAX_IMAGE.div_ceil(3) as usize * 4 {
-        return Err(invalid());
-    }
-    let data = STANDARD.decode(encoded).map_err(|_| invalid())?;
-    Ok(data)
-}
 
 fn validate_payload(data: &[u8], favicon: bool) -> CoreResult<()> {
     if data.is_empty() || data.len() as u64 > MAX_IMAGE {
@@ -34,18 +24,6 @@ fn validate_payload(data: &[u8], favicon: bool) -> CoreResult<()> {
         return Err(invalid());
     }
     Ok(())
-}
-
-pub(super) fn publish(request: &Value, context: &OperationContext) -> CoreResult<Value> {
-    if request.get("binaryLengths").is_some() {
-        return Err(invalid());
-    }
-    let payloads = [
-        payload(request, "largeBase64")?,
-        payload(request, "smallBase64")?,
-        payload(request, "faviconBase64")?,
-    ];
-    publish_payloads(request, [&payloads[0], &payloads[1], &payloads[2]], context)
 }
 
 pub(super) fn publish_bytes(
@@ -82,7 +60,12 @@ fn publish_payloads(
         return Err(invalid());
     }
     let root = open_absolute(&root_path, true)?;
-    let images = descend(&root, Path::new("images/system"), true, false)?;
+    let images = descend(
+        &root,
+        Path::new("images/system"),
+        true,
+        DirectoryPermissions::Unrestricted,
+    )?;
     let images_path = root_path.join("images/system");
     let stage_name = format!(".branding-{}", uuid::Uuid::new_v4());
     create_directory(&root, Path::new(&stage_name))?;
@@ -124,7 +107,6 @@ fn publish_payloads(
         .into_iter()
         .enumerate()
         {
-            context.check()?;
             assert_location(&root_path, &root)?;
             assert_location(&images_path, &images)?;
             if !same(&stage_identity, &root.symlink_metadata(&stage_name)?) {
@@ -136,6 +118,7 @@ fn publish_payloads(
             ) {
                 return Err(invalid());
             }
+            context.check_now()?;
             super::super::recovery::rename_retry(
                 &stage,
                 Path::new(&index.to_string()),

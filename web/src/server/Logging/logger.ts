@@ -1,55 +1,19 @@
-import { LOG_LIMITS } from '@/config/logging.config.ts'
-import { getSafeErrorDetailsService } from './error-details.ts'
-import { sanitizeLogContextService } from './log-context.ts'
 import { writeLogLineService } from './log-transport.ts'
-import { recordRuntimeLogService } from './runtime-log-history.service.ts'
-import type {
-    LogContext,
-    LogLevel,
-    SafeErrorDetails,
-} from './Types/logging.types.ts'
+import { recordRuntimeLogLineService } from './runtime-log-history.service.ts'
+import type { LogContext, LogLevel } from './Types/logging.types.ts'
 
 function writeLog(
     level: LogLevel,
     event: string,
     context: LogContext,
-    details?: SafeErrorDetails,
+    cause?: { error: unknown },
 ) {
-    const safeEvent =
-        typeof event === 'string' &&
-        event.length <= LOG_LIMITS.eventLength &&
-        /^[a-z][a-z0-9_-]*(?:\.[a-z0-9_-]+){1,8}$/.test(event)
-            ? event
-            : 'logging.invalid_event'
-    const safeContext = sanitizeLogContextService({
-        ...context,
-        ...(/^(?:realtime|websocket)\./.test(safeEvent)
-            ? { service: 'websocket' }
-            : {}),
-    })
-    const timestamp = new Date().toISOString()
-    const entry = JSON.stringify({
-        ...safeContext,
-        ...details,
-        timestamp,
-        level,
-        event: safeEvent,
-    })
-    writeLogLineService(
-        level === 'error' ? process.stderr : process.stdout,
-        entry + '\n',
-    )
-    recordRuntimeLogService({
-        timestamp,
-        level,
-        event: safeEvent,
-        context: {
-            ...safeContext,
-            errorName: details?.errorName,
-            errorCode: details?.errorCode,
-            errorId: details?.errorId,
-        },
-    })
+    const line = recordRuntimeLogLineService(level, event, context, cause)
+    if (line)
+        writeLogLineService(
+            level === 'error' ? process.stderr : process.stdout,
+            line,
+        )
 }
 
 export function logInfo(event: string, context: LogContext = {}) {
@@ -65,7 +29,7 @@ export function logWarnError(
     error: unknown,
     context: LogContext = {},
 ) {
-    writeLog('warn', event, context, getSafeErrorDetailsService(error))
+    writeLog('warn', event, context, { error })
 }
 
 export function logError(
@@ -73,5 +37,5 @@ export function logError(
     error: unknown,
     context: LogContext = {},
 ) {
-    writeLog('error', event, context, getSafeErrorDetailsService(error))
+    writeLog('error', event, context, { error })
 }

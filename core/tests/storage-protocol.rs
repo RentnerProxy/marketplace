@@ -31,20 +31,27 @@ fn fixture() -> tempfile::TempDir {
 }
 
 #[test]
-fn storage_binary_roundtrips_bounded_private_bytes_over_ndjson() {
+fn storage_binary_reads_background_metadata_without_payload() {
     let fixture = fixture();
     let root = fixture.path().join("private");
-    let path = root.join("images/background.webp");
-    let (success,messages)=invoke(&serde_json::to_vec(&json!({"operation":"writeFile","rootDirectory":root,"filePath":path,"dataBase64":"AQID"})).unwrap());
+    let directory = root.join("images");
+    let path = directory.join("background.webp");
+    let (success, _) = invoke(&serde_json::to_vec(&json!({"operation":"prepareDirectories","rootDirectory":root,"directoryPath":directory})).unwrap());
     assert!(success);
-    assert_eq!(messages.last().unwrap()["type"], "result");
+    std::fs::write(&path, [1, 2, 3]).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+    }
     let (success, messages) = invoke(
-        &serde_json::to_vec(&json!({"operation":"readFile","rootDirectory":root,"filePath":path}))
+        &serde_json::to_vec(&json!({"operation":"statBackground","rootDirectory":root,"directoryPath":directory,"filePath":path}))
             .unwrap(),
     );
     assert!(success);
-    assert_eq!(messages.last().unwrap()["result"]["dataBase64"], "AQID");
-    assert_eq!(std::fs::read(path).unwrap(), [1, 2, 3]);
+    let result = &messages.last().unwrap()["result"];
+    assert_eq!(result["size"], 3);
+    assert_eq!(result["version"].as_str().unwrap().len(), 64);
 }
 
 #[test]

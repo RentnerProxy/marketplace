@@ -14,7 +14,6 @@ fn bounded_copy_rejects_entry_and_byte_overflow_before_creation() {
     let target = open_absolute(&fixture.path().join("target"), false).unwrap();
     let context = OperationContext::default();
     let mut full_entries = MAX_ENTRIES;
-    let mut full_bytes = MAX_BYTES;
     assert!(
         copy(
             &source,
@@ -22,8 +21,10 @@ fn bounded_copy_rejects_entry_and_byte_overflow_before_creation() {
             &target,
             Path::new("new"),
             &context,
-            &mut full_entries,
-            &mut 0
+            &mut CopyState {
+                entries: MAX_ENTRIES,
+                ..CopyState::default()
+            }
         )
         .is_err()
     );
@@ -34,8 +35,10 @@ fn bounded_copy_rejects_entry_and_byte_overflow_before_creation() {
             &target,
             Path::new("new"),
             &context,
-            &mut 0,
-            &mut full_bytes
+            &mut CopyState {
+                bytes: MAX_BYTES,
+                ..CopyState::default()
+            }
         )
         .is_err()
     );
@@ -211,6 +214,7 @@ fn cross_device_move_copies_syncs_then_removes_source_and_never_overwrites() {
         &target,
         Path::new("copied"),
         &context,
+        &mut CopyState::default(),
     )
     .unwrap();
     assert!(!source.exists("nested"));
@@ -225,6 +229,7 @@ fn cross_device_move_copies_syncs_then_removes_source_and_never_overwrites() {
         &target,
         Path::new("copied"),
         &context,
+        &mut CopyState::default(),
     )
     .unwrap_err();
     assert_eq!(error.code, "EEXIST");

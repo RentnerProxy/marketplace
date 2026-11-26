@@ -1,5 +1,34 @@
 import { createHmac, hkdfSync } from 'node:crypto'
-import type { RestoreJournalRecord } from '@/server/Admin/Backups/Types/restore-journal.types.ts'
+import { z } from 'zod'
+
+const canonicalUuid = z.uuid().refine((value) => value === value.toLowerCase())
+const checksum = z
+    .string()
+    .length(64)
+    .regex(/^[a-f0-9]{64}$/)
+
+export const restoreJournalRecordSchema = z.strictObject({
+    restoreRunId: canonicalUuid,
+    actorUserId: canonicalUuid,
+    sourceBackupId: canonicalUuid,
+    sourceChecksumSha256: checksum,
+    includesStorage: z.boolean(),
+    version: z.literal(1),
+    purpose: z.literal('restore-journal-v1'),
+    algorithm: z.literal('hmac-sha256'),
+    sequence: z.number().int().min(1).max(8),
+    event: z.enum([
+        'started',
+        'rewind-ready',
+        'applied',
+        'completed',
+        'failed',
+        'recovery-required',
+    ]),
+    occurredAt: z.iso.datetime({ precision: 3 }),
+    previousHmacSha256: checksum,
+    hmacSha256: checksum,
+})
 
 export const SYNTHETIC_JOURNAL_KEY = Buffer.alloc(32, 19).toString('base64')
 export const JOURNAL_BINDING = {
@@ -20,7 +49,9 @@ export function deriveSyntheticJournalKey() {
         ),
     )
 }
-export function independentlySignRecord(record: RestoreJournalRecord) {
+export function independentlySignRecord(
+    record: z.infer<typeof restoreJournalRecordSchema>,
+) {
     return createHmac('sha256', deriveSyntheticJournalKey())
         .update(
             JSON.stringify([

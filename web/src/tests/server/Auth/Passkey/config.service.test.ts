@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test'
+import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import { getPasskeyConfig } from '@/server/Auth/Passkey/config.service.ts'
 
 const previousEnvironment = {
@@ -31,14 +32,35 @@ describe('Passkey-Runtime-Konfiguration', function () {
         })
     })
 
-    it('verwendet explizite RP-Werte unverändert', function () {
-        process.env.PASSKEY_ORIGIN = 'https://login.example.test'
-        process.env.PASSKEY_RP_ID = 'example.test'
-        process.env.PASSKEY_RP_NAME = 'Example App'
+    it('trims explicit passkey settings', function () {
+        process.env.PASSKEY_ORIGIN = ' https://login.example.test '
+        process.env.PASSKEY_RP_ID = ' example.test '
+        process.env.PASSKEY_RP_NAME = ' Example App '
 
-        expect(getPasskeyConfig()).toMatchObject({
+        expect(getPasskeyConfig()).toEqual({
             rpName: 'Example App',
             rpID: 'example.test',
+            origin: 'https://login.example.test',
+        })
+    })
+
+    it('uses defaults for blank passkey settings', function () {
+        process.env.PASSKEY_ORIGIN = ''
+        process.env.PASSKEY_RP_ID = ' '
+        process.env.PASSKEY_RP_NAME = ''
+        process.env.ORIGIN = ' https://app.example.test/ '
+
+        expect(getPasskeyConfig()).toEqual({
+            rpName: PROJECT_CONFIG.defaultName,
+            rpID: 'app.example.test',
+            origin: 'https://app.example.test',
+        })
+
+        process.env.ORIGIN = ' '
+        expect(getPasskeyConfig()).toEqual({
+            rpName: PROJECT_CONFIG.defaultName,
+            rpID: 'localhost',
+            origin: 'http://localhost:3000',
         })
     })
 })

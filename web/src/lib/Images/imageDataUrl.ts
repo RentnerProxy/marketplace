@@ -11,16 +11,21 @@ export async function getImageBufferFromDataUrl(
     imageDataUrl: string,
     errorMessage = 'Das Bild konnte nicht gelesen werden.',
 ) {
-    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s.exec(
-        imageDataUrl,
-    )
-
-    if (!match) {
+    const separator = ';base64,'
+    const separatorIndex = imageDataUrl.indexOf(separator)
+    const payloadStart = separatorIndex + separator.length
+    if (
+        !imageDataUrl.startsWith('data:') ||
+        separatorIndex < 0 ||
+        payloadStart === imageDataUrl.length
+    ) {
         throw new Error(errorMessage)
     }
 
-    const mimeType = match[1]
-    const base64 = match[2]
+    const mimeType = imageDataUrl.slice('data:'.length, separatorIndex)
+    if (!/^image\/[a-zA-Z0-9.+-]+$/.test(mimeType)) {
+        throw new Error(errorMessage)
+    }
 
     if (
         mimeType !== 'image/jpeg' &&
@@ -32,7 +37,9 @@ export async function getImageBufferFromDataUrl(
         )
     }
 
-    const estimatedBytes = Math.floor((base64.length * 3) / 4)
+    const estimatedBytes = Math.floor(
+        ((imageDataUrl.length - payloadStart) * 3) / 4,
+    )
 
     if (estimatedBytes > IMAGE_UPLOAD_CONFIG.maxInputBytes) {
         throw new Error(
@@ -40,7 +47,7 @@ export async function getImageBufferFromDataUrl(
         )
     }
 
-    const buffer = Buffer.from(base64, 'base64')
+    const buffer = Buffer.from(imageDataUrl.slice(payloadStart), 'base64')
 
     if (
         buffer.byteLength === 0 ||

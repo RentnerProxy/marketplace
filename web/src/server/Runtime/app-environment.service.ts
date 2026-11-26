@@ -18,7 +18,7 @@ import {
 } from './backup-environment.service.ts'
 import {
     createUrlSchema,
-    encryptionKeySchema,
+    normalizeOptionalEnvironmentValue,
     optionalEnvironmentValue,
 } from './environment-schema.service.ts'
 
@@ -74,8 +74,7 @@ const appEnvironmentSchema = backupEnvironmentSchema
         ...socialAuthEnvironmentFields,
         ORIGIN: originSchema,
         CONTAINER_LOG_READER_URL: z.preprocess(
-            (value) =>
-                typeof value === 'string' && !value.trim() ? undefined : value,
+            normalizeOptionalEnvironmentValue,
             containerLogReaderOriginSchema.optional(),
         ),
         VITE_REALTIME_WS_URL: z
@@ -95,7 +94,6 @@ const appEnvironmentSchema = backupEnvironmentSchema
                 }
             })
             .optional(),
-        AUTH_ENCRYPTION_KEY: encryptionKeySchema,
         TRUST_PROXY_HEADERS: z.enum(['true', 'false']).default('false'),
         TRUSTED_PROXY_RANGES: optionalEnvironmentValue,
         PASSKEY_ORIGIN: optionalEnvironmentValue,

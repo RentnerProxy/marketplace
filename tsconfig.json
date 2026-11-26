@@ -1,15 +1,24 @@
 {
     "include": ["**/*.ts", "**/*.tsx"],
-    "exclude": ["node_modules", "core/target"],
+    "exclude": [
+        "node_modules",
+        "core/target",
+        ".output",
+        ".tools",
+        ".tanstack",
+        ".nitro",
+        "dist",
+        "web/drizzle"
+    ],
 
     "compilerOptions": {
-        "target": "ES2022",
+        "target": "ES2024",
         "jsx": "react-jsx",
         "module": "ESNext",
         "paths": {
             "@/*": ["./web/src/*"]
         },
-        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "lib": ["ES2024", "DOM", "DOM.Iterable"],
         "types": ["bun", "vite/client"],
 
         "moduleResolution": "bundler",

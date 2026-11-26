@@ -26,21 +26,85 @@ fn errors_preserve_public_codes_without_leaking_os_paths_or_json_values() {
 fn cancellation_is_shared_but_cleanup_ignores_an_existing_marker_and_abort() {
     let directory = tempfile::tempdir().unwrap();
     let marker = directory.path().join("cancel");
-    let context = OperationContext {
-        cancellation_path: Some(marker.clone()),
-        ..OperationContext::cleanup()
-    };
+    let context = OperationContext::new(Some(marker.clone()), None);
     context.check().unwrap();
-    std::fs::write(marker, b"").unwrap();
-    assert_eq!(context.check().unwrap_err().code, "CORE_CANCELLED");
+    let poll = context.cancellation_marker.as_deref().unwrap();
+    assert!(poll.next_poll_ms.load(Ordering::Relaxed) >= 25);
+    poll.next_poll_ms.store(u64::MAX, Ordering::Relaxed);
+    std::fs::write(&marker, b"").unwrap();
     let shared = context.clone();
-    shared.cancel();
-    assert!(context.cancelled.load(Ordering::Acquire));
+    shared.check().unwrap();
+    poll.next_poll_ms.store(0, Ordering::Relaxed);
+    assert_eq!(shared.check().unwrap_err().code, "CORE_CANCELLED");
+    std::fs::remove_file(marker).unwrap();
+    assert_eq!(context.check().unwrap_err().code, "CORE_CANCELLED");
     OperationContext::cleanup().check().unwrap();
     assert_eq!(
         context.progress(serde_json::json!({})).unwrap_err().code,
         "CORE_CANCELLED"
     );
+}
+
+#[test]
+fn atomic_cancellation_interrupts_a_clone_during_the_marker_poll_interval() {
+    let directory = tempfile::tempdir().unwrap();
+    let context = OperationContext::new(Some(directory.path().join("missing")), None);
+    let poll = context.cancellation_marker.as_deref().unwrap();
+    poll.next_poll_ms.store(u64::MAX, Ordering::Relaxed);
+    context.check().unwrap();
+    context.clone().cancel();
+    assert_eq!(context.check().unwrap_err().code, "CORE_CANCELLED");
+}
+
+#[test]
+fn immediate_cancellation_check_bypasses_and_refreshes_the_poll_deadline() {
+    let directory = tempfile::tempdir().unwrap();
+    let marker = directory.path().join("cancel");
+    let context = OperationContext::new(Some(marker.clone()), None);
+    let poll = context.cancellation_marker.as_deref().unwrap();
+    poll.next_poll_ms.store(u64::MAX, Ordering::Relaxed);
+
+    context.check_now().unwrap();
+    assert!(
+        (CancellationMarker::POLL_INTERVAL_MS..u64::MAX)
+            .contains(&poll.next_poll_ms.load(Ordering::Relaxed))
+    );
+    poll.next_poll_ms.store(u64::MAX, Ordering::Relaxed);
+    std::fs::write(&marker, b"").unwrap();
+    context.check().unwrap();
+    assert_eq!(context.check_now().unwrap_err().code, "CORE_CANCELLED");
+
+    std::fs::remove_file(marker).unwrap();
+    assert_eq!(context.clone().check().unwrap_err().code, "CORE_CANCELLED");
+}
+
+#[test]
+fn pending_cancellation_marker_prevents_replacing_a_private_file() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path().join("private");
+    let file = root.join("payload");
+    let request = serde_json::json!({
+        "operation": "writeFile",
+        "rootDirectory": root,
+        "filePath": file,
+    });
+    crate::storage::execute_worker(&request, Some(b"original"), &OperationContext::cleanup())
+        .unwrap();
+
+    let marker = directory.path().join("cancel");
+    std::fs::write(&marker, b"").unwrap();
+    let context = OperationContext::new(Some(marker), None);
+    let poll = context.cancellation_marker.as_deref().unwrap();
+    poll.next_poll_ms.store(u64::MAX, Ordering::Relaxed);
+
+    let result = crate::storage::execute_worker(&request, Some(b"replacement"), &context);
+    let Err(error) = result else {
+        panic!("A pending cancellation marker must block publication.");
+    };
+
+    assert_eq!(error.code, "CORE_CANCELLED");
+    assert_eq!(std::fs::read(file).unwrap(), b"original");
+    assert_eq!(std::fs::read_dir(root).unwrap().count(), 1);
 }
 
 #[test]

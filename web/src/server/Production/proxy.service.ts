@@ -1,4 +1,4 @@
-import { BACKUP_LIMITS } from '@/config/backup.config.ts'
+import { PRODUCTION_HTTP_LIMITS } from '@/config/production-server.config.ts'
 import { REALTIME_WS_PATH } from '@/lib/Realtime/realtimeProtocol.ts'
 import {
     getTrustedForwardedProtocol,
@@ -14,12 +14,29 @@ import type {
 } from './production.types.ts'
 
 const defaultProxyBodyLimitBytes = 16 * 1024 * 1024
-export const BACKUP_IMPORT_PATH = '/api/admin/backups/import'
-export const MAX_PRODUCTION_REQUEST_BODY_BYTES = BACKUP_LIMITS.maxArchiveBytes
+const BACKUP_IMPORT_PATH = '/api/admin/backups/import'
+const storedBackupPath =
+    /^\/api\/admin\/backups\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i
+export const BACKUP_REQUEST_IDLE_TIMEOUT_SECONDS = 255
 
-function getProxyBodyLimit(pathname: string) {
-    return pathname === BACKUP_IMPORT_PATH
-        ? MAX_PRODUCTION_REQUEST_BODY_BYTES
+function isBackupImportRequest(method: string, pathname: string) {
+    return method === 'POST' && pathname === BACKUP_IMPORT_PATH
+}
+
+export function usesBackupStreamingPolicyService(
+    method: string,
+    pathname: string,
+) {
+    return (
+        isBackupImportRequest(method, pathname) ||
+        ((method === 'GET' || method === 'HEAD') &&
+            storedBackupPath.test(pathname))
+    )
+}
+
+function getProxyBodyLimit(method: string, pathname: string) {
+    return isBackupImportRequest(method, pathname)
+        ? PRODUCTION_HTTP_LIMITS.maxRequestBodySize
         : defaultProxyBodyLimitBytes
 }
 
@@ -68,7 +85,7 @@ export async function proxyToInternalAppService(
     headers.set('x-forwarded-proto', proxyMetadata.publicProtocol)
     headers.set('x-app-client-ip', proxyMetadata.clientIp)
 
-    const bodyLimit = getProxyBodyLimit(incomingUrl.pathname)
+    const bodyLimit = getProxyBodyLimit(request.method, incomingUrl.pathname)
     const declaredContentLength = request.headers.get('content-length')
     const declaredBodySize = declaredContentLength
         ? Number(declaredContentLength)
@@ -110,11 +127,10 @@ export async function proxyToInternalAppService(
                       },
                   }),
               )
-    const isStoredBackupDownload =
-        ['GET', 'HEAD'].includes(request.method) &&
-        /^\/api\/admin\/backups\/[0-9a-f-]{36}$/i.test(incomingUrl.pathname)
-    const usesStreamingPolicy =
-        isStoredBackupDownload || incomingUrl.pathname === BACKUP_IMPORT_PATH
+    const usesStreamingPolicy = usesBackupStreamingPolicyService(
+        request.method,
+        incomingUrl.pathname,
+    )
     const deadlineSignal = usesStreamingPolicy
         ? null
         : AbortSignal.timeout(2 * 60 * 1_000)

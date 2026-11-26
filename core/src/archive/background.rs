@@ -215,7 +215,12 @@ pub(crate) fn execute(request: &Value, context: &OperationContext) -> CoreResult
                 let parent = to
                     .parent()
                     .ok_or_else(|| invalid("Der Background-Zielpfad ist ungültig."))?;
-                target_root.create_dir_all(parent)?;
+                crate::storage::files::descend(
+                    &target_root,
+                    parent,
+                    true,
+                    crate::storage::files::DirectoryPermissions::Private,
+                )?;
                 source_root.rename(from, &target_root, to)?;
                 sync_directory(
                     &root

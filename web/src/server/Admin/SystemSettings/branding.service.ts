@@ -1,5 +1,4 @@
 import { eq } from 'drizzle-orm'
-import sharp from 'sharp'
 import { db } from '@/db'
 import { systemSettings } from '@/db/schema.ts'
 import { IMAGE_UPLOAD_CONFIG } from '@/config/image-upload.config.ts'
@@ -16,6 +15,7 @@ import {
     getSafeImageCrop,
 } from '@/lib/Images/imageDataUrl.ts'
 import { getSystemLogoPublicImagePaths } from '@/lib/Images/publicImagePaths.ts'
+import { prepareImageVariantSource } from '@/lib/Images/prepareImageVariantSource.ts'
 import { publishSystemSettingsUpdatedService } from '@/server/Realtime/publish.service.ts'
 import { withSharedStorageMutationBarrier } from '@/server/Storage/storage-mutation-barrier.service.ts'
 import type {
@@ -105,7 +105,6 @@ export async function updateSystemLogoService(
         data.imageDataUrl,
         'Das Logo konnte nicht gelesen werden.',
     )
-    const imageBuffer = image.buffer
     const paths = getSystemLogoPublicImagePaths()
     const logoUpdatedAt = new Date()
     const crop = getSafeImageCrop(data.crop, image)
@@ -126,46 +125,21 @@ export async function updateSystemLogoService(
         })
         await publishCommittedAuditLogService(intentReceipt)
 
-        const largeLogo = await sharp(imageBuffer, {
-            limitInputPixels: IMAGE_UPLOAD_CONFIG.maxInputPixels,
-        })
-            .extract(crop)
-            .resize(
-                IMAGE_UPLOAD_CONFIG.systemLogo.width,
-                IMAGE_UPLOAD_CONFIG.systemLogo.height,
-                {
-                    fit: 'cover',
-                    background: { r: 0, g: 0, b: 0, alpha: 0 },
-                },
-            )
-            .webp({ quality: IMAGE_UPLOAD_CONFIG.systemLogo.quality })
-            .toBuffer()
-
-        const smallLogo = await sharp(imageBuffer, {
-            limitInputPixels: IMAGE_UPLOAD_CONFIG.maxInputPixels,
-        })
-            .extract(crop)
-            .resize(
-                IMAGE_UPLOAD_CONFIG.systemLogo.thumbnailWidth,
-                IMAGE_UPLOAD_CONFIG.systemLogo.thumbnailHeight,
-                {
-                    fit: 'cover',
-                    background: { r: 0, g: 0, b: 0, alpha: 0 },
-                },
-            )
-            .webp({ quality: IMAGE_UPLOAD_CONFIG.systemLogo.thumbnailQuality })
-            .toBuffer()
-
-        const faviconPngBuffer = await sharp(imageBuffer, {
-            limitInputPixels: IMAGE_UPLOAD_CONFIG.maxInputPixels,
-        })
-            .extract(crop)
-            .resize(32, 32, {
-                fit: 'cover',
-                background: { r: 0, g: 0, b: 0, alpha: 0 },
-            })
-            .png()
-            .toBuffer()
+        const config = IMAGE_UPLOAD_CONFIG.systemLogo
+        const createVariant = await prepareImageVariantSource(
+            image.buffer,
+            crop,
+            config.width,
+            config.height,
+        )
+        const [largeLogo, smallLogo, faviconPngBuffer] = await Promise.all([
+            createVariant().webp({ quality: config.quality }).toBuffer(),
+            createVariant()
+                .resize(config.thumbnailWidth, config.thumbnailHeight)
+                .webp({ quality: config.thumbnailQuality })
+                .toBuffer(),
+            createVariant().resize(32, 32).png().toBuffer(),
+        ])
 
         const favicon = createIcoFromPngBuffer(faviconPngBuffer)
         for (const buffer of [largeLogo, smallLogo, favicon]) {
@@ -186,6 +160,7 @@ export async function updateSystemLogoService(
                 )
                 const previousSettings =
                     await getOrCreateSystemSettingsForUpdateService(tx)
+                // The actor and settings locks cover replacement of the fixed paths.
                 await publishSystemBrandingStorageService(
                     largeLogo,
                     smallLogo,

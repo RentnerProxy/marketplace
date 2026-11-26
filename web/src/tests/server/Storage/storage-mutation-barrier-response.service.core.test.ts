@@ -22,6 +22,7 @@ import type { StorageMutationTestDirectory } from './storageMutationFence.test.t
 import { STORAGE_MUTATION_BARRIER_CONFIG as config } from '@/config/storage-mutation-barrier.config.ts'
 
 const {
+    drainSharedStorageMutationBarrierService: drainShared,
     StorageMutationBarrierUnavailableError,
     withSharedStorageMutationBarrier: shared,
     withExclusiveStorageMutationBarrier: exclusive,
@@ -76,8 +77,16 @@ beforeEach(async function () {
 })
 
 afterEach(async function () {
-    expect(sqlModel.waiters).toHaveLength(0)
-    await cleanupStorageMutationTestDirectoryService(fixture)
+    try {
+        if (sqlModel.healthy) await drainShared()
+        else
+            await expect(drainShared()).rejects.toBeInstanceOf(
+                StorageMutationBarrierUnavailableError,
+            )
+        expect(sqlModel.waiters).toHaveLength(0)
+    } finally {
+        await cleanupStorageMutationTestDirectoryService(fixture)
+    }
 })
 
 describe('response lifetime storage fencing', function () {
@@ -207,6 +216,7 @@ describe('response lifetime storage fencing', function () {
             headers.getSetCookie(),
         )
         expect(await response.response.text()).toBe('body')
+        await drainShared()
         expect(
             await readdir(path.join(fixture.rootDirectory, 'shared')),
         ).toEqual([])
@@ -233,6 +243,7 @@ describe('response lifetime storage fencing', function () {
         )
         expect(second.metadata).toBe(2)
         await second.response.text()
+        await drainShared()
         expect(
             await readdir(path.join(fixture.rootDirectory, 'shared')),
         ).toEqual([])
@@ -370,7 +381,10 @@ describe('response lifetime storage fencing', function () {
                 }),
             ),
         }))
-        await expect(response.response.text()).rejects.toBe(failure)
+        const responseError = await response.response
+            .text()
+            .catch((error: unknown) => error)
+        expect(responseError).toBe(failure)
         expect(markUnhealthy).not.toHaveBeenCalled()
         expect(
             await readdir(path.join(fixture.rootDirectory, 'shared')),
@@ -431,6 +445,7 @@ describe('response lifetime storage fencing', function () {
         await waitFor(() => pulls > 0)
         expect(pulls).toBeLessThanOrEqual(3)
         await response.response.body?.cancel()
+        await drainShared()
         expect(
             await readdir(path.join(fixture.rootDirectory, 'shared')),
         ).toEqual([])

@@ -16,7 +16,7 @@ import { createBackupImportTestContext } from './import-context.test.helpers.ts'
 vi.mock('@/config/backup.config.ts', function () {
     return {
         BACKUP_UPLOAD_CONTENT_TYPE: 'application/octet-stream',
-        BACKUP_FILE_PERMISSIONS: { directory: 0o700, file: 0o600 },
+        BACKUP_FILE_PERMISSIONS: { file: 0o600 },
         BACKUP_LIMITS: { maxArchiveBytes: 64 },
     }
 })
@@ -91,7 +91,7 @@ describe('Backup-Uploadgrenzen', function () {
             const fixture = contextFor(request)
             fixture.beforeWrite.mockImplementation(async function () {
                 expect(
-                    (await stat(path.join(testRoot, 'upload.enc'))).size,
+                    (await stat(path.join(testRoot, 'upload.partial'))).size,
                 ).toBe(0)
             })
             const upload = await receiveBackupUpload(request, fixture.context)
@@ -121,6 +121,34 @@ describe('Backup-Uploadgrenzen', function () {
         expect(await readdir(testRoot)).toEqual(['other-owned-artifact'])
         expect(await readFile(retained, 'utf8')).toBe('retain')
         expect(fixture.markCleanupIncomplete).not.toHaveBeenCalled()
+    })
+
+    it('writes consecutive byte views in order without including their backing bytes', async function () {
+        const bytes = new Uint8Array([0, 1, 2, 3, 4, 5, 0])
+        const request = new Request(
+            'http://localhost/api/admin/backups/import',
+            {
+                method: 'POST',
+                headers: { 'content-type': BACKUP_UPLOAD_CONTENT_TYPE },
+                body: new ReadableStream<Uint8Array>({
+                    start(controller) {
+                        controller.enqueue(bytes.subarray(1, 3))
+                        controller.enqueue(bytes.subarray(3, 6))
+                        controller.close()
+                    },
+                }),
+            },
+        )
+        const fixture = contextFor(request, 5)
+        const upload = await receiveBackupUpload(request, fixture.context)
+        try {
+            expect(await readFile(upload.filePath)).toEqual(
+                Buffer.from([1, 2, 3, 4, 5]),
+            )
+            expect(fixture.beforeWrite.mock.calls).toEqual([[2], [3]])
+        } finally {
+            await upload.dispose()
+        }
     })
 
     it('akzeptiert einen Body exakt am Archivlimit', async function () {
@@ -202,6 +230,40 @@ describe('Backup-Uploadgrenzen', function () {
         await expectRejectedAndCleaned(request)
     })
 
+    it('cancels a blocked Web stream read before removing its partial upload', async function () {
+        const waitingForBody = Promise.withResolvers<void>()
+        const finishPull = Promise.withResolvers<void>()
+        const cancel = vi.fn()
+        const request = new Request(
+            'http://localhost/api/admin/backups/import',
+            {
+                method: 'POST',
+                headers: { 'content-type': BACKUP_UPLOAD_CONTENT_TYPE },
+                body: new ReadableStream<Uint8Array>(
+                    {
+                        pull() {
+                            waitingForBody.resolve()
+                            return finishPull.promise
+                        },
+                        cancel,
+                    },
+                    { highWaterMark: 0 },
+                ),
+            },
+        )
+        const fixture = contextFor(request)
+        const uploading = receiveBackupUpload(request, fixture.context)
+        try {
+            await waitingForBody.promise
+            fixture.controller.abort(new Error('Upload aborted'))
+            await expect(uploading).rejects.toThrow('Upload aborted')
+            expect(cancel).toHaveBeenCalledTimes(1)
+            expect(await readdir(testRoot)).toEqual([])
+        } finally {
+            finishPull.resolve()
+        }
+    })
+
     it('wartet bei Abbruch auf einen laufenden Budgetcallback vor Dateicleanup', async function () {
         const request = createRequest('valid-backup')
         const fixture = contextFor(request)
@@ -245,7 +307,7 @@ describe('Backup-Uploadgrenzen', function () {
     })
 
     it('lässt eine fremde vorhandene Uploaddatei bei EEXIST vollständig bestehen', async function () {
-        const foreign = path.join(testRoot, 'upload.enc')
+        const foreign = path.join(testRoot, 'upload.partial')
         await writeFile(foreign, 'foreign')
         const request = createRequest('valid-backup')
         const fixture = contextFor(request)
@@ -278,7 +340,9 @@ describe('Backup-Uploadgrenzen', function () {
                 ).rejects.toBeInstanceOf(AggregateError)
                 expect(fixture.markCleanupIncomplete).toHaveBeenCalledTimes(1)
                 expect(
-                    (await stat(path.join(testRoot, 'upload.enc'))).isFile(),
+                    (
+                        await stat(path.join(testRoot, 'upload.partial'))
+                    ).isFile(),
                 ).toBe(true)
                 expect((await stat(testRoot)).isDirectory()).toBe(true)
             } finally {

@@ -142,7 +142,7 @@ fn prepare_directory(path: &str, owner: (u32, u32), mode: u32, create: bool) -> 
 }
 
 #[cfg(unix)]
-fn private_file(parent: &str, name: &str, create: bool) -> std::io::Result<File> {
+pub(super) fn private_file(parent: &str, name: &str, create: bool) -> std::io::Result<File> {
     use std::{
         ffi::CString,
         os::fd::{AsRawFd, FromRawFd},

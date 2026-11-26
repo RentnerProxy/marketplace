@@ -1,5 +1,9 @@
 import type { FileHandle } from 'node:fs/promises'
-import type { BackupImportContext } from './import.types.ts'
+import type {
+    ArchiveCoreOptions,
+    AuthenticateBackupArchiveInput,
+    BackupArchiveEncryptionMetadata,
+} from './Types/archive-core.types.ts'
 import { runCoreCommandService } from '@/server/Core/command.service.ts'
 import { getRequiredServerEnvironment } from '@/server/Runtime/environment.service.ts'
 import { parseArchiveCoreResultService } from './archive-core.schema.ts'
@@ -17,8 +21,7 @@ export async function getArchiveSourceIdentityService(source: FileHandle) {
 
 export async function runArchiveCoreService<T>(
     request: Record<string, unknown>,
-    context?: BackupImportContext,
-    onProgress?: (progress: unknown) => void | Promise<void>,
+    { context, signal, onProgress }: ArchiveCoreOptions = {},
 ): Promise<T> {
     context?.assertActive()
     try {
@@ -27,13 +30,19 @@ export async function runArchiveCoreService<T>(
             {
                 ...request,
                 key: getRequiredServerEnvironment('AUTH_ENCRYPTION_KEY'),
-                ...(context
+                ...(context && request.operation !== 'validate'
                     ? { capacityDirectory: context.temporaryDirectory }
                     : {}),
             },
             {
-                signal: context?.signal,
-                onProgress,
+                signal: context?.signal ?? signal,
+                onProgress: onProgress
+                    ? (progress) => {
+                          const { processedBytes, totalBytes } =
+                              readArchiveProgress(progress)
+                          return onProgress(processedBytes, totalBytes)
+                      }
+                    : undefined,
                 validateResult: (reply) =>
                     parseArchiveCoreResultService<T>(request.operation, reply),
             },
@@ -54,7 +63,21 @@ export async function runArchiveCoreService<T>(
     }
 }
 
-export function readArchiveProgressService(progress: unknown) {
+export async function authenticateBackupArchiveService(
+    input: AuthenticateBackupArchiveInput,
+): Promise<BackupArchiveEncryptionMetadata> {
+    return runArchiveCoreService(
+        {
+            operation: 'authenticate',
+            sourcePath: input.sourcePath,
+            expectedSourceIdentity: input.expectedSourceIdentity,
+            expectedChecksumSha256: input.expectedChecksumSha256,
+        },
+        { signal: input.signal },
+    )
+}
+
+function readArchiveProgress(progress: unknown) {
     if (
         typeof progress !== 'object' ||
         progress === null ||

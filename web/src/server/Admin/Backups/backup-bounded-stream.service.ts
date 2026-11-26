@@ -1,41 +1,62 @@
-import { Transform } from 'node:stream'
-import { callbackify } from 'node:util'
-import type { BackupImportContext } from './import.types.ts'
-import type { BackupBoundedStreamOptions } from './Types/backup-bounded-stream.types.ts'
+import type { FileHandle } from 'node:fs/promises'
+import type {
+    BackupBoundedStreamOptions,
+    BackupImportContext,
+} from './Types/import.types.ts'
 
-export function createBoundedBackupStreamService(
+export async function writeBoundedBackupStreamService(
+    body: ReadableStream<Uint8Array>,
+    file: FileHandle,
     context: BackupImportContext,
     options: BackupBoundedStreamOptions,
-) {
-    let observedBytes = 0
-    let pendingWrite: Promise<Buffer> | undefined
+): Promise<number> {
+    const reader = body.getReader()
+    let writtenBytes = 0
 
-    async function processChunk(chunk: unknown) {
-        context.assertActive()
-        if (!(chunk instanceof Uint8Array)) {
-            throw new Error(options.invalidChunkMessage)
-        }
-        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-        observedBytes += buffer.length
-        if (observedBytes > options.getMaximumBytes()) {
-            throw new Error(options.sizeLimitMessage)
-        }
-        await context.beforeWrite(buffer.length)
-        context.assertActive()
-        return buffer
+    function abortRead() {
+        void reader.cancel(context.signal.reason).catch(() => undefined)
     }
 
-    return {
-        getObservedBytes: () => observedBytes,
-        stream: new Transform({
-            transform(chunk, _encoding, callback) {
-                const task = processChunk(chunk)
-                pendingWrite = task
-                callbackify(() => task)(callback)
-            },
-        }),
-        settle: async function () {
-            await pendingWrite?.catch(() => undefined)
-        },
+    context.signal.addEventListener('abort', abortRead, { once: true })
+    try {
+        // Keep each read, reservation and write ordered for backpressure and cleanup.
+        /* oxlint-disable no-await-in-loop */
+        while (true) {
+            context.assertActive()
+            const { done, value: chunk } = await reader.read()
+            context.assertActive()
+            if (done) return writtenBytes
+            if (!(chunk instanceof Uint8Array)) {
+                throw new Error(options.invalidChunkMessage)
+            }
+            if (chunk.byteLength > options.maximumBytes - writtenBytes) {
+                throw new Error(options.sizeLimitMessage)
+            }
+            await context.beforeWrite(chunk.byteLength)
+            let offset = 0
+            while (offset < chunk.byteLength) {
+                context.assertActive()
+                const { bytesWritten } = await file.write(
+                    chunk,
+                    offset,
+                    chunk.byteLength - offset,
+                    writtenBytes,
+                )
+                if (bytesWritten === 0) {
+                    throw new Error(
+                        'Der Backup-Upload konnte nicht geschrieben werden.',
+                    )
+                }
+                offset += bytesWritten
+                writtenBytes += bytesWritten
+            }
+        }
+        /* oxlint-enable no-await-in-loop */
+    } catch (error) {
+        void reader.cancel(error).catch(() => undefined)
+        throw error
+    } finally {
+        context.signal.removeEventListener('abort', abortRead)
+        reader.releaseLock()
     }
 }

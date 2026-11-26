@@ -1,5 +1,14 @@
-import type { StorageMutationFenceLease } from '@/server/Storage/Types/storage-mutation-fence.types.ts'
-import { vi } from 'bun:test'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import type {
+    StorageMutationFenceLease,
+    StorageMutationSharedFenceInput,
+} from '@/server/Storage/Types/storage-mutation-fence.types.ts'
+import { afterAll, vi } from 'bun:test'
+
+export const fenceRoot = await mkdtemp(path.join(tmpdir(), 'storage-mutation-'))
+afterAll(() => rm(fenceRoot, { recursive: true, force: true }))
 
 export const barrierMocks = (function () {
     const events: string[] = []
@@ -111,12 +120,12 @@ export function resetStorageMutationBarrierTestHarness() {
 
 const sharedFence: StorageMutationFenceLease = {
     context: {
-        rootDirectory: '/synthetic-storage-fence',
-        sharedDirectory: '/synthetic-storage-fence/shared',
+        rootDirectory: fenceRoot,
+        sharedDirectory: path.join(fenceRoot, 'shared'),
         directories: [],
     },
     file: {
-        path: '/synthetic-storage-fence/shared/owned.json',
+        path: path.join(fenceRoot, 'shared', 'owned.json'),
         identity: { dev: 1n, ino: 1n },
         metadata: {
             version: 1,
@@ -133,14 +142,26 @@ const exclusiveFence: StorageMutationFenceLease = {
     },
 }
 
+export const fenceMocks = {
+    prepareRoot: vi.fn(async () => fenceRoot),
+    backupPaths: vi.fn(() => ({
+        backupDirectory: '/synthetic-backups',
+        storageDirectory: '/synthetic-storage',
+    })),
+    acquireExclusive: vi.fn(async () => exclusiveFence),
+    admitShared: vi.fn(
+        async (_input: StorageMutationSharedFenceInput) => sharedFence,
+    ),
+    release: vi.fn(async (): Promise<void> => undefined),
+}
+
 vi.mock('@/server/Admin/Backups/backup-directory.service.ts', () => ({
-    getBackupFilePath: vi.fn(async () => '/synthetic-storage-fence'),
+    getBackupFilePath: fenceMocks.prepareRoot,
+    getBackupStoragePaths: fenceMocks.backupPaths,
 }))
 vi.mock('@/server/Storage/storage-mutation-fence.service.ts', () => ({
-    admitSharedStorageMutationFenceService: vi.fn(async () => sharedFence),
-    acquireExclusiveStorageMutationFenceService: vi.fn(
-        async () => exclusiveFence,
-    ),
-    releaseStorageMutationFenceService: vi.fn(async () => undefined),
+    admitSharedStorageMutationFenceService: fenceMocks.admitShared,
+    acquireExclusiveStorageMutationFenceService: fenceMocks.acquireExclusive,
+    releaseStorageMutationFenceService: fenceMocks.release,
     waitForStorageMutationSharedDrainService: vi.fn(async () => undefined),
 }))

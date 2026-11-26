@@ -29,7 +29,7 @@ import {
 } from '@/config/session.config.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 import { createSessionTokenService } from '../session-token.service.ts'
-import { getMaintenanceStateService } from '@/server/Maintenance/state.service.ts'
+import { getFreshMaintenanceStateService } from '@/server/Maintenance/state.service.ts'
 import type {
     CreateAuthenticatedSessionInput,
     CreateAuthenticatedSessionResult,
@@ -53,7 +53,7 @@ export async function createAuthenticatedSessionForUser({
 }: CreateAuthenticatedSessionInput): Promise<CreateAuthenticatedSessionResult> {
     const meta = await getClientRequestMeta()
     const { isActive: isMaintenanceModeActive } =
-        await getMaintenanceStateService()
+        await getFreshMaintenanceStateService()
 
     const auditContext = prepareAuditContextService(user.id)
     const result = await db.transaction(async function (transaction) {

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { MAX_PRODUCTION_REQUEST_BODY_BYTES } from '@/server/Production/proxy.service.ts'
+import { PRODUCTION_HTTP_LIMITS } from '@/config/production-server.config.ts'
 import { createProductionRequestHandlerService } from '@/server/Production/request-handler.service.ts'
 import type {
     ProductionAssetConfig,
@@ -15,12 +15,16 @@ import { createAppReadinessCheckService } from '@/server/Runtime/app-readiness.s
 import { startFirstSuperUserSetupLogService } from '@/server/SystemBootstrap/first-super-user-setup-log.service.ts'
 import { logError, logInfo } from '@/server/Logging/logger.ts'
 import { shutdownProductionServerService } from '@/server/Production/shutdown.service.ts'
+import { installStorageMutationBarrierFatalExitHandlerService } from '@/server/Storage/storage-mutation-barrier-health.service.ts'
+import { BACKUP_TIMEOUTS } from '@/config/backup.config.ts'
+
+installStorageMutationBarrierFatalExitHandlerService()
 
 const publicPort = Number(Bun.env.PORT ?? 3000)
 const internalPort = Number(Bun.env.INTERNAL_APP_PORT ?? 3002)
 const hostname = Bun.env.HOST ?? '0.0.0.0'
 const configuredOrigin = new URL(
-    process.env.ORIGIN?.trim() ?? `http://localhost:${publicPort}`,
+    process.env.ORIGIN?.trim() || `http://localhost:${publicPort}`,
 )
 const childEnv: Record<string, string | undefined> = {}
 const realtimePublishSecret = crypto.randomUUID()
@@ -55,7 +59,8 @@ let realtimeValkeySubscriber: Awaited<
 const isInternalAppReady = createAppReadinessCheckService(internalPort)
 
 for (const [key, value] of Object.entries(Bun.env)) {
-    childEnv[key] = typeof value === 'string' ? value : String(value)
+    if (key.toUpperCase() !== 'CI' && key.toUpperCase() !== 'TEST')
+        childEnv[key] = value
 }
 
 if (!Number.isInteger(publicPort) || publicPort < 1 || publicPort > 65535) {
@@ -73,8 +78,7 @@ if (
 const server = Bun.serve({
     hostname,
     port: publicPort,
-    idleTimeout: 60,
-    maxRequestBodySize: MAX_PRODUCTION_REQUEST_BODY_BYTES,
+    ...PRODUCTION_HTTP_LIMITS,
     fetch: createProductionRequestHandlerService({
         proxyConfig,
         assetConfig,
@@ -100,6 +104,9 @@ const appProcess = Bun.spawn(
             ...childEnv,
             HOST: '127.0.0.1',
             PORT: String(internalPort),
+            SERVER_SHUTDOWN_TIMEOUT: String(
+                BACKUP_TIMEOUTS.maximumDownloadDurationMs / 1_000 + 60,
+            ),
             REALTIME_PUBLISH_URL: `http://127.0.0.1:${publicPort}${REALTIME_PUBLISH_PATH}`,
             REALTIME_PUBLISH_SECRET: realtimePublishSecret,
             INTERNAL_PROXY_SECRET: internalProxySecret,
