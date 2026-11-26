@@ -31,6 +31,8 @@ it('never persists a superseded or failed selection', async function () {
     const { getSnapshot, setLanguage } =
         await import('@/language/languageStore.ts')
     const { localStorage } = stubBrowserLanguage('de', 'en-US')
+    await setLanguage('de')
+    localStorage.setItem.mockClear()
 
     const currentGerman = setLanguage('de')
     const failingDutch = setLanguage('nl')
