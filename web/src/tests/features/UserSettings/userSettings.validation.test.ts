@@ -19,6 +19,7 @@ import {
 const imageDataUrl = `data:image/png;base64,${Buffer.alloc(128, 0x61).toString('base64')}`
 const crop = { x: 10, y: 20, width: 240, height: 200 }
 const tokenId = '11111111-1111-4111-8111-111111111111'
+const passkeyId = '01941f29-7c00-7000-8000-000000000002'
 const challengeId = '01941f29-7c00-7000-8000-000000000001'
 
 describe('UserSettings Validierung', function () {
@@ -169,9 +170,18 @@ describe('UserSettings Validierung', function () {
         ).toBe(true)
         expect(
             deleteCurrentUserPasskeyInputSchema.safeParse({
-                passkeyId: tokenId,
+                passkeyId,
             }).success,
         ).toBe(false)
+        expect(
+            deleteCurrentUserPasskeyInputSchema.safeParse({
+                passkeyId,
+                reauthentication: {
+                    method: 'password',
+                    credential: 'existing-password',
+                },
+            }).success,
+        ).toBe(true)
     })
 
     it('bindet den TOTP-Abschluss an einen Setup-Nachweis', function () {

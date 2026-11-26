@@ -56,17 +56,22 @@ async function loadTranslator(language: AppLanguage): Promise<Translate> {
     return createTranslator((await load()).default)
 }
 
-async function changeLanguage(store: BrowserStore, language: AppLanguage) {
+/** Resolves to true when this switch is the current language after loading. */
+async function changeLanguage(
+    store: BrowserStore,
+    language: AppLanguage,
+): Promise<boolean> {
     const revision = ++store.revision
-    if (store.snapshot.language === language) return
+    if (store.snapshot.language === language) return true
 
     const t = await loadTranslator(language)
 
-    if (revision !== store.revision) return
+    if (revision !== store.revision) return false
 
     store.snapshot = { language, t }
     window.document.documentElement.lang = language
     store.subscribers.forEach((subscriber) => subscriber())
+    return true
 }
 
 function getBrowserStore(): BrowserStore {
@@ -104,13 +109,14 @@ export function subscribe(subscriber: () => void) {
 export async function setLanguage(language: AppLanguage) {
     if (typeof window === 'undefined' || !isAppLanguage(language)) return
 
+    // Persist only a switch that loaded and was not superseded.
+    if (!(await changeLanguage(getBrowserStore(), language))) return
+
     try {
         window.localStorage.setItem(storageKey, language)
     } catch {
         // Language changes still work when storage is disabled.
     }
-
-    await changeLanguage(getBrowserStore(), language)
 }
 
 export const translateCurrentLanguage: Translate = (key, values) =>
