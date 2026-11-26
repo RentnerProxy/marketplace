@@ -56,22 +56,38 @@ async function loadTranslator(language: AppLanguage): Promise<Translate> {
     return createTranslator((await load()).default)
 }
 
-/** Resolves to true when this switch is the current language after loading. */
+function storeLanguage(language: AppLanguage) {
+    try {
+        window.localStorage.setItem(storageKey, language)
+    } catch {
+        // Language changes still work when storage is disabled.
+    }
+}
+
+/**
+ * Applies a switch unless a later one superseded it. An explicit selection is
+ * persisted synchronously at that point, so a stale or failed switch never
+ * overwrites the stored preference.
+ */
 async function changeLanguage(
     store: BrowserStore,
     language: AppLanguage,
-): Promise<boolean> {
+    persist: boolean,
+) {
     const revision = ++store.revision
-    if (store.snapshot.language === language) return true
+    if (store.snapshot.language === language) {
+        if (persist) storeLanguage(language)
+        return
+    }
 
     const t = await loadTranslator(language)
 
-    if (revision !== store.revision) return false
+    if (revision !== store.revision) return
 
+    if (persist) storeLanguage(language)
     store.snapshot = { language, t }
     window.document.documentElement.lang = language
     store.subscribers.forEach((subscriber) => subscriber())
-    return true
 }
 
 function getBrowserStore(): BrowserStore {
@@ -98,7 +114,7 @@ export function subscribe(subscriber: () => void) {
     const store = getBrowserStore()
     store.subscribers.add(subscriber)
     if (store.revision === 0) {
-        void changeLanguage(store, getStoredLanguage()).catch(() => {
+        void changeLanguage(store, getStoredLanguage(), false).catch(() => {
             console.error('Language initialization failed.')
         })
     }
@@ -109,14 +125,7 @@ export function subscribe(subscriber: () => void) {
 export async function setLanguage(language: AppLanguage) {
     if (typeof window === 'undefined' || !isAppLanguage(language)) return
 
-    // Persist only a switch that loaded and was not superseded.
-    if (!(await changeLanguage(getBrowserStore(), language))) return
-
-    try {
-        window.localStorage.setItem(storageKey, language)
-    } catch {
-        // Language changes still work when storage is disabled.
-    }
+    await changeLanguage(getBrowserStore(), language, true)
 }
 
 export const translateCurrentLanguage: Translate = (key, values) =>
