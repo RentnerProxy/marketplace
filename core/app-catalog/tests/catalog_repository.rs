@@ -461,6 +461,34 @@ fn package_reader_checks_the_signed_chain_without_fetching_icon_contents() {
 }
 
 #[test]
+fn timestamp_falls_due_long_before_it_expires() {
+    let (credentials, root, files, state) = repository();
+    let keys = credentials.online();
+    let due = |at| {
+        !update_catalog(
+            &state,
+            state.catalog_bytes(),
+            &keys,
+            UpdateOptions {
+                now: at,
+                next_root: None,
+                icons: &Files::new(),
+            },
+        )
+        .unwrap()
+        .is_empty()
+    };
+    let falls_due = now() + Duration::hours(12);
+    assert!(!due(falls_due - Duration::seconds(1)));
+    assert!(due(falls_due));
+
+    // Runs spaced up to 12 hours apart get three renewal attempts before expiry.
+    let expires = falls_due + Duration::hours(36);
+    read(&files, &root, options(expires - Duration::seconds(1))).unwrap();
+    reject(read(&files, &root, options(expires)), "expired timestamp");
+}
+
+#[test]
 fn refreshes_due_roles_and_rejects_rollback_or_metadata_version_reuse() {
     let (credentials, root, files, state) = repository();
     let keys = credentials.online();

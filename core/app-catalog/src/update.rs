@@ -11,6 +11,28 @@ use crate::{
 
 const EMPTY_CATALOG: &[u8] = br#"{"formatVersion":1,"revision":1,"releases":[],"revocations":[]}"#;
 
+// An online role is re-signed once its remaining validity falls to its renewal window.
+// Scheduled publication runs can lag their cron by hours (gaps of almost 12 hours were
+// observed), and a run can fail on a transient GitHub error. The timestamp therefore
+// falls due 12 hours after signing but stays valid for 36 more hours, so at least three
+// runs can renew it before it expires.
+const TIMESTAMP_LIFETIME: Duration = Duration::days(2);
+const TIMESTAMP_RENEWAL: Duration = Duration::hours(36);
+const SNAPSHOT_LIFETIME: Duration = Duration::days(7);
+const SNAPSHOT_RENEWAL: Duration = Duration::days(2);
+const TARGETS_LIFETIME: Duration = Duration::days(90);
+const TARGETS_RENEWAL: Duration = Duration::days(14);
+
+// A role is renewed while it still outlives any newly signed role that links to it,
+// so the timestamp always expires first.
+const _: () = {
+    assert!(TIMESTAMP_RENEWAL.whole_seconds() < TIMESTAMP_LIFETIME.whole_seconds());
+    assert!(SNAPSHOT_RENEWAL.whole_seconds() < SNAPSHOT_LIFETIME.whole_seconds());
+    assert!(TARGETS_RENEWAL.whole_seconds() < TARGETS_LIFETIME.whole_seconds());
+    assert!(SNAPSHOT_RENEWAL.whole_seconds() >= TIMESTAMP_LIFETIME.whole_seconds());
+    assert!(TARGETS_RENEWAL.whole_seconds() >= SNAPSHOT_LIFETIME.whole_seconds());
+};
+
 pub struct UpdateOptions<'a> {
     pub now: OffsetDateTime,
     pub next_root: Option<&'a [u8]>,
@@ -193,37 +215,37 @@ fn build_update(
     let timestamp = state.map(|state| &state.timestamp);
     let sign_new_targets = state.is_none_or(|state| {
         state.root.version != root.version || state.catalog.revision != catalog.revision
-    }) || due(targets, now, Duration::days(14));
+    }) || due(targets, now, TARGETS_RENEWAL);
     let mut new_targets_link = None;
     if sign_new_targets || !options.icons.is_empty() {
         let entries = prepare_targets(catalog, bytes, files, state, options.icons)?;
         if sign_new_targets {
-            let (version, expires) = fields(targets, now, Duration::days(90))?;
+            let (version, expires) = fields(targets, now, TARGETS_LIFETIME)?;
             let signed = sign_targets(root, keys, version, expires, &entries)?;
             new_targets_link = Some(MetaLink::from_bytes(version, &signed));
             files.insert(version_path(Role::Targets, version), signed);
         }
     }
 
-    let sign_new_snapshot = sign_new_targets || due(snapshot, now, Duration::days(2));
+    let sign_new_snapshot = sign_new_targets || due(snapshot, now, SNAPSHOT_RENEWAL);
     let mut new_snapshot_link = None;
     if sign_new_snapshot {
         let targets_link = new_targets_link
             .as_ref()
             .or_else(|| state.map(|state| &state.targets_link))
             .ok_or_else(|| CatalogError::new("Missing targets metadata"))?;
-        let (version, expires) = fields(snapshot, now, Duration::days(7))?;
+        let (version, expires) = fields(snapshot, now, SNAPSHOT_LIFETIME)?;
         let signed = sign_link(Role::Snapshot, root, keys, version, expires, targets_link)?;
         new_snapshot_link = Some(MetaLink::from_bytes(version, &signed));
         files.insert(version_path(Role::Snapshot, version), signed);
     }
 
-    if sign_new_snapshot || due(timestamp, now, Duration::hours(12)) {
+    if sign_new_snapshot || due(timestamp, now, TIMESTAMP_RENEWAL) {
         let snapshot_link = new_snapshot_link
             .as_ref()
             .or_else(|| state.map(|state| &state.snapshot_link))
             .ok_or_else(|| CatalogError::new("Missing snapshot metadata"))?;
-        let (version, expires) = fields(timestamp, now, Duration::days(1))?;
+        let (version, expires) = fields(timestamp, now, TIMESTAMP_LIFETIME)?;
         let signed = sign_link(Role::Timestamp, root, keys, version, expires, snapshot_link)?;
         files.insert(TIMESTAMP_PATH.into(), signed);
     }

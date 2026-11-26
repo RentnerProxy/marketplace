@@ -77,18 +77,42 @@ async function requireCatalogWorkflow() {
     await requireDriverCheckout(sha)
 }
 
+// Every installation verifies the live timestamp, unlike a single queue item.
+class MetadataRefreshError extends Error {
+    constructor(cause: unknown) {
+        super('Signed catalog metadata refresh failed', { cause })
+    }
+}
+
+// Never print request, artifact or key material from this privileged job.
+function publicMessage(error: unknown): string {
+    const message =
+        error instanceof MetadataRefreshError
+            ? `${error.message}: ${publicMessage(error.cause)}`
+            : error instanceof z.ZodError
+              ? 'Catalog metadata or publisher response violates its schema'
+              : error instanceof Error
+                ? error.message
+                : 'Catalog publication failed'
+    return message.replace(/\p{Cc}/gu, ' ').slice(0, 260)
+}
+
 async function syncCatalog(core: CatalogCore, root: Buffer) {
     const distribution = createDistribution(
         setting('APP_CATALOG_DISTRIBUTION_TOKEN'),
     )
     const next = process.env.APP_CATALOG_NEXT_ROOT?.trim()
     // Metadata refresh depends solely on the public distribution and its keys.
-    await refreshDistributionCatalog(
-        core,
-        distribution,
-        root,
-        next ? rootBytes(next) : undefined,
-    )
+    try {
+        await refreshDistributionCatalog(
+            core,
+            distribution,
+            root,
+            next ? rootBytes(next) : undefined,
+        )
+    } catch (error) {
+        throw new MetadataRefreshError(error)
+    }
     console.log('Signed catalog metadata is current')
 
     const marketplace = marketplacePublisher(process.env)
@@ -132,17 +156,14 @@ if (import.meta.main) {
     try {
         await main()
     } catch (error) {
-        // Never print request, artifact or key material from this privileged job.
-        const message =
-            error instanceof z.ZodError
-                ? 'Catalog metadata or publisher response violates its schema'
-                : error instanceof Error
-                  ? error.message
-                  : 'Catalog publication failed'
-        console.error(
-            'App catalog publisher: ' +
-                message.replace(/\p{Cc}/gu, ' ').slice(0, 220),
-        )
+        const message = publicMessage(error)
+        // An annotation shows the cause on the run summary, not only in the log.
+        if (process.env.GITHUB_ACTIONS === 'true')
+            console.log(
+                '::error title=App catalog publisher::' +
+                    message.replaceAll('%', '%25'),
+            )
+        else console.error('App catalog publisher: ' + message)
         process.exitCode = 1
     }
 }
