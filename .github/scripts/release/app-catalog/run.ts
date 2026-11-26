@@ -97,12 +97,13 @@ function publicMessage(error: unknown): string {
     return message.replace(/\p{Cc}/gu, ' ').slice(0, 260)
 }
 
-async function syncCatalog(core: CatalogCore, root: Buffer) {
+// Renewal reads only the public distribution and its keys, so it keeps the live
+// timestamp valid while the Marketplace or its private network is unavailable.
+async function refreshCatalog(core: CatalogCore, root: Buffer) {
     const distribution = createDistribution(
         setting('APP_CATALOG_DISTRIBUTION_TOKEN'),
     )
     const next = process.env.APP_CATALOG_NEXT_ROOT?.trim()
-    // Metadata refresh depends solely on the public distribution and its keys.
     try {
         await refreshDistributionCatalog(
             core,
@@ -114,7 +115,12 @@ async function syncCatalog(core: CatalogCore, root: Buffer) {
         throw new MetadataRefreshError(error)
     }
     console.log('Signed catalog metadata is current')
+}
 
+async function publishCatalog(core: CatalogCore, root: Buffer) {
+    const distribution = createDistribution(
+        setting('APP_CATALOG_DISTRIBUTION_TOKEN'),
+    )
     const marketplace = marketplacePublisher(process.env)
     const sourceToken = setting('GH_TOKEN')
     const runnerTemp = setting('RUNNER_TEMP')
@@ -133,19 +139,23 @@ async function main() {
     const [command, destination, ...rest] = process.argv.slice(2)
     if (
         rest.length ||
-        !['bootstrap', 'sync'].includes(command ?? '') ||
+        !['bootstrap', 'refresh', 'publish'].includes(command ?? '') ||
         (command === 'bootstrap' ? !destination : destination !== undefined)
     )
-        throw new Error('Expected bootstrap <new-directory> or sync')
+        throw new Error(
+            'Expected bootstrap <new-directory>, refresh or publish',
+        )
 
-    if (command === 'sync') await requireCatalogWorkflow()
+    if (command !== 'bootstrap') await requireCatalogWorkflow()
     const root = rootBytes(setting('APP_CATALOG_TRUSTED_ROOT'))
     const core = openCatalogCore(signingKeys())
     try {
         if (command === 'bootstrap' && destination) {
             await bootstrap(core, destination, root)
+        } else if (command === 'refresh') {
+            await refreshCatalog(core, root)
         } else {
-            await syncCatalog(core, root)
+            await publishCatalog(core, root)
         }
     } finally {
         await core.close()

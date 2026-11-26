@@ -14,7 +14,9 @@ concurrency:
 jobs:
     publish:
         name: Reconcile approved apps and signed metadata
-        if: github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main' && vars.APP_CATALOG_ENABLED == 'true'
+        # Metadata renewal runs whenever a catalog root is configured. APP_CATALOG_ENABLED
+        # pauses only Marketplace publication; disable this workflow to stop renewal too.
+        if: github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main' && vars.APP_CATALOG_TRUSTED_ROOT != ''
         runs-on: ubuntu-24.04
         timeout-minutes: 22
         environment: app-catalog-publishing
@@ -38,14 +40,6 @@ jobs:
               run: |
                   rustup toolchain install 1.100.0 --profile minimal
                   cargo build --locked --release -p marketplace-app-catalog -p marketplace-app-pipeline
-            - name: Connect to the private Marketplace publisher network
-              id: private-network
-              env:
-                  APP_CATALOG_WARP_TEAM: ${{ vars.APP_CATALOG_WARP_TEAM }}
-                  APP_CATALOG_WARP_VNET: ${{ vars.APP_CATALOG_WARP_VNET }}
-                  APP_CATALOG_WARP_CLIENT_ID: ${{ secrets.APP_CATALOG_WARP_CLIENT_ID }}
-                  APP_CATALOG_WARP_CLIENT_SECRET: ${{ secrets.APP_CATALOG_WARP_CLIENT_SECRET }}
-              run: bash .github/scripts/release/app-catalog/warp.sh connect
             - name: Issue a short-lived distribution-only token
               id: distribution
               uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
@@ -56,18 +50,36 @@ jobs:
                   repositories: app-catalog
                   permission-administration: read
                   permission-contents: write
-            - name: Verify, publish and reconcile
+            - name: Renew signed metadata from the public distribution
               env:
-                  GH_TOKEN: ${{ github.token }}
-                  APP_CATALOG_PUBLISHER_IP: ${{ vars.APP_CATALOG_PUBLISHER_IP }}
-                  APP_CATALOG_PUBLISHER_CA: ${{ vars.APP_CATALOG_PUBLISHER_CA }}
                   APP_CATALOG_DISTRIBUTION_TOKEN: ${{ steps.distribution.outputs.token }}
                   APP_CATALOG_TRUSTED_ROOT: ${{ vars.APP_CATALOG_TRUSTED_ROOT }}
                   APP_CATALOG_NEXT_ROOT: ${{ vars.APP_CATALOG_NEXT_ROOT }}
                   APP_CATALOG_TARGETS_KEY: ${{ secrets.APP_CATALOG_TARGETS_KEY }}
                   APP_CATALOG_SNAPSHOT_KEY: ${{ secrets.APP_CATALOG_SNAPSHOT_KEY }}
                   APP_CATALOG_TIMESTAMP_KEY: ${{ secrets.APP_CATALOG_TIMESTAMP_KEY }}
-              run: bun --no-env-file .github/scripts/release/app-catalog/run.ts sync
+              run: bun --no-env-file .github/scripts/release/app-catalog/run.ts refresh
+            - name: Connect to the private Marketplace publisher network
+              id: private-network
+              if: vars.APP_CATALOG_ENABLED == 'true'
+              env:
+                  APP_CATALOG_WARP_TEAM: ${{ vars.APP_CATALOG_WARP_TEAM }}
+                  APP_CATALOG_WARP_VNET: ${{ vars.APP_CATALOG_WARP_VNET }}
+                  APP_CATALOG_WARP_CLIENT_ID: ${{ secrets.APP_CATALOG_WARP_CLIENT_ID }}
+                  APP_CATALOG_WARP_CLIENT_SECRET: ${{ secrets.APP_CATALOG_WARP_CLIENT_SECRET }}
+              run: bash .github/scripts/release/app-catalog/warp.sh connect
+            - name: Verify, publish and reconcile
+              if: vars.APP_CATALOG_ENABLED == 'true'
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  APP_CATALOG_PUBLISHER_IP: ${{ vars.APP_CATALOG_PUBLISHER_IP }}
+                  APP_CATALOG_PUBLISHER_CA: ${{ vars.APP_CATALOG_PUBLISHER_CA }}
+                  APP_CATALOG_DISTRIBUTION_TOKEN: ${{ steps.distribution.outputs.token }}
+                  APP_CATALOG_TRUSTED_ROOT: ${{ vars.APP_CATALOG_TRUSTED_ROOT }}
+                  APP_CATALOG_TARGETS_KEY: ${{ secrets.APP_CATALOG_TARGETS_KEY }}
+                  APP_CATALOG_SNAPSHOT_KEY: ${{ secrets.APP_CATALOG_SNAPSHOT_KEY }}
+                  APP_CATALOG_TIMESTAMP_KEY: ${{ secrets.APP_CATALOG_TIMESTAMP_KEY }}
+              run: bun --no-env-file .github/scripts/release/app-catalog/run.ts publish
             - name: Remove the runner from the private publisher network
               if: always() && steps.private-network.outcome != 'skipped'
               run: bash .github/scripts/release/app-catalog/warp.sh disconnect
