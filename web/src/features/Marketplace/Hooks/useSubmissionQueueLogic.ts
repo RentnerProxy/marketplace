@@ -15,6 +15,9 @@ import { decisionInput, stopInput } from '../validation.ts'
 import type { SubmissionMode } from '../Types/components.types.ts'
 import { useSubmissionFeedback } from './useSubmissionFeedback.ts'
 
+const submissionIntents = ['approve', 'reject', 'revoke', 'withdraw'] as const
+type SubmissionIntent = (typeof submissionIntents)[number]
+
 export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
     const { language } = useTranslationStore()
     const [page, setPage] = useState(0)
@@ -67,7 +70,7 @@ export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
         ].includes(status ?? '')
 
     const action = useMutation({
-        mutationFn: async (intent: string) => {
+        mutationFn: async (intent: SubmissionIntent) => {
             if (!current) throw new Error('submissionConflict')
             const data = { id: current.id, revision: current.revision, reason }
             if (intent === 'approve' || intent === 'reject') {
@@ -114,9 +117,10 @@ export function useSubmissionQueueLogic(mode: SubmissionMode, userId: string) {
     function submit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault()
         const value = event.nativeEvent.submitter?.getAttribute('value')
-        if (value && id && !action.isPending) {
+        const intent = submissionIntents.find((entry) => entry === value)
+        if (intent && id && !action.isPending) {
             setSelectedId(id)
-            action.mutate(value)
+            action.mutate(intent)
         }
     }
 

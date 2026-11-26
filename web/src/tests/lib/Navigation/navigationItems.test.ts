@@ -10,27 +10,27 @@ import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
 
 const nestedNavigation: Array<AuthenticatedNavItem> = [
     {
-        labelKey: 'dashboard',
+        labelKey: 'nav.dashboard',
         to: '/admin/dashboard',
         icon: LayoutDashboard,
         permission: PERMISSIONS.ADMIN_DASHBOARD,
     },
     {
-        labelKey: 'users',
+        labelKey: 'nav.userManagement',
         icon: Users,
         children: [
             {
-                labelKey: 'levelTwo',
+                labelKey: 'nav.overview',
                 icon: Users,
                 children: [
                     {
-                        labelKey: 'allowed',
+                        labelKey: 'nav.auditLogs',
                         to: '/admin/audit-logs',
                         icon: FileText,
                         permission: PERMISSIONS.ADMIN_AUDIT_LOGS,
                     },
                     {
-                        labelKey: 'hidden',
+                        labelKey: 'nav.backups',
                         to: '/admin/backups',
                         icon: FileText,
                         permission: PERMISSIONS.ADMIN_BACKUPS,
@@ -91,7 +91,7 @@ describe('Sidebar-Navigation', function () {
 
         expect(visibleItems[1]?.children?.[0]?.children).toHaveLength(1)
         expect(visibleItems[1]?.children?.[0]?.children?.[0]?.labelKey).toBe(
-            'allowed',
+            'nav.auditLogs',
         )
     })
 

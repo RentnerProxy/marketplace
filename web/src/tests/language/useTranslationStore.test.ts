@@ -1,57 +1,67 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
-import {
-    backendMock,
-    i18nextMock,
-    reactMock,
-    resetLanguageTestHarness,
-    restoreLanguageTestHarness,
-} from './useTranslationStoreTestHarness.ts'
+import { describe, expect, expectTypeOf, it } from 'bun:test'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import en from '@/language/Locales/en.json'
+import { setLanguage } from '@/language/languageStore.ts'
+import { createTranslator, isTranslationKey } from '@/language/translation.ts'
+import type { TranslationKey } from '@/language/translation.ts'
+import useTranslationStore from '@/language/useTranslationStore.ts'
 
-describe('useTranslationStore serverseitig', function () {
-    beforeEach(resetLanguageTestHarness)
-    afterEach(restoreLanguageTestHarness)
+function SaveLabel() {
+    const { availableLanguages, language, t } = useTranslationStore()
+    expect(availableLanguages).toEqual([
+        'en',
+        'de',
+        'es',
+        'fr',
+        'it',
+        'pt',
+        'nl',
+        'pl',
+    ])
+    return createElement('span', { lang: language }, t('common.save'))
+}
 
-    it('verwendet serverseitig die Fallback-Sprache und benachrichtigt Subscriber', async function () {
-        const useTranslationStore = (
-            await import('@/language/useTranslationStore.ts')
-        ).default
+describe('Translations', function () {
+    it('accepts only leaf keys of the English catalog', function () {
+        expectTypeOf<'common.save'>().toExtend<TranslationKey>()
+        expectTypeOf<'common'>().not.toExtend<TranslationKey>()
+        expectTypeOf<'common.unknown'>().not.toExtend<TranslationKey>()
+    })
 
-        const store = useTranslationStore()
-        const subscriber = vi.fn()
-        const unsubscribe = reactMock.subscribe?.(subscriber)
+    it('renders English immediately without mutating the language between requests', async function () {
+        const markup = '<span lang="en">Save</span>'
+        expect(renderToStaticMarkup(createElement(SaveLabel))).toBe(markup)
 
-        expect(store.language).toBe('en')
-        expect(store.availableLanguages).toEqual([
-            'en',
-            'de',
-            'es',
-            'fr',
-            'it',
-            'pt',
-            'nl',
-            'pl',
-        ])
-        const options = { count: 2, name: 'Österreich' }
-        const translation: string = store.t('example.key', options)
-        expect(translation).toBe('translated:example.key')
-        expect(i18nextMock.api.t).toHaveBeenCalledWith('example.key', options)
-        expect(i18nextMock.api.init).toHaveBeenCalledWith(
-            expect.objectContaining({
-                lng: 'en',
-                fallbackLng: 'en',
-                supportedLngs: ['en', 'de', 'es', 'fr', 'it', 'pt', 'nl', 'pl'],
-                interpolation: { escapeValue: false },
-            }),
+        await setLanguage('de')
+
+        expect(renderToStaticMarkup(createElement(SaveLabel))).toBe(markup)
+    })
+
+    it('interpolates raw values, preserves absent placeholders and falls back to English', function () {
+        const t = createTranslator({
+            common: { save: 'Speichern' },
+            auth: {
+                passwordPolicy: 'Zwischen {{min}} und {{max}} Zeichen.',
+            },
+        })
+
+        expect(t('common.save')).toBe('Speichern')
+        expect(t('common.cancel')).toBe(en.common.cancel)
+        expect(t('auth.passwordPolicy', { min: '<1> {{max}}' })).toBe(
+            'Zwischen <1> {{max}} und {{max}} Zeichen.',
         )
-        expect(i18nextMock.api.use).toHaveBeenCalledWith(backendMock.backend)
+        expect(t('auth.passwordPolicy', { min: 0, max: 10 })).toBe(
+            'Zwischen 0 und 10 Zeichen.',
+        )
+        expect(createTranslator()('auth.passwordPolicy', { min: 8 })).toBe(
+            'The password must contain between 8 and {{max}} characters.',
+        )
+    })
 
-        i18nextMock.handlers.initialized?.()
-        i18nextMock.handlers.loaded?.()
-        expect(subscriber).toHaveBeenCalledTimes(2)
-        expect(reactMock.getSnapshot?.()).toBe('en:2')
-
-        unsubscribe?.()
-        i18nextMock.handlers.loaded?.()
-        expect(subscriber).toHaveBeenCalledTimes(2)
+    it('recognizes only own translation paths', function () {
+        expect(isTranslationKey('common.save')).toBe(true)
+        expect(isTranslationKey('common.constructor.name')).toBe(false)
+        expect(isTranslationKey('common.toString')).toBe(false)
     })
 })

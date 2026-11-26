@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'motion/react'
 import {
     Check,
     LoaderCircle,
@@ -15,16 +14,25 @@ import SecurityChangeLoginNotice from './SecurityChangeLoginNotice.tsx'
 export default function TwoFactorSection() {
     const { t } = useTranslationStore()
     const { state, handler } = useTwoFactorLogic()
+    const isEnabled = state.isTwoFactorEnabled
     const isReauthenticationDisabled =
         state.isTwoFactorBusy || state.isLoadingTwoFactorStatus
     const isActionDisabled =
         isReauthenticationDisabled || !state.isTwoFactorReauthenticationReady
+    const isActionPending = isEnabled
+        ? state.isDisablingTwoFactor
+        : state.isStartingTwoFactorSetup
+    const actionLabel = isEnabled
+        ? isActionPending
+            ? 'userSettings.security.2faDisabling'
+            : 'userSettings.security.2faDisable'
+        : isActionPending
+          ? 'userSettings.security.2faPreparing'
+          : 'userSettings.security.2faEnable'
+    const ActionIcon = isEnabled ? ShieldOff : LockKeyhole
 
     return (
-        <motion.section
-            layout
-            className="relative overflow-hidden rounded-lg border border-border-dark bg-input-dark/50 p-4"
-        >
+        <section className="relative overflow-hidden rounded-lg border border-border-dark bg-input-dark/50 p-4">
             {state.isReauthenticationRequired && (
                 <div className="relative mb-4">
                     <SecurityChangeLoginNotice />
@@ -33,26 +41,10 @@ export default function TwoFactorSection() {
             <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <div className="flex items-center gap-2">
-                        <motion.span
-                            animate={{
-                                rotate: state.isTwoFactorEnabled ? 0 : -6,
-                                scale: state.isTwoFactorEnabled ? 1.05 : 1,
-                            }}
-                            transition={{
-                                type: 'spring',
-                                stiffness: 360,
-                                damping: 20,
-                            }}
-                        >
-                            <ShieldCheck
-                                className={[
-                                    'h-4 w-4 transition-colors',
-                                    state.isTwoFactorEnabled
-                                        ? 'text-emerald-400'
-                                        : 'text-primary',
-                                ].join(' ')}
-                            />
-                        </motion.span>
+                        <ShieldCheck
+                            data-enabled={isEnabled}
+                            className="h-4 w-4 text-primary data-[enabled=true]:text-emerald-400 motion-safe:transition-[color,rotate,scale] motion-safe:duration-200 motion-safe:data-[enabled=false]:rotate-[-6deg] motion-safe:data-[enabled=true]:scale-[1.05]"
+                        />
 
                         <h3 className="text-sm font-semibold text-white">
                             {t('userSettings.security.2faTitle')}
@@ -64,119 +56,66 @@ export default function TwoFactorSection() {
                     </p>
                 </div>
 
-                <AnimatePresence initial={false} mode="wait">
-                    {state.isTwoFactorEnabled ? (
-                        <motion.div
-                            key="disable-2fa"
-                            className="w-full space-y-3 sm:max-w-sm"
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 6 }}
-                            transition={{
-                                type: 'spring',
-                                stiffness: 420,
-                                damping: 30,
-                            }}
+                {(isEnabled || !state.twoFactorOtpAuthUrl) && (
+                    <div
+                        key={isEnabled ? 'disable-2fa' : 'enable-2fa'}
+                        className="w-full space-y-3 sm:max-w-sm motion-safe:transition-[opacity,translate] motion-safe:duration-200 motion-safe:starting:-translate-y-1.5 motion-safe:starting:opacity-0"
+                    >
+                        <ReauthenticationInput
+                            id={
+                                isEnabled
+                                    ? 'disable-two-factor-reauthentication'
+                                    : 'enable-two-factor-reauthentication'
+                            }
+                            isTotp={isEnabled}
+                            value={state.twoFactorReauthenticationValue}
+                            disabled={isReauthenticationDisabled}
+                            onChange={
+                                handler.handleTwoFactorReauthenticationValueChange
+                            }
+                        />
+                        <button
+                            type="button"
+                            disabled={isActionDisabled}
+                            onClick={
+                                isEnabled
+                                    ? handler.handleDisableTwoFactor
+                                    : handler.handleStartTwoFactorSetup
+                            }
+                            className={[
+                                'flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-[color,background-color,border-color,scale] disabled:cursor-not-allowed disabled:opacity-60 motion-safe:enabled:active:scale-[0.97]',
+                                isEnabled
+                                    ? 'border border-border-dark bg-background-dark text-danger hover:border-danger hover:text-white'
+                                    : 'bg-primary text-white hover:bg-primary-hover',
+                            ].join(' ')}
                         >
-                            <ReauthenticationInput
-                                id="disable-two-factor-reauthentication"
-                                isTotp
-                                value={state.twoFactorReauthenticationValue}
-                                disabled={isReauthenticationDisabled}
-                                onChange={
-                                    handler.handleTwoFactorReauthenticationValueChange
-                                }
-                            />
-                            <motion.button
-                                type="button"
-                                disabled={isActionDisabled}
-                                onClick={handler.handleDisableTwoFactor}
-                                whileTap={
-                                    isActionDisabled
-                                        ? undefined
-                                        : { scale: 0.97 }
-                                }
-                                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-border-dark bg-background-dark px-4 text-sm font-semibold text-danger transition-colors hover:border-danger hover:text-white disabled:opacity-60"
-                            >
-                                {state.isDisablingTwoFactor ? (
-                                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <ShieldOff className="h-4 w-4" />
-                                )}
+                            {isActionPending ? (
+                                <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
+                            ) : (
+                                <ActionIcon className="h-4 w-4" />
+                            )}
 
-                                {state.isDisablingTwoFactor
-                                    ? t('userSettings.security.2faDisabling')
-                                    : t('userSettings.security.2faDisable')}
-                            </motion.button>
-                        </motion.div>
-                    ) : !state.twoFactorOtpAuthUrl ? (
-                        <motion.div
-                            key="enable-2fa"
-                            className="w-full space-y-3 sm:max-w-sm"
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 6 }}
-                            transition={{
-                                type: 'spring',
-                                stiffness: 420,
-                                damping: 30,
-                            }}
-                        >
-                            <ReauthenticationInput
-                                id="enable-two-factor-reauthentication"
-                                isTotp={false}
-                                value={state.twoFactorReauthenticationValue}
-                                disabled={isReauthenticationDisabled}
-                                onChange={
-                                    handler.handleTwoFactorReauthenticationValueChange
-                                }
-                            />
-                            <motion.button
-                                type="button"
-                                disabled={isActionDisabled}
-                                onClick={handler.handleStartTwoFactorSetup}
-                                whileTap={
-                                    isActionDisabled
-                                        ? undefined
-                                        : { scale: 0.97 }
-                                }
-                                className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {state.isStartingTwoFactorSetup ? (
-                                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <LockKeyhole className="h-4 w-4" />
-                                )}
-
-                                {state.isStartingTwoFactorSetup
-                                    ? t('userSettings.security.2faPreparing')
-                                    : t('userSettings.security.2faEnable')}
-                            </motion.button>
-                        </motion.div>
-                    ) : null}
-                </AnimatePresence>
+                            {t(actionLabel)}
+                        </button>
+                    </div>
+                )}
             </div>
 
-            <AnimatePresence>
-                {state.isTwoFactorEnabled && (
-                    <motion.div
-                        className="relative mt-4 flex items-center gap-2 rounded-md border border-border-dark bg-surface-dark px-3 py-2 text-sm text-white"
-                        initial={{ opacity: 0, height: 0, y: -6 }}
-                        animate={{ opacity: 1, height: 'auto', y: 0 }}
-                        exit={{ opacity: 0, height: 0, y: -6 }}
-                        transition={{
-                            type: 'spring',
-                            stiffness: 360,
-                            damping: 30,
-                        }}
-                    >
+            <div
+                aria-hidden={!isEnabled}
+                inert={!isEnabled}
+                data-open={isEnabled}
+                className="grid grid-rows-[0fr] opacity-0 data-[open=true]:grid-rows-[1fr] data-[open=true]:opacity-100 motion-safe:-translate-y-1.5 motion-safe:transition-[grid-template-rows,opacity,translate] motion-safe:duration-200 motion-safe:data-[open=true]:translate-y-0"
+            >
+                <div className="min-h-0 overflow-hidden">
+                    <div className="mt-4 flex items-center gap-2 rounded-md border border-border-dark bg-surface-dark px-3 py-2 text-sm text-white">
                         <Check className="h-4 w-4 shrink-0 text-success" />
                         {t('userSettings.security.2faActive')}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
+                </div>
+            </div>
 
             <TwoFactorSetupPanel state={state} handler={handler} />
-        </motion.section>
+        </section>
     )
 }

@@ -64,6 +64,9 @@ vi.mock('@/lib/Backups/backupCache.ts', () => ({
 vi.mock('@/language/useTranslationStore.ts', () => ({
     default: () => ({ t: (key: string) => key }),
 }))
+vi.mock('@/language/languageStore.ts', () => ({
+    translateCurrentLanguage: () => 'Error',
+}))
 vi.mock('@rentnerkev/toasts', () => ({
     toast: { success: mocks.success, error: mocks.toastError },
 }))
@@ -270,6 +273,6 @@ it('composes empty and populated overview state and routes child errors to a toa
     await Promise.all(pending)
     expect(mocks.toastError).toHaveBeenCalledWith(
         'Synthetic deletion rejection',
-        { title: 'common.error' },
+        expect.objectContaining({ title: 'Error', dedupeWindow: 2_000 }),
     )
 })

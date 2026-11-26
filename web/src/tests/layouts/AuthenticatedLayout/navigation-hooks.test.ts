@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'bun:test'
 import { hookReact } from '../hook-harness.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
-import { NAVBAR_ITEMS } from '@/config/navbar.config.ts'
+import { flattenNavigationRoutes } from '@/lib/Navigation/navigationItems.ts'
 
 let pathname = '/admin/users'
 vi.mock('react', () => hookReact)
@@ -17,8 +17,6 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 const { default: useNavigation } =
     await import('@/layouts/AuthenticatedLayout/Hooks/useAuthenticatedNavigation.ts')
-const { default: useSidebar } =
-    await import('@/layouts/AuthenticatedLayout/Hooks/useSidebarNavigationItems.ts')
 const { default: useTopbar } =
     await import('@/layouts/AuthenticatedLayout/Hooks/useAuthenticatedTopbarLogic.ts')
 
@@ -46,8 +44,7 @@ it.each([
         const result = useNavigation(currentPermissions).state
         expect(result.homeTo).toBe(homeTo)
         expect(result.subtitle).toBe(subtitle)
-        const allRoutes = useSidebar(result.visibleNavItems, true).state
-            .navigationItems
+        const allRoutes = flattenNavigationRoutes(result.visibleNavItems)
         expect(
             allRoutes.every(
                 (item) =>
@@ -57,18 +54,6 @@ it.each([
         ).toBe(true)
     },
 )
-
-it('keeps expanded navigation groups and flattens them for collapsed navigation', () => {
-    expect(useSidebar(NAVBAR_ITEMS, false).state.navigationItems).toBe(
-        NAVBAR_ITEMS,
-    )
-    const collapsed = useSidebar(NAVBAR_ITEMS, true).state.navigationItems
-    expect(collapsed.every((item) => Boolean(item.to))).toBe(true)
-    expect(collapsed.some((item) => item.to === '/admin/users')).toBe(true)
-    expect(
-        collapsed.some((item) => item.labelKey === 'nav.userManagement'),
-    ).toBe(false)
-})
 
 it.each([
     {

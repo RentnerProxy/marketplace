@@ -1,19 +1,15 @@
 import { describe, expect, it, vi } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { createInstance } from 'i18next'
 import de from '@/language/Locales/de.json'
 import en from '@/language/Locales/en.json'
+import { createTranslator } from '@/language/translation.ts'
 import type { DashboardServiceHealth } from '@/features/Admin/Dashboard/Types/dashboard-domain.types.ts'
 
-const translations = createInstance()
-await translations.init({
-    lng: 'de',
-    resources: { de: { translation: de }, en: { translation: en } },
-    interpolation: { escapeValue: false },
-})
+let t = createTranslator()
+
 vi.mock('@/language/useTranslationStore.ts', () => ({
-    default: () => ({ t: translations.t.bind(translations) }),
+    default: () => ({ t }),
 }))
 
 const { default: ServiceStatusCard } =
@@ -59,10 +55,10 @@ describe('Farben und verständliche Texte der Statuskarten', function () {
         },
     ] satisfies Array<{ health: DashboardServiceHealth; color: string }>)(
         'zeigt $health.status mit Farbe und Text in beiden Sprachen',
-        async function ({ health, color }) {
-            async function expectTranslatedCard(language: 'de' | 'en') {
-                await translations.changeLanguage(language)
+        function ({ health, color }) {
+            function expectTranslatedCard(language: 'de' | 'en') {
                 const source = language === 'de' ? de : en
+                t = createTranslator(source)
                 const html = renderToStaticMarkup(
                     createElement(ServiceStatusCard, {
                         service: 'worker',
@@ -82,8 +78,8 @@ describe('Farben und verständliche Texte der Statuskarten', function () {
                 expect(html).not.toContain('admin.dashboard.')
             }
 
-            await expectTranslatedCard('de')
-            await expectTranslatedCard('en')
+            expectTranslatedCard('de')
+            expectTranslatedCard('en')
         },
     )
 })

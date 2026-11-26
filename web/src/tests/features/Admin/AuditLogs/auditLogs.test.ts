@@ -40,7 +40,6 @@ vi.mock('@rentnerkev/table', () => ({
 }))
 import AuditLogs from '@/features/Admin/AuditLogs/index.tsx'
 import useAuditLogic from '@/features/Admin/AuditLogs/Hooks/useAuditLogic.ts'
-import useAuditLogDetailsLogic from '@/features/Admin/AuditLogs/Components/AuditTable/Hooks/useAuditLogDetailsLogic.ts'
 import { AuditLogDetails } from '@/features/Admin/AuditLogs/Components/AuditTable/Components/AuditLogDetails.tsx'
 
 const entry: AuditLogEntry = {
@@ -225,12 +224,9 @@ describe('audit table behavior', () => {
     })
 
     it('formats changed values only and renders the before/after diff and empty state', () => {
-        const hook = render(() => useAuditLogDetailsLogic(entry))
-        expect(hook.state.rows).toEqual([
-            { key: 'username', oldValue: 'Old', newValue: 'New' },
-        ])
         const html = renderToStaticMarkup(AuditLogDetails({ auditLog: entry }))
         expect(html).toStartWith('<div')
+        expect(html).toContain('username')
         expect(html).toContain('Old')
         expect(html).toContain('New')
         expect(html).not.toContain('unchanged')

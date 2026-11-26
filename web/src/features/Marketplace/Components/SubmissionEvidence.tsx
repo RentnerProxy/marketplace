@@ -1,5 +1,6 @@
 import { CANDIDATE_PIPELINE } from '@/config/submissions.config.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import { isTranslationKey } from '@/language/translation.ts'
 import type { ValidatedSubmission } from '@/lib/Marketplace/Types/submission.types.ts'
 
 export function SubmissionEvidence({
@@ -91,9 +92,12 @@ export function SubmissionEvidence({
                             <dt>{t('submissions.checks')}</dt>
                             <dd>
                                 {Object.keys(checks)
-                                    .map((check) =>
-                                        t('submissions.check.' + check),
-                                    )
+                                    .map((check) => {
+                                        const key = `submissions.check.${check}`
+                                        return isTranslationKey(key)
+                                            ? t(key)
+                                            : key
+                                    })
                                     .join(' · ')}
                             </dd>
                         </div>

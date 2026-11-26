@@ -1,8 +1,13 @@
-import type { AuditCompareRow } from './Types/audit-value.types.ts'
 import type {
     AuditLogEntry,
     AuditLogJsonRecord,
 } from './Types/auditLog.types.ts'
+
+type AuditCompareRow = {
+    key: string
+    oldValue: unknown
+    newValue: unknown
+}
 
 export function hasAuditJsonValue(value: AuditLogJsonRecord | null) {
     return Boolean(value && Object.keys(value).length > 0)
