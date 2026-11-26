@@ -224,8 +224,10 @@ fn worker_keeps_the_verified_checkpoint_until_it_reads_the_promoted_files() {
         serde_json::from_slice::<Value>(&previous_catalog).unwrap()["revision"],
         1
     );
+    // The legacy timestamp has under 36 hours left, so an unchanged catalog renews only
+    // the timestamp and never republishes the installed root.
     worker.update(1, b"", Some(root), &Files::new());
-    assert!(worker.files().is_empty());
+    assert_eq!(worker.files().into_keys().collect::<Vec<_>>(), [TIMESTAMP]);
 
     let icon = vec![0xff; 100_000];
     let hash = hex::encode(Sha256::digest(&icon));
@@ -244,7 +246,7 @@ fn worker_keeps_the_verified_checkpoint_until_it_reads_the_promoted_files() {
     assert_eq!(changes[&static_icon], icon);
 
     worker.update(1, b"", None, &Files::new());
-    assert!(worker.files().is_empty());
+    assert_eq!(worker.files().into_keys().collect::<Vec<_>>(), [TIMESTAMP]);
     let mut promoted = previous.clone();
     promoted.extend(changes);
     assert_eq!(

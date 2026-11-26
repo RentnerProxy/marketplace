@@ -347,6 +347,7 @@ type RoleLink = FileLink & { version: number }
 function readRole(files: ReadonlyMap<string, Buffer>, path: string) {
     return JSON.parse(files.get(path)!.toString()) as {
         signed: {
+            expires: string
             meta?: Record<string, RoleLink>
             targets?: Record<string, FileLink>
         }
@@ -509,6 +510,7 @@ async function publicationFixture(
     const deferrals: number[] = []
     const publisherReads = new Map<string, Set<string>>()
     const faults = {
+        marketplace: false,
         promotion: false,
         receipt: false,
         readOnce: false,
@@ -585,6 +587,7 @@ async function publicationFixture(
     }
 
     const request = async (input: Request) => {
+        if (faults.marketplace) throw new Error('simulated Marketplace outage')
         if (input.operation === 'queue')
             return {
                 items: approvals
@@ -711,6 +714,8 @@ async function publicationFixture(
         deferrals,
         approvals,
         catalog,
+        timestampExpiry: () =>
+            Date.parse(storedState().timestamp.signed.expires),
         rootSigners: c.root,
         nextRun: () => {
             currentRun = { ...currentRun, runId: '5552' }
@@ -826,6 +831,24 @@ test.each([
         ).toEqual(['2.0.0'])
     },
 )
+
+test('publisher refresh renews a due timestamp while the Marketplace is unreachable', async () => {
+    const hour = day / 24
+    const fixture = await publicationFixture(['1.0.0'], {
+        createdAt: new Date(Date.now() - 13 * hour),
+    })
+    fixture.faults.marketplace = true
+    const { core, distribution, root } = fixture.options
+    expect(fixture.timestampExpiry() - Date.now()).toBeLessThan(36 * hour)
+    await refreshDistributionCatalog(core, distribution, root)
+    expect(fixture.events).toEqual(['promoted'])
+    expect(fixture.timestampExpiry() - Date.now()).toBeGreaterThan(47 * hour)
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
+        'simulated Marketplace outage',
+    )
+    expect(fixture.events).toEqual(['promoted'])
+})
 
 test('publisher refresh atomically rotates an expired installed root before ordinary reads resume', async () => {
     const fixture = await publicationFixture([], {
