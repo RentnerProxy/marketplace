@@ -1,4 +1,3 @@
-import { motion } from 'motion/react'
 import {
     CalendarClock,
     Fingerprint,
@@ -17,10 +16,7 @@ export default function PasskeySection() {
     const { state, handler } = usePasskeyLogic()
 
     return (
-        <motion.section
-            layout
-            className="relative overflow-hidden rounded-lg border border-border-dark bg-input-dark/50 p-4"
-        >
+        <section className="relative overflow-hidden rounded-lg border border-border-dark bg-input-dark/50 p-4">
             {state.isReauthenticationRequired && (
                 <div className="relative mb-4">
                     <SecurityChangeLoginNotice />
@@ -53,7 +49,7 @@ export default function PasskeySection() {
                         }
                         onChange={handler.handleReauthenticationValueChange}
                     />
-                    <motion.button
+                    <button
                         type="button"
                         disabled={
                             state.isAddingPasskey ||
@@ -61,17 +57,10 @@ export default function PasskeySection() {
                             !state.isReauthenticationReady
                         }
                         onClick={handler.handleAddPasskey}
-                        whileTap={
-                            state.isAddingPasskey ||
-                            state.isDeletingPasskey ||
-                            !state.isReauthenticationReady
-                                ? undefined
-                                : { scale: 0.97 }
-                        }
-                        className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-[background-color,scale] hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 motion-safe:enabled:active:scale-[0.97]"
                     >
                         {state.isAddingPasskey ? (
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                            <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
                         ) : (
                             <KeyRound className="h-4 w-4" />
                         )}
@@ -79,14 +68,14 @@ export default function PasskeySection() {
                         {state.isAddingPasskey
                             ? t('userSettings.security.passkeyAdding')
                             : t('userSettings.security.passkeyAdd')}
-                    </motion.button>
+                    </button>
                 </div>
             </div>
 
             <div className="relative mt-4 space-y-3">
                 {state.isLoadingPasskeys ? (
                     <div className="flex items-center gap-2 rounded-md border border-border-dark bg-surface-dark/60 px-3 py-2 text-sm text-secondary-text">
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
                         {t('userSettings.security.passkeysLoading')}
                     </div>
                 ) : state.passkeys.length === 0 ? (
@@ -163,7 +152,7 @@ export default function PasskeySection() {
                                         className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-border-dark bg-background-dark px-3 text-sm font-semibold text-danger transition-colors hover:border-danger hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {isDeleting ? (
-                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" />
                                         ) : (
                                             <Trash2 className="h-4 w-4" />
                                         )}
@@ -177,6 +166,6 @@ export default function PasskeySection() {
                     </>
                 )}
             </div>
-        </motion.section>
+        </section>
     )
 }

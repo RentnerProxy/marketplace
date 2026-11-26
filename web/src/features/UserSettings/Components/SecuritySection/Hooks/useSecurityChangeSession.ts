@@ -7,7 +7,11 @@ import { validateSessionHandler } from '@/features/Auth/middleware.ts'
 import { authenticatedSessionQueryOptions } from '@/lib/Queries/appQueries.ts'
 import { revalidateCurrentSession } from '@/lib/Queries/sessionRevalidation.ts'
 import { resetAppThemeSettings } from '@/lib/Theme/appTheme.ts'
-import type { SecurityChangeSessionIdentity } from '../Types/security-change-session.types.ts'
+
+type SecurityChangeSessionIdentity = {
+    userId: string
+    absoluteExpiresAt: string | undefined
+}
 
 export default function useSecurityChangeSession() {
     const queryClient = useQueryClient()

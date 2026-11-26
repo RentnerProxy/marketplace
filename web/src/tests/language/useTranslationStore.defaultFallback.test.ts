@@ -1,32 +1,24 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
-import { stubTestGlobal } from '@/tests/shared/bunTestStubs.ts'
+import { afterEach, expect, it, vi } from 'bun:test'
 import {
-    i18nextMock,
-    resetLanguageTestHarness,
-    restoreLanguageTestHarness,
-} from './useTranslationStoreTestHarness.ts'
+    getSnapshot,
+    setLanguage,
+    subscribe,
+} from '@/language/languageStore.ts'
+import { restoreTestGlobals } from '@/tests/shared/bunTestStubs.ts'
+import { stubBrowserLanguage } from './useTranslationStoreTestHarness.ts'
 
-describe('useTranslationStore Standard-Fallback', function () {
-    beforeEach(resetLanguageTestHarness)
-    afterEach(restoreLanguageTestHarness)
+afterEach(restoreTestGlobals)
 
-    it('uses English when storage is unsupported despite a German browser', async function () {
-        const storage = {
-            getItem: vi.fn(function () {
-                return 'sv'
-            }),
-            setItem: vi.fn(),
-        }
-        stubTestGlobal('window', {
-            localStorage: storage,
-            navigator: { language: 'de-DE' },
-        })
-        stubTestGlobal('document', { documentElement: { lang: '' } })
+it('keeps English for unsupported stored languages and ignores invalid switches', async function () {
+    const { documentElement, localStorage } = stubBrowserLanguage('sv', 'de-DE')
+    const subscriber = vi.fn()
+    const unsubscribe = subscribe(subscriber)
+    await Reflect.apply(setLanguage, undefined, ['sv'])
 
-        await import('@/language/useTranslationStore.ts')
-
-        expect(i18nextMock.api.init).toHaveBeenLastCalledWith(
-            expect.objectContaining({ lng: 'en' }),
-        )
-    })
+    expect(localStorage.getItem).toHaveBeenCalledWith('app-language')
+    expect(localStorage.setItem).not.toHaveBeenCalled()
+    expect(getSnapshot().language).toBe('en')
+    expect(documentElement.lang).toBe('en')
+    expect(subscriber).not.toHaveBeenCalled()
+    unsubscribe()
 })

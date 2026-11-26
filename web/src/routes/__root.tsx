@@ -6,14 +6,13 @@ import {
     createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { CalendarProvider } from '@rentnerkev/calendar'
 import { InputProvider } from '@rentnerkev/inputs'
 import { SelectProvider } from '@rentnerkev/select'
 import { ToastProvider } from '@rentnerkev/toasts'
 import { TooltipProvider } from '@rentnerkev/tooltips'
-
-import TanStackQueryDevtools from '@/integrations/TanstackQuery/devtools.tsx'
 
 import appCss from '@/styles.css?url'
 import useTranslationStore from '@/language/useTranslationStore.ts'
@@ -108,7 +107,10 @@ function RootDocument({ children }: { children: ReactNode }) {
                                 name: 'Tanstack Router',
                                 render: <TanStackRouterDevtoolsPanel />,
                             },
-                            TanStackQueryDevtools,
+                            {
+                                name: 'Tanstack Query',
+                                render: <ReactQueryDevtoolsPanel />,
+                            },
                         ]}
                     />
                 )}

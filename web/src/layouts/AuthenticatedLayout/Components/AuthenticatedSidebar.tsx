@@ -4,7 +4,7 @@ import SidebarHeader from './SidebarHeader.tsx'
 import UserProfileButton from './UserProfileButton.tsx'
 import type { AuthenticatedSidebarProps } from '../Types/authenticated-layout-component-props.types.ts'
 import useAuthenticatedSidebarLogic from '../Hooks/useAuthenticatedSidebarLogic.ts'
-import useSidebarNavigationItems from '../Hooks/useSidebarNavigationItems.ts'
+import { flattenNavigationRoutes } from '@/lib/Navigation/navigationItems.ts'
 
 export default function AuthenticatedSidebar({
     title,
@@ -16,10 +16,9 @@ export default function AuthenticatedSidebar({
     userIconSrc,
 }: AuthenticatedSidebarProps) {
     const { state } = useAuthenticatedSidebarLogic()
-    const { state: navigationState } = useSidebarNavigationItems(
-        navItems,
-        state.isCollapsed,
-    )
+    const navigationItems = state.isCollapsed
+        ? flattenNavigationRoutes(navItems)
+        : navItems
 
     return (
         <aside
@@ -37,7 +36,7 @@ export default function AuthenticatedSidebar({
                 />
 
                 <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-                    {navigationState.navigationItems.map((item) => (
+                    {navigationItems.map((item) => (
                         <NavigationItem
                             key={item.to ?? item.labelKey}
                             item={item}

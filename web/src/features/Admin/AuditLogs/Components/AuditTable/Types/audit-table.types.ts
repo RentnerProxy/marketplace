@@ -8,9 +8,3 @@ export type AuditTableProps = {
 export type AuditLogDetailsProps = {
     auditLog: AuditLogEntry
 }
-
-export type AuditLogDetailsLogicReturn = {
-    state: {
-        rows: Array<{ key: string; oldValue: string; newValue: string }>
-    }
-}

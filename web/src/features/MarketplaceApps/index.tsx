@@ -38,14 +38,16 @@ export default function MarketplaceApps() {
                     </p>
                 </header>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {[
-                        { id: 'monitoring', Icon: Activity, number: '01' },
-                        { id: 'docker', Icon: Boxes, number: '02' },
-                        { id: 'loadBalancer', Icon: Network, number: '03' },
-                        { id: 'dns', Icon: Globe2, number: '04' },
-                        { id: 'oidc', Icon: KeyRound, number: '05' },
-                        { id: 'crowdsec', Icon: ShieldCheck, number: '06' },
-                    ].map(({ id, Icon, number }) => (
+                    {(
+                        [
+                            { id: 'monitoring', Icon: Activity, number: '01' },
+                            { id: 'docker', Icon: Boxes, number: '02' },
+                            { id: 'loadBalancer', Icon: Network, number: '03' },
+                            { id: 'dns', Icon: Globe2, number: '04' },
+                            { id: 'oidc', Icon: KeyRound, number: '05' },
+                            { id: 'crowdsec', Icon: ShieldCheck, number: '06' },
+                        ] as const
+                    ).map(({ id, Icon, number }) => (
                         <article
                             key={id}
                             className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-marketplace-void px-7 py-10 text-white shadow-[0_16px_40px_rgba(6,18,15,0.12)] sm:px-8 sm:py-11"

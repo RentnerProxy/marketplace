@@ -3,11 +3,23 @@ import type { UIEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { RUNTIME_LOGS } from '@/config/logging.config.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import { isTranslationKey } from '@/language/translation.ts'
+import type { Translate } from '@/language/translation.ts'
 import { getDashboardLogsHandler } from '../../../middleware.ts'
 import type {
     ServiceConsoleLogicReturn,
     ServiceConsoleProps,
 } from '../Types/service-console.types.ts'
+
+function translateLogEvent(event: string, t: Translate) {
+    if (!event.startsWith('health.')) return event
+
+    const detail = event
+        .slice(7)
+        .replace(/_([a-z])/g, (_match, letter: string) => letter.toUpperCase())
+    const key = `admin.dashboard.details.${detail}`
+    return isTranslationKey(key) ? t(key) : event
+}
 
 export default function useServiceConsoleLogic({
     service,
@@ -48,19 +60,7 @@ export default function useServiceConsoleLogic({
                 timestamp: entry.timestamp,
                 level: entry.level,
                 time: formatter.format(new Date(entry.timestamp)),
-                message:
-                    entry.message ??
-                    (entry.event.startsWith('health.')
-                        ? t(
-                              `admin.dashboard.details.${entry.event
-                                  .slice(7)
-                                  .replace(
-                                      /_([a-z])/g,
-                                      (_match, letter: string) =>
-                                          letter.toUpperCase(),
-                                  )}`,
-                          )
-                        : entry.event),
+                message: entry.message ?? translateLogEvent(entry.event, t),
                 contextText: Object.keys(entry.context).length
                     ? JSON.stringify(entry.context)
                     : '',
@@ -112,11 +112,15 @@ export default function useServiceConsoleLogic({
         }
     }
 
-    let connectionKey = 'live'
+    let connectionKey: 'live' | 'disconnected' | 'connecting' = 'live'
     if (isUnavailable) connectionKey = 'disconnected'
     else if (logsQuery.isPending) connectionKey = 'connecting'
 
-    let sourceKey = 'applicationSource'
+    let sourceKey:
+        | 'applicationSource'
+        | 'pendingSource'
+        | 'containerSource'
+        | 'connectionSource' = 'applicationSource'
     if (!logsQuery.data) sourceKey = 'pendingSource'
     else if (logsQuery.data.source === 'container')
         sourceKey = 'containerSource'

@@ -24,20 +24,18 @@ export default function useBackupTableColumns({
     onOpenRestore,
     onDeleteBackup,
 }: UseBackupTableColumnsParams): TableColumn<BackupRun>[] {
-    const { t, language } = useTranslationStore()
+    const { t } = useTranslationStore()
 
     return useMemo(
         () => [
             {
                 accessorKey: 'fileName',
-                header: t('admin.backups.table.file', { lng: language }),
+                header: t('admin.backups.table.file'),
                 enableHiding: false,
                 meta: {
                     filter: {
                         type: 'text',
-                        placeholder: t('admin.backups.table.file', {
-                            lng: language,
-                        }),
+                        placeholder: t('admin.backups.table.file'),
                     },
                 },
                 size: 280,
@@ -92,13 +90,15 @@ export default function useBackupTableColumns({
                     filter: {
                         type: 'select',
                         placeholder: t('admin.backups.table.trigger'),
-                        options: [
-                            'manual',
-                            'scheduled',
-                            'import',
-                            'restore-safety',
-                            'restore',
-                        ].map((value) => ({
+                        options: (
+                            [
+                                'manual',
+                                'scheduled',
+                                'import',
+                                'restore-safety',
+                                'restore',
+                            ] as const
+                        ).map((value) => ({
                             value,
                             label: t(`admin.backups.trigger.${value}`),
                         })),
@@ -159,12 +159,14 @@ export default function useBackupTableColumns({
                     filter: {
                         type: 'select',
                         placeholder: t('common.status'),
-                        options: [
-                            'queued',
-                            'running',
-                            'completed',
-                            'failed',
-                        ].map((value) => ({
+                        options: (
+                            [
+                                'queued',
+                                'running',
+                                'completed',
+                                'failed',
+                            ] as const
+                        ).map((value) => ({
                             value,
                             label: t(`admin.backups.status.${value}`),
                         })),
@@ -278,6 +280,6 @@ export default function useBackupTableColumns({
                 },
             },
         ],
-        [activeActionId, language, onDeleteBackup, onOpenRestore, t],
+        [activeActionId, onDeleteBackup, onOpenRestore, t],
     )
 }

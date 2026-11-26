@@ -1,9 +1,10 @@
 import { CheckCircle2, Download, Upload, X, XCircle } from 'lucide-react'
 import type { TransferOverlayItemProps, TransferTask } from '../Types/types.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import type { Translate } from '@/language/translation.ts'
 import { formatFileSize } from '@/lib/Format/format.ts'
 
-function getTaskLabel(task: TransferTask, t: (key: string) => string) {
+function getTaskLabel(task: TransferTask, t: Translate) {
     if (task.kind === 'backup') {
         if (task.status === 'success') {
             return t('shared.transfer.backupDone')

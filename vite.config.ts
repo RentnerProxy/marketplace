@@ -25,6 +25,18 @@ const config = defineConfig({
             // Die Server-Event-Bridge blockiert Nitros Modultransport unter Bun.
             eventBusConfig: { enabled: false },
         }),
+        {
+            name: 'strip-form-devtools',
+            apply: 'build',
+            transform(_code, id) {
+                // Form Core imports its diagnostics even in production builds.
+                return id.endsWith(
+                    '/@tanstack/form-core/dist/esm/EventClient.js',
+                )
+                    ? 'export const formEventClient = { emit() {}, on() { return () => {} } }'
+                    : null
+            },
+        },
         nitro({
             publicAssets: [{ dir: 'web/public' }],
             plugins: [
