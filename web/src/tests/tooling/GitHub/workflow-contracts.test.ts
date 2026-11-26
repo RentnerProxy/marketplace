@@ -116,12 +116,45 @@ test('catalog publication builds the locked native signer before issuing credent
     )
     const token = steps.findIndex((step) => step.id === 'distribution')
     const publish = steps.findIndex((step) =>
-        step.run?.endsWith('app-catalog/run.ts sync'),
+        step.run?.endsWith('app-catalog/run.ts publish'),
     )
     expect(build).toBeGreaterThanOrEqual(0)
     expect(token).toBeGreaterThan(build)
     expect(publish).toBeGreaterThan(token)
     expect(steps[build]?.env).toBeUndefined()
+})
+
+test('catalog metadata renewal needs neither the Marketplace nor the publication switch', async () => {
+    const publication = await workflow('app-catalog-publish')
+    const job = publication.jobs.publish!
+    const steps = job.steps
+    const token = steps.findIndex((step) => step.id === 'distribution')
+    const refresh = steps.findIndex((step) =>
+        step.run?.endsWith('app-catalog/run.ts refresh'),
+    )
+    const network = steps.findIndex((step) => step.id === 'private-network')
+    const publish = steps.findIndex((step) =>
+        step.run?.endsWith('app-catalog/run.ts publish'),
+    )
+    expect(refresh).toBeGreaterThan(token)
+    expect(network).toBeGreaterThan(refresh)
+    expect(publish).toBeGreaterThan(network)
+
+    expect(Object.keys(steps[refresh]?.env ?? {}).toSorted()).toEqual([
+        'APP_CATALOG_DISTRIBUTION_TOKEN',
+        'APP_CATALOG_NEXT_ROOT',
+        'APP_CATALOG_SNAPSHOT_KEY',
+        'APP_CATALOG_TARGETS_KEY',
+        'APP_CATALOG_TIMESTAMP_KEY',
+        'APP_CATALOG_TRUSTED_ROOT',
+    ])
+    expect(steps[refresh]).not.toHaveProperty('if')
+    // A job-level `if` cannot read environment variables, so it must not gate on any.
+    expect(job.if).toBe(
+        "github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main'",
+    )
+    for (const index of [network, publish])
+        expect(steps[index]?.if).toBe("vars.APP_CATALOG_ENABLED == 'true'")
 })
 
 test.each(['image', 'release'])(
