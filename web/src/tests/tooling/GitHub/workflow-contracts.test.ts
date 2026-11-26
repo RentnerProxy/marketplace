@@ -149,7 +149,10 @@ test('catalog metadata renewal needs neither the Marketplace nor the publication
         'APP_CATALOG_TRUSTED_ROOT',
     ])
     expect(steps[refresh]).not.toHaveProperty('if')
-    expect(String(job.if)).not.toContain('APP_CATALOG_ENABLED')
+    // A job-level `if` cannot read environment variables, so it must not gate on any.
+    expect(job.if).toBe(
+        "github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main'",
+    )
     for (const index of [network, publish])
         expect(steps[index]?.if).toBe("vars.APP_CATALOG_ENABLED == 'true'")
 })

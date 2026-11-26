@@ -14,9 +14,10 @@ concurrency:
 jobs:
     publish:
         name: Reconcile approved apps and signed metadata
-        # Metadata renewal runs whenever a catalog root is configured. APP_CATALOG_ENABLED
-        # pauses only Marketplace publication; disable this workflow to stop renewal too.
-        if: github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main' && vars.APP_CATALOG_TRUSTED_ROOT != ''
+        # Metadata renewal runs on every run and fails closed without its environment
+        # settings, which a job-level `if` cannot read. APP_CATALOG_ENABLED pauses only
+        # Marketplace publication; disable this workflow to stop renewal too.
+        if: github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main'
         runs-on: ubuntu-24.04
         timeout-minutes: 22
         environment: app-catalog-publishing
