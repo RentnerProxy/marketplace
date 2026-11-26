@@ -130,7 +130,7 @@ impl<'a> DecryptReader<'a> {
         request: &'a Value,
         context: &'a OperationContext,
     ) -> CoreResult<Self> {
-        let source = files::open_source(source_path)?;
+        let mut source = files::open_source(source_path)?;
         let before = files::identity(&source)?;
         files::assert_expected_identity(&before, request)?;
         let maximum = request
@@ -141,9 +141,9 @@ impl<'a> DecryptReader<'a> {
         if before.size < ENVELOPE_OVERHEAD || before.size > maximum {
             return Err(failure());
         }
-        let mut source = BufReader::with_capacity(FILE_BUFFER_SIZE, source);
         let mut header = [0; HEADER_LENGTH];
         source.read_exact(&mut header)?;
+        let source = BufReader::with_capacity(FILE_BUFFER_SIZE, source);
         if &header[..10] != b"TDBAKENC\x01\x01" {
             return Err(failure());
         }
