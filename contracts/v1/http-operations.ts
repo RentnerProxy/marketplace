@@ -14,6 +14,7 @@ export const pathParameterSchemas = Object.freeze({
     operationId: 'RecordId',
     providerId: 'RecordId',
     secretId: 'RecordId',
+    incidentKey: 'RecordId',
     domain: 'LegacyHandoffDomain',
 } as const satisfies Record<string, ProtocolDocumentName>)
 

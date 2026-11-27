@@ -600,6 +600,190 @@
             "error": "invalidManifest"
         },
         {
+            "name": "incident categories come with their capability",
+            "check": "manifest",
+            "path": "/manifest/incidentCategories",
+            "value": [
+                {
+                    "id": "host-availability",
+                    "name": "Host availability",
+                    "resource": "proxyHost"
+                },
+                {
+                    "id": "app-health",
+                    "name": "App health",
+                    "resource": "none"
+                }
+            ],
+            "also": [
+                {
+                    "path": "/manifest/capabilities",
+                    "value": [
+                        {
+                            "id": "proxy.hosts.read.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "diagnostics.upstream.probe.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "notifications.publish.v1",
+                            "scope": "installation"
+                        },
+                        {
+                            "id": "notifications.incidents.manage.v1",
+                            "scope": "installation"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "incident categories require their capability",
+            "check": "manifest",
+            "path": "/manifest/incidentCategories",
+            "value": [
+                {
+                    "id": "host-availability",
+                    "name": "Host availability",
+                    "resource": "proxyHost"
+                }
+            ],
+            "error": "invalidManifest"
+        },
+        {
+            "name": "the incident capability requires categories",
+            "path": "/manifest/capabilities",
+            "value": [
+                {
+                    "id": "proxy.hosts.read.v1",
+                    "scope": "proxyHosts"
+                },
+                {
+                    "id": "diagnostics.upstream.probe.v1",
+                    "scope": "proxyHosts"
+                },
+                {
+                    "id": "notifications.publish.v1",
+                    "scope": "installation"
+                },
+                {
+                    "id": "notifications.incidents.manage.v1",
+                    "scope": "installation"
+                }
+            ],
+            "check": "manifest",
+            "error": "invalidManifest"
+        },
+        {
+            "name": "duplicate incident category",
+            "check": "manifest",
+            "path": "/manifest/incidentCategories",
+            "value": [
+                {
+                    "id": "host-availability",
+                    "name": "Host availability",
+                    "resource": "proxyHost"
+                },
+                {
+                    "id": "host-availability",
+                    "name": "Other",
+                    "resource": "proxyHost"
+                }
+            ],
+            "error": "invalidManifest",
+            "also": [
+                {
+                    "path": "/manifest/capabilities",
+                    "value": [
+                        {
+                            "id": "proxy.hosts.read.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "diagnostics.upstream.probe.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "notifications.publish.v1",
+                            "scope": "installation"
+                        },
+                        {
+                            "id": "notifications.incidents.manage.v1",
+                            "scope": "installation"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "unknown incident resource",
+            "check": "manifest",
+            "path": "/manifest/incidentCategories",
+            "value": [
+                {
+                    "id": "host-availability",
+                    "name": "Host availability",
+                    "resource": "dockerContainer"
+                }
+            ],
+            "error": "invalidShape",
+            "also": [
+                {
+                    "path": "/manifest/capabilities",
+                    "value": [
+                        {
+                            "id": "proxy.hosts.read.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "diagnostics.upstream.probe.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "notifications.publish.v1",
+                            "scope": "installation"
+                        },
+                        {
+                            "id": "notifications.incidents.manage.v1",
+                            "scope": "installation"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "empty incident category list",
+            "check": "manifest",
+            "path": "/manifest/incidentCategories",
+            "value": [],
+            "error": "invalidShape",
+            "also": [
+                {
+                    "path": "/manifest/capabilities",
+                    "value": [
+                        {
+                            "id": "proxy.hosts.read.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "diagnostics.upstream.probe.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "notifications.publish.v1",
+                            "scope": "installation"
+                        },
+                        {
+                            "id": "notifications.incidents.manage.v1",
+                            "scope": "installation"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "unknown engine capability",
             "check": "manifest",
             "path": "/manifest/requires/engineCapabilities",

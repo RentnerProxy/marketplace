@@ -203,6 +203,48 @@
             }
         },
         {
+            "title": "an incident is set by its key with an idempotency key",
+            "operation": "setIncident",
+            "options": {
+                "pathParameter": "host-availability-host-1",
+                "idempotencyKey": "incident-1",
+                "body": {
+                    "status": "open",
+                    "category": "host-availability",
+                    "severity": "error",
+                    "title": "app.example.net is unreachable",
+                    "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                    "resourceId": "host-1"
+                }
+            },
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/incidents/host-availability-host-1"
+            }
+        },
+        {
+            "title": "an incident change requires an idempotency key",
+            "operation": "setIncident",
+            "options": {
+                "pathParameter": "host-availability-host-1",
+                "body": {
+                    "status": "resolved"
+                }
+            }
+        },
+        {
+            "title": "an incident key cannot add URL syntax",
+            "operation": "setIncident",
+            "options": {
+                "pathParameter": "host/1",
+                "idempotencyKey": "incident-1",
+                "body": {
+                    "status": "resolved"
+                }
+            }
+        },
+        {
             "title": "an app-owned operation accepts a nested JSON object",
             "operation": "callAppApi",
             "options": {
@@ -538,6 +580,12 @@
                 ]
             },
             "valid": false
+        },
+        {
+            "title": "an incident change succeeds without a body",
+            "operation": "setIncident",
+            "status": 204,
+            "valid": true
         },
         {
             "title": "a legacy handoff status reports platform ownership",

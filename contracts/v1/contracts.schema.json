@@ -205,7 +205,7 @@
                     }
                 },
                 "capabilities": {
-                    "maxItems": 11,
+                    "maxItems": 12,
                     "type": "array",
                     "items": {
                         "anyOf": [
@@ -287,6 +287,24 @@
                                     "id": {
                                         "type": "string",
                                         "const": "notifications.publish.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "installation"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "notifications.incidents.manage.v1"
                                     },
                                     "scope": {
                                         "type": "string",
@@ -487,6 +505,40 @@
                     ],
                     "additionalProperties": false,
                     "description": "Write versions must be readable and include the target version. Order migrations by source version. Every declared forward migration must lead to the target, with one outgoing step per source version. Zero denotes fresh state."
+                },
+                "incidentCategories": {
+                    "description": "Incident categories the app opens with notifications.incidents.manage.v1. Users subscribe to each category. The SDK checks unique IDs, and that the categories and the capability are declared together.",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "description": "App-local category ID. Keep it stable across releases: subscriptions refer to it together with the app ID.",
+                                "$ref": "#/$defs/RecordId"
+                            },
+                            "name": {
+                                "type": "string",
+                                "pattern": "^[^\\p{Cc}\\p{Cs}]{1,80}$",
+                                "description": "Name users see when they subscribe."
+                            },
+                            "resource": {
+                                "type": "string",
+                                "enum": [
+                                    "proxyHost",
+                                    "none"
+                                ],
+                                "description": "What each incident of the category refers to. A proxyHost incident names a host the app may read or probe, and only users who may view that host receive it."
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "resource"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "resources": {
                     "type": "object",
@@ -1267,6 +1319,24 @@
                                 "properties": {
                                     "id": {
                                         "type": "string",
+                                        "const": "notifications.incidents.manage.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "installation"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
                                         "const": "docker.inventory.observe.v1"
                                     },
                                     "scope": {
@@ -1469,6 +1539,24 @@
                                 "id": {
                                     "type": "string",
                                     "const": "notifications.publish.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "installation"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "notifications.incidents.manage.v1"
                                 },
                                 "scope": {
                                     "type": "string",
@@ -3098,6 +3186,65 @@
             ],
             "additionalProperties": false
         },
+        "AppIncidentChange": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "const": "open"
+                        },
+                        "category": {
+                            "description": "An incident category the manifest declares.",
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "severity": {
+                            "type": "string",
+                            "enum": [
+                                "warning",
+                                "error",
+                                "critical"
+                            ]
+                        },
+                        "title": {
+                            "type": "string",
+                            "pattern": "^[^\\p{Cc}\\p{Cs}\\p{Cf}]{1,80}$"
+                        },
+                        "message": {
+                            "type": "string",
+                            "pattern": "^[^\\p{Cc}\\p{Cs}\\p{Cf}]{1,400}$"
+                        },
+                        "resourceId": {
+                            "description": "Required for a proxyHost category and absent otherwise: the listed host ID the incident refers to. The app must hold a read or probe grant that covers the host.",
+                            "$ref": "#/$defs/RecordId"
+                        }
+                    },
+                    "required": [
+                        "status",
+                        "category",
+                        "severity",
+                        "title",
+                        "message"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "const": "resolved"
+                        }
+                    },
+                    "required": [
+                        "status"
+                    ],
+                    "additionalProperties": false
+                }
+            ],
+            "description": "Assert the current state of the incident the path key names. Open creates or updates it and resolve closes it. The SDK rejects link-like text. The platform renders title and message as plain text in its own templates, delivers through mail and webhook channels to users who subscribe to the category and may see the resource, and never sends a notification twice for a repeated state. Send the current state again with every observation: while notifications are paused after a restore, the platform keeps no incidents."
+        },
         "AppAuditEvent": {
             "type": "object",
             "properties": {
@@ -3835,6 +3982,7 @@
         "UpstreamProbeOutcome",
         "UpstreamProbeBatchResult",
         "AppNotification",
+        "AppIncidentChange",
         "AppAuditEvent",
         "AppSecret",
         "LegacyHandoffDomain",

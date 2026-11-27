@@ -11,6 +11,24 @@ const MAX_JSON_NUMBER: f64 = 9_007_199_254_740_991.0;
 /// Serialized size limit of a legacy handoff part.
 const MAX_PART_BYTES: usize = 262_144;
 
+/// Whether incident text holds a run a mail client could turn into a link: a URL scheme
+/// (`letter [letters, digits, + . -]* ://`), `www.` or `mailto:`, ignoring case.
+fn link_like(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    if lower.contains("www.") || lower.contains("mailto:") {
+        return true;
+    }
+    lower.match_indices("://").any(|(index, _)| {
+        lower[..index]
+            .chars()
+            .rev()
+            .take_while(|character| {
+                character.is_ascii_alphanumeric() || matches!(character, '+' | '.' | '-')
+            })
+            .any(|character| character.is_ascii_alphabetic())
+    })
+}
+
 /// UTF-8 length of the ECMAScript `JSON.stringify` form of decoded wire JSON.
 fn json_text_len(value: &Value) -> usize {
     match value {
@@ -139,6 +157,12 @@ impl ProtocolContracts {
                     .iter()
                     .map(|provider| string(&provider["id"])),
             )
+        {
+            return Err(ContractError::InvalidShape);
+        }
+        if name == "AppIncidentChange"
+            && document["status"] == "open"
+            && (link_like(string(&document["title"])) || link_like(string(&document["message"])))
         {
             return Err(ContractError::InvalidShape);
         }

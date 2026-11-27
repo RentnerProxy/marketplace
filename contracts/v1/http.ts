@@ -161,6 +161,7 @@ export const httpComponents = {
         operationId: pathParameter('operationId'),
         providerId: pathParameter('providerId'),
         secretId: pathParameter('secretId'),
+        incidentKey: pathParameter('incidentKey'),
         domain: pathParameter('domain'),
         ResumeCursor: {
             name: 'Last-Event-ID',
