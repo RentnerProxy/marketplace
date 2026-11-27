@@ -2630,6 +2630,26 @@
                                 "maxLength": 253,
                                 "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
                                 "description": "Lowercase ASCII hostname. Encode international names as A-labels."
+                            },
+                            "enabled": {
+                                "description": "Whether the host serves traffic. Platforms that serve diagnostics.upstream.probe.v2 always include it.",
+                                "type": "boolean"
+                            },
+                            "domains": {
+                                "description": "Every domain of the host in ascending order. Platforms that serve diagnostics.upstream.probe.v2 always include it; a probe names one of these domains that is not a wildcard.",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "maxLength": 255,
+                                    "pattern": "^(?:\\*\\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                                    "description": "Lowercase ASCII domain, optionally with a leading wildcard label."
+                                }
+                            },
+                            "probeRevision": {
+                                "description": "Changes only when something an upstream probe observes changes. Platforms that serve diagnostics.upstream.probe.v2 always include it, and each probe result carries the value from when the probe ran.",
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
                             }
                         },
                         "required": [

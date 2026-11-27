@@ -13,10 +13,37 @@ const hostname = z
     )
 
 const listCursor = z.string().regex(/^[A-Za-z0-9_-]{1,256}$/)
+const listedDomain = z
+    .string()
+    .max(255)
+    .regex(
+        /^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
+    )
+    .describe(
+        'Lowercase ASCII domain, optionally with a leading wildcard label.',
+    )
 const proxyHost = z.looseObject({
     id: recordId,
     revision: recordId,
     hostname,
+    enabled: z
+        .boolean()
+        .optional()
+        .describe(
+            'Whether the host serves traffic. Platforms that serve diagnostics.upstream.probe.v2 always include it.',
+        ),
+    domains: z
+        .array(listedDomain)
+        .min(1)
+        .optional()
+        .describe(
+            'Every domain of the host in ascending order. Platforms that serve diagnostics.upstream.probe.v2 always include it; a probe names one of these domains that is not a wildcard.',
+        ),
+    probeRevision: sha256
+        .optional()
+        .describe(
+            'Changes only when something an upstream probe observes changes. Platforms that serve diagnostics.upstream.probe.v2 always include it, and each probe result carries the value from when the probe ran.',
+        ),
 })
 
 const upstreamAddress = z.union([z.ipv4(), z.ipv6(), hostname])
