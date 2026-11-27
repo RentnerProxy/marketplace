@@ -754,6 +754,42 @@
             ]
         },
         {
+            "name": "an incident category name has no format characters",
+            "check": "manifest",
+            "path": "/manifest/incidentCategories",
+            "value": [
+                {
+                    "id": "host-availability",
+                    "name": "Host‮availability",
+                    "resource": "proxyHost"
+                }
+            ],
+            "error": "invalidShape",
+            "also": [
+                {
+                    "path": "/manifest/capabilities",
+                    "value": [
+                        {
+                            "id": "proxy.hosts.read.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "diagnostics.upstream.probe.v1",
+                            "scope": "proxyHosts"
+                        },
+                        {
+                            "id": "notifications.publish.v1",
+                            "scope": "installation"
+                        },
+                        {
+                            "id": "notifications.incidents.manage.v1",
+                            "scope": "installation"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "empty incident category list",
             "check": "manifest",
             "path": "/manifest/incidentCategories",

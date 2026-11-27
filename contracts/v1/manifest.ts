@@ -121,9 +121,12 @@ export const appManifest = z
                     id: recordId.describe(
                         'App-local category ID. Keep it stable across releases: subscriptions refer to it together with the app ID.',
                     ),
-                    name: displayName.describe(
-                        'Name users see when they subscribe.',
-                    ),
+                    name: z
+                        .string()
+                        .regex(/^[^\p{Cc}\p{Cs}\p{Cf}\p{Zl}\p{Zp}]{1,80}$/u)
+                        .describe(
+                            'Name users see when they subscribe and in notifications: one line of plain text without format characters.',
+                        ),
                     resource: z
                         .enum(['proxyHost', 'none'])
                         .describe(
