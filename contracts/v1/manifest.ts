@@ -17,6 +17,7 @@ const capabilities = [
     ['proxy.hosts.read.v1', 'proxyHosts'],
     ['proxy.hosts.manage-owned.v1', 'ownedProxyHosts'],
     ['diagnostics.upstream.probe.v1', 'proxyHosts'],
+    ['diagnostics.upstream.probe.v2', 'proxyHosts'],
     ['notifications.publish.v1', 'installation'],
     ['docker.inventory.observe.v1', 'dockerConnections'],
     ['dns.challenge.manage.v1', 'dnsZones'],

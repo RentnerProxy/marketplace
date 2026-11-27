@@ -126,6 +126,16 @@ export const generatedHttpOperations = {
         "status": 200,
         "summary": "Run a bounded probe of an authorized proxy host upstream"
     },
+    probeUpstreams: {
+        "description": "Requires diagnostics.upstream.probe.v2. Each probe returns the stage result that built-in host monitoring classifies, so an app can classify it the same way. A probe the platform cannot run returns an explicit outcome instead of failing the batch.",
+        "method": "POST",
+        "path": "/platform/v1/diagnostics/upstream/batch",
+        "request": "UpstreamProbeBatch",
+        "response": "UpstreamProbeBatchResult",
+        "socket": "core.sock",
+        "status": 200,
+        "summary": "Probe authorized proxy host upstreams with monitoring-class admission"
+    },
     publishNotification: {
         "idempotencyKey": true,
         "method": "POST",

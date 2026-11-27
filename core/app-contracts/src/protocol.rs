@@ -142,6 +142,15 @@ impl ProtocolContracts {
         {
             return Err(ContractError::InvalidShape);
         }
+        if name == "UpstreamProbeBatch"
+            && !unique_strings(
+                array(&document["probes"])
+                    .iter()
+                    .map(|probe| string(&probe["hostId"])),
+            )
+        {
+            return Err(ContractError::InvalidShape);
+        }
         if name == "LegacyHandoffPart" && json_text_len(&document["part"]) > MAX_PART_BYTES {
             return Err(ContractError::InvalidShape);
         }

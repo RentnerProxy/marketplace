@@ -137,6 +137,17 @@
             "response": "UpstreamProbeResult"
         },
         {
+            "id": "probeUpstreams",
+            "socket": "core.sock",
+            "method": "POST",
+            "path": "/platform/v1/diagnostics/upstream/batch",
+            "summary": "Probe authorized proxy host upstreams with monitoring-class admission",
+            "status": 200,
+            "request": "UpstreamProbeBatch",
+            "response": "UpstreamProbeBatchResult",
+            "description": "Requires diagnostics.upstream.probe.v2. Each probe returns the stage result that built-in host monitoring classifies, so an app can classify it the same way. A probe the platform cannot run returns an explicit outcome instead of failing the batch."
+        },
+        {
             "id": "publishNotification",
             "socket": "core.sock",
             "method": "POST",
