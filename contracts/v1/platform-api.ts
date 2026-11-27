@@ -184,7 +184,7 @@ const appIncidentChange = z
         z.strictObject({ status: z.literal('resolved') }),
     ])
     .describe(
-        'Assert the current state of the incident the path key names. Open creates or updates it and resolve closes it. The SDK rejects link-like text. The platform renders title and message as plain text in its own templates, delivers through mail and webhook channels to users who subscribe to the category and may see the resource, and never sends a notification twice for a repeated state. Send the current state again with every observation: while notifications are paused after a restore, the platform keeps no incidents.',
+        "Assert the current state of the incident the path key names. Open creates or updates it and resolve closes it. The SDK rejects link-like text. The platform renders title and message as plain text in its own templates, delivers through mail and webhook channels to users who subscribe to the category and may see the resource, and never sends a notification twice for a repeated state. Send the current state again with every observation: while notifications are paused after a restore, the platform keeps no incidents. Derive the idempotency key from the incident key and the asserted state, so a repeated observation reuses it and stays within the platform's idempotency record limit.",
     )
 
 export const jsonValue = z.json()
