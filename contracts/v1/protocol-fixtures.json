@@ -286,6 +286,18 @@
             "valid": false
         },
         {
+            "title": "check the monitoring-class probe for one host",
+            "schema": "AuthorizationRequest",
+            "document": {
+                "capability": {
+                    "id": "diagnostics.upstream.probe.v2",
+                    "scope": "proxyHosts"
+                },
+                "resourceId": "proxy-edge"
+            },
+            "valid": true
+        },
+        {
             "title": "check one resource",
             "schema": "AuthorizationRequest",
             "document": {
@@ -871,6 +883,190 @@
             "title": "upstream probe is restricted to an existing host and deadline",
             "schema": "UpstreamProbe",
             "document": { "hostId": "host-1", "timeoutMs": 10001 },
+            "valid": false
+        },
+        {
+            "title": "a probe batch names a domain and deadline for each host",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 1000
+                    },
+                    {
+                        "hostId": "host-2",
+                        "domain": "api.example.net",
+                        "timeoutMs": 8000
+                    }
+                ]
+            },
+            "valid": true
+        },
+        {
+            "title": "a probe batch is never empty",
+            "schema": "UpstreamProbeBatch",
+            "document": { "probes": [] },
+            "valid": false
+        },
+        {
+            "title": "a probe batch names each host once",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 3000
+                    },
+                    {
+                        "hostId": "host-1",
+                        "domain": "www.example.net",
+                        "timeoutMs": 3000
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe deadline leaves room for the platform checks",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 8001
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe deadline is at least one second",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 999
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a wildcard domain cannot be probed",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "*.example.net",
+                        "timeoutMs": 3000
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe names its domain",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [{ "hostId": "host-1", "timeoutMs": 3000 }]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probed host reports the first failing stage",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": 200,
+                "failure": { "stage": "tls", "code": "tls_failed" }
+            },
+            "valid": true
+        },
+        {
+            "title": "a probed host tolerates additional result fields",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 0,
+                "httpStatus": null,
+                "failure": {
+                    "stage": "configuration",
+                    "code": "host_not_active",
+                    "detail": "later addition"
+                },
+                "addresses": ["192.0.2.10"]
+            },
+            "valid": true
+        },
+        {
+            "title": "a TLS failure stage carries only the TLS failure code",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": null,
+                "failure": { "stage": "tls", "code": "tls_verified" }
+            },
+            "valid": false
+        },
+        {
+            "title": "a probed host states that no stage failed",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": 200
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe revision is a lowercase SHA-256",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": 200,
+                "failure": null
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe the platform did not run names its host and reason",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "rateLimited",
+                "hostId": "host-1",
+                "domain": "app.example.net"
+            },
+            "valid": true
+        },
+        {
+            "title": "a probe batch result returns at least one result",
+            "schema": "UpstreamProbeBatchResult",
+            "document": { "results": [] },
             "valid": false
         },
         {

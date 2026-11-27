@@ -20,6 +20,105 @@ const proxyHost = z.looseObject({
 })
 
 const upstreamAddress = z.union([z.ipv4(), z.ipv6(), hostname])
+
+const maxUpstreamProbes = 32
+const probedHost = {
+    hostId: recordId.describe('Host ID from the proxy host listing.'),
+    domain: hostname.describe(
+        'One of the listed domains of the host, sent to the upstream like a request for that domain. Wildcard domains cannot be probed.',
+    ),
+}
+const upstreamProbeTarget = z.strictObject({
+    ...probedHost,
+    timeoutMs: z
+        .number()
+        .int()
+        .min(1_000)
+        .max(8_000)
+        .describe(
+            'Upstream deadline in milliseconds. It leaves room for the platform checks within the App API request deadline.',
+        ),
+})
+const upstreamProbeFailure = z
+    .discriminatedUnion('stage', [
+        z.looseObject({
+            stage: z.literal('configuration'),
+            code: z.enum([
+                'configuration_stale',
+                'configuration_changed',
+                'host_not_active',
+                'runtime_unavailable',
+            ]),
+        }),
+        z.looseObject({
+            stage: z.literal('tls'),
+            code: z.literal('tls_failed'),
+        }),
+        z.looseObject({
+            stage: z.literal('upstream'),
+            code: z.enum([
+                'upstream_unreachable',
+                'upstream_timeout',
+                'upstream_dns_failed',
+                'upstream_responded',
+                'access_denied',
+                'upstream_error',
+                'redirect_not_followed',
+                'unexpected_status',
+                'redirect_host',
+                'wildcard_domain',
+                'skipped',
+            ]),
+        }),
+    ])
+    .describe(
+        'The first stage that prevented a usable upstream response, checked in this order: the active proxy configuration did not serve the host and domain, upstream TLS verification failed, or the upstream sent no HTTP response. Built-in monitoring reports configuration failures as unknown, tls_failed and the upstream codes upstream_unreachable, upstream_timeout and upstream_dns_failed as unhealthy, and any other upstream code as an invalid response.',
+    )
+const upstreamProbeOutcome = z
+    .discriminatedUnion('outcome', [
+        z.looseObject({
+            outcome: z.literal('probed'),
+            ...probedHost,
+            probeRevision: sha256.describe(
+                'Equals the probeRevision of the host in the listing when the probe ran. A different value means that something the probe observes changed since the host was listed.',
+            ),
+            durationMs: z
+                .number()
+                .int()
+                .min(0)
+                .max(12_000)
+                .describe('Duration of the upstream stage.'),
+            httpStatus: z
+                .number()
+                .int()
+                .min(100)
+                .max(599)
+                .nullable()
+                .describe(
+                    'Status of the upstream response, or null without one. Compare it with the expected status only when failure is null. Built-in monitoring accepts exactly the expected status, and any 2xx or 3xx status while the expected status is the default 200.',
+                ),
+            failure: upstreamProbeFailure.nullable(),
+        }),
+        z.looseObject({
+            outcome: z
+                .enum([
+                    'scopeDenied',
+                    'hostRemoved',
+                    'hostDisabled',
+                    'domainNotFound',
+                    'configurationChanged',
+                    'busy',
+                    'rateLimited',
+                    'unavailable',
+                ])
+                .describe(
+                    'The probe did not run or its result was discarded. scopeDenied: the grant no longer covers the host. hostRemoved, hostDisabled and domainNotFound: list the hosts again. configurationChanged: the host or proxy configuration changed during the probe; discard it. busy: monitoring-class capacity is in use or a probe of the same host is running. rateLimited: this installation exhausted its probe budget. unavailable: the proxy runtime cannot run probes. Retry busy, rateLimited and unavailable later with backoff.',
+                ),
+            ...probedHost,
+        }),
+    ])
+    .describe('The result of one probe.')
+
 const notification = z.strictObject({
     category: recordId,
     severity: z.enum(['info', 'warning', 'error']),
@@ -155,6 +254,31 @@ export const platformApiSchemas = {
         }),
         z.looseObject({ outcome: z.enum(['unreachable', 'timedOut']) }),
     ]),
+    UpstreamProbeBatch: z
+        .strictObject({
+            probes: z
+                .array(upstreamProbeTarget)
+                .min(1)
+                .max(maxUpstreamProbes)
+                .refine(
+                    (probes) =>
+                        new Set(probes.map(({ hostId }) => hostId)).size ===
+                        probes.length,
+                    'Probe each host at most once per batch.',
+                ),
+        })
+        .describe(
+            'Probe hosts that a diagnostics.upstream.probe.v2 grant covers, each through the domain the app chooses from the listing. The SDK checks that each host appears once. The platform admits every probe with monitoring-class capacity separate from interactive Domain Checks, against a budget of this installation sized for 1,000 hosts probed every 60 seconds.',
+        ),
+    UpstreamProbeOutcome: upstreamProbeOutcome,
+    UpstreamProbeBatchResult: z
+        .looseObject({
+            results: z
+                .array(upstreamProbeOutcome)
+                .min(1)
+                .max(maxUpstreamProbes),
+        })
+        .describe('One result for every requested probe, in request order.'),
     AppNotification: notification,
     AppAuditEvent: z.strictObject({
         action: recordId,

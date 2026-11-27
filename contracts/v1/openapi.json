@@ -1032,6 +1032,92 @@
                 }
             }
         },
+        "/platform/v1/diagnostics/upstream/batch": {
+            "post": {
+                "operationId": "probeUpstreams",
+                "summary": "Probe authorized proxy host upstreams with monitoring-class admission",
+                "description": "Requires diagnostics.upstream.probe.v2. Each probe returns the stage result that built-in host monitoring classifies, so an app can classify it the same way. A probe the platform cannot run returns an explicit outcome instead of failing the batch.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpstreamProbeBatch"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The operation result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UpstreamProbeBatchResult"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/platform/v1/notifications": {
             "post": {
                 "operationId": "publishNotification",
@@ -2301,6 +2387,15 @@
             },
             "UpstreamProbeResult": {
                 "$ref": "./contracts.schema.json#/$defs/UpstreamProbeResult"
+            },
+            "UpstreamProbeBatch": {
+                "$ref": "./contracts.schema.json#/$defs/UpstreamProbeBatch"
+            },
+            "UpstreamProbeOutcome": {
+                "$ref": "./contracts.schema.json#/$defs/UpstreamProbeOutcome"
+            },
+            "UpstreamProbeBatchResult": {
+                "$ref": "./contracts.schema.json#/$defs/UpstreamProbeBatchResult"
             },
             "AppNotification": {
                 "$ref": "./contracts.schema.json#/$defs/AppNotification"

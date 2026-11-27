@@ -20,6 +20,10 @@ use validation::{
 
 const SCHEMA: &str = include_str!(concat!(env!("OUT_DIR"), "/contracts.schema.json"));
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Shared cases that pair an `UpstreamProbeOutcome` with the outcome built-in host monitoring
+/// records, so platforms and apps can check that they classify probe results the same way.
+pub const UPSTREAM_PROBE_FIXTURES: &str =
+    include_str!(concat!(env!("OUT_DIR"), "/upstream-probe-fixtures.json"));
 const RELEASE_DISTRIBUTION: &str = "https://github.com/RentnerProxy/app-catalog/releases/download/";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

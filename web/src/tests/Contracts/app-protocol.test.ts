@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import httpFixtures from '../../../../contracts/v1/http-fixtures.json'
 import fixtures from '../../../../contracts/v1/protocol-fixtures.json'
+import probeFixtures from '../../../../contracts/v1/upstream-probe-fixtures.json'
 import {
     pathParameterSchemas,
     type HttpOperationDefinition,
@@ -16,6 +17,7 @@ import {
     prepareHttpRequest,
     rpcLimits,
     type HttpOperationName,
+    type ProtocolDocument,
     type ProtocolDocumentName,
 } from '../../../../contracts/v1/index.ts'
 
@@ -164,6 +166,81 @@ describe('app protocol v1', () => {
                 })
             if (valid) expect(check()).toBeDefined()
             else expect(check).toThrow(ContractError)
+        })
+    }
+})
+
+type ProbeOutcome = ProtocolDocument<'UpstreamProbeOutcome'>
+type MonitoringOutcome = {
+    status: string
+    code: string
+    durationMs: number | null
+    httpStatus: number | null
+} | null
+
+const unknownOutcome = (code: string): MonitoringOutcome => ({
+    status: 'unknown',
+    code,
+    durationMs: null,
+    httpStatus: null,
+})
+const unreachableCodes = new Set([
+    'upstream_unreachable',
+    'upstream_timeout',
+    'upstream_dns_failed',
+])
+
+/** Classifies a probe result as the contract describes built-in host monitoring. */
+function monitoringOutcome(
+    result: ProbeOutcome,
+    expectedStatus: number,
+): MonitoringOutcome {
+    if (result.outcome === 'busy') return unknownOutcome('busy')
+    if (result.outcome === 'unavailable')
+        return unknownOutcome('runtime_unavailable')
+    if (result.outcome !== 'probed') return null
+    const { failure, httpStatus, durationMs } = result
+    if (failure?.stage === 'configuration') return unknownOutcome(failure.code)
+    if (failure?.stage === 'tls')
+        return {
+            status: 'unhealthy',
+            code: 'tls_failed',
+            durationMs,
+            httpStatus: null,
+        }
+    if (failure === null && httpStatus !== null) {
+        const accepted =
+            httpStatus === expectedStatus ||
+            (expectedStatus === 200 && httpStatus >= 200 && httpStatus < 400)
+        return {
+            status: accepted ? 'healthy' : 'unhealthy',
+            code: accepted ? 'expected_status' : 'unexpected_status',
+            durationMs,
+            httpStatus,
+        }
+    }
+    if (failure?.stage === 'upstream' && unreachableCodes.has(failure.code))
+        return {
+            status: 'unhealthy',
+            code: failure.code,
+            durationMs,
+            httpStatus: null,
+        }
+    return unknownOutcome('invalid_response')
+}
+
+describe('shared upstream probe fixtures', () => {
+    for (const fixture of probeFixtures.cases) {
+        test(fixture.title, () => {
+            const result = parseProtocolDocument(
+                'UpstreamProbeOutcome',
+                fixture.result,
+            )
+            const parsed: unknown = result
+            expect(parsed).toEqual(fixture.result)
+            expect(monitoringOutcome(result, fixture.expectedStatus)).toEqual(
+                fixture.monitoring,
+            )
         })
     }
 })

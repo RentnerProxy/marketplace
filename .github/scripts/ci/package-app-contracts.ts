@@ -161,6 +161,10 @@ function packageRust(directory: string, bundle: string) {
     }
     for (const file of ['LICENSE', 'contracts.schema.json'])
         copyFileSync(join(bundle, file), join(packageDir, file))
+    copyFileSync(
+        join(root, tsSource, 'upstream-probe-fixtures.json'),
+        join(packageDir, 'upstream-probe-fixtures.json'),
+    )
     copyFileSync(join(root, 'core/Cargo.lock'), join(packageDir, 'Cargo.lock'))
     // Reduce the locked workspace dependency graph to the standalone crate.
     command('cargo', ['tree', '--offline'], packageDir)
@@ -255,6 +259,11 @@ function smokeRust(directory: string, bundle: string) {
             readFileSync(join(bundle, file)),
             file,
         )
+    deepStrictEqual(
+        readFileSync(join(directory, crateDir, 'upstream-probe-fixtures.json')),
+        readFileSync(join(root, tsSource, 'upstream-probe-fixtures.json')),
+        'upstream-probe-fixtures.json',
+    )
     copyFileSync(
         join(root, tsSource, 'fixtures.json'),
         join(directory, 'fixtures.json'),

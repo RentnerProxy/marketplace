@@ -2,7 +2,7 @@ use std::sync::LazyLock;
 
 use rentnerproxy_app_contracts::{
     ContractError, HttpDescriptor, HttpMethod, HttpOperation, HttpRequestOptions, HttpSocket,
-    ProtocolContracts,
+    ProtocolContracts, UPSTREAM_PROBE_FIXTURES,
 };
 use serde_json::{Value, json};
 
@@ -24,6 +24,25 @@ fn shared_protocol_fixtures_agree_with_the_typescript_contract() {
                 case.get("document").unwrap()
             ),
             expected_validation(case),
+            "{}",
+            case["title"].as_str().unwrap()
+        );
+    }
+}
+
+#[test]
+fn shared_upstream_probe_fixtures_are_bundled_valid_outcomes() {
+    assert_eq!(
+        UPSTREAM_PROBE_FIXTURES,
+        include_str!("../../../contracts/v1/upstream-probe-fixtures.json")
+    );
+    let fixtures: Value = serde_json::from_str(UPSTREAM_PROBE_FIXTURES).unwrap();
+    let cases = fixtures["cases"].as_array().unwrap();
+    assert!(!cases.is_empty());
+    for case in cases {
+        assert_eq!(
+            CONTRACTS.validate("UpstreamProbeOutcome", &case["result"]),
+            Ok(()),
             "{}",
             case["title"].as_str().unwrap()
         );

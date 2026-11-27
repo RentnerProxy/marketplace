@@ -158,6 +158,51 @@
             }
         },
         {
+            "title": "a probe batch names each host with a listed domain",
+            "operation": "probeUpstreams",
+            "options": {
+                "body": {
+                    "probes": [
+                        {
+                            "hostId": "host-1",
+                            "domain": "app.example.net",
+                            "timeoutMs": 3000
+                        },
+                        {
+                            "hostId": "host-2",
+                            "domain": "api.example.net",
+                            "timeoutMs": 8000
+                        }
+                    ]
+                }
+            },
+            "expected": {
+                "method": "POST",
+                "socket": "core.sock",
+                "path": "/platform/v1/diagnostics/upstream/batch"
+            }
+        },
+        {
+            "title": "a probe batch probes each host once",
+            "operation": "probeUpstreams",
+            "options": {
+                "body": {
+                    "probes": [
+                        {
+                            "hostId": "host-1",
+                            "domain": "app.example.net",
+                            "timeoutMs": 3000
+                        },
+                        {
+                            "hostId": "host-1",
+                            "domain": "www.example.net",
+                            "timeoutMs": 3000
+                        }
+                    ]
+                }
+            }
+        },
+        {
             "title": "an app-owned operation accepts a nested JSON object",
             "operation": "callAppApi",
             "options": {
@@ -441,6 +486,57 @@
             "title": "redirections are outside the operation contract",
             "operation": "getAppReadiness",
             "status": 302,
+            "valid": false
+        },
+        {
+            "title": "a probe batch returns a stage result or an explicit outcome per host",
+            "operation": "probeUpstreams",
+            "status": 200,
+            "body": {
+                "results": [
+                    {
+                        "outcome": "probed",
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                        "durationMs": 42,
+                        "httpStatus": 204,
+                        "failure": null
+                    },
+                    {
+                        "outcome": "probed",
+                        "hostId": "host-2",
+                        "domain": "api.example.net",
+                        "probeRevision": "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9",
+                        "durationMs": 8000,
+                        "httpStatus": null,
+                        "failure": {
+                            "stage": "upstream",
+                            "code": "upstream_timeout"
+                        }
+                    },
+                    {
+                        "outcome": "hostDisabled",
+                        "hostId": "host-3",
+                        "domain": "old.example.net"
+                    }
+                ]
+            },
+            "valid": true
+        },
+        {
+            "title": "a probe batch result rejects an unknown outcome",
+            "operation": "probeUpstreams",
+            "status": 200,
+            "body": {
+                "results": [
+                    {
+                        "outcome": "skipped",
+                        "hostId": "host-1",
+                        "domain": "app.example.net"
+                    }
+                ]
+            },
             "valid": false
         },
         {

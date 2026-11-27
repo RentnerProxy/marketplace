@@ -205,7 +205,7 @@
                     }
                 },
                 "capabilities": {
-                    "maxItems": 10,
+                    "maxItems": 11,
                     "type": "array",
                     "items": {
                         "anyOf": [
@@ -251,6 +251,24 @@
                                     "id": {
                                         "type": "string",
                                         "const": "diagnostics.upstream.probe.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "diagnostics.upstream.probe.v2"
                                     },
                                     "scope": {
                                         "type": "string",
@@ -1213,6 +1231,24 @@
                                 "properties": {
                                     "id": {
                                         "type": "string",
+                                        "const": "diagnostics.upstream.probe.v2"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
                                         "const": "notifications.publish.v1"
                                     },
                                     "scope": {
@@ -1397,6 +1433,24 @@
                                 "id": {
                                     "type": "string",
                                     "const": "diagnostics.upstream.probe.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "proxyHosts"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "diagnostics.upstream.probe.v2"
                                 },
                                 "scope": {
                                     "type": "string",
@@ -2757,6 +2811,242 @@
                 }
             ]
         },
+        "UpstreamProbeBatch": {
+            "type": "object",
+            "properties": {
+                "probes": {
+                    "minItems": 1,
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "hostId": {
+                                "description": "Host ID from the proxy host listing.",
+                                "$ref": "#/$defs/RecordId"
+                            },
+                            "domain": {
+                                "type": "string",
+                                "maxLength": 253,
+                                "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                                "description": "One of the listed domains of the host, sent to the upstream like a request for that domain. Wildcard domains cannot be probed."
+                            },
+                            "timeoutMs": {
+                                "type": "integer",
+                                "minimum": 1000,
+                                "maximum": 8000,
+                                "description": "Upstream deadline in milliseconds. It leaves room for the platform checks within the App API request deadline."
+                            }
+                        },
+                        "required": [
+                            "hostId",
+                            "domain",
+                            "timeoutMs"
+                        ],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required": [
+                "probes"
+            ],
+            "additionalProperties": false,
+            "description": "Probe hosts that a diagnostics.upstream.probe.v2 grant covers, each through the domain the app chooses from the listing. The SDK checks that each host appears once. The platform admits every probe with monitoring-class capacity separate from interactive Domain Checks, against a budget of this installation sized for 1,000 hosts probed every 60 seconds."
+        },
+        "UpstreamProbeOutcome": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "outcome": {
+                            "type": "string",
+                            "const": "probed"
+                        },
+                        "hostId": {
+                            "description": "Host ID from the proxy host listing.",
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "domain": {
+                            "type": "string",
+                            "maxLength": 253,
+                            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                            "description": "One of the listed domains of the host, sent to the upstream like a request for that domain. Wildcard domains cannot be probed."
+                        },
+                        "probeRevision": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Equals the probeRevision of the host in the listing when the probe ran. A different value means that something the probe observes changed since the host was listed."
+                        },
+                        "durationMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 12000,
+                            "description": "Duration of the upstream stage."
+                        },
+                        "httpStatus": {
+                            "anyOf": [
+                                {
+                                    "type": "integer",
+                                    "minimum": 100,
+                                    "maximum": 599
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Status of the upstream response, or null without one. Compare it with the expected status only when failure is null. Built-in monitoring accepts exactly the expected status, and any 2xx or 3xx status while the expected status is the default 200."
+                        },
+                        "failure": {
+                            "anyOf": [
+                                {
+                                    "oneOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stage": {
+                                                    "type": "string",
+                                                    "const": "configuration"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "configuration_stale",
+                                                        "configuration_changed",
+                                                        "host_not_active",
+                                                        "runtime_unavailable"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "stage",
+                                                "code"
+                                            ],
+                                            "additionalProperties": {}
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stage": {
+                                                    "type": "string",
+                                                    "const": "tls"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "tls_failed"
+                                                }
+                                            },
+                                            "required": [
+                                                "stage",
+                                                "code"
+                                            ],
+                                            "additionalProperties": {}
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stage": {
+                                                    "type": "string",
+                                                    "const": "upstream"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "upstream_unreachable",
+                                                        "upstream_timeout",
+                                                        "upstream_dns_failed",
+                                                        "upstream_responded",
+                                                        "access_denied",
+                                                        "upstream_error",
+                                                        "redirect_not_followed",
+                                                        "unexpected_status",
+                                                        "redirect_host",
+                                                        "wildcard_domain",
+                                                        "skipped"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "stage",
+                                                "code"
+                                            ],
+                                            "additionalProperties": {}
+                                        }
+                                    ],
+                                    "description": "The first stage that prevented a usable upstream response, checked in this order: the active proxy configuration did not serve the host and domain, upstream TLS verification failed, or the upstream sent no HTTP response. Built-in monitoring reports configuration failures as unknown, tls_failed and the upstream codes upstream_unreachable, upstream_timeout and upstream_dns_failed as unhealthy, and any other upstream code as an invalid response."
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "outcome",
+                        "hostId",
+                        "domain",
+                        "probeRevision",
+                        "durationMs",
+                        "httpStatus",
+                        "failure"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "outcome": {
+                            "type": "string",
+                            "enum": [
+                                "scopeDenied",
+                                "hostRemoved",
+                                "hostDisabled",
+                                "domainNotFound",
+                                "configurationChanged",
+                                "busy",
+                                "rateLimited",
+                                "unavailable"
+                            ],
+                            "description": "The probe did not run or its result was discarded. scopeDenied: the grant no longer covers the host. hostRemoved, hostDisabled and domainNotFound: list the hosts again. configurationChanged: the host or proxy configuration changed during the probe; discard it. busy: monitoring-class capacity is in use or a probe of the same host is running. rateLimited: this installation exhausted its probe budget. unavailable: the proxy runtime cannot run probes. Retry busy, rateLimited and unavailable later with backoff."
+                        },
+                        "hostId": {
+                            "description": "Host ID from the proxy host listing.",
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "domain": {
+                            "type": "string",
+                            "maxLength": 253,
+                            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                            "description": "One of the listed domains of the host, sent to the upstream like a request for that domain. Wildcard domains cannot be probed."
+                        }
+                    },
+                    "required": [
+                        "outcome",
+                        "hostId",
+                        "domain"
+                    ],
+                    "additionalProperties": {}
+                }
+            ],
+            "description": "The result of one probe."
+        },
+        "UpstreamProbeBatchResult": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "minItems": 1,
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/UpstreamProbeOutcome"
+                    }
+                }
+            },
+            "required": [
+                "results"
+            ],
+            "additionalProperties": {},
+            "description": "One result for every requested probe, in request order."
+        },
         "AppNotification": {
             "type": "object",
             "properties": {
@@ -3521,6 +3811,9 @@
         "OwnedProxyHostChange",
         "UpstreamProbe",
         "UpstreamProbeResult",
+        "UpstreamProbeBatch",
+        "UpstreamProbeOutcome",
+        "UpstreamProbeBatchResult",
         "AppNotification",
         "AppAuditEvent",
         "AppSecret",
