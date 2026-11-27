@@ -18,7 +18,7 @@ COPY core/tooling/Cargo.toml ./tooling/
 COPY core/tooling/src ./tooling/src
 COPY core/ffi/Cargo.toml ./ffi/Cargo.toml
 COPY core/ffi/src ./ffi/src
-COPY contracts/v1/contracts.schema.json /app/contracts/v1/contracts.schema.json
+COPY contracts/v1/contracts.schema.json contracts/v1/upstream-probe-fixtures.json /app/contracts/v1/
 
 FROM core-sources AS candidate-probe-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
