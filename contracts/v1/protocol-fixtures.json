@@ -1249,6 +1249,71 @@
             "valid": false
         },
         {
+            "title": "incident text cannot contain a line separator",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First Second",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a paragraph separator",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First Second",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text keeps spaces and emoji",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "Upstream down 🚨",
+                "message": "Still down after 3 checks — investigating.",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "incident text folds only ASCII letters when it looks for a scheme",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Marked ſ://example.net as unreachable",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "incident text rejects an upper case URL scheme",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Details at HTTPS://status.example.net",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
             "title": "an incident title stays within 80 characters",
             "schema": "AppIncidentChange",
             "document": {

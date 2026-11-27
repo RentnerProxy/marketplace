@@ -153,15 +153,27 @@ const notification = z.strictObject({
     message: summary,
 })
 
-/** A link-like run that a mail client could turn into a link. */
-const linkLike = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|mailto:)/iu
-/** Plain incident text without control, surrogate or format characters, and without links. */
+/** A link-like run that a mail client could turn into a link, after ASCII-only lowercasing. */
+const linkLike = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|mailto:)/u
+/** Lowercase ASCII letters only, as the Rust SDK does, so both SDKs fold case alike. */
+function asciiLowercase(value: string) {
+    return value.replace(/[A-Z]/gu, (letter) => letter.toLowerCase())
+}
+/**
+ * Plain incident text on one line: no control, surrogate, format, line or paragraph separator
+ * characters, and no links.
+ */
 function incidentText(maximum: number) {
     return z
         .string()
-        .regex(new RegExp(`^[^\\p{Cc}\\p{Cs}\\p{Cf}]{1,${maximum}}$`, 'u'))
+        .regex(
+            new RegExp(
+                `^[^\\p{Cc}\\p{Cs}\\p{Cf}\\p{Zl}\\p{Zp}]{1,${maximum}}$`,
+                'u',
+            ),
+        )
         .refine(
-            (value) => !linkLike.test(value),
+            (value) => !linkLike.test(asciiLowercase(value)),
             'Incident text cannot contain links.',
         )
 }
