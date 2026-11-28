@@ -67,7 +67,7 @@ function maintenanceStatus(
         isMaintenanceScheduled: false,
         maintenanceStartsAt: null,
         canBypassMaintenance: false,
-        redirectTo: '/user/dashboard',
+        redirectTo: '/user/catalog',
         canRequestExtension: true,
         pendingExtensionRequest: null,
     }
@@ -100,7 +100,7 @@ it.each(['search', 'stored', 'status', 'fallback'] as const)(
                     : source === 'stored'
                       ? '/admin/backups'
                       : source === 'status'
-                        ? '/user/dashboard'
+                        ? '/user/catalog'
                         : '/login',
         })
         expect(clearReturn).toHaveBeenCalledTimes(1)
@@ -145,7 +145,7 @@ it('stays on active maintenance, merges realtime status and navigates after main
             updatedAt: '2026-11-05T00:00:01Z',
         },
     })
-    expect(navigate).toHaveBeenCalledWith({ href: '/user/dashboard' })
+    expect(navigate).toHaveBeenCalledWith({ href: '/user/catalog' })
     expect(client.getQueryData(['maintenance-page-status'])).toMatchObject({
         isMaintenanceActive: false,
     })

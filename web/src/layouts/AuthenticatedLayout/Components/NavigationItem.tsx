@@ -15,7 +15,7 @@ export default function NavigationItem({
     const Icon = item.icon
     const label = t(item.labelKey)
     const isOpen = openGroups[navigationKey] ?? true
-    const itemSpacing = 'mx-3 gap-3 px-3 lg:mr-12 lg:ml-5'
+    const itemSpacing = 'mx-3 gap-3 px-3'
     const focusStyle =
         'focus-visible:outline-dashed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-proxy-300'
 
@@ -27,7 +27,7 @@ export default function NavigationItem({
                     onClick={() => onToggleGroup(navigationKey)}
                     aria-expanded={isOpen}
                     data-active={activeGroupKey === item.labelKey}
-                    className={`comic-lettering group relative flex min-h-10 w-[calc(100%-1.5rem)] cursor-pointer items-center rounded-md text-xs text-mist-300 transition-colors hover:bg-white/10 hover:text-proxy-300 data-[active=true]:text-proxy-300 motion-reduce:transition-none lg:w-[calc(100%-4.25rem)] ${itemSpacing} ${focusStyle}`}
+                    className={`comic-lettering group relative flex min-h-10 w-[calc(100%-1.5rem)] cursor-pointer items-center rounded-md text-xs text-mist-300 transition-colors hover:bg-white/10 hover:text-proxy-300 data-[active=true]:text-proxy-300 motion-reduce:transition-none ${itemSpacing} ${focusStyle}`}
                 >
                     <span
                         aria-hidden="true"

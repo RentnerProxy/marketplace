@@ -263,8 +263,10 @@ describe('app logo', () => {
 })
 
 describe('editable store apps', () => {
-    it('renders nothing while loading or without apps', () => {
-        expect(render(createElement(EditableStoreApps))).toBe('')
+    it('explains the empty list and renders nothing while loading', () => {
+        expect(render(createElement(EditableStoreApps))).toContain(
+            'appStore.overviewEmpty',
+        )
         editable = {
             state: {
                 apps: [
@@ -302,12 +304,12 @@ describe('editable store apps', () => {
             },
         }
         const html = render(createElement(EditableStoreApps))
-        expect(html).toContain('appStore.overviewTitle')
+        expect(html).not.toContain('appStore.overviewEmpty')
         expect(html).toContain('Wetter')
         expect(html).toContain('submissions.status.submitted')
         expect(html).toContain('submissions.status.published')
-        expect(html).toContain(`href="/user/app-store/${appId}"`)
-        expect(html).toContain('href="/user/app-store/rentner.other"')
+        expect(html).toContain(`href="/user/app-submissions/${appId}"`)
+        expect(html).toContain('href="/user/app-submissions/rentner.other"')
         expect(html).toContain('src="/other.webp"')
     })
 })
@@ -608,7 +610,7 @@ describe('app detail page', () => {
             state: { app: { ...detail, canEdit: true }, isSignedIn: true },
         }
         const html = render(createElement(AppDetailPage, { appId }))
-        expect(html).toContain(`href="/user/app-store/${appId}"`)
+        expect(html).toContain(`href="/user/app-submissions/${appId}"`)
         expect(html).toContain('appStore.edit')
     })
 

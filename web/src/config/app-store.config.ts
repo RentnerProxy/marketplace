@@ -5,5 +5,5 @@ export const APP_STORE_CONFIG = {
     screenshotAspectRatio: 16 / 9,
     logo: { width: 512, height: 512, quality: 90 },
     screenshot: { width: 1920, height: 1080, quality: 85 },
-    catalogLimit: 60,
+    catalogLimit: 200,
 } as const

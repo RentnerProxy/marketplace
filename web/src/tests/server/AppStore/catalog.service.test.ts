@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
+import { APP_STORE_CONFIG } from '@/config/app-store.config.ts'
 import { createQueuedDatabase } from '../Social/social-db.test.helpers.ts'
 
 const database = createQueuedDatabase()
@@ -157,16 +158,16 @@ describe('app detail', () => {
 
 describe('published apps', () => {
     it('lists the latest published version of each app for the viewer', async () => {
-        const rows = [{ appId, version: '1.2.0' }]
+        const rows = [{ appId, version: '1.2.0', publisher: 'kevin' }]
         database.queue(rows)
         await expect(listPublishedAppsService(submitterId)).resolves.toEqual([
-            { appId } as never,
+            { appId, publisher: 'kevin' } as never,
         ])
         expect(mocks.buildApps).toHaveBeenCalledWith(rows, submitterId)
         expect(database.methods()).toContain('selectDistinctOn')
         expect(database.methods()).toContain('leftJoin')
         expect(
             database.calls.find((call) => call.method === 'limit')?.args,
-        ).toEqual([60])
+        ).toEqual([APP_STORE_CONFIG.catalogLimit])
     })
 })

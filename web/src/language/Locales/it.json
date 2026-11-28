@@ -65,7 +65,8 @@
         "staffInvitations": "Inviti",
         "staffAccounts": "Account del team",
         "profile": "Profilo",
-        "people": "Persone"
+        "people": "Persone",
+        "catalog": "Catalogo app"
     },
     "auth": {
         "experience": {
@@ -836,6 +837,26 @@
             "closeLightbox": "Chiudi vista ingrandita",
             "by": "di {{username}}",
             "published": "Pubblicata il {{date}}"
-        }
+        },
+        "overviewEmpty": "Dopo aver inviato una versione, qui gestisci logo, screenshot e descrizione delle tue app."
+    },
+    "catalog": {
+        "title": "Catalogo app",
+        "description": "Tutte le app pubblicate a colpo d’occhio.",
+        "loading": "Caricamento app …",
+        "searchPlaceholder": "Cerca per nome, descrizione, ID app o editore …",
+        "sortLabel": "Ordina",
+        "sort": {
+            "newest": "Più recenti",
+            "stars": "Più stelle",
+            "name": "Nome A–Z"
+        },
+        "starredOnly": "Solo le mie stelle",
+        "resultCount": "{{count}} di {{total}} app",
+        "noMatches": "Nessuna app corrisponde alla ricerca.",
+        "resetFilters": "Reimposta filtri",
+        "emptyTitle": "Ancora nessuna app pubblicata",
+        "emptyDescription": "Appena le prime app superano la revisione, compaiono qui.",
+        "submitCta": "Invia un’app"
     }
 }

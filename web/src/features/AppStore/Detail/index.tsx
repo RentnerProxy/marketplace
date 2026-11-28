@@ -97,7 +97,7 @@ export default function AppDetailPage({ appId }: AppDetailPageProps) {
                         <StarButton app={app} isSignedIn={state.isSignedIn} />
                         {app.canEdit && (
                             <Link
-                                to="/user/app-store/$appId"
+                                to="/user/app-submissions/$appId"
                                 params={{ appId: app.appId }}
                                 className="comic-btn comic-btn-sm comic-btn-white"
                             >

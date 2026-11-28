@@ -65,7 +65,8 @@
         "staffInvitations": "Uitnodigingen",
         "staffAccounts": "Teamaccounts",
         "profile": "Profiel",
-        "people": "Mensen"
+        "people": "Mensen",
+        "catalog": "App-catalogus"
     },
     "auth": {
         "experience": {
@@ -836,6 +837,26 @@
             "closeLightbox": "Grote weergave sluiten",
             "by": "door {{username}}",
             "published": "Gepubliceerd op {{date}}"
-        }
+        },
+        "overviewEmpty": "Zodra je een versie hebt ingediend, beheer je hier logo, screenshots en beschrijving van je apps."
+    },
+    "catalog": {
+        "title": "App-catalogus",
+        "description": "Alle gepubliceerde apps in één oogopslag.",
+        "loading": "Apps laden …",
+        "searchPlaceholder": "Zoeken op naam, beschrijving, app-ID of uitgever …",
+        "sortLabel": "Sorteren",
+        "sort": {
+            "newest": "Nieuwste eerst",
+            "stars": "Meeste sterren",
+            "name": "Naam A–Z"
+        },
+        "starredOnly": "Alleen mijn sterren",
+        "resultCount": "{{count}} van {{total}} apps",
+        "noMatches": "Geen app past bij je zoekopdracht.",
+        "resetFilters": "Filters wissen",
+        "emptyTitle": "Nog geen apps gepubliceerd",
+        "emptyDescription": "Zodra de eerste apps door de controle zijn, verschijnen ze hier.",
+        "submitCta": "App indienen"
     }
 }

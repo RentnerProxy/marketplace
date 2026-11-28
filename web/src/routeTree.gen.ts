@@ -45,10 +45,10 @@ import { Route as AuthenticatedAdminStaffInvitationsRouteImport } from './routes
 import { Route as AuthenticatedAdminSystemSettingsRouteImport } from './routes/_authenticated/admin/system-settings'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedUserAppSubmissionsRouteImport } from './routes/_authenticated/user/app-submissions'
-import { Route as AuthenticatedUserDashboardRouteImport } from './routes/_authenticated/user/dashboard'
+import { Route as AuthenticatedUserCatalogRouteImport } from './routes/_authenticated/user/catalog'
 import { Route as ApiSystemRestoreStatusRouteImport } from './routes/api/system/restore-status'
 import { Route as ApiUserBackgroundRouteImport } from './routes/api/user/background'
-import { Route as AuthenticatedUserAppStoreAppIdRouteImport } from './routes/_authenticated/user/app-store.$appId'
+import { Route as AuthenticatedUserAppSubmissionsAppIdRouteImport } from './routes/_authenticated/user/app-submissions_.$appId'
 import { Route as ApiAdminBackupsBackupIdRouteImport } from './routes/api/admin/backups/$backupId'
 import { Route as ApiAdminBackupsDownloadRouteImport } from './routes/api/admin/backups/download'
 import { Route as ApiAdminBackupsImportRouteImport } from './routes/api/admin/backups/import'
@@ -244,10 +244,10 @@ const AuthenticatedUserAppSubmissionsRoute =
     path: '/app-submissions',
     getParentRoute: () => AuthenticatedUserRouteRoute,
   } as any)
-const AuthenticatedUserDashboardRoute =
-  AuthenticatedUserDashboardRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
+const AuthenticatedUserCatalogRoute =
+  AuthenticatedUserCatalogRouteImport.update({
+    id: '/catalog',
+    path: '/catalog',
     getParentRoute: () => AuthenticatedUserRouteRoute,
   } as any)
 const ApiSystemRestoreStatusRoute = ApiSystemRestoreStatusRouteImport.update({
@@ -260,10 +260,10 @@ const ApiUserBackgroundRoute = ApiUserBackgroundRouteImport.update({
   path: '/api/user/background',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedUserAppStoreAppIdRoute =
-  AuthenticatedUserAppStoreAppIdRouteImport.update({
-    id: '/app-store/$appId',
-    path: '/app-store/$appId',
+const AuthenticatedUserAppSubmissionsAppIdRoute =
+  AuthenticatedUserAppSubmissionsAppIdRouteImport.update({
+    id: '/app-submissions_/$appId',
+    path: '/app-submissions/$appId',
     getParentRoute: () => AuthenticatedUserRouteRoute,
   } as any)
 const ApiAdminBackupsBackupIdRoute = ApiAdminBackupsBackupIdRouteImport.update({
@@ -338,10 +338,10 @@ export interface FileRoutesByFullPath {
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
-  '/user/dashboard': typeof AuthenticatedUserDashboardRoute
+  '/user/catalog': typeof AuthenticatedUserCatalogRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
-  '/user/app-store/$appId': typeof AuthenticatedUserAppStoreAppIdRoute
+  '/user/app-submissions/$appId': typeof AuthenticatedUserAppSubmissionsAppIdRoute
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
@@ -385,10 +385,10 @@ export interface FileRoutesByTo {
   '/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
-  '/user/dashboard': typeof AuthenticatedUserDashboardRoute
+  '/user/catalog': typeof AuthenticatedUserCatalogRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
-  '/user/app-store/$appId': typeof AuthenticatedUserAppStoreAppIdRoute
+  '/user/app-submissions/$appId': typeof AuthenticatedUserAppSubmissionsAppIdRoute
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
@@ -435,10 +435,10 @@ export interface FileRoutesById {
   '/_authenticated/admin/system-settings': typeof AuthenticatedAdminSystemSettingsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/user/app-submissions': typeof AuthenticatedUserAppSubmissionsRoute
-  '/_authenticated/user/dashboard': typeof AuthenticatedUserDashboardRoute
+  '/_authenticated/user/catalog': typeof AuthenticatedUserCatalogRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
-  '/_authenticated/user/app-store/$appId': typeof AuthenticatedUserAppStoreAppIdRoute
+  '/_authenticated/user/app-submissions_/$appId': typeof AuthenticatedUserAppSubmissionsAppIdRoute
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
@@ -484,10 +484,10 @@ export interface FileRouteTypes {
     | '/admin/system-settings'
     | '/admin/users'
     | '/user/app-submissions'
-    | '/user/dashboard'
+    | '/user/catalog'
     | '/api/system/restore-status'
     | '/api/user/background'
-    | '/user/app-store/$appId'
+    | '/user/app-submissions/$appId'
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
@@ -531,10 +531,10 @@ export interface FileRouteTypes {
     | '/admin/system-settings'
     | '/admin/users'
     | '/user/app-submissions'
-    | '/user/dashboard'
+    | '/user/catalog'
     | '/api/system/restore-status'
     | '/api/user/background'
-    | '/user/app-store/$appId'
+    | '/user/app-submissions/$appId'
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
@@ -580,10 +580,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/system-settings'
     | '/_authenticated/admin/users'
     | '/_authenticated/user/app-submissions'
-    | '/_authenticated/user/dashboard'
+    | '/_authenticated/user/catalog'
     | '/api/system/restore-status'
     | '/api/user/background'
-    | '/_authenticated/user/app-store/$appId'
+    | '/_authenticated/user/app-submissions_/$appId'
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
@@ -875,11 +875,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUserAppSubmissionsRouteImport
       parentRoute: typeof AuthenticatedUserRouteRoute
     }
-    '/_authenticated/user/dashboard': {
-      id: '/_authenticated/user/dashboard'
-      path: '/dashboard'
-      fullPath: '/user/dashboard'
-      preLoaderRoute: typeof AuthenticatedUserDashboardRouteImport
+    '/_authenticated/user/catalog': {
+      id: '/_authenticated/user/catalog'
+      path: '/catalog'
+      fullPath: '/user/catalog'
+      preLoaderRoute: typeof AuthenticatedUserCatalogRouteImport
       parentRoute: typeof AuthenticatedUserRouteRoute
     }
     '/api/system/restore-status': {
@@ -896,11 +896,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUserBackgroundRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/user/app-store/$appId': {
-      id: '/_authenticated/user/app-store/$appId'
-      path: '/app-store/$appId'
-      fullPath: '/user/app-store/$appId'
-      preLoaderRoute: typeof AuthenticatedUserAppStoreAppIdRouteImport
+    '/_authenticated/user/app-submissions_/$appId': {
+      id: '/_authenticated/user/app-submissions_/$appId'
+      path: '/app-submissions/$appId'
+      fullPath: '/user/app-submissions/$appId'
+      preLoaderRoute: typeof AuthenticatedUserAppSubmissionsAppIdRouteImport
       parentRoute: typeof AuthenticatedUserRouteRoute
     }
     '/api/admin/backups/$backupId': {
@@ -991,15 +991,16 @@ const AuthenticatedAdminRouteRouteWithChildren =
 
 interface AuthenticatedUserRouteRouteChildren {
   AuthenticatedUserAppSubmissionsRoute: typeof AuthenticatedUserAppSubmissionsRoute
-  AuthenticatedUserDashboardRoute: typeof AuthenticatedUserDashboardRoute
-  AuthenticatedUserAppStoreAppIdRoute: typeof AuthenticatedUserAppStoreAppIdRoute
+  AuthenticatedUserCatalogRoute: typeof AuthenticatedUserCatalogRoute
+  AuthenticatedUserAppSubmissionsAppIdRoute: typeof AuthenticatedUserAppSubmissionsAppIdRoute
 }
 
 const AuthenticatedUserRouteRouteChildren: AuthenticatedUserRouteRouteChildren =
   {
     AuthenticatedUserAppSubmissionsRoute: AuthenticatedUserAppSubmissionsRoute,
-    AuthenticatedUserDashboardRoute: AuthenticatedUserDashboardRoute,
-    AuthenticatedUserAppStoreAppIdRoute: AuthenticatedUserAppStoreAppIdRoute,
+    AuthenticatedUserCatalogRoute: AuthenticatedUserCatalogRoute,
+    AuthenticatedUserAppSubmissionsAppIdRoute:
+      AuthenticatedUserAppSubmissionsAppIdRoute,
   }
 
 const AuthenticatedUserRouteRouteWithChildren =

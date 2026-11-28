@@ -65,7 +65,8 @@
         "staffInvitations": "Zaproszenia",
         "staffAccounts": "Konta zespołu",
         "profile": "Profil",
-        "people": "Ludzie"
+        "people": "Ludzie",
+        "catalog": "Katalog aplikacji"
     },
     "auth": {
         "experience": {
@@ -836,6 +837,26 @@
             "closeLightbox": "Zamknij widok pełnego rozmiaru",
             "by": "autor: {{username}}",
             "published": "Opublikowano {{date}}"
-        }
+        },
+        "overviewEmpty": "Po zgłoszeniu wersji zarządzasz tutaj logo, zrzutami ekranu i opisem swoich aplikacji."
+    },
+    "catalog": {
+        "title": "Katalog aplikacji",
+        "description": "Wszystkie opublikowane aplikacje w jednym miejscu.",
+        "loading": "Wczytywanie aplikacji …",
+        "searchPlaceholder": "Szukaj po nazwie, opisie, ID aplikacji lub wydawcy …",
+        "sortLabel": "Sortuj",
+        "sort": {
+            "newest": "Najnowsze",
+            "stars": "Najwięcej gwiazdek",
+            "name": "Nazwa A–Z"
+        },
+        "starredOnly": "Tylko moje gwiazdki",
+        "resultCount": "{{count}} z {{total}} aplikacji",
+        "noMatches": "Żadna aplikacja nie pasuje do wyszukiwania.",
+        "resetFilters": "Wyczyść filtry",
+        "emptyTitle": "Brak opublikowanych aplikacji",
+        "emptyDescription": "Gdy pierwsze aplikacje przejdą weryfikację, pojawią się tutaj.",
+        "submitCta": "Zgłoś aplikację"
     }
 }

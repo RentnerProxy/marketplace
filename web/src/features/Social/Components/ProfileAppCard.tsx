@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { CustomTooltip } from '@rentnerkev/tooltips'
-import { PencilLine, Scale, Tag } from 'lucide-react'
+import { AtSign, PencilLine, Scale, Tag } from 'lucide-react'
 import AppLogo from '@/features/AppStore/Components/AppLogo.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import type { ProfileAppCardProps } from '../Types/social-component.types.ts'
@@ -10,6 +10,7 @@ export default function ProfileAppCard({
     app,
     isSignedIn,
     canEdit = false,
+    publisher = null,
 }: ProfileAppCardProps) {
     const { t } = useTranslationStore()
 
@@ -37,6 +38,16 @@ export default function ProfileAppCard({
                 {app.summary}
             </p>
             <div className="flex flex-wrap items-center gap-2 text-xs">
+                {publisher && (
+                    <Link
+                        to="/u/$username"
+                        params={{ username: publisher }}
+                        className="comic-chip transition-transform hover:-translate-x-px hover:-translate-y-px"
+                    >
+                        <AtSign aria-hidden="true" className="h-3.5 w-3.5" />
+                        {publisher}
+                    </Link>
+                )}
                 <span className="comic-chip">
                     <Tag aria-hidden="true" className="h-3.5 w-3.5" />
                     {t('social.appVersion', { version: app.version })}
@@ -48,7 +59,7 @@ export default function ProfileAppCard({
                 {canEdit && (
                     <CustomTooltip side="top" content={t('appStore.edit')}>
                         <Link
-                            to="/user/app-store/$appId"
+                            to="/user/app-submissions/$appId"
                             params={{ appId: app.appId }}
                             aria-label={t('appStore.edit')}
                             className="comic-btn comic-btn-sm comic-btn-white ml-auto"

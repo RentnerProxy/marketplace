@@ -90,11 +90,11 @@ describe('Route-Guards', function () {
         })
 
         await expect(
-            requireAuthenticatedRoute('/user/dashboard'),
+            requireAuthenticatedRoute('/user/catalog'),
         ).rejects.toMatchObject({
             isRedirect: true,
             to: '/maintenance',
-            search: { redirect: '/user/dashboard' },
+            search: { redirect: '/user/catalog' },
         })
     })
 
@@ -125,7 +125,7 @@ describe('Route-Guards', function () {
         }).toThrow(
             expect.objectContaining({
                 isRedirect: true,
-                to: '/user/dashboard',
+                to: '/user/catalog',
             }),
         )
     })

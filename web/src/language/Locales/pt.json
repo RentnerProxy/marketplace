@@ -65,7 +65,8 @@
         "staffInvitations": "Convites",
         "staffAccounts": "Contas da equipa",
         "profile": "Perfil",
-        "people": "Pessoas"
+        "people": "Pessoas",
+        "catalog": "Catálogo de apps"
     },
     "auth": {
         "experience": {
@@ -836,6 +837,26 @@
             "closeLightbox": "Fechar visualização ampliada",
             "by": "por {{username}}",
             "published": "Publicado em {{date}}"
-        }
+        },
+        "overviewEmpty": "Depois de enviar uma versão, você gerencia aqui o logo, as capturas e a descrição dos seus apps."
+    },
+    "catalog": {
+        "title": "Catálogo de apps",
+        "description": "Todos os apps publicados num só lugar.",
+        "loading": "Carregando apps …",
+        "searchPlaceholder": "Buscar por nome, descrição, ID do app ou publicador …",
+        "sortLabel": "Ordenar",
+        "sort": {
+            "newest": "Mais recentes",
+            "stars": "Mais estrelas",
+            "name": "Nome A–Z"
+        },
+        "starredOnly": "Só minhas estrelas",
+        "resultCount": "{{count}} de {{total}} apps",
+        "noMatches": "Nenhum app corresponde à sua busca.",
+        "resetFilters": "Limpar filtros",
+        "emptyTitle": "Nenhum app publicado ainda",
+        "emptyDescription": "Assim que os primeiros apps passarem pela revisão, eles aparecerão aqui.",
+        "submitCta": "Enviar um app"
     }
 }

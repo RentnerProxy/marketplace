@@ -13,7 +13,7 @@ import {
 const success = mock()
 const navigate = mock(async (_options: unknown) => {})
 const browser = {
-    location: { hash: '', pathname: '/user/dashboard', search: '?view=all' },
+    location: { hash: '', pathname: '/user/catalog', search: '?view=all' },
     history: { state: null, replaceState: mock() },
 }
 mock.module('react', () => hookReact)
@@ -43,7 +43,7 @@ describe('social linked redirect', () => {
         expect(browser.history.replaceState).toHaveBeenCalledWith(
             null,
             '',
-            '/user/dashboard?view=all',
+            '/user/catalog?view=all',
         )
         expect(success).toHaveBeenCalledWith(
             'userSettings.security.socialAccounts.linked',

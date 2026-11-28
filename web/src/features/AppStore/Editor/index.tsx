@@ -48,6 +48,13 @@ export default function StoreEditorPage({ appId }: StoreEditorPageProps) {
 
     return (
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+            <Link
+                to="/user/app-submissions"
+                className="comic-lettering inline-flex w-fit items-center gap-2 text-sm text-secondary-text hover:text-foreground"
+            >
+                <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+                {t('appStore.backToSubmissions')}
+            </Link>
             <header className="comic-panel flex flex-wrap items-center gap-5 bg-surface-dark p-5 sm:p-6">
                 <AppLogo logoSrc={entry.logoSrc} name={entry.name} size="md" />
                 <div className="min-w-0 flex-1">

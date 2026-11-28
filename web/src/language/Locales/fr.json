@@ -65,7 +65,8 @@
         "staffInvitations": "Invitations",
         "staffAccounts": "Comptes de l’équipe",
         "profile": "Profil",
-        "people": "Personnes"
+        "people": "Personnes",
+        "catalog": "Catalogue d’applis"
     },
     "auth": {
         "experience": {
@@ -836,6 +837,26 @@
             "closeLightbox": "Fermer la vue agrandie",
             "by": "par {{username}}",
             "published": "Publiée le {{date}}"
-        }
+        },
+        "overviewEmpty": "Dès que vous avez soumis une version, vous gérez ici le logo, les captures et la description de vos applis."
+    },
+    "catalog": {
+        "title": "Catalogue d’applis",
+        "description": "Toutes les applis publiées en un coup d’œil.",
+        "loading": "Chargement des applis …",
+        "searchPlaceholder": "Rechercher par nom, description, ID d’appli ou éditeur …",
+        "sortLabel": "Trier",
+        "sort": {
+            "newest": "Plus récentes",
+            "stars": "Plus d’étoiles",
+            "name": "Nom A–Z"
+        },
+        "starredOnly": "Seulement mes étoiles",
+        "resultCount": "{{count}} sur {{total}} applis",
+        "noMatches": "Aucune appli ne correspond à votre recherche.",
+        "resetFilters": "Réinitialiser les filtres",
+        "emptyTitle": "Aucune appli publiée pour l’instant",
+        "emptyDescription": "Dès que les premières applis auront passé la vérification, elles apparaîtront ici.",
+        "submitCta": "Soumettre une appli"
     }
 }

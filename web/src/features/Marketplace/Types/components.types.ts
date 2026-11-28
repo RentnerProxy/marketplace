@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type {
     getReviewSubmissionHandler,
     getReviewSubmissionsHandler,
@@ -25,4 +26,12 @@ export type SubmissionAction = {
     intent: 'approve' | 'reject' | 'revoke' | 'withdraw'
     submission: SubmissionDetail
     reason: string
+}
+
+export type SubmissionStepProps = {
+    step: number
+    title: string
+    description: string
+    isDone?: boolean
+    children: ReactNode
 }

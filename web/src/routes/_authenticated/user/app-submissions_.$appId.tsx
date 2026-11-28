@@ -3,7 +3,9 @@ import StoreEditorPage from '@/features/AppStore/Editor/index.tsx'
 import { storeAppInputSchema } from '@/features/AppStore/validation.ts'
 import { RouteErrorComponent } from '@/shared/RouteErrorComponent/RouteErrorComponent.tsx'
 
-export const Route = createFileRoute('/_authenticated/user/app-store/$appId')({
+export const Route = createFileRoute(
+    '/_authenticated/user/app-submissions_/$appId',
+)({
     beforeLoad: function ({ params }) {
         if (!storeAppInputSchema.safeParse(params).success) throw notFound()
     },
