@@ -63,7 +63,9 @@
         "accounts": "Cuentas",
         "staff": "Equipo",
         "staffInvitations": "Invitaciones",
-        "staffAccounts": "Cuentas del equipo"
+        "staffAccounts": "Cuentas del equipo",
+        "profile": "Perfil",
+        "people": "Personas"
     },
     "auth": {
         "experience": {
@@ -95,8 +97,6 @@
             "checkingSetupLink": "Comprobando el enlace de configuración…",
             "setupLinkRequired": "Busca el enlace de configuración en los registros de la aplicación",
             "setupLinkDescription": "En desarrollo local, busca el enlace de configuración en el terminal de bun run dev. En un despliegue con Komodo, abre los registros de la pila y selecciona el servicio «app». Copia el enlace más reciente completo y ábrelo en el navegador. Es válido durante diez minutos y se renueva automáticamente hasta completar la configuración inicial.",
-            "personalInfoTitle": "Información personal",
-            "personalInfoDescription": "Estos datos son opcionales y se pueden cambiar más adelante.",
             "create": "Crear superusuario",
             "creating": "Creando superusuario...",
             "created": "Se ha creado el primer superusuario. Ya puedes iniciar sesión.",
@@ -332,16 +332,6 @@
             "light": "Modo claro",
             "save": "Guardar tema",
             "title": "Tema principal"
-        },
-        "personalInfo": {
-            "city": "Ciudad",
-            "firstName": "Nombre",
-            "houseNumber": "Número",
-            "lastName": "Apellidos",
-            "postalCode": "Código postal",
-            "save": "Guardar datos",
-            "street": "Calle",
-            "title": "Datos personales"
         },
         "profileImage": {
             "choose": "Elegir imagen",
@@ -704,5 +694,148 @@
     },
     "maintenance": {
         "requestSent": "Enviando..."
+    },
+    "profile": {
+        "title": "Perfil",
+        "description": "Tu página en el RentnerProxy Marketplace.",
+        "cancel": "Cancelar",
+        "tabs": {
+            "apps": "Apps"
+        },
+        "banner": {
+            "change": "Cambiar banner",
+            "remove": "Quitar banner",
+            "save": "Guardar banner",
+            "hint": "Arrastra para colocar la imagen. Recomendado: al menos 1500 × 500 px.",
+            "saved": "Banner guardado.",
+            "removed": "Banner eliminado.",
+            "failed": "No se pudo subir el banner.",
+            "alt": "Banner de perfil de {{username}}",
+            "removeTitle": "¿Quitar el banner?",
+            "removeQuestion": "¿De verdad quieres quitar tu banner de perfil? Después tu perfil volverá a mostrar el banner predeterminado."
+        },
+        "bio": {
+            "title": "Biografía",
+            "placeholder": "Cuéntale a la comunidad qué construyes …",
+            "empty": "Todavía no hay biografía.",
+            "save": "Guardar biografía",
+            "saved": "Biografía guardada.",
+            "edit": "Editar biografía"
+        },
+        "stats": {
+            "apps": "Apps",
+            "downloads": "Descargas",
+            "comingSoon": "Pronto",
+            "stars": "Estrellas"
+        },
+        "apps": {
+            "title": "Tus apps",
+            "description": "Aquí aparecerán las apps que publiques en el Marketplace.",
+            "placeholder": "Espacio de app {{number}}"
+        },
+        "avatar": {
+            "change": "Cambiar imagen de perfil",
+            "cropTitle": "Recortar imagen de perfil",
+            "hint": "Arrastra y haz zoom hasta que todo quepa en el círculo."
+        }
+    },
+    "social": {
+        "title": "Buscar personas",
+        "description": "Busca desarrolladores y miembros de la comunidad y síguelos.",
+        "searchPlaceholder": "Buscar por nombre de usuario …",
+        "searchHint": "Introduce al menos 2 caracteres.",
+        "empty": "No se encontró a nadie para «{{query}}».",
+        "follow": "Seguir",
+        "following": "Siguiendo",
+        "unfollow": "Dejar de seguir",
+        "followers": "Seguidores",
+        "followingList": "Siguiendo",
+        "loginToFollow": "Inicia sesión para seguir",
+        "team": "Equipo",
+        "you": "Tú",
+        "joined": "Se unió el {{date}}",
+        "notFoundTitle": "Perfil no encontrado",
+        "notFoundDescription": "Esta cuenta no existe o ya no es pública.",
+        "emptyFollowers": "Todavía no hay seguidores.",
+        "emptyFollowing": "Todavía no sigue a nadie.",
+        "loadMore": "Cargar más",
+        "followed": "Ahora sigues a {{username}}.",
+        "unfollowed": "Ya no sigues a {{username}}.",
+        "viewPublicProfile": "Ver perfil público",
+        "backToSearch": "Buscar más personas",
+        "appsTitle": "Apps",
+        "star": "Dar estrella",
+        "unstar": "Quitar estrella",
+        "starred": "Le diste una estrella a «{{name}}».",
+        "unstarred": "Quitaste tu estrella de «{{name}}».",
+        "loginToStar": "Inicia sesión para dar estrellas",
+        "appsLoading": "Cargando apps …",
+        "appVersion": "Versión {{version}}",
+        "appsEmpty": "{{username}} todavía no ha publicado apps."
+    },
+    "appStore": {
+        "title": "Ficha de la tienda",
+        "uploadFailed": "No se pudo subir la imagen.",
+        "noImage": "Elige primero una imagen.",
+        "cropHint": "Arrastra y haz zoom hasta que el recorte encaje.",
+        "loading": "Cargando ficha de la tienda …",
+        "notAllowedTitle": "Sin acceso a esta ficha",
+        "notAllowedDescription": "Solo la cuenta que envió la app y los administradores del marketplace pueden editar esta ficha.",
+        "backToSubmissions": "Volver a los envíos",
+        "editorEyebrow": "Editar ficha de la tienda",
+        "viewPublic": "Ver página pública",
+        "notPublishedHint": "Será visible cuando se publique una versión. Ya puedes prepararlo todo.",
+        "edit": "Editar ficha de la tienda",
+        "overviewTitle": "Fichas de la tienda",
+        "overviewDescription": "Logo, capturas y descripción de tus apps: cámbialos cuando quieras sin publicar una versión nueva.",
+        "catalogTitle": "Apps publicadas",
+        "logo": {
+            "title": "Logo",
+            "hint": "Cuadrado, recortado a 512 × 512 px. PNG, JPEG o WebP de hasta 8 MB.",
+            "upload": "Subir logo",
+            "change": "Cambiar logo",
+            "remove": "Quitar logo",
+            "save": "Guardar logo",
+            "saved": "El logo se ha guardado.",
+            "removed": "El logo se ha quitado.",
+            "cropTitle": "Recortar logo",
+            "removeTitle": "¿Quitar logo?",
+            "removeQuestion": "¿Seguro que quieres quitar el logo? Se volverá a mostrar el icono predeterminado."
+        },
+        "screenshots": {
+            "title": "Capturas de pantalla",
+            "hint": "Hasta 8 imágenes en 16:9, guardadas a 1920 × 1080 px. El orden define la galería.",
+            "add": "Añadir captura",
+            "save": "Guardar captura",
+            "saved": "La captura se ha añadido.",
+            "removed": "La captura se ha eliminado.",
+            "reordered": "El orden se ha guardado.",
+            "alt": "Captura {{number}}",
+            "moveLeft": "Mover antes",
+            "moveRight": "Mover después",
+            "remove": "Eliminar captura",
+            "cropTitle": "Recortar captura",
+            "removeTitle": "¿Eliminar captura?",
+            "removeQuestion": "¿Seguro que quieres eliminar esta captura?"
+        },
+        "description": {
+            "title": "Descripción",
+            "hint": "Texto sin formato; los párrafos se conservan. Máximo 5000 caracteres.",
+            "placeholder": "¿Qué hace tu app, para quién es y qué necesita?",
+            "save": "Guardar descripción",
+            "saved": "La descripción se ha guardado."
+        },
+        "detail": {
+            "notFoundTitle": "App no encontrada",
+            "notFoundDescription": "Esta app no existe o todavía no se ha publicado.",
+            "backToApps": "Todas las apps",
+            "screenshotAlt": "Captura {{number}} de {{total}} – {{name}}",
+            "previous": "Captura anterior",
+            "next": "Captura siguiente",
+            "openLightbox": "Ver captura a tamaño completo",
+            "closeLightbox": "Cerrar vista completa",
+            "by": "de {{username}}",
+            "published": "Publicada el {{date}}"
+        }
     }
 }

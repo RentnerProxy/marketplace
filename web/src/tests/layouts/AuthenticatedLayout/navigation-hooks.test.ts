@@ -20,7 +20,7 @@ const { default: usePageHeader } =
     await import('@/layouts/AuthenticatedLayout/Hooks/useAuthenticatedPageHeaderLogic.ts')
 
 it.each([
-    { permissions: [], homeTo: '/login', subtitle: 'nav.navigation' },
+    { permissions: [], homeTo: '/people', subtitle: 'nav.navigation' },
     {
         permissions: [PERMISSIONS.USER_DASHBOARD],
         homeTo: '/user/dashboard',

@@ -16,7 +16,7 @@ export const PREFERENCE_AUDIT_ACTIONS = [
     'user.font_size_updated',
     'user.primary_color_updated',
     'user.primary_color_reset',
-    'user.personal_info_updated',
+    'user.bio_updated',
     'user.profile_image_update_started',
     'user.profile_image_updated',
     'user.background_appearance_updated',

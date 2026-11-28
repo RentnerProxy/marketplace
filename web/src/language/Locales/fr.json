@@ -63,7 +63,9 @@
         "accounts": "Comptes",
         "staff": "Équipe",
         "staffInvitations": "Invitations",
-        "staffAccounts": "Comptes de l’équipe"
+        "staffAccounts": "Comptes de l’équipe",
+        "profile": "Profil",
+        "people": "Personnes"
     },
     "auth": {
         "experience": {
@@ -95,8 +97,6 @@
             "checkingSetupLink": "Vérification du lien de configuration…",
             "setupLinkRequired": "Trouvez le lien de configuration dans les journaux de l’application",
             "setupLinkDescription": "En développement local, trouvez le lien de configuration dans le terminal de bun run dev. Avec Komodo, ouvrez les journaux de la pile et sélectionnez le service « app ». Copiez le dernier lien complet et ouvrez-le dans votre navigateur. Il est valable dix minutes et renouvelé automatiquement jusqu’à la fin de la configuration initiale.",
-            "personalInfoTitle": "Informations personnelles",
-            "personalInfoDescription": "Ces informations sont facultatives et modifiables ultérieurement.",
             "create": "Créer le superutilisateur",
             "creating": "Création du superutilisateur...",
             "created": "Le premier superutilisateur a été créé. Vous pouvez vous connecter.",
@@ -332,16 +332,6 @@
             "light": "Mode clair",
             "save": "Enregistrer le thème",
             "title": "Thème principal"
-        },
-        "personalInfo": {
-            "city": "Ville",
-            "firstName": "Prénom",
-            "houseNumber": "Numéro",
-            "lastName": "Nom",
-            "postalCode": "Code postal",
-            "save": "Enregistrer les informations",
-            "street": "Rue",
-            "title": "Informations personnelles"
         },
         "profileImage": {
             "choose": "Choisir une image",
@@ -704,5 +694,148 @@
     },
     "maintenance": {
         "requestSent": "Envoi..."
+    },
+    "profile": {
+        "title": "Profil",
+        "description": "Ta page sur le RentnerProxy Marketplace.",
+        "cancel": "Annuler",
+        "tabs": {
+            "apps": "Applis"
+        },
+        "banner": {
+            "change": "Changer la bannière",
+            "remove": "Supprimer la bannière",
+            "save": "Enregistrer la bannière",
+            "hint": "Fais glisser pour positionner l’image. Recommandé : au moins 1500 × 500 px.",
+            "saved": "Bannière enregistrée.",
+            "removed": "Bannière supprimée.",
+            "failed": "La bannière n’a pas pu être téléversée.",
+            "alt": "Bannière de profil de {{username}}",
+            "removeTitle": "Supprimer la bannière ?",
+            "removeQuestion": "Veux-tu vraiment supprimer ta bannière de profil ? Ton profil affichera ensuite la bannière par défaut."
+        },
+        "bio": {
+            "title": "Bio",
+            "placeholder": "Raconte à la communauté ce que tu construis …",
+            "empty": "Pas encore de bio.",
+            "save": "Enregistrer la bio",
+            "saved": "Bio enregistrée.",
+            "edit": "Modifier la bio"
+        },
+        "stats": {
+            "apps": "Applis",
+            "downloads": "Téléchargements",
+            "comingSoon": "Bientôt",
+            "stars": "Étoiles"
+        },
+        "apps": {
+            "title": "Tes applis",
+            "description": "Les applis que tu publies sur le Marketplace apparaîtront ici.",
+            "placeholder": "Emplacement d’appli {{number}}"
+        },
+        "avatar": {
+            "change": "Changer la photo de profil",
+            "cropTitle": "Recadrer la photo de profil",
+            "hint": "Fais glisser et zoome jusqu’à ce que tout tienne dans le cercle."
+        }
+    },
+    "social": {
+        "title": "Trouver des personnes",
+        "description": "Recherche des développeurs et des membres de la communauté et suis-les.",
+        "searchPlaceholder": "Rechercher par nom d’utilisateur …",
+        "searchHint": "Saisis au moins 2 caractères.",
+        "empty": "Personne trouvé pour « {{query}} ».",
+        "follow": "Suivre",
+        "following": "Abonné",
+        "unfollow": "Ne plus suivre",
+        "followers": "Abonnés",
+        "followingList": "Abonnements",
+        "loginToFollow": "Connecte-toi pour suivre",
+        "team": "Équipe",
+        "you": "Toi",
+        "joined": "Inscrit depuis le {{date}}",
+        "notFoundTitle": "Profil introuvable",
+        "notFoundDescription": "Ce compte n’existe pas ou n’est plus public.",
+        "emptyFollowers": "Pas encore d’abonnés.",
+        "emptyFollowing": "Ne suit encore personne.",
+        "loadMore": "Charger plus",
+        "followed": "Tu suis maintenant {{username}}.",
+        "unfollowed": "Tu ne suis plus {{username}}.",
+        "viewPublicProfile": "Voir le profil public",
+        "backToSearch": "Trouver d’autres personnes",
+        "appsTitle": "Applis",
+        "star": "Ajouter une étoile",
+        "unstar": "Retirer l’étoile",
+        "starred": "Vous avez ajouté une étoile à « {{name}} ».",
+        "unstarred": "Vous avez retiré votre étoile de « {{name}} ».",
+        "loginToStar": "Connectez-vous pour attribuer des étoiles",
+        "appsLoading": "Chargement des applis …",
+        "appVersion": "Version {{version}}",
+        "appsEmpty": "{{username}} n’a encore publié aucune appli."
+    },
+    "appStore": {
+        "title": "Fiche boutique",
+        "uploadFailed": "L’image n’a pas pu être envoyée.",
+        "noImage": "Choisissez d’abord une image.",
+        "cropHint": "Faites glisser et zoomez jusqu’à obtenir le bon cadrage.",
+        "loading": "Chargement de la fiche boutique …",
+        "notAllowedTitle": "Pas d’accès à cette fiche",
+        "notAllowedDescription": "Seuls le compte qui a soumis l’appli et les administrateurs du marketplace peuvent modifier cette fiche.",
+        "backToSubmissions": "Retour aux soumissions",
+        "editorEyebrow": "Modifier la fiche boutique",
+        "viewPublic": "Voir la page publique",
+        "notPublishedHint": "Visible publiquement dès qu’une version est publiée. Vous pouvez déjà tout préparer.",
+        "edit": "Modifier la fiche boutique",
+        "overviewTitle": "Fiches boutique",
+        "overviewDescription": "Logo, captures et description de vos applis – modifiables à tout moment sans nouvelle version.",
+        "catalogTitle": "Applis publiées",
+        "logo": {
+            "title": "Logo",
+            "hint": "Carré, recadré en 512 × 512 px. PNG, JPEG ou WebP jusqu’à 8 Mo.",
+            "upload": "Envoyer un logo",
+            "change": "Changer le logo",
+            "remove": "Retirer le logo",
+            "save": "Enregistrer le logo",
+            "saved": "Le logo a été enregistré.",
+            "removed": "Le logo a été retiré.",
+            "cropTitle": "Recadrer le logo",
+            "removeTitle": "Retirer le logo ?",
+            "removeQuestion": "Voulez-vous vraiment retirer le logo ? L’icône par défaut sera de nouveau affichée."
+        },
+        "screenshots": {
+            "title": "Captures d’écran",
+            "hint": "Jusqu’à 8 images en 16:9, enregistrées en 1920 × 1080 px. L’ordre définit la galerie.",
+            "add": "Ajouter une capture",
+            "save": "Enregistrer la capture",
+            "saved": "La capture a été ajoutée.",
+            "removed": "La capture a été supprimée.",
+            "reordered": "L’ordre a été enregistré.",
+            "alt": "Capture {{number}}",
+            "moveLeft": "Déplacer avant",
+            "moveRight": "Déplacer après",
+            "remove": "Supprimer la capture",
+            "cropTitle": "Recadrer la capture",
+            "removeTitle": "Supprimer la capture ?",
+            "removeQuestion": "Voulez-vous vraiment supprimer cette capture ?"
+        },
+        "description": {
+            "title": "Description",
+            "hint": "Texte brut, les paragraphes sont conservés. 5000 caractères au maximum.",
+            "placeholder": "Que fait votre appli, à qui s’adresse-t-elle et de quoi a-t-elle besoin ?",
+            "save": "Enregistrer la description",
+            "saved": "La description a été enregistrée."
+        },
+        "detail": {
+            "notFoundTitle": "Appli introuvable",
+            "notFoundDescription": "Cette appli n’existe pas ou n’est pas encore publiée.",
+            "backToApps": "Toutes les applis",
+            "screenshotAlt": "Capture {{number}} sur {{total}} – {{name}}",
+            "previous": "Capture précédente",
+            "next": "Capture suivante",
+            "openLightbox": "Afficher la capture en grand",
+            "closeLightbox": "Fermer la vue agrandie",
+            "by": "par {{username}}",
+            "published": "Publiée le {{date}}"
+        }
     }
 }

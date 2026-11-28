@@ -44,13 +44,14 @@ describe('Sidebar-Navigation', function () {
             getVisibleNavigationItems(NAVBAR_ITEMS, [], true).map(
                 ({ to }) => to,
             ),
-        ).toEqual(['/user/app-submissions'])
+        ).toEqual(['/user/app-submissions', '/people'])
         expect(
             getVisibleNavigationItems(NAVBAR_ITEMS, [
                 PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,
             ]),
         ).toMatchObject([
             { labelKey: 'nav.staff', children: [{ to: '/admin/app-reviews' }] },
+            { labelKey: 'nav.people', to: '/people' },
         ])
     })
 
@@ -64,6 +65,7 @@ describe('Sidebar-Navigation', function () {
         ])
         expect(delegated).toMatchObject([
             { labelKey: 'nav.staff', children: [{ to: '/admin/users' }] },
+            { labelKey: 'nav.people', to: '/people' },
         ])
         expect(
             owner
@@ -118,6 +120,7 @@ describe('Sidebar-Navigation', function () {
             },
             { to: '/user/dashboard' },
             { to: '/user/app-submissions' },
+            { to: '/people' },
         ])
     })
 })

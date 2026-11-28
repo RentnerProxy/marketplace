@@ -63,7 +63,9 @@
         "accounts": "Konta",
         "staff": "Zespół",
         "staffInvitations": "Zaproszenia",
-        "staffAccounts": "Konta zespołu"
+        "staffAccounts": "Konta zespołu",
+        "profile": "Profil",
+        "people": "Ludzie"
     },
     "auth": {
         "experience": {
@@ -95,8 +97,6 @@
             "checkingSetupLink": "Sprawdzanie odnośnika konfiguracji…",
             "setupLinkRequired": "Znajdź odnośnik konfiguracji w dziennikach aplikacji",
             "setupLinkDescription": "Podczas lokalnego tworzenia aplikacji znajdź odnośnik konfiguracji w terminalu bun run dev. Przy wdrożeniu przez Komodo otwórz dzienniki stosu i wybierz usługę „app”. Skopiuj cały najnowszy odnośnik i otwórz go w przeglądarce. Jest ważny przez dziesięć minut i odnawia się automatycznie do zakończenia konfiguracji początkowej.",
-            "personalInfoTitle": "Dane osobowe",
-            "personalInfoDescription": "Te dane są opcjonalne i można je później zmienić.",
             "create": "Utwórz superużytkownika",
             "creating": "Tworzenie superużytkownika...",
             "created": "Utworzono pierwszego superużytkownika. Możesz się teraz zalogować.",
@@ -332,16 +332,6 @@
             "light": "Tryb jasny",
             "save": "Zapisz motyw",
             "title": "Motyw główny"
-        },
-        "personalInfo": {
-            "city": "Miejscowość",
-            "firstName": "Imię",
-            "houseNumber": "Numer domu",
-            "lastName": "Nazwisko",
-            "postalCode": "Kod pocztowy",
-            "save": "Zapisz dane",
-            "street": "Ulica",
-            "title": "Dane osobowe"
         },
         "profileImage": {
             "choose": "Wybierz obraz",
@@ -704,5 +694,148 @@
     },
     "maintenance": {
         "requestSent": "Wysyłanie..."
+    },
+    "profile": {
+        "title": "Profil",
+        "description": "Twoja strona w RentnerProxy Marketplace.",
+        "cancel": "Anuluj",
+        "tabs": {
+            "apps": "Aplikacje"
+        },
+        "banner": {
+            "change": "Zmień baner",
+            "remove": "Usuń baner",
+            "save": "Zapisz baner",
+            "hint": "Przeciągnij, aby ustawić obraz. Zalecane: co najmniej 1500 × 500 px.",
+            "saved": "Baner zapisany.",
+            "removed": "Baner usunięty.",
+            "failed": "Nie udało się przesłać banera.",
+            "alt": "Baner profilu {{username}}",
+            "removeTitle": "Usunąć baner?",
+            "removeQuestion": "Czy na pewno chcesz usunąć baner profilu? Potem profil znowu pokaże domyślny baner."
+        },
+        "bio": {
+            "title": "Bio",
+            "placeholder": "Opowiedz społeczności, co budujesz …",
+            "empty": "Brak bio.",
+            "save": "Zapisz bio",
+            "saved": "Bio zapisane.",
+            "edit": "Edytuj bio"
+        },
+        "stats": {
+            "apps": "Aplikacje",
+            "downloads": "Pobrania",
+            "comingSoon": "Wkrótce",
+            "stars": "Gwiazdki"
+        },
+        "apps": {
+            "title": "Twoje aplikacje",
+            "description": "Tutaj pojawią się aplikacje, które opublikujesz w Marketplace.",
+            "placeholder": "Miejsce na aplikację {{number}}"
+        },
+        "avatar": {
+            "change": "Zmień zdjęcie profilowe",
+            "cropTitle": "Przytnij zdjęcie profilowe",
+            "hint": "Przeciągnij i przybliż, aż wszystko zmieści się w kole."
+        }
+    },
+    "social": {
+        "title": "Znajdź ludzi",
+        "description": "Szukaj deweloperów i członków społeczności i obserwuj ich.",
+        "searchPlaceholder": "Szukaj po nazwie użytkownika …",
+        "searchHint": "Wpisz co najmniej 2 znaki.",
+        "empty": "Nikogo nie znaleziono dla „{{query}}”.",
+        "follow": "Obserwuj",
+        "following": "Obserwujesz",
+        "unfollow": "Przestań obserwować",
+        "followers": "Obserwujący",
+        "followingList": "Obserwowani",
+        "loginToFollow": "Zaloguj się, aby obserwować",
+        "team": "Zespół",
+        "you": "Ty",
+        "joined": "Dołączył(a) {{date}}",
+        "notFoundTitle": "Nie znaleziono profilu",
+        "notFoundDescription": "To konto nie istnieje lub nie jest już publiczne.",
+        "emptyFollowers": "Brak obserwujących.",
+        "emptyFollowing": "Nikogo jeszcze nie obserwuje.",
+        "loadMore": "Wczytaj więcej",
+        "followed": "Obserwujesz teraz {{username}}.",
+        "unfollowed": "Nie obserwujesz już {{username}}.",
+        "viewPublicProfile": "Zobacz profil publiczny",
+        "backToSearch": "Znajdź więcej osób",
+        "appsTitle": "Aplikacje",
+        "star": "Daj gwiazdkę",
+        "unstar": "Usuń gwiazdkę",
+        "starred": "Aplikacja „{{name}}” ma teraz Twoją gwiazdkę.",
+        "unstarred": "Gwiazdka została usunięta z aplikacji „{{name}}”.",
+        "loginToStar": "Zaloguj się, aby dawać gwiazdki",
+        "appsLoading": "Ładowanie aplikacji …",
+        "appVersion": "Wersja {{version}}",
+        "appsEmpty": "{{username}} nie ma jeszcze opublikowanych aplikacji."
+    },
+    "appStore": {
+        "title": "Wpis w sklepie",
+        "uploadFailed": "Nie udało się przesłać obrazu.",
+        "noImage": "Najpierw wybierz obraz.",
+        "cropHint": "Przeciągnij i przybliż, aż kadr będzie pasował.",
+        "loading": "Wczytywanie wpisu w sklepie …",
+        "notAllowedTitle": "Brak dostępu do tego wpisu",
+        "notAllowedDescription": "Ten wpis mogą edytować tylko konto, które zgłosiło aplikację, oraz administratorzy marketplace.",
+        "backToSubmissions": "Wróć do zgłoszeń",
+        "editorEyebrow": "Edytuj wpis w sklepie",
+        "viewPublic": "Zobacz stronę publiczną",
+        "notPublishedHint": "Widoczny publicznie po opublikowaniu wersji. Już teraz możesz wszystko przygotować.",
+        "edit": "Edytuj wpis w sklepie",
+        "overviewTitle": "Wpisy w sklepie",
+        "overviewDescription": "Logo, zrzuty ekranu i opis Twoich aplikacji – zmieniaj je w dowolnej chwili bez nowej wersji.",
+        "catalogTitle": "Opublikowane aplikacje",
+        "logo": {
+            "title": "Logo",
+            "hint": "Kwadratowe, przycinane do 512 × 512 px. PNG, JPEG lub WebP do 8 MB.",
+            "upload": "Prześlij logo",
+            "change": "Zmień logo",
+            "remove": "Usuń logo",
+            "save": "Zapisz logo",
+            "saved": "Logo zostało zapisane.",
+            "removed": "Logo zostało usunięte.",
+            "cropTitle": "Przytnij logo",
+            "removeTitle": "Usunąć logo?",
+            "removeQuestion": "Czy na pewno chcesz usunąć logo? Ponownie będzie wyświetlana domyślna ikona."
+        },
+        "screenshots": {
+            "title": "Zrzuty ekranu",
+            "hint": "Do 8 obrazów w formacie 16:9, zapisywanych w 1920 × 1080 px. Kolejność określa galerię.",
+            "add": "Dodaj zrzut ekranu",
+            "save": "Zapisz zrzut ekranu",
+            "saved": "Zrzut ekranu został dodany.",
+            "removed": "Zrzut ekranu został usunięty.",
+            "reordered": "Kolejność została zapisana.",
+            "alt": "Zrzut ekranu {{number}}",
+            "moveLeft": "Przesuń wcześniej",
+            "moveRight": "Przesuń dalej",
+            "remove": "Usuń zrzut ekranu",
+            "cropTitle": "Przytnij zrzut ekranu",
+            "removeTitle": "Usunąć zrzut ekranu?",
+            "removeQuestion": "Czy na pewno chcesz usunąć ten zrzut ekranu?"
+        },
+        "description": {
+            "title": "Opis",
+            "hint": "Zwykły tekst, akapity zostają zachowane. Maksymalnie 5000 znaków.",
+            "placeholder": "Co robi Twoja aplikacja, dla kogo jest i czego potrzebuje?",
+            "save": "Zapisz opis",
+            "saved": "Opis został zapisany."
+        },
+        "detail": {
+            "notFoundTitle": "Nie znaleziono aplikacji",
+            "notFoundDescription": "Ta aplikacja nie istnieje lub nie została jeszcze opublikowana.",
+            "backToApps": "Wszystkie aplikacje",
+            "screenshotAlt": "Zrzut ekranu {{number}} z {{total}} – {{name}}",
+            "previous": "Poprzedni zrzut ekranu",
+            "next": "Następny zrzut ekranu",
+            "openLightbox": "Pokaż zrzut ekranu w pełnym rozmiarze",
+            "closeLightbox": "Zamknij widok pełnego rozmiaru",
+            "by": "autor: {{username}}",
+            "published": "Opublikowano {{date}}"
+        }
     }
 }

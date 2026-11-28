@@ -11,6 +11,8 @@ import {
     ContactRound,
     PackagePlus,
     ClipboardCheck,
+    UserRound,
+    UsersRound,
 } from 'lucide-react'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
@@ -123,5 +125,23 @@ export const NAVBAR_ITEMS = [
         requiresVerifiedDeveloper: true,
         title: 'submissions.title',
         description: 'submissions.description',
+    },
+    {
+        labelKey: 'nav.people',
+        to: '/people',
+        icon: UsersRound,
+        title: 'social.title',
+        description: 'social.description',
+    },
+] satisfies Array<AuthenticatedNavItem>
+
+/** Signed-in pages outside the navigation that still need a page heading. */
+export const ACCOUNT_PAGE_ITEMS = [
+    {
+        labelKey: 'nav.profile',
+        to: '/profile',
+        icon: UserRound,
+        title: 'profile.title',
+        description: 'profile.description',
     },
 ] satisfies Array<AuthenticatedNavItem>
