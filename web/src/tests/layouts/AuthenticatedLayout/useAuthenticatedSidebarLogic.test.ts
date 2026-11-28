@@ -49,7 +49,6 @@ vi.mock(
         default: () => ({
             state: { isCollapsed: false, openGroups: [] },
             handler: {
-                openUserSettings: vi.fn(),
                 toggleCollapse: vi.fn(),
                 toggleGroup: vi.fn(),
             },

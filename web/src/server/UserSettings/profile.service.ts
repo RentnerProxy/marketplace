@@ -16,7 +16,7 @@ import { prepareImageVariantSource } from '@/lib/Images/prepareImageVariantSourc
 import { getCurrentUserSettingsSession } from '@/server/Auth/currentSession.ts'
 import { withSharedStorageMutationBarrier } from '@/server/Storage/storage-mutation-barrier.service.ts'
 import type {
-    UpdateCurrentUserPersonalInfoInput,
+    UpdateCurrentUserBioInput,
     UpdateCurrentUserProfileImageInput,
 } from '@/features/UserSettings/Types/user-settings-server-input.types.ts'
 
@@ -127,8 +127,8 @@ export async function updateCurrentUserProfileImageService(
     })
 }
 
-export async function updateCurrentUserPersonalInfoService(
-    data: UpdateCurrentUserPersonalInfoInput,
+export async function updateCurrentUserBioService(
+    data: UpdateCurrentUserBioInput,
 ) {
     const currentUser = await getCurrentUserSettingsSession()
 
@@ -136,71 +136,44 @@ export async function updateCurrentUserPersonalInfoService(
         return { success: false as const, error: 'Du bist nicht angemeldet.' }
     }
 
-    const personalInfo = {
-        firstName: data.firstName.trim() || null,
-        lastName: data.lastName.trim() || null,
-        street: data.street.trim() || null,
-        houseNumber: data.houseNumber.trim() || null,
-        postalCode: data.postalCode.trim() || null,
-        city: data.city.trim() || null,
-    }
+    const bio = data.bio.trim() || null
 
     return runAuditedUserSettingsMutationService(
         currentUser.id,
         {
-            action: 'user.personal_info_updated',
-            message: 'Persönliche Daten wurden aktualisiert.',
+            action: 'user.bio_updated',
+            message: 'Profilbeschreibung wurde aktualisiert.',
         },
         async function (transaction) {
-            const previousUsers = await transaction
-                .select({
-                    firstName: user_profiles.firstName,
-                    lastName: user_profiles.lastName,
-                    street: user_profiles.street,
-                    houseNumber: user_profiles.houseNumber,
-                    postalCode: user_profiles.postalCode,
-                    city: user_profiles.city,
-                })
-                .from(user_profiles)
-                .where(eq(user_profiles.userId, currentUser.id))
-                .limit(1)
-            const previous = previousUsers.at(0)
-            if (
-                previous &&
-                previous.firstName === personalInfo.firstName &&
-                previous.lastName === personalInfo.lastName &&
-                previous.street === personalInfo.street &&
-                previous.houseNumber === personalInfo.houseNumber &&
-                previous.postalCode === personalInfo.postalCode &&
-                previous.city === personalInfo.city
-            ) {
+            const previous = (
+                await transaction
+                    .select({ bio: user_profiles.bio })
+                    .from(user_profiles)
+                    .where(eq(user_profiles.userId, currentUser.id))
+                    .limit(1)
+            ).at(0)
+            if (previous && previous.bio === bio) {
                 return {
                     changed: false as const,
-                    value: { success: true as const, personalInfo },
+                    value: { success: true as const, bio },
                 }
             }
-            const updatedProfiles = await transaction
-                .insert(user_profiles)
-                .values({ userId: currentUser.id, ...personalInfo })
-                .onConflictDoUpdate({
-                    target: user_profiles.userId,
-                    set: personalInfo,
-                })
-                .returning({
-                    firstName: user_profiles.firstName,
-                    lastName: user_profiles.lastName,
-                    street: user_profiles.street,
-                    houseNumber: user_profiles.houseNumber,
-                    postalCode: user_profiles.postalCode,
-                    city: user_profiles.city,
-                })
-            const updated = updatedProfiles.at(0)
-            if (!updated) throw new Error('Profile update did not return a row')
+            const updated = (
+                await transaction
+                    .insert(user_profiles)
+                    .values({ userId: currentUser.id, bio })
+                    .onConflictDoUpdate({
+                        target: user_profiles.userId,
+                        set: { bio },
+                    })
+                    .returning({ bio: user_profiles.bio })
+            ).at(0)
+            if (!updated) throw new Error('Bio update did not return a row')
             return {
                 changed: true as const,
-                value: { success: true as const, personalInfo: updated },
-                oldValues: previous ?? null,
-                newValues: updated,
+                value: { success: true as const, bio: updated.bio },
+                oldValues: { bio: previous?.bio ?? null },
+                newValues: { bio: updated.bio },
             }
         },
     )

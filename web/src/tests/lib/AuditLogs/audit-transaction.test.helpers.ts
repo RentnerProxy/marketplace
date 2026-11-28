@@ -38,12 +38,7 @@ const auditTestSchema = {
     ]),
     user_profiles: table('user_profiles', [
         'userId',
-        'firstName',
-        'lastName',
-        'street',
-        'houseNumber',
-        'postalCode',
-        'city',
+        'bio',
         'profileImageUpdatedAt',
     ]),
     systemSettings: table('systemSettings', [
