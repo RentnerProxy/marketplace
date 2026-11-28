@@ -1,5 +1,5 @@
 use super::invalid;
-use marketplace_artifacts::{hash_stream, parse_json, read_file};
+use rentnerproxy_artifacts::{hash_stream, parse_json, read_file};
 use serde_json::Value;
 use std::fs;
 use std::io;

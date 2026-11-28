@@ -9,7 +9,7 @@ import {
     uuid,
     varchar,
 } from 'drizzle-orm/pg-core'
-import type { Publication } from '../../../../contracts/v1/index.ts'
+import type { Publication } from '@rentnerproxy/app-contracts'
 import type {
     PublicationRun,
     SubmissionApproval,

@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
-import type { Catalog } from '../../../../contracts/v1/index.ts'
+import type { Catalog } from '@rentnerproxy/app-contracts'
 
 export type SigningKeys = {
     targets: string

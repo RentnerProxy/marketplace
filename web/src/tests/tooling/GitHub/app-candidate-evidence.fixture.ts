@@ -6,8 +6,8 @@ import {
     type BuildIdentity,
     type Purpose,
 } from '../../../../../.github/scripts/ci/app-candidates/evidence.ts'
-import fixtures from '../../../../../contracts/v1/fixtures.json'
-import { parseAppManifest } from '../../../../../contracts/v1/index.ts'
+import fixtures from '@rentnerproxy/app-contracts/fixtures.json'
+import { parseAppManifest } from '@rentnerproxy/app-contracts'
 
 export const candidateBuild: BuildIdentity = {
     repositoryId: '1234',

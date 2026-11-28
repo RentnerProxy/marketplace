@@ -1,18 +1,19 @@
 import { z } from 'zod'
-import { catalogRelease, revocation } from '../../../../contracts/v1/catalog.ts'
-import {
-    githubId,
-    positiveInteger,
-    sha256,
-    timestamp,
-} from '../../../../contracts/v1/primitives.ts'
 import {
     approval,
     candidate,
+    catalogRelease,
+    githubId,
     publication,
-} from '../../../../contracts/v1/publication.ts'
+    revocation,
+    sha256,
+    timestamp,
+} from '@rentnerproxy/app-contracts/schemas'
 
 export type CatalogRevocation = z.output<typeof revocation>
+
+// Revisions and run attempts share the contract's positive safe integer.
+const positiveInteger = publication.shape.catalogRevision
 
 export const catalogPublicationPath = '/api/marketplace/v1/catalog-publication'
 export const catalogPublisherAudience =
