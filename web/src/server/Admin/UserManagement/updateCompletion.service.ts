@@ -17,12 +17,6 @@ function createUpdatedUserProjection(
 
     return {
         ...user,
-        firstName: userProfile.firstName,
-        lastName: userProfile.lastName,
-        street: userProfile.street,
-        houseNumber: userProfile.houseNumber,
-        postalCode: userProfile.postalCode,
-        city: userProfile.city,
         isSuperUser: hasSuperUserPermission(permissionKeys),
         isCurrentUser: user.id === currentUserId,
         permissions: permissionKeys,

@@ -14,8 +14,6 @@ const pageSizeOptions = [5, 10, 20, 50] as const
 const getUserSearchValues = (user: UserManagementUser) => [
     user.username,
     user.email,
-    user.firstName,
-    user.lastName,
 ]
 
 export default function UsersTable(props: UsersTableProps) {

@@ -17,14 +17,6 @@ const { prepareAuditContextService, writeAuditLogInTransactionService } =
     await import('@/lib/AuditLogs/auditLogs.ts')
 
 function changedUser(audit: AuditReceipt): SuccessfulUserUpdateTransaction {
-    const profile = {
-        firstName: 'Test',
-        lastName: null,
-        street: null,
-        houseNumber: null,
-        postalCode: null,
-        city: null,
-    }
     return {
         success: true,
         audit,
@@ -36,13 +28,12 @@ function changedUser(audit: AuditReceipt): SuccessfulUserUpdateTransaction {
             accountType: 'public',
             createdAt: new Date('2026-01-01T00:00:00.000Z'),
         },
-        userProfile: { ...profile, profileImageUpdatedAt: null },
+        userProfile: { profileImageUpdatedAt: null },
         previousUser: {
             username: 'test-user',
             email: 'previous@example.test',
             isActive: true,
             isDeleted: false,
-            ...profile,
         },
         previousPermissionKeys: ['user.dashboard'],
         permissionKeys: ['user.dashboard'],

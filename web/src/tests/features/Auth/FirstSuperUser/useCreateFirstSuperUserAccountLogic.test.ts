@@ -391,11 +391,6 @@ describe('first setup hook secret lifecycle', function () {
             value: '',
             message: 'auth.firstSetup.invalidUsername',
         },
-        {
-            field: 'firstName',
-            value: 'A'.repeat(101),
-            message: 'auth.firstSetup.invalidData',
-        },
     ] as const)(
         'preserves the form notice for $field',
         async function ({ field, value, message }) {

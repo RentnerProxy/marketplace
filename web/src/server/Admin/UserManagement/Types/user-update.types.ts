@@ -11,12 +11,4 @@ export type NormalizedUserUpdate = {
     accountType: AccountType
     username: string
     email: string
-    profile: {
-        firstName: string | null
-        lastName: string | null
-        street: string | null
-        houseNumber: string | null
-        postalCode: string | null
-        city: string | null
-    }
 }

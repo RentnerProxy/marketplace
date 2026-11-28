@@ -70,10 +70,10 @@ export default function PermissionChecklist({
                 return (
                     <label
                         key={permission.key}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg border border-border-dark p-3 transition-colors hover:bg-input-dark has-disabled:cursor-not-allowed has-disabled:opacity-60 ${
+                        className={`flex cursor-pointer items-start gap-3 rounded-md border-2 p-3 transition-colors hover:bg-input-dark has-disabled:cursor-not-allowed has-disabled:opacity-60 ${
                             isSelected
-                                ? 'border-l-2 border-l-primary bg-input-dark'
-                                : 'bg-input-dark/30'
+                                ? 'border-primary bg-input-dark shadow-[3px_3px_0_0_var(--color-primary)]'
+                                : 'border-border-dark bg-input-dark/30'
                         }`}
                     >
                         <input

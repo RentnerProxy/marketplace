@@ -1,11 +1,9 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import AccountSection from '@/features/Auth/FirstSuperUser/Components/AccountSection.tsx'
-import PersonalInfoSection from '@/features/Auth/FirstSuperUser/Components/PersonalInfoSection.tsx'
 import type { FirstSuperUserFormValues } from '@/features/Auth/FirstSuperUser/Types/first-super-user-form.types.ts'
 import {
     elements,
-    findElement,
     invoke,
 } from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
 
@@ -17,12 +15,6 @@ const values: FirstSuperUserFormValues = {
     email: 'admin@example.test',
     password: 'Example-password-123',
     confirmPassword: 'Example-password-123',
-    firstName: 'Kevin',
-    lastName: 'Test',
-    street: 'Teststraße',
-    houseNumber: '12',
-    postalCode: '10115',
-    city: 'Berlin',
 }
 
 describe('First administrator form sections', () => {
@@ -49,36 +41,5 @@ describe('First administrator form sections', () => {
         expect(renderToStaticMarkup(tree)).toContain(
             'id="first-setup-password-policy"',
         )
-    })
-
-    it('forwards personal names and the address editor without losing existing values', () => {
-        const onFieldChange = mock()
-        const tree = PersonalInfoSection({ values, onFieldChange })
-        const firstName = findElement(
-            tree,
-            (element) =>
-                element.props.placeholder ===
-                'userSettings.personalInfo.firstName',
-        )
-        invoke(firstName, 'onChange', { target: { value: 'Ada' } })
-        invoke(
-            findElement(
-                tree,
-                (element) =>
-                    element.props.placeholder ===
-                    'userSettings.personalInfo.lastName',
-            ),
-            'onChange',
-            { target: { value: 'Lovelace' } },
-        )
-        expect(onFieldChange).toHaveBeenCalledWith('firstName', 'Ada')
-        expect(onFieldChange).toHaveBeenCalledWith('lastName', 'Lovelace')
-        const address = findElement(
-            tree,
-            (element) => element.props.values !== undefined,
-        )
-        expect(address.props.values).toBe(values)
-        invoke(address, 'onChange', 'city', 'Bonn')
-        expect(onFieldChange).toHaveBeenCalledWith('city', 'Bonn')
     })
 })

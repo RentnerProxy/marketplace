@@ -19,14 +19,6 @@ export function normalizeUserProfileUpdate(data: UpdateUserProfileInput) {
             accountType: data.accountType,
             username,
             email,
-            profile: {
-                firstName: data.firstName.trim() || null,
-                lastName: data.lastName.trim() || null,
-                street: data.street.trim() || null,
-                houseNumber: data.houseNumber.trim() || null,
-                postalCode: data.postalCode.trim() || null,
-                city: data.city.trim() || null,
-            },
         } satisfies NormalizedUserUpdate,
     }
 }

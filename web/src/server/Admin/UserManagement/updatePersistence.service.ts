@@ -36,35 +36,6 @@ export async function lockUserForUpdateInTransaction(
     return userRows.at(0) ?? null
 }
 
-export async function loadUserProfileInTransaction(
-    transaction: DatabaseTransaction,
-    userId: string,
-) {
-    const profileRows = await transaction
-        .select({
-            firstName: user_profiles.firstName,
-            lastName: user_profiles.lastName,
-            street: user_profiles.street,
-            houseNumber: user_profiles.houseNumber,
-            postalCode: user_profiles.postalCode,
-            city: user_profiles.city,
-        })
-        .from(user_profiles)
-        .where(eq(user_profiles.userId, userId))
-        .limit(1)
-
-    return (
-        profileRows.at(0) ?? {
-            firstName: null,
-            lastName: null,
-            street: null,
-            houseNumber: null,
-            postalCode: null,
-            city: null,
-        }
-    )
-}
-
 export async function loadSelectedPermissionsInTransaction(
     transaction: DatabaseTransaction,
     permissionKeys: Array<string>,
@@ -108,7 +79,7 @@ export async function hasDuplicateVisibleUserInTransaction(
     )
 }
 
-export async function writeUserAndProfileInTransaction(
+export async function writeUserInTransaction(
     transaction: DatabaseTransaction,
     input: NormalizedUserUpdate,
     emailChanged: boolean,
@@ -135,29 +106,12 @@ export async function writeUserAndProfileInTransaction(
         return null
     }
 
-    const updatedProfiles = await transaction
-        .insert(user_profiles)
-        .values({
-            userId: input.id,
-            ...input.profile,
-        })
-        .onConflictDoUpdate({
-            target: user_profiles.userId,
-            set: input.profile,
-        })
-        .returning({
-            firstName: user_profiles.firstName,
-            lastName: user_profiles.lastName,
-            street: user_profiles.street,
-            houseNumber: user_profiles.houseNumber,
-            postalCode: user_profiles.postalCode,
-            city: user_profiles.city,
-            profileImageUpdatedAt: user_profiles.profileImageUpdatedAt,
-        })
-    const userProfile = updatedProfiles.at(0) ?? {
-        ...input.profile,
-        profileImageUpdatedAt: null,
-    }
+    const profileRows = await transaction
+        .select({ profileImageUpdatedAt: user_profiles.profileImageUpdatedAt })
+        .from(user_profiles)
+        .where(eq(user_profiles.userId, input.id))
+        .limit(1)
+    const userProfile = profileRows.at(0) ?? { profileImageUpdatedAt: null }
 
     return { user, userProfile }
 }

@@ -17,10 +17,9 @@ import {
 import {
     hasDuplicateVisibleUserInTransaction,
     loadSelectedPermissionsInTransaction,
-    loadUserProfileInTransaction,
     lockUserForUpdateInTransaction,
     revokeUserAuthenticationStateInTransaction,
-    writeUserAndProfileInTransaction,
+    writeUserInTransaction,
 } from './updatePersistence.service.ts'
 
 export async function updateUserInTransaction(
@@ -34,27 +33,19 @@ export async function updateUserInTransaction(
         currentUserId,
         input.id,
     ])
-    const previousUserData = await lockUserForUpdateInTransaction(
+    const previousUser = await lockUserForUpdateInTransaction(
         transaction,
         input.id,
         input.accountType,
     )
 
-    if (!previousUserData || previousUserData.isDeleted) {
+    if (!previousUser || previousUser.isDeleted) {
         return {
             success: false as const,
             error: 'Benutzer wurde nicht gefunden.',
         }
     }
 
-    const previousProfile = await loadUserProfileInTransaction(
-        transaction,
-        input.id,
-    )
-    const previousUser = {
-        ...previousUserData,
-        ...previousProfile,
-    }
     const {
         targetPermissionKeys: previousPermissionKeys,
         activeSuperUserCount,
@@ -106,7 +97,7 @@ export async function updateUserInTransaction(
     }
 
     const emailChanged = previousUser.email.toLowerCase() !== input.email
-    const updatedState = await writeUserAndProfileInTransaction(
+    const updatedState = await writeUserInTransaction(
         transaction,
         input,
         emailChanged,
@@ -131,7 +122,6 @@ export async function updateUserInTransaction(
         newValues: {
             username: updatedState.user.username,
             email: updatedState.user.email,
-            ...updatedState.userProfile,
             permissionKeys,
         },
     })

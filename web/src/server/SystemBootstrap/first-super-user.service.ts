@@ -106,15 +106,7 @@ export async function createFirstSuperUserAccountService(
 
         await transaction.insert(staffAccounts).values({ userId: user.id })
 
-        await transaction.insert(user_profiles).values({
-            userId: user.id,
-            firstName: data.firstName || null,
-            lastName: data.lastName || null,
-            street: data.street || null,
-            houseNumber: data.houseNumber || null,
-            postalCode: data.postalCode || null,
-            city: data.city || null,
-        })
+        await transaction.insert(user_profiles).values({ userId: user.id })
 
         const adminPermissions = availablePermissions.filter((permission) =>
             DEFAULT_ADMIN_PERMISSION_KEYS.includes(permission.key),

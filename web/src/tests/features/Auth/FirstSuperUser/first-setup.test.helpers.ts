@@ -6,11 +6,5 @@ export function createFirstSetupFormValues(): FirstSuperUserFormValues {
         email: 'fixture@example.test',
         password: 'abcd',
         confirmPassword: 'abcd',
-        firstName: '',
-        lastName: '',
-        street: '',
-        houseNumber: '',
-        postalCode: '',
-        city: '',
     }
 }

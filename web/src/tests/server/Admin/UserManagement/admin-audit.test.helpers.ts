@@ -36,12 +36,7 @@ const adminAuditSchema = {
     ]),
     user_profiles: createTestTable('user_profiles', [
         'userId',
-        'firstName',
-        'lastName',
-        'street',
-        'houseNumber',
-        'postalCode',
-        'city',
+        'bio',
         'profileImageUpdatedAt',
     ]),
     permissions: createTestTable('permissions', ['id', 'key']),
@@ -309,12 +304,7 @@ function createAdminAuditTestDatabase() {
                             isActive: true,
                             isDeleted: false,
                             isTwoFactorEnabled: false,
-                            firstName: null,
-                            lastName: null,
-                            street: null,
-                            houseNumber: null,
-                            postalCode: null,
-                            city: null,
+                            bio: null,
                             profileImageUpdatedAt: null,
                             referenceId: null,
                             readAt: null,
@@ -487,12 +477,7 @@ function createAdminAuditTestDatabase() {
         ]
         state.rows.user_profiles = state.rows.users.map((user) => ({
             userId: user.id,
-            firstName: 'Before',
-            lastName: null,
-            street: null,
-            houseNumber: null,
-            postalCode: null,
-            city: null,
+            bio: null,
             profileImageUpdatedAt: null,
         }))
         state.rows.permissions = Object.values(PERMISSIONS).map((key) => ({

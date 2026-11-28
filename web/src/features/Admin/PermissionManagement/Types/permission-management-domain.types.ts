@@ -25,8 +25,6 @@ export type PermissionManagementUser = {
     id: string
     username: string
     email: string
-    firstName: string | null
-    lastName: string | null
     isActive: boolean
     isSuperUser: boolean
     isCurrentUser: boolean

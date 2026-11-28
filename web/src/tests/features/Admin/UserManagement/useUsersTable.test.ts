@@ -19,12 +19,6 @@ const user: UserManagementUser = {
     id: 'member',
     username: 'Ada',
     email: 'ada@example.invalid',
-    firstName: 'Augusta',
-    lastName: 'Lovelace',
-    street: null,
-    houseNumber: null,
-    postalCode: null,
-    city: null,
     isActive: true,
     isSuperUser: false,
     isCurrentUser: false,
@@ -142,30 +136,22 @@ describe('users table view', () => {
         expect(table.getRowId(user, 0)).toBe(user.id)
     })
 
-    it('supplies all identity fields, including names without columns, to the table search', () => {
+    it('supplies the account identity fields to the table search', () => {
         const getSearchValues = renderTable().getSearchValues
         if (!getSearchValues) throw new Error('Missing user search values')
         expect(renderTable().getSearchValues).toBe(getSearchValues)
-        expect(getSearchValues(user)).toEqual([
-            user.username,
-            user.email,
-            user.firstName,
-            user.lastName,
-        ])
-        expect(
-            getSearchValues({ ...user, firstName: null, lastName: null }),
-        ).toEqual([user.username, user.email, null, null])
+        expect(getSearchValues(user)).toEqual([user.username, user.email])
     })
 
-    it('filters hidden names and exact permissions through the table instance', () => {
+    it('filters by account identity and exact permissions through the table instance', () => {
         const options = renderTable()
         const data = [
             { ...user, permissions: ['a.read', 'z.read'] },
             {
                 ...user,
                 id: 'other',
-                firstName: null,
-                lastName: null,
+                username: 'Grace',
+                email: 'grace@example.invalid',
                 permissions: ['a.read.extended'],
             },
         ]
@@ -180,7 +166,7 @@ describe('users table view', () => {
         const rowIds = () =>
             table.getFilteredRowModel().rows.map((row) => row.id)
 
-        for (const search of [' augusta ', 'LOVELACE']) {
+        for (const search of [' ada ', 'ADA@EXAMPLE']) {
             handler.handleSearch(search)
             expect(rowIds()).toEqual([user.id])
         }

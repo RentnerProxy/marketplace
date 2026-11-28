@@ -68,12 +68,6 @@ const values: UpdateUserFormValues = {
     id: 'member',
     username: 'Ada',
     email: 'ada@example.invalid',
-    firstName: '',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
 }
 
 beforeEach(() => {
@@ -155,21 +149,19 @@ describe('user management components', () => {
         expect(onSubmit).toHaveBeenCalledWith(values)
     })
 
-    it('wires every account/name input to the matching edit field', () => {
+    it('wires every account input to the matching edit field', () => {
         const onFieldChange = vi.fn()
         const tree = GeneralUserInfo({ draftForm: values, onFieldChange })
         const fields = elements(tree).filter(
             (element) => typeof element.props.onValueChange === 'function',
         )
-        expect(fields).toHaveLength(4)
+        expect(fields).toHaveLength(2)
         fields.forEach((field, index) => {
             invoke(field, 'onValueChange', `changed-${index}`)
         })
         expect(onFieldChange.mock.calls).toEqual([
             ['username', 'changed-0'],
             ['email', 'changed-1'],
-            ['firstName', 'changed-2'],
-            ['lastName', 'changed-3'],
         ])
     })
 
