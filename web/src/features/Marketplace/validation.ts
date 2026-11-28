@@ -1,16 +1,17 @@
 import { z } from 'zod'
 import { CANDIDATE_PIPELINE } from '@/config/submissions.config.ts'
 import { repositoryName, sourcePath } from '@/lib/Marketplace/sourceRequest.ts'
-import { appManifest } from '../../../../contracts/v1/manifest.ts'
 import {
     appId,
+    appManifest,
     appVersion,
+    catalogRelease,
     commit,
-    displayName,
     sha256,
-} from '../../../../contracts/v1/primitives.ts'
+} from '@rentnerproxy/app-contracts/schemas'
 
 const id = z.uuid()
+const publisherDisplayName = catalogRelease.shape.publisher.shape.name
 const revision = z.number().int().min(1).max(2147483647)
 const reason = z
     .string()
@@ -35,7 +36,7 @@ export const submitInput = z
             z.literal(CANDIDATE_PIPELINE.targets[0]),
             z.literal(CANDIDATE_PIPELINE.targets[1]),
         ]),
-        publisherName: z.string().trim().pipe(displayName),
+        publisherName: z.string().trim().pipe(publisherDisplayName),
         display: appManifest.shape.display,
         configSchema: appManifest.shape.configSchema,
     })

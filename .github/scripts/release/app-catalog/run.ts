@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { z } from 'zod'
-import { commit } from '../../../../contracts/v1/primitives.ts'
+import { commit } from '@rentnerproxy/app-contracts/schemas'
 import { CANDIDATE_PIPELINE as pipeline } from '../../../../web/src/config/submissions.config.ts'
 import { requireDriverCheckout } from '../../ci/app-candidates/context.ts'
 import { withCandidateBundle } from './artifact.ts'

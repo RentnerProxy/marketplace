@@ -8,17 +8,12 @@ COPY core/Cargo.toml core/Cargo.lock core/rust-toolchain.toml ./
 COPY core/src ./src
 COPY core/app-catalog/Cargo.toml ./app-catalog/
 COPY core/app-catalog/src ./app-catalog/src
-COPY core/app-contracts/Cargo.toml core/app-contracts/build.rs ./app-contracts/
-COPY core/app-contracts/src ./app-contracts/src
 COPY core/app-pipeline/Cargo.toml ./app-pipeline/
 COPY core/app-pipeline/src ./app-pipeline/src
-COPY core/artifacts/Cargo.toml ./artifacts/
-COPY core/artifacts/src ./artifacts/src
 COPY core/tooling/Cargo.toml ./tooling/
 COPY core/tooling/src ./tooling/src
 COPY core/ffi/Cargo.toml ./ffi/Cargo.toml
 COPY core/ffi/src ./ffi/src
-COPY contracts/v1/contracts.schema.json contracts/v1/upstream-probe-fixtures.json /app/contracts/v1/
 
 FROM core-sources AS candidate-probe-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
@@ -169,7 +164,6 @@ COPY --from=builder /app/web/drizzle ./web/drizzle
 COPY --from=builder /app/package.json ./package.json
 COPY LICENSE /app/LICENSE
 COPY --from=builder /app/web ./web
-COPY --from=builder /app/contracts/v1 ./contracts/v1
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=core-builder /native/ /usr/local/bin/
 

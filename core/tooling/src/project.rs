@@ -8,8 +8,8 @@ use std::{
     sync::LazyLock,
 };
 
-use marketplace_artifacts::{invalid, read_file};
 use regex::Regex;
+use rentnerproxy_artifacts::{invalid, read_file};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 

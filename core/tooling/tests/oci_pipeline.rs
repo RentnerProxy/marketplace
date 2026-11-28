@@ -1,5 +1,5 @@
-use marketplace_artifacts::digest;
 use marketplace_tooling::oci::execute;
+use rentnerproxy_artifacts::digest;
 use serde_json::{Value, json};
 use std::{fs, io};
 use tar::{Builder, EntryType, Header};
@@ -165,7 +165,7 @@ fn sealed_archive_is_bound_to_the_tested_bytes() -> io::Result<()> {
     input["testedArchiveSha256"] = tested_hash.clone();
     let outputs = execute("oci-dev", input.clone())?;
     let receipt_bytes = fs::read(root.path().join("marketplace-dev-candidate/candidate.json"))?;
-    let receipt = marketplace_artifacts::parse_json(&receipt_bytes)?;
+    let receipt = rentnerproxy_artifacts::parse_json(&receipt_bytes)?;
     assert_eq!(outputs["evidence_sha256"], digest(&receipt_bytes));
     assert_eq!(outputs["archive_sha256"], tested_hash);
     assert_eq!(receipt["archiveSha256"], tested_hash);
@@ -230,7 +230,7 @@ fn publisher_requires_the_attested_handoff_assessment_and_both_registry_digests(
 
     input["command"] = json!("verify");
     assert!(execute("oci-dev", input.clone())?.is_null());
-    let identity = marketplace_artifacts::parse_json(&fs::read(directory.join("identity.json"))?)?;
+    let identity = rentnerproxy_artifacts::parse_json(&fs::read(directory.join("identity.json"))?)?;
     assert_eq!(identity["digest"], sealed["digest"]);
 
     input["command"] = json!("ready");
@@ -257,7 +257,7 @@ fn publisher_requires_the_attested_handoff_assessment_and_both_registry_digests(
     );
     fs::write(&assessment_path, vec![b' '; 1024 * 1024 + 1])?;
     assert!(execute("oci-dev", input.clone()).is_err());
-    let mut forged = marketplace_artifacts::parse_json(&assessment_bytes)?;
+    let mut forged = rentnerproxy_artifacts::parse_json(&assessment_bytes)?;
     forged["platforms"] = json!(["linux/arm64"]);
     fs::write(&assessment_path, serde_json::to_vec(&forged)?)?;
     assert!(
@@ -284,7 +284,7 @@ fn publisher_requires_the_attested_handoff_assessment_and_both_registry_digests(
     input["remote"]["dev"] = sealed["digest"].clone();
     execute("oci-dev", input.clone())?;
     let published =
-        marketplace_artifacts::parse_json(&fs::read(directory.join("publication.json"))?)?;
+        rentnerproxy_artifacts::parse_json(&fs::read(directory.join("publication.json"))?)?;
     assert_eq!(published["tags"], json!(["dev-aaaaaaaaaaaa-53-1", "dev"]));
     assert_eq!(published["digest"], sealed["digest"]);
 

@@ -1,6 +1,6 @@
 use super::evidence::{MANIFEST_TYPE, digest};
 use crate::security::invalid;
-use marketplace_artifacts::{digest as hash_bytes, hash_stream, open_regular, parse_json};
+use rentnerproxy_artifacts::{digest as hash_bytes, hash_stream, open_regular, parse_json};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};

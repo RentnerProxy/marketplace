@@ -4,11 +4,8 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createDistribution } from '../../../../../.github/scripts/release/app-catalog/distribution.ts'
-import fixtures from '../../../../../contracts/v1/fixtures.json'
-import {
-    packageReleaseAssets,
-    parseCatalog,
-} from '../../../../../contracts/v1/index.ts'
+import fixtures from '@rentnerproxy/app-contracts/fixtures.json'
+import { packageReleaseAssets, parseCatalog } from '@rentnerproxy/app-contracts'
 
 const repository = '/repos/RentnerProxy/app-catalog'
 const branch = `${repository}/git/ref/heads/main`

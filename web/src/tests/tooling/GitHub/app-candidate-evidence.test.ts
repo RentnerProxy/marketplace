@@ -17,8 +17,8 @@ import {
     type Purpose,
 } from '../../../../../.github/scripts/ci/app-candidates/evidence.ts'
 import { candidateSbom } from '../../../../../.github/scripts/ci/app-candidates/scan.ts'
-import fixtures from '../../../../../contracts/v1/fixtures.json'
-import { parseAppManifest } from '../../../../../contracts/v1/index.ts'
+import fixtures from '@rentnerproxy/app-contracts/fixtures.json'
+import { parseAppManifest } from '@rentnerproxy/app-contracts'
 import {
     candidateBuild as build,
     candidateEvidenceFixture,

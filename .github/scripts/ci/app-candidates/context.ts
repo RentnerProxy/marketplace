@@ -1,7 +1,7 @@
 import { appendFile } from 'node:fs/promises'
 import { z } from 'zod'
-import type { Candidate } from '../../../../contracts/v1/index.ts'
-import { commit, githubId } from '../../../../contracts/v1/primitives.ts'
+import type { Candidate } from '@rentnerproxy/app-contracts'
+import { commit, githubId } from '@rentnerproxy/app-contracts/schemas'
 import type { Purpose } from './evidence.ts'
 import { sourceRequest } from './source.ts'
 

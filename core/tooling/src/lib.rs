@@ -1,4 +1,3 @@
-pub mod contracts;
 pub mod coverage;
 pub mod oci;
 pub mod policy;

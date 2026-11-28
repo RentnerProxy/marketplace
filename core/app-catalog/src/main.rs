@@ -6,7 +6,7 @@ use ipc::{
     MAX_FILES, MAX_GENERATION, MAX_ICONS, MAX_REQUESTS, Pipe, ROOT_LIMIT, Reply, invalid_frame,
     logical_icon_path, static_file_limit,
 };
-use marketplace_app_catalog::{
+use rentnerproxy_app_catalog::{
     CatalogError, ReadOptions, SigningKeys, TrustedCatalog, UpdateOptions, bootstrap_catalog,
     read_catalog, update_catalog,
 };

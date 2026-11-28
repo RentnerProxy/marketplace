@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
 import type { marketplaceRepositoryClaims } from '@/db/schema.ts'
 import { repositoryName } from '@/lib/Marketplace/sourceRequest.ts'
-import { commit } from '../../../../../contracts/v1/primitives.ts'
+import { commit } from '@rentnerproxy/app-contracts/schemas'
 import { publicRepositoryGitHubToken } from './github-credentials.service.ts'
 import {
     GitHubRequestError,

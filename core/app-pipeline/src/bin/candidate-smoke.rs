@@ -1,5 +1,5 @@
-use marketplace_app_pipeline::smoke;
-use marketplace_artifacts::{invalid, read_request};
+use rentnerproxy_app_pipeline::smoke;
+use rentnerproxy_artifacts::{invalid, read_request};
 use std::io::{self, Write};
 use std::process::ExitCode;
 
