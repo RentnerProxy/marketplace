@@ -1,7 +1,7 @@
 use std::io;
 
-use marketplace_artifacts::invalid;
 use regex::{Captures, Regex};
+use rentnerproxy_artifacts::invalid;
 
 use super::Config;
 

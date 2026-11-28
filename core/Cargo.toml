@@ -6,15 +6,8 @@ rust-version = "1.99"
 publish = false
 
 [workspace]
-members = [
-    "app-catalog",
-    "app-contracts",
-    "app-pipeline",
-    "artifacts",
-    "ffi",
-    "tooling",
-]
-default-members = [".", "app-contracts"]
+members = ["app-catalog", "app-pipeline", "ffi", "tooling"]
+default-members = ["."]
 resolver = "3"
 
 [dependencies]

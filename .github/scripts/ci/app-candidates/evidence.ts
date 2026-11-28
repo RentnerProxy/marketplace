@@ -1,4 +1,4 @@
-import type { AppManifest, Candidate } from '../../../../contracts/v1/index.ts'
+import type { AppManifest, Candidate } from '@rentnerproxy/app-contracts'
 import type {
     AppSource,
     AppTarget,

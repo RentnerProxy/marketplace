@@ -1,7 +1,5 @@
-use marketplace_artifacts::{invalid, read_request};
-use marketplace_tooling::{
-    contracts, coverage, oci, policy, project, release, security, verification,
-};
+use marketplace_tooling::{coverage, oci, policy, project, release, security, verification};
+use rentnerproxy_artifacts::{invalid, read_request};
 use serde_json::Value;
 use std::io::{self, Write};
 use std::process::ExitCode;
@@ -15,7 +13,6 @@ fn execute(operation: &str, input: Value) -> io::Result<Value> {
         "release" => release::execute(command, input),
         "security" => security::execute(command, input),
         "policy" => policy::execute(command, input),
-        "contracts" => contracts::execute(command, input),
         "coverage" => coverage::execute(command, input),
         "project" => project::execute(command, input),
         "verification" => verification::execute(command, input),

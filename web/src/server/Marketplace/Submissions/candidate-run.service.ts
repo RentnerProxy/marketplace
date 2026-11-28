@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
-import { commit, sha256 } from '../../../../../contracts/v1/primitives.ts'
+import { commit, sha256 } from '@rentnerproxy/app-contracts/schemas'
 import type {
     marketplaceRepositoryClaims,
     marketplaceSubmissions,

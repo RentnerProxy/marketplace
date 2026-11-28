@@ -1,0 +1,124 @@
+{
+    "manifest": {
+        "formatVersion": 1,
+        "id": "rentnerproxy.monitoring",
+        "version": "0.1.0-beta.1",
+        "target": "linux-amd64",
+        "source": {
+            "repositoryId": "8001234",
+            "commit": "0123456789abcdef0123456789abcdef01234567"
+        },
+        "display": {
+            "name": "Monitoring 🦦",
+            "summary": "Track service health, latency and uptime.",
+            "license": "MIT"
+        },
+        "requires": {
+            "runtimeProfile": "rentnerproxy-linux-v1",
+            "platformApi": ">=1.0.0 <2.0.0",
+            "appProtocol": ">=1.0.0 <2.0.0",
+            "uiBridge": ">=1.0.0 <1.4.0",
+            "engineCapabilities": []
+        },
+        "entrypoint": "bin/app",
+        "api": "api/openapi.json",
+        "configSchema": "schemas/settings.json",
+        "ui": {
+            "entrypoint": "ui/index.html",
+            "slots": ["navigation", "dashboardWidget"]
+        },
+        "providers": ["monitoring"],
+        "capabilities": [
+            {
+                "id": "proxy.hosts.read.v1",
+                "scope": "proxyHosts"
+            },
+            {
+                "id": "diagnostics.upstream.probe.v1",
+                "scope": "proxyHosts"
+            },
+            {
+                "id": "notifications.publish.v1",
+                "scope": "installation"
+            }
+        ],
+        "permissions": ["view", "manage"],
+        "data": {
+            "targetVersion": 3,
+            "readVersions": [2, 3],
+            "writeVersions": [3],
+            "migrations": [
+                {
+                    "fromVersion": 0,
+                    "toVersion": 2,
+                    "path": "migrations/initialize.sql"
+                },
+                {
+                    "fromVersion": 2,
+                    "toVersion": 3,
+                    "path": "migrations/v3.json"
+                }
+            ]
+        },
+        "resources": {
+            "startupTimeoutMs": 10000,
+            "drainTimeoutMs": 2000,
+            "memoryMiB": 128,
+            "processLimit": 4
+        }
+    },
+    "records": {
+        "release": {
+            "appId": "rentnerproxy.monitoring",
+            "version": "0.1.0-beta.1",
+            "source": {
+                "repositoryId": "8001234",
+                "commit": "0123456789abcdef0123456789abcdef01234567"
+            },
+            "publisher": {
+                "namespace": "rentnerproxy",
+                "name": "RentnerProxy"
+            },
+            "icon": {
+                "format": "webp",
+                "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "sizeBytes": 512
+            },
+            "notes": "Adds service uptime checks.\nFixes display of failed probes."
+        }
+    },
+    "targets": [
+        {
+            "target": "linux-amd64",
+            "archive": {
+                "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+                "sizeBytes": 512000
+            },
+            "manifestSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "sbom": {
+                "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+                "sizeBytes": 2048
+            },
+            "provenance": {
+                "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+                "sizeBytes": 1024
+            }
+        },
+        {
+            "target": "linux-arm64",
+            "archive": {
+                "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+                "sizeBytes": 480000
+            },
+            "manifestSha256": "6666666666666666666666666666666666666666666666666666666666666666",
+            "sbom": {
+                "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+                "sizeBytes": 2048
+            },
+            "provenance": {
+                "sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+                "sizeBytes": 1024
+            }
+        }
+    ]
+}
