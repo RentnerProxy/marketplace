@@ -76,9 +76,14 @@ describe('candidate builds', () => {
             'test -d /work/package && test ! -L /work/package',
             "exec /usr/bin/tar --format=ustar --owner=0 --group=0 --mode='u=rwX,go=rX' -C /work/package -cf - .",
         ])
-        expect(sandboxConfig({ ...buildLimits.typescript, target: 'linux-arm64', mounts: [], command }).image).toBe(
-            applianceImage,
-        )
+        expect(
+            sandboxConfig({
+                ...buildLimits.typescript,
+                target: 'linux-arm64',
+                mounts: [],
+                command,
+            }).image,
+        ).toBe(applianceImage)
     })
 
     test('builds a Rust backend offline with the admitted lock and fetched crates', () => {
@@ -123,7 +128,15 @@ describe('candidate builds', () => {
             ).some((line) => line.includes('/candidate-crates.tar')),
         ).toBe(false)
         const image = 'sha256:' + 'e'.repeat(64)
-        expect(sandboxConfig({ ...buildLimits.rust, image, target: 'linux-amd64', mounts: [], command }).image).toBe(image)
+        expect(
+            sandboxConfig({
+                ...buildLimits.rust,
+                image,
+                target: 'linux-amd64',
+                mounts: [],
+                command,
+            }).image,
+        ).toBe(image)
     })
 
     test.each(Object.entries(rustHosts))(
