@@ -51,7 +51,7 @@
     "dependencies": {
         "@rentnerkev/calendar": "^2.10.2",
         "@rentnerkev/inputs": "^2.8.3",
-        "@rentnerkev/menu": "1.2.0",
+        "@rentnerkev/menu": "1.2.1",
         "@rentnerkev/picker": "^2.4.2",
         "@rentnerkev/select": "^6.2.1",
         "@rentnerkev/table": "^1.4.2",
@@ -59,7 +59,7 @@
         "@rentnerkev/tooltips": "^2.3.3",
         "@simplewebauthn/browser": "^14.0.0",
         "@simplewebauthn/server": "^14.1.0",
-        "@tanstack/react-form": "^1.33.5",
+        "@tanstack/react-form": "^1.33.6",
         "@tanstack/react-query": "^5.108.4",
         "@tanstack/react-router": "^1.170.46",
         "@tanstack/react-router-ssr-query": "^1.167.3",
@@ -69,7 +69,7 @@
         "drizzle-orm": "^0.45.4",
         "ioredis": "^6.1.0",
         "jose": "^6.2.18",
-        "lucide-react": "^1.80.0",
+        "lucide-react": "^1.81.0",
         "nodemailer": "^10.6.1",
         "openid-client": "^6.9.1",
         "otpauth": "^9.6.0",
@@ -95,11 +95,11 @@
         "drizzle-kit": "^0.31.11",
         "nitro": "^3.0.261103-rc",
         "oxlint": "^1.95.0",
-        "oxlint-tsgolint": "^7.0.2008",
+        "oxlint-tsgolint": "^7.0.2009",
         "tailwindcss": "^4.3.5",
         "tar-stream": "^3.3.0",
         "typescript": "7.0.2",
-        "vite": "^8.3.8"
+        "vite": "^8.4.0"
     },
     "overrides": {
         "@esbuild-kit/core-utils>esbuild": "0.28.2"
