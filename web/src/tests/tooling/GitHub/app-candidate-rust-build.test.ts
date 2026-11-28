@@ -160,9 +160,13 @@ describe('candidate builds', () => {
             expect(lines).toContain(
                 '/usr/bin/tar -xf /candidate-source.tar --no-same-owner --no-same-permissions --exclude=.cargo',
             )
+            const workspace = lines.indexOf(
+                'test "$(cargo locate-project --workspace --message-format plain)" = /work/source/core/Cargo.toml || exit 65',
+            )
             expect(lines).toContain('test -d core && test ! -L core')
             expect(lock).toBeGreaterThan(0)
-            expect(fetch).toBeGreaterThan(lock)
+            expect(workspace).toBeGreaterThan(lock)
+            expect(fetch).toBeGreaterThan(workspace)
             expect(lines.at(-1)).toBe(
                 'exec /usr/bin/tar --exclude=cargo-home/registry/src --exclude=cargo-home/git/checkouts -cf - cargo-home',
             )

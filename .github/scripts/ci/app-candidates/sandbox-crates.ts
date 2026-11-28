@@ -41,6 +41,8 @@ export function crateFetchCommand(
             '/usr/bin/tar -xf /candidate-source.tar --no-same-owner --no-same-permissions --exclude=.cargo',
             ...admittedCargoLock(lockSha256),
             'cd core',
+            // A workspace root above core/ would make Cargo resolve a lock that was not admitted.
+            'test "$(cargo locate-project --workspace --message-format plain)" = /work/source/core/Cargo.toml || exit 65',
             `cargo fetch --locked --target ${rustHosts[target]} >&2`,
             'cd /work',
             // Offline builds extract crates and check out Git sources themselves.
