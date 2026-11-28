@@ -3,6 +3,11 @@ import {
     restoreTestGlobals,
     stubTestGlobal,
 } from '@/tests/shared/bunTestStubs.ts'
+import {
+    elements,
+    findElement,
+    invoke,
+} from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
 import { createElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type useAppDetailPageLogic from '@/features/AppStore/Hooks/useAppDetailPageLogic.ts'
@@ -120,6 +125,8 @@ const { default: AppDetailPage } =
     await import('@/features/AppStore/Detail/index.tsx')
 const { default: StoreEditorPage } =
     await import('@/features/AppStore/Editor/index.tsx')
+const { default: ImageCropDialog } =
+    await import('@/shared/Images/Components/ImageCropDialog.tsx')
 
 const appId = 'rentner.weather-widget'
 const shotIds = [
@@ -361,6 +368,23 @@ describe('store editor page', () => {
 })
 
 describe('store logo editor', () => {
+    it('hands a chosen logo file to the cropper and clears the input', () => {
+        const tree = StoreLogoEditor({ appId, logoSrc: null, name: 'W' })
+        const input = findElement(
+            tree,
+            (element) =>
+                element.type === 'input' && element.props.type === 'file',
+        )
+        const file = new File(['png'], 'logo.png', { type: 'image/png' })
+        const chosen = { target: { files: [file], value: 'C:\\logo.png' } }
+        invoke(input, 'onChange', chosen)
+        expect(logo.handler.handleSelectImage).toHaveBeenLastCalledWith(file)
+        expect(chosen.target.value).toBe('')
+
+        invoke(input, 'onChange', { target: { files: [], value: '' } })
+        expect(logo.handler.handleSelectImage).toHaveBeenLastCalledWith(null)
+    })
+
     it('offers an upload without a logo', () => {
         const html = render(
             createElement(StoreLogoEditor, { appId, logoSrc: null, name: 'W' }),
@@ -459,9 +483,113 @@ describe('store screenshots editor', () => {
         expect(html).toContain('appStore.screenshots.add')
         expect(html).not.toContain('disabled=""')
     })
+
+    it('wires moving and removing each tile to its own position', () => {
+        const tree = StoreScreenshotsEditor({ appId, screenshots })
+        const buttons = (label: string) =>
+            elements(tree).filter(
+                (element) =>
+                    element.type === 'button' &&
+                    element.props['aria-label'] === label,
+            )
+
+        const [, secondLeft] = buttons('appStore.screenshots.moveLeft')
+        const [firstRight] = buttons('appStore.screenshots.moveRight')
+        const removes = buttons('appStore.screenshots.remove')
+        if (!secondLeft || !firstRight) throw new Error('Missing move button')
+        invoke(secondLeft, 'onClick')
+        expect(shots.handler.handleMove).toHaveBeenLastCalledWith(1, -1)
+        invoke(firstRight, 'onClick')
+        expect(shots.handler.handleMove).toHaveBeenLastCalledWith(0, 1)
+
+        expect(removes).toHaveLength(3)
+        const lastRemove = removes[2]
+        if (!lastRemove) throw new Error('Missing remove button')
+        invoke(lastRemove, 'onClick')
+        expect(shots.handler.handleOpenRemove).toHaveBeenCalledWith(shotIds[2])
+    })
+
+    it('hands a chosen file to the cropper and clears the input for the next choice', () => {
+        const tree = StoreScreenshotsEditor({ appId, screenshots })
+        const input = findElement(
+            tree,
+            (element) =>
+                element.type === 'input' && element.props.type === 'file',
+        )
+        const file = new File(['png'], 'shot.png', { type: 'image/png' })
+        const chosen = { target: { files: [file], value: 'C:\\shot.png' } }
+        invoke(input, 'onChange', chosen)
+        expect(shots.handler.handleSelectImage).toHaveBeenLastCalledWith(file)
+        expect(chosen.target.value).toBe('')
+
+        invoke(input, 'onChange', { target: { files: null, value: '' } })
+        expect(shots.handler.handleSelectImage).toHaveBeenLastCalledWith(null)
+    })
+})
+
+function cropDialog(isSaving: boolean, onZoomChange = mock()) {
+    stubTestGlobal('document', { body: {} })
+    return ImageCropDialog({
+        titleId: 'crop-title',
+        title: 'Logo zuschneiden',
+        hint: 'Hinweis',
+        imageSrc: 'data:image/png;base64,AAAA',
+        crop: { x: 0, y: 0 },
+        zoom: 1.5,
+        aspect: 1,
+        isSaving,
+        saveLabel: 'Speichern',
+        onCropChange: mock(),
+        onZoomChange,
+        onCropComplete: mock(),
+        onCancel: mock(),
+        onSave: mock(),
+    })
+}
+
+describe('image crop dialog', () => {
+    it('converts the zoom slider value into a number', () => {
+        const onZoomChange = mock((_zoom: number) => {})
+        const tree = cropDialog(false, onZoomChange)
+        const slider = findElement(
+            tree,
+            (element) =>
+                element.type === 'input' && element.props.type === 'range',
+        )
+        expect(slider.props.value).toBe(1.5)
+        invoke(slider, 'onChange', { target: { value: '2.5' } })
+        expect(onZoomChange).toHaveBeenCalledWith(2.5)
+        expect(
+            findElement(tree, (element) => element.props.role === 'dialog')
+                .props['aria-labelledby'],
+        ).toBe('crop-title')
+        const html = renderToStaticMarkup(tree)
+        expect(html).toContain('Speichern')
+        expect(html).not.toContain('animate-spin')
+    })
+
+    it('locks both actions and shows progress while saving', () => {
+        const html = renderToStaticMarkup(cropDialog(true))
+        expect(count(html, 'disabled=""')).toBe(2)
+        expect(html).toContain('animate-spin')
+        expect(html).toContain('common.saving')
+        expect(html).not.toContain('Speichern')
+    })
 })
 
 describe('store description editor', () => {
+    it('passes typed text to the description logic', () => {
+        const tree = StoreDescriptionEditor({ appId, description: 'Text' })
+        invoke(
+            findElement(tree, (element) => element.type === 'textarea'),
+            'onChange',
+            { target: { value: 'Neuer Text' } },
+        )
+        expect(description.handler.handleChange).toHaveBeenCalledWith(
+            'Neuer Text',
+        )
+    })
+
     it('shows the text, the counter and a disabled save without changes', () => {
         const html = render(
             createElement(StoreDescriptionEditor, {
@@ -563,6 +691,53 @@ describe('screenshot gallery', () => {
         )
         expect(single).toContain('role="dialog"')
         expect(single).not.toContain('appStore.detail.previous')
+    })
+
+    it('selects thumbnails and navigates inside the lightbox without closing it', () => {
+        stubTestGlobal('document', { body: {} })
+        gallery.state.isLightboxOpen = true
+        const tree = ScreenshotGallery({ name: 'Wetter', screenshots })
+        invoke(
+            findElement(
+                tree,
+                (element) =>
+                    element.props['aria-label'] ===
+                    'appStore.screenshots.alt{"number":3}',
+            ),
+            'onClick',
+        )
+        expect(gallery.handler.handleSelect).toHaveBeenCalledWith(2)
+
+        const dialog = findElement(
+            tree,
+            (element) => element.props.role === 'dialog',
+        )
+        expect(dialog.props.onClick).toBe(gallery.handler.handleCloseLightbox)
+        const image = { stopPropagation: mock() }
+        invoke(
+            findElement(dialog, (element) => element.type === 'img'),
+            'onClick',
+            image,
+        )
+        expect(image.stopPropagation).toHaveBeenCalledTimes(1)
+
+        for (const [label, handler] of [
+            ['appStore.detail.previous', gallery.handler.handlePrevious],
+            ['appStore.detail.next', gallery.handler.handleNext],
+        ] as const) {
+            const event = { stopPropagation: mock() }
+            invoke(
+                findElement(
+                    dialog,
+                    (element) => element.props['aria-label'] === label,
+                ),
+                'onClick',
+                event,
+            )
+            expect(event.stopPropagation).toHaveBeenCalledTimes(1)
+            expect(handler).toHaveBeenCalledTimes(1)
+        }
+        expect(gallery.handler.handleCloseLightbox).not.toHaveBeenCalled()
     })
 })
 
