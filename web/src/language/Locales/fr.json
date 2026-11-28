@@ -1,4 +1,16 @@
 {
+    "submissions": {
+        "title": "Soumettre des applis",
+        "steps": {
+            "proofTitle": "Prouver le dépôt",
+            "proofDescription": "Demandez une preuve de propriété et enregistrez la valeur dans le dépôt. Vous pourrez ensuite soumettre depuis ce dépôt.",
+            "versionTitle": "Soumettre une version",
+            "versionDescription": "Le nom, le résumé et la licence doivent correspondre exactement à l’app.json du commit indiqué. Lors de la soumission, nous vérifions que la preuve de propriété se trouve dans le dépôt.",
+            "versionLocked": "Demandez d’abord une preuve de propriété et sélectionnez le dépôt.",
+            "storeTitle": "Composer la fiche boutique",
+            "storeDescription": "Modifiez le logo, les captures et la description longue à tout moment, même pendant la vérification et sans nouvelle version."
+        }
+    },
     "common": {
         "active": "Actif",
         "actions": "Actions",
@@ -589,7 +601,7 @@
             "eyebrow": "Le catalogue d’applications",
             "title": "Des applications pour votre RentnerProxy.",
             "description": "Un espace pour les applications et extensions officielles. Découvrez ce qui est prévu pour votre installation.",
-            "note": "Toutes les applications présentées sont prévues. Elles ne peuvent pas encore être téléchargées ni installées.",
+            "note": "Les cartes suivantes présentent des extensions prévues. Elles ne peuvent pas encore être téléchargées ni installées.",
             "backToFlow": "Le fonctionnement prévu du marketplace"
         },
         "blog": {
@@ -857,6 +869,8 @@
         "resetFilters": "Réinitialiser les filtres",
         "emptyTitle": "Aucune appli publiée pour l’instant",
         "emptyDescription": "Dès que les premières applis auront passé la vérification, elles apparaîtront ici.",
-        "submitCta": "Soumettre une appli"
+        "submitCta": "Soumettre une appli",
+        "loadError": "Le catalogue d’applis n’a pas pu être chargé.",
+        "retry": "Réessayer"
     }
 }

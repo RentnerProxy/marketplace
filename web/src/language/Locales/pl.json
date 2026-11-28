@@ -1,4 +1,16 @@
 {
+    "submissions": {
+        "title": "Zgłoś aplikacje",
+        "steps": {
+            "proofTitle": "Potwierdź repozytorium",
+            "proofDescription": "Poproś o dowód własności i zapisz wartość w repozytorium. Potem możesz zgłaszać z tego repozytorium.",
+            "versionTitle": "Zgłoś wersję",
+            "versionDescription": "Nazwa, podsumowanie i licencja muszą dokładnie odpowiadać plikowi app.json we wskazanym commicie. Przy zgłoszeniu sprawdzamy, czy dowód własności znajduje się w repozytorium.",
+            "versionLocked": "Najpierw poproś o dowód własności i wybierz repozytorium.",
+            "storeTitle": "Przygotuj wpis w sklepie",
+            "storeDescription": "Zmieniaj logo, zrzuty ekranu i długi opis w dowolnym momencie – także w trakcie weryfikacji i bez nowej wersji."
+        }
+    },
     "common": {
         "active": "Aktywne",
         "actions": "Działania",
@@ -589,7 +601,7 @@
             "eyebrow": "Katalog aplikacji",
             "title": "Aplikacje dla Twojego RentnerProxy.",
             "description": "Miejsce dla oficjalnych aplikacji i rozszerzeń. Zobacz, co planujemy dla Twojej instalacji.",
-            "note": "Wszystkie pozycje są planowane. Tych aplikacji nie można jeszcze pobrać ani zainstalować.",
+            "note": "Poniższe karty pokazują planowane rozszerzenia. Nie można ich jeszcze pobrać ani zainstalować.",
             "backToFlow": "Jak ma działać marketplace"
         },
         "blog": {
@@ -857,6 +869,8 @@
         "resetFilters": "Wyczyść filtry",
         "emptyTitle": "Brak opublikowanych aplikacji",
         "emptyDescription": "Gdy pierwsze aplikacje przejdą weryfikację, pojawią się tutaj.",
-        "submitCta": "Zgłoś aplikację"
+        "submitCta": "Zgłoś aplikację",
+        "loadError": "Nie udało się wczytać katalogu aplikacji.",
+        "retry": "Spróbuj ponownie"
     }
 }

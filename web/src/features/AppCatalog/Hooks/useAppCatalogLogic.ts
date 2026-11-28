@@ -38,7 +38,9 @@ function compareApps(sort: AppCatalogSort) {
 
 /** Search, sort and star filter over the published catalog. */
 export default function useAppCatalogLogic(): AppCatalogLogicReturn {
-    const { data, isLoading } = useQuery(publishedAppsQueryOptions())
+    const { data, isLoading, isError, refetch } = useQuery(
+        publishedAppsQueryOptions(),
+    )
     const { data: session } = useQuery(authenticatedSessionQueryOptions())
     const [query, setQuery] = useState('')
     const [sort, setSort] = useState<AppCatalogSort>(
@@ -52,7 +54,7 @@ export default function useAppCatalogLogic(): AppCatalogLogicReturn {
         .filter(
             (app) =>
                 matchesQuery(app, normalizedQuery) &&
-                (!starredOnly || app.isStarred),
+                (!isSignedIn || !starredOnly || app.isStarred),
         )
         .toSorted(compareApps(sort))
 
@@ -61,6 +63,7 @@ export default function useAppCatalogLogic(): AppCatalogLogicReturn {
             apps,
             totalCount: allApps.length,
             isLoading,
+            isError: isError && allApps.length === 0,
             isSignedIn,
             query,
             sort,
@@ -73,6 +76,9 @@ export default function useAppCatalogLogic(): AppCatalogLogicReturn {
                 if (isCatalogSort(value)) setSort(value)
             },
             handleToggleStarredOnly: () => setStarredOnly((value) => !value),
+            handleRetry: () => {
+                void refetch()
+            },
             handleResetFilters: () => {
                 setQuery('')
                 setStarredOnly(false)

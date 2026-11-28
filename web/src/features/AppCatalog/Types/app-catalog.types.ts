@@ -17,6 +17,8 @@ export type AppCatalogLogicReturn = {
         apps: Array<CatalogApp>
         totalCount: number
         isLoading: boolean
+        /** The request failed and no earlier catalog data is available. */
+        isError: boolean
         isSignedIn: boolean
         query: string
         sort: AppCatalogSort
@@ -26,6 +28,7 @@ export type AppCatalogLogicReturn = {
         handleQueryChange: (query: string) => void
         handleSortChange: (sort: string) => void
         handleToggleStarredOnly: () => void
+        handleRetry: () => void
         handleResetFilters: () => void
     }
 }

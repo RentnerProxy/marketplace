@@ -1,4 +1,4 @@
-import { LoaderCircle, SearchX } from 'lucide-react'
+import { CircleAlert, LoaderCircle, RotateCw, SearchX } from 'lucide-react'
 import ProfileAppCard from '@/features/Social/Components/ProfileAppCard.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import useAppCatalogLogic from '../Hooks/useAppCatalogLogic.ts'
@@ -23,6 +23,28 @@ export default function AppCatalog({
                 />
                 {t('catalog.loading')}
             </p>
+        )
+    }
+
+    if (state.isError) {
+        return (
+            <div
+                role="alert"
+                className="comic-notice flex flex-col items-start gap-3 bg-surface-dark p-5 text-foreground [--notice-tone:var(--color-danger)]"
+            >
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                    <CircleAlert aria-hidden="true" className="h-4 w-4" />
+                    {t('catalog.loadError')}
+                </p>
+                <button
+                    type="button"
+                    onClick={handler.handleRetry}
+                    className="comic-btn comic-btn-sm comic-btn-white"
+                >
+                    <RotateCw aria-hidden="true" className="h-4 w-4" />
+                    {t('catalog.retry')}
+                </button>
+            </div>
         )
     }
 

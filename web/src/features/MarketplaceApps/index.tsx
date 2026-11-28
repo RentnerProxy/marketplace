@@ -34,9 +34,6 @@ export default function MarketplaceApps() {
                     <p className="mt-6 max-w-2xl text-base leading-8 text-steel-600 sm:text-lg">
                         {t('marketplace.catalog.description')}
                     </p>
-                    <p className="mt-4 max-w-2xl text-sm leading-7 text-steel-600">
-                        {t('marketplace.catalog.note')}
-                    </p>
                 </header>
                 <div className="mb-16">
                     <AppCatalog
@@ -44,6 +41,9 @@ export default function MarketplaceApps() {
                         title={t('appStore.catalogTitle')}
                     />
                 </div>
+                <p className="mb-6 max-w-2xl text-sm leading-7 text-steel-600">
+                    {t('marketplace.catalog.note')}
+                </p>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {(
                         [

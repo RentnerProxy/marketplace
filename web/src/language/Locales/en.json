@@ -114,8 +114,8 @@
             "proofTitle": "Prove the repository",
             "proofDescription": "Request an ownership proof and store the value in the repository. You can then submit from this repository.",
             "versionTitle": "Submit a version",
-            "versionDescription": "Name, summary and license must match the app.json at the given commit exactly.",
-            "versionLocked": "Select a proven repository first.",
+            "versionDescription": "Name, summary and license must match the app.json at the given commit exactly. On submission we check that the ownership proof is in the repository.",
+            "versionLocked": "Request an ownership proof and select the repository first.",
             "storeTitle": "Shape the store listing",
             "storeDescription": "Change the logo, screenshots and long description at any time – also during review and without a new version."
         }
@@ -1266,7 +1266,7 @@
             "eyebrow": "The app catalog",
             "title": "Apps for your RentnerProxy.",
             "description": "A home for official apps and extensions. Discover what's planned for your stack.",
-            "note": "Every listing is planned. These apps cannot be downloaded or installed yet.",
+            "note": "The following cards show planned extensions. They cannot be downloaded or installed yet.",
             "backToFlow": "How the marketplace is planned to work"
         },
         "blog": {
@@ -1531,6 +1531,8 @@
         "resetFilters": "Reset filters",
         "emptyTitle": "No apps published yet",
         "emptyDescription": "As soon as the first apps pass review, they appear here.",
-        "submitCta": "Submit an app"
+        "submitCta": "Submit an app",
+        "loadError": "The app catalog could not be loaded.",
+        "retry": "Try again"
     }
 }

@@ -1,4 +1,16 @@
 {
+    "submissions": {
+        "title": "Invia app",
+        "steps": {
+            "proofTitle": "Dimostra il repository",
+            "proofDescription": "Richiedi una prova di proprietà e salva il valore nel repository. Poi potrai inviare da questo repository.",
+            "versionTitle": "Invia una versione",
+            "versionDescription": "Nome, riepilogo e licenza devono corrispondere esattamente all’app.json del commit indicato. All’invio verifichiamo che la prova di proprietà sia nel repository.",
+            "versionLocked": "Richiedi prima una prova di proprietà e seleziona il repository.",
+            "storeTitle": "Crea la scheda dello store",
+            "storeDescription": "Cambia logo, screenshot e descrizione lunga in qualsiasi momento, anche durante la revisione e senza nuova versione."
+        }
+    },
     "common": {
         "active": "Attivo",
         "actions": "Azioni",
@@ -589,7 +601,7 @@
             "eyebrow": "Il catalogo delle app",
             "title": "App per il tuo RentnerProxy.",
             "description": "Uno spazio per app ed estensioni ufficiali. Scopri cosa è previsto per la tua installazione.",
-            "note": "Tutte le app elencate sono pianificate. Non è ancora possibile scaricarle o installarle.",
+            "note": "Le schede seguenti mostrano estensioni pianificate. Non è ancora possibile scaricarle o installarle.",
             "backToFlow": "Come dovrebbe funzionare il marketplace"
         },
         "blog": {
@@ -857,6 +869,8 @@
         "resetFilters": "Reimposta filtri",
         "emptyTitle": "Ancora nessuna app pubblicata",
         "emptyDescription": "Appena le prime app superano la revisione, compaiono qui.",
-        "submitCta": "Invia un’app"
+        "submitCta": "Invia un’app",
+        "loadError": "Impossibile caricare il catalogo app.",
+        "retry": "Riprova"
     }
 }

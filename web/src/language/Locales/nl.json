@@ -1,4 +1,16 @@
 {
+    "submissions": {
+        "title": "Apps indienen",
+        "steps": {
+            "proofTitle": "Repository aantonen",
+            "proofDescription": "Vraag een eigendomsbewijs aan en zet de waarde in de repository. Daarna kun je vanuit deze repository indienen.",
+            "versionTitle": "Versie indienen",
+            "versionDescription": "Naam, samenvatting en licentie moeten exact overeenkomen met de app.json in de opgegeven commit. Bij het indienen controleren we of het eigendomsbewijs in de repository staat.",
+            "versionLocked": "Vraag eerst een eigendomsbewijs aan en kies de repository.",
+            "storeTitle": "Storevermelding vormgeven",
+            "storeDescription": "Wijzig logo, screenshots en lange beschrijving op elk moment – ook tijdens de controle en zonder nieuwe versie."
+        }
+    },
     "common": {
         "active": "Actief",
         "actions": "Acties",
@@ -589,7 +601,7 @@
             "eyebrow": "De appcatalogus",
             "title": "Apps voor jouw RentnerProxy.",
             "description": "Een plek voor officiële apps en uitbreidingen. Ontdek wat er voor je installatie is gepland.",
-            "note": "Alle vermeldingen zijn gepland. Je kunt deze apps nog niet downloaden of installeren.",
+            "note": "De volgende kaarten tonen geplande uitbreidingen. Ze kunnen nog niet worden gedownload of geïnstalleerd.",
             "backToFlow": "Hoe de marketplace moet gaan werken"
         },
         "blog": {
@@ -857,6 +869,8 @@
         "resetFilters": "Filters wissen",
         "emptyTitle": "Nog geen apps gepubliceerd",
         "emptyDescription": "Zodra de eerste apps door de controle zijn, verschijnen ze hier.",
-        "submitCta": "App indienen"
+        "submitCta": "App indienen",
+        "loadError": "De app-catalogus kon niet worden geladen.",
+        "retry": "Opnieuw proberen"
     }
 }

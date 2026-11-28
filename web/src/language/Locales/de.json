@@ -114,8 +114,8 @@
             "proofTitle": "Repository nachweisen",
             "proofDescription": "Fordere einen Besitznachweis an und hinterlege den Wert im Repository. Danach kannst du aus diesem Repository einreichen.",
             "versionTitle": "Version einreichen",
-            "versionDescription": "Name, Kurzbeschreibung und Lizenz müssen exakt mit der app.json im angegebenen Commit übereinstimmen.",
-            "versionLocked": "Wähle zuerst ein nachgewiesenes Repository aus.",
+            "versionDescription": "Name, Kurzbeschreibung und Lizenz müssen exakt mit der app.json im angegebenen Commit übereinstimmen. Beim Einreichen prüfen wir, ob der Besitznachweis im Repository liegt.",
+            "versionLocked": "Fordere zuerst einen Besitznachweis an und wähle das Repository aus.",
             "storeTitle": "Store-Eintrag gestalten",
             "storeDescription": "Logo, Screenshots und Langbeschreibung kannst du jederzeit ändern – auch während der Prüfung und ohne neue Version."
         }
@@ -1266,7 +1266,7 @@
             "eyebrow": "Der App-Katalog",
             "title": "Apps für dein RentnerProxy.",
             "description": "Hier bekommen offizielle Apps und Erweiterungen ihr Zuhause. Entdecke, was für deinen Stack geplant ist.",
-            "note": "Alle Einträge sind geplant. Die Apps können noch nicht heruntergeladen oder installiert werden.",
+            "note": "Die folgenden Karten zeigen geplante Erweiterungen. Sie lassen sich noch nicht herunterladen oder installieren.",
             "backToFlow": "So soll der Marketplace funktionieren"
         },
         "blog": {
@@ -1531,6 +1531,8 @@
         "resetFilters": "Filter zurücksetzen",
         "emptyTitle": "Noch keine Apps veröffentlicht",
         "emptyDescription": "Sobald die ersten Apps die Prüfung bestanden haben, erscheinen sie hier.",
-        "submitCta": "App einreichen"
+        "submitCta": "App einreichen",
+        "loadError": "Der App-Katalog konnte nicht geladen werden.",
+        "retry": "Erneut versuchen"
     }
 }

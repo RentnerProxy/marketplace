@@ -110,6 +110,7 @@ beforeEach(() => {
             apps: [app],
             totalCount: 1,
             isLoading: false,
+            isError: false,
             isSignedIn: true,
             query: '',
             sort: 'newest',
@@ -119,6 +120,7 @@ beforeEach(() => {
             handleQueryChange: mock(),
             handleSortChange: mock(),
             handleToggleStarredOnly: mock(),
+            handleRetry: mock(),
             handleResetFilters: mock(),
         },
     }
@@ -152,6 +154,19 @@ describe('app catalog', () => {
         const html = render(createElement(AppCatalog))
         expect(html).toContain('catalog.noMatches')
         expect(html).toContain('catalog.resetFilters')
+    })
+
+    it('reports a failed catalog request with a retry instead of an empty catalog', () => {
+        logic.state.isError = true
+        logic.state.totalCount = 0
+        logic.state.apps = []
+        for (const props of [{}, { hideWhenEmpty: true }]) {
+            const html = render(createElement(AppCatalog, props))
+            expect(html).toContain('role="alert"')
+            expect(html).toContain('catalog.loadError')
+            expect(html).toContain('catalog.retry')
+            expect(html).not.toContain('catalog.emptyTitle')
+        }
     })
 
     it('shows loading and empty states or nothing on public pages', () => {

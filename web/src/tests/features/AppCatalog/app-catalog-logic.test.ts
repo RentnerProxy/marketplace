@@ -8,6 +8,8 @@ import type { CatalogApp } from '@/features/AppStore/Types/app-store.types.ts'
 
 let catalog: Array<CatalogApp> | undefined
 let isLoading = false
+let isError = false
+const refetch = vi.fn(async () => {})
 let session: { user?: { id: string } } | undefined
 
 vi.mock('react', () => hookReact)
@@ -15,7 +17,7 @@ vi.mock('@tanstack/react-query', () => ({
     useQuery: (options: { queryKey: ReadonlyArray<string> }) =>
         options.queryKey[0] === 'auth'
             ? { data: session }
-            : { data: catalog, isLoading },
+            : { data: catalog, isLoading, isError, refetch },
 }))
 vi.mock('@/lib/AppStore/appStoreQueries.ts', () => ({
     publishedAppsQueryOptions: () => ({ queryKey: ['app-store', 'published'] }),
@@ -71,6 +73,8 @@ beforeEach(() => {
     resetHooks()
     catalog = apps
     isLoading = false
+    isError = false
+    refetch.mockClear()
     session = { user: { id: 'viewer' } }
 })
 
@@ -126,11 +130,23 @@ describe('app catalog logic', () => {
     })
 
     it('never applies the star filter for anonymous visitors', () => {
-        session = undefined
         renderHook(useAppCatalogLogic).handler.handleToggleStarredOnly()
+        expect(names(renderHook(useAppCatalogLogic))).toEqual(['Beta'])
+        session = undefined
         const logic = renderHook(useAppCatalogLogic)
         expect(logic.state.isSignedIn).toBe(false)
         expect(logic.state.starredOnly).toBe(false)
+        expect(names(logic)).toEqual(['Beta', 'Alpha', 'Gamma'])
+    })
+
+    it('reports failures only without earlier data and retries on request', () => {
+        isError = true
+        expect(renderHook(useAppCatalogLogic).state.isError).toBe(false)
+        catalog = undefined
+        const failed = renderHook(useAppCatalogLogic)
+        expect(failed.state.isError).toBe(true)
+        failed.handler.handleRetry()
+        expect(refetch).toHaveBeenCalledTimes(1)
     })
 
     it('keeps an empty list while the catalog loads', () => {
