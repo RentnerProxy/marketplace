@@ -310,6 +310,23 @@ describe('store logo logic', () => {
         ).toBe(false)
     })
 
+    it('reports thrown removal errors and keeps the dialog open', async () => {
+        renderHook(() =>
+            useStoreLogoLogic(appId),
+        ).handler.handleOpenRemoveLogo()
+        const error = new Error('network')
+        handlers.removeLogo.mockRejectedValueOnce(error)
+        renderHook(() =>
+            useStoreLogoLogic(appId),
+        ).handler.handleConfirmRemoveLogo()
+        await settle()
+        expect(failure).toHaveBeenCalledWith(error)
+        expect(success).not.toHaveBeenCalled()
+        expect(
+            renderHook(() => useStoreLogoLogic(appId)).state.isRemoveDialogOpen,
+        ).toBe(true)
+    })
+
     it('passes the crop controls through to the selection', () => {
         const logic = renderHook(() => useStoreLogoLogic(appId))
         expect(logic.handler.handleCropChange).toBe(selection.setter.setCrop)
@@ -425,6 +442,38 @@ describe('store screenshots logic', () => {
         })
         logic = renderHook(() => useStoreScreenshotsLogic(appId, screenshots))
         expect(logic.state.removeId).toBeNull()
+    })
+
+    it('reports thrown upload, removal and reorder errors without confirming', async () => {
+        selectCroppedImage()
+        const uploadError = new Error('upload')
+        const removeError = new Error('remove')
+        const reorderError = new Error('reorder')
+        handlers.addShot.mockRejectedValueOnce(uploadError)
+        handlers.removeShot.mockRejectedValueOnce(removeError)
+        handlers.reorder.mockRejectedValueOnce(reorderError)
+
+        const logic = renderHook(() =>
+            useStoreScreenshotsLogic(appId, screenshots),
+        )
+        logic.handler.handleSaveScreenshot()
+        logic.handler.handleMove(1, -1)
+        logic.handler.handleOpenRemove(shotC)
+        renderHook(() =>
+            useStoreScreenshotsLogic(appId, screenshots),
+        ).handler.handleConfirmRemove()
+        await settle()
+
+        expect(failure).toHaveBeenCalledWith(uploadError)
+        expect(failure).toHaveBeenCalledWith(removeError)
+        expect(failure).toHaveBeenCalledWith(reorderError)
+        expect(transfer.fail).toHaveBeenCalledWith('appStore.uploadFailed')
+        expect(success).not.toHaveBeenCalled()
+        expect(selection.handler.handleResetSelection).not.toHaveBeenCalled()
+        expect(
+            renderHook(() => useStoreScreenshotsLogic(appId, screenshots)).state
+                .removeId,
+        ).toBe(shotC)
     })
 
     it('does nothing when confirming without a chosen screenshot', async () => {
