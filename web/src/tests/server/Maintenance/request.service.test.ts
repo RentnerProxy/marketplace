@@ -36,7 +36,7 @@ const dbMock = (function () {
         ] as Array<Record<string, unknown>>,
     }
     const database = {
-        select: vi.fn(function (selection?: unknown) {
+        select: vi.fn(function (_selection?: unknown) {
             const chain = {
                 from: vi.fn(function () {
                     return chain
@@ -51,7 +51,6 @@ const dbMock = (function () {
                     return state.settingsRows
                 }),
             }
-            void selection
             return chain
         }),
     }

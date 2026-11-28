@@ -59,8 +59,11 @@ export async function validateSessionService() {
         }
     }
 
-    const { passwordHash, emailVerifiedAt, ...sessionUser } = session.user
-    void passwordHash
+    const {
+        passwordHash: _passwordHash,
+        emailVerifiedAt,
+        ...sessionUser
+    } = session.user
     const safeUser = {
         ...sessionUser,
         bio: session.profile?.bio ?? null,
