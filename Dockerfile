@@ -24,6 +24,17 @@ RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/lo
 FROM scratch AS candidate-probe
 COPY --from=candidate-probe-builder /candidate-smoke /candidate-smoke
 
+# Offline builder for candidates with a Rust backend. It runs Debian 13 like the appliance, and its
+# Bun comes from the pinned appliance image that checks and runs the packages.
+FROM ghcr.io/rentnerproxy/platform@sha256:6a9ecb2330c20f366590f4c6c1c32441104a44c8435d7858cbef4d9496e07b46 AS candidate-appliance
+
+FROM rust:1.100-slim-trixie@sha256:3b199fd6db7d709274df56565b8f4003f9e30d7bfcff9d53148c86053b7855e2 AS candidate-builder
+COPY --from=candidate-appliance /usr/local/bin/bun /usr/local/bin/bun
+# Candidates call the toolchain here, without rustup, so rust-toolchain.toml cannot select another one.
+RUN ln -s "$(rustc --print sysroot)" /opt/candidate-rust \
+    && /opt/candidate-rust/bin/cargo --version \
+    && bun --version
+
 FROM core-sources AS core-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,id=rentnerproxy-marketplace-cargo-musl-release,target=/app/core/target,sharing=locked \

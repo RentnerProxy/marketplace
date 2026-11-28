@@ -7,7 +7,7 @@ import {
     rm,
     writeFile,
 } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import type { AppManifest } from '@rentnerproxy/app-contracts'
 import {
@@ -37,6 +37,9 @@ const githubRepository = z.object({
 
 const githubCommit = z.object({ sha: commitSha })
 const sourceArchiveBytesLimit = 64 * 1024 * 1024
+// Inert inputs for admission and the dependency scan. core/Cargo.lock marks a Rust backend.
+export const cargoLockPath = 'core/Cargo.lock'
+const stagedDependencyFiles = ['package.json', 'bun.lock', cargoLockPath]
 
 export function checkSourceTree(value: unknown, expectedTree: string) {
     return runAppPipelineSync<string[]>('source-tree', {
@@ -291,7 +294,7 @@ export async function stageGitSource(
         )
     }
     await Promise.all(
-        ['package.json', 'bun.lock'].map(async (name) => {
+        stagedDependencyFiles.map(async (name) => {
             const entry = (
                 await captureGit(['ls-tree', tree, '--', name])
             ).toString()
@@ -300,8 +303,10 @@ export async function stageGitSource(
                 limit: number
             }>('source-staged-file', { name, entry })
             if (!present) return
+            const target = join(dependencies, name)
+            await mkdir(dirname(target), { recursive: true })
             await writeFile(
-                join(dependencies, name),
+                target,
                 await captureGit(
                     ['cat-file', 'blob', tree + ':' + name],
                     limit,

@@ -21,6 +21,8 @@ const oldManifest =
     '{"name":"example-app","scripts":{"build":"bun ./build.ts"}}\n'
 const originalLock =
     '{"lockfileVersion":3,"workspaces":{"":{}},"packages":{}}\n'
+const cargoLock =
+    'version = 4\n\n[[package]]\nname = "app"\nversion = "0.0.0"\n'
 const tempPrefix = join(tmpdir(), 'candidate-git-source-')
 let scratch: string | undefined
 let origin: string
@@ -125,6 +127,7 @@ beforeAll(async () => {
         mkdir(join(origin, 'missing'), { recursive: true }),
         mkdir(join(origin, 'invalid', 'package.json'), { recursive: true }),
         mkdir(join(origin, 'without-lock'), { recursive: true }),
+        mkdir(join(origin, 'rust', 'core'), { recursive: true }),
     ])
     await Promise.all([
         writeFile(
@@ -149,6 +152,12 @@ beforeAll(async () => {
             'package.json is a directory\n',
         ),
         writeFile(join(origin, 'without-lock', 'package.json'), oldManifest),
+        writeFile(join(origin, 'rust', 'package.json'), oldManifest),
+        writeFile(join(origin, 'rust', 'core', 'Cargo.lock'), cargoLock),
+        writeFile(
+            join(origin, 'rust', 'core', 'Cargo.toml'),
+            '[package]\nname = "app"\n',
+        ),
     ])
     git(origin, 'add', '-f', '--', '.')
     git(origin, 'commit', '-m', 'Original fixture')
@@ -341,6 +350,25 @@ describe('candidate Git source staging', () => {
             localTransport(),
         )
         expect(await readdir(dependencies)).toEqual(['package.json'])
+    })
+
+    test('stages the Cargo lock of a Rust backend without other core files', async () => {
+        const stage = await destination('rust')
+        const { dependencies } = await stageGitSource(
+            stage,
+            wanted('rust'),
+            localTransport(),
+        )
+        expect((await readdir(dependencies)).toSorted()).toEqual([
+            'core',
+            'package.json',
+        ])
+        expect(await readdir(join(dependencies, 'core'))).toEqual([
+            'Cargo.lock',
+        ])
+        expect(
+            await readFile(join(dependencies, 'core', 'Cargo.lock'), 'utf8'),
+        ).toBe(cargoLock)
     })
 
     test('rejects a transport outside the explicit HTTPS and file protocols', async () => {
