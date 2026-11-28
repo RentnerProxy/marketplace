@@ -3,7 +3,7 @@ import {
     packageReleaseAssets,
     parseCatalog,
     type CatalogRelease,
-} from '../../../../contracts/v1/index.ts'
+} from '@rentnerproxy/app-contracts'
 import { verifyNativeArtifactStream } from '../../../../web/src/lib/Core/native-tool.ts'
 import {
     evidenceLimit,

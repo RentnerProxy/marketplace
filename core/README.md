@@ -73,6 +73,12 @@ in telemetry-only mode; it does not start a production database.
 - `time` standardizes time formats; `chrono` is no longer used. `base64` 0.23
   and `getrandom` 0.4 have been updated. `Serde`, `cap-std`, and `cap-fs-ext`
   remain for explicit contracts and handle-relative filesystem boundaries.
+- App contracts, catalog verification and the package pipeline come from the
+  published `rentnerproxy-app-contracts`, `rentnerproxy-app-catalog`,
+  `rentnerproxy-app-pipeline` and `rentnerproxy-artifacts` crates of
+  [RentnerProxy/app-sdk](https://github.com/RentnerProxy/app-sdk).
+  `app-catalog` and `app-pipeline` contain only the `marketplace-app-catalog`,
+  `marketplace-app-pipeline` and `candidate-smoke` executables.
 - PostgreSQL receives no credentials through process arguments. Private
   service files and `PGPASSWORD` carry connection settings; a constant
   `--dbname` argument forces `pg_restore` to perform a direct restore.

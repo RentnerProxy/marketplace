@@ -179,7 +179,7 @@ fn legacy() -> Files {
 
 fn release(hash: &str, size: usize) -> Vec<u8> {
     let fixture: Value =
-        serde_json::from_str(include_str!("../../../contracts/v1/fixtures.json")).unwrap();
+        serde_json::from_str(include_str!("fixtures/catalog-release.json")).unwrap();
     let mut release = fixture["records"]["release"].clone();
     release["icon"] = json!({"format": "png", "sha256": hash, "sizeBytes": size});
     release["packages"] = Value::Array(

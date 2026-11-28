@@ -13,6 +13,7 @@
         "@rentnerkev/table": "^1.4.2",
         "@rentnerkev/toasts": "^3.9.1",
         "@rentnerkev/tooltips": "^2.3.3",
+        "@rentnerproxy/app-contracts": "^1.1.0",
         "@simplewebauthn/browser": "^14.0.0",
         "@simplewebauthn/server": "^14.1.0",
         "@tanstack/react-form": "^1.33.5",
@@ -413,6 +414,8 @@
     "@rentnerkev/toasts": ["@rentnerkev/toasts@3.9.1", "", { "peerDependencies": { "lucide-react": "^1.0.0", "react": "^19.0.0", "react-dom": "^19.0.0" } }, "sha512-1lR/lWrjixPl2B0FILwJpXquwcMksRKQhPYSfR9zBwq4RBC9jb9G48jO25bjCeEoCrPqAhBnO6WP1fFApbtIWA=="],
 
     "@rentnerkev/tooltips": ["@rentnerkev/tooltips@2.3.3", "", { "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }, "sha512-TOxANbayMB9iU97Jh1Pgh8ylDbLAzZQykLQyP/JTkokYTnn9PZnK/CiZYAz7qQymDsXHYSNxhZALpevzVp+uPw=="],
+
+    "@rentnerproxy/app-contracts": ["@rentnerproxy/app-contracts@1.1.0", "", { "dependencies": { "zod": "^4.6.7" } }, "sha512-CHDPMvmzzvz+1KmSNfVo6Ww2vACyDYIitHd6ujrtA2ik4j5v0idK1vvn8TRotIB0q6C0Jo47q1VX6cMXh9oZDA=="],
 
     "@rolldown/binding-android-arm-eabi": ["@rolldown/binding-android-arm-eabi@1.2.19", "", { "os": "android", "cpu": "arm" }, "sha512-e+Ebe0WT+9tbXmNKPIiC8YrWAHYwug3m6i4p3rZGGulfZri1jtI4HslT+OZnFf/OIHowWF71DTlHwXBP2SiA7A=="],
 
