@@ -23,7 +23,7 @@ export default function MobileNavigation({
             aria-modal="true"
             ref={dialogRef}
             onCancel={handler.handleCancel}
-            className="marketplace-sidebar-texture fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(24rem,calc(100%-1rem))] max-w-none flex-col overflow-hidden border-r-[6px] border-double border-primary/80 text-[#f4f5f7] shadow-2xl shadow-black/40 open:flex backdrop:bg-background-dark/75"
+            className="comic-dark fixed inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(24rem,calc(100%-1rem))] max-w-none flex-col overflow-hidden border-r-4 border-ink text-[#f4f5f7] shadow-[6px_0_0_0_var(--color-proxy-400)] open:flex backdrop:bg-background-dark/75"
         >
             {state.shouldRender && (
                 <>

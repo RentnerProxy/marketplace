@@ -2,10 +2,10 @@ import { QueryClient } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import type {
     AppDetail,
+    CatalogApp,
     EditableStoreApp,
     StoreEntryEditor,
 } from '@/features/AppStore/Types/app-store.types.ts'
-import type { ProfileApp } from '@/features/Social/Types/social.types.ts'
 
 type HandlerInput = { data?: { appId: string }; signal: AbortSignal }
 
@@ -37,7 +37,7 @@ const editorEntry: StoreEntryEditor = {
 const editableApps: Array<EditableStoreApp> = [
     { appId, name: 'Wetter', status: 'published', logoSrc: null },
 ]
-const publishedApps: Array<ProfileApp> = [
+const publishedApps: Array<CatalogApp> = [
     {
         appId,
         name: 'Wetter',
@@ -48,6 +48,7 @@ const publishedApps: Array<ProfileApp> = [
         logoSrc: null,
         starCount: 3,
         isStarred: false,
+        publisher: 'kevin',
     },
 ]
 

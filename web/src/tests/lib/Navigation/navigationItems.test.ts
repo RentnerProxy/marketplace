@@ -118,7 +118,7 @@ describe('Sidebar-Navigation', function () {
                     { to: '/admin/app-reviews' },
                 ],
             },
-            { to: '/user/dashboard' },
+            { to: '/user/catalog' },
             { to: '/user/app-submissions' },
             { to: '/people' },
         ])

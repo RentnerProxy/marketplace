@@ -23,7 +23,7 @@ describe('hasControlCharacters', function () {
         'ä漢字😀',
         '\ud800',
         '\udfff',
-        '/user/dashboard?search=hello%20world#section',
+        '/user/catalog?search=hello%20world#section',
         '%00%1f%7f',
     ])(
         'verändert die Bedeutung anderer Zeichen nicht: Fall %#',

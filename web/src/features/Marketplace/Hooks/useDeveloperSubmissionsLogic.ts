@@ -7,6 +7,7 @@ import {
     requestRepositoryClaimHandler,
 } from '../middleware.ts'
 import { claimInput, submitInput } from '../validation.ts'
+import { APP_STORE_QUERY_KEY } from '@/lib/AppStore/appStoreQueries.ts'
 import { useSubmissionFeedback } from './useSubmissionFeedback.ts'
 
 const initialFields = {
@@ -95,9 +96,12 @@ export function useDeveloperSubmissionsLogic(userId: string) {
         onSuccess: async () => {
             setFields(initialFields)
             attempt.current = null
-            await client.invalidateQueries({
-                queryKey: ['marketplace-submissions', userId, 'developer'],
-            })
+            await Promise.all([
+                client.invalidateQueries({
+                    queryKey: ['marketplace-submissions', userId, 'developer'],
+                }),
+                client.invalidateQueries({ queryKey: APP_STORE_QUERY_KEY }),
+            ])
             feedback.success('submit')
         },
         onError: feedback.error,

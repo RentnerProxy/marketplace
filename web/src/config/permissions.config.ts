@@ -9,6 +9,7 @@ export const PERMISSIONS = {
     ADMIN_SYSTEM_SETTINGS: 'admin.systemSettings',
     ADMIN_MAINTENANCE_BYPASS: 'admin.maintenanceBypass',
     ADMIN_SUPER_USER: 'admin.superUser',
+    /** Basic signed-in access (app catalog); the stored key predates the catalog. */
     USER_DASHBOARD: 'user.dashboard',
     ADMIN_AUDIT_LOGS: 'admin.auditLogs',
     ADMIN_BACKUPS: 'admin.backups',
@@ -59,8 +60,8 @@ export const DEFAULT_PERMISSIONS = [
     },
     {
         key: PERMISSIONS.USER_DASHBOARD,
-        name: 'User Dashboard',
-        description: 'Darf das User Dashboard öffnen.',
+        name: 'App-Katalog',
+        description: 'Darf den App-Katalog im Konto öffnen.',
     },
     {
         key: PERMISSIONS.ADMIN_AUDIT_LOGS,

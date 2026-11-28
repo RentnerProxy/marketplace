@@ -59,6 +59,8 @@ export type ProfileAppCardProps = {
     app: ProfileApp
     isSignedIn: boolean
     canEdit?: boolean
+    /** Publisher username, shown in the catalog where cards mix publishers. */
+    publisher?: string | null
 }
 
 export type StarButtonProps = {

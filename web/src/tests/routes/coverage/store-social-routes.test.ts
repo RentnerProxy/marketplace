@@ -132,7 +132,7 @@ mock.module(
 
 await import('@/routes/apps_/$appId.tsx')
 await import('@/routes/u/$username.tsx')
-await import('@/routes/_authenticated/user/app-store.$appId.tsx')
+await import('@/routes/_authenticated/user/app-submissions_.$appId.tsx')
 await import('@/routes/_authenticated/admin/app-reviews.tsx')
 await import('@/routes/api/profiles/$userId/banner.ts')
 
@@ -274,7 +274,7 @@ describe('public profile route', () => {
 
 describe('store editor route', () => {
     it('only opens the editor for well-formed app ids', () => {
-        const options = route('/_authenticated/user/app-store/$appId')
+        const options = route('/_authenticated/user/app-submissions_/$appId')
         expect(() => options.beforeLoad!(args({ appId: '../admin' }))).toThrow(
             'Not found',
         )
@@ -285,7 +285,9 @@ describe('store editor route', () => {
     it('passes the route app id to the store editor', () => {
         routeParams = { appId }
         expect(
-            render(route('/_authenticated/user/app-store/$appId').component),
+            render(
+                route('/_authenticated/user/app-submissions_/$appId').component,
+            ),
         ).toContain(`Store editor ${appId}`)
     })
 })

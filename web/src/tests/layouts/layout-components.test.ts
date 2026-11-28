@@ -14,7 +14,7 @@ let requesting = false
 let minimized = false
 let mobileOpen = false
 const navItems: AuthenticatedNavItem[] = [
-    { labelKey: 'nav.dashboard', to: '/user/dashboard', icon: Home },
+    { labelKey: 'nav.catalog', to: '/user/catalog', icon: Home },
 ]
 let publicRegistrationEnabled = false
 vi.mock('@tanstack/react-query', () => ({
@@ -146,7 +146,7 @@ vi.mock(
                 companyName: 'Company',
                 navigationSubtitle: 'Overview',
                 systemLogoSrc: '/logo.png',
-                homeTo: '/user/dashboard',
+                homeTo: '/user/catalog',
                 visibleNavItems: navItems,
                 username: 'Kevin',
                 profileImageSrc64: '/profile.png',
@@ -287,7 +287,7 @@ it.each([false, true])(
                 subtitle: 'Overview',
                 logoSrc: '/logo.png',
                 hasCustomLogo: true,
-                homeTo: '/user/dashboard',
+                homeTo: '/user/catalog',
                 navItems,
                 username: 'Kevin',
                 userIconSrc: '/profile.png',
@@ -302,11 +302,11 @@ it.each([false, true])(
             return
         }
 
-        expect(html).toContain('--marketplace-sidebar-tail:5rem')
-        expect(html).toContain('marketplace-sidebar-mask comic-dark')
+        expect(html).not.toContain('marketplace-sidebar-mask')
+        expect(html).toContain('border-x-[3px] border-ink bg-proxy-400')
         expect(html).toContain('src="/logo.png"')
         expect(html).toContain('aria-label="nav.navigation"')
-        expect(html).toContain('href="/user/dashboard"')
+        expect(html).toContain('href="/user/catalog"')
         expect(html).toContain('aria-[current=page]:bg-proxy-400')
         expect(html).toContain('alt="Kevin"')
         expect(html).toContain('nav.profile')
@@ -329,7 +329,7 @@ it('toggles visible navigation groups independently of desktop visibility', () =
     }
     expect(
         renderToStaticMarkup(createElement(NavigationItem, props)),
-    ).toContain('nav.dashboard')
+    ).toContain('nav.catalog')
     expect(
         renderToStaticMarkup(createElement(NavigationItem, props)),
     ).toContain('comic-lettering')
@@ -346,7 +346,7 @@ it('toggles visible navigation groups independently of desktop visibility', () =
                 openGroups: { 'nav.user': false },
             }),
         ),
-    ).not.toContain('nav.dashboard')
+    ).not.toContain('nav.catalog')
     expect(
         NavigationItem({
             ...props,
@@ -461,7 +461,7 @@ it('offers expanded mobile navigation even when the desktop rail is collapsed', 
     )
     expect(html).toContain('<dialog id="marketplace-mobile-navigation"')
     expect(html).toContain('id="marketplace-mobile-navigation-title"')
-    expect(html).toContain('>nav.dashboard</span>')
+    expect(html).toContain('>nav.catalog</span>')
     expect(html).toContain('nav.profile')
 })
 
@@ -470,7 +470,7 @@ it('uses the Marketplace wordmark for default branding', () => {
         title: 'RentnerProxy Marketplace',
         subtitle: 'Overview',
         logoSrc: '/images/default.webp',
-        homeTo: '/user/dashboard' as const,
+        homeTo: '/user/catalog' as const,
         navItems,
         username: 'Kevin',
         userIconSrc: '/profile.png',

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
+import { APP_STORE_CONFIG } from '@/config/app-store.config.ts'
 import {
     restoreBunProperties,
     stubBunProperties,
@@ -186,7 +187,7 @@ describe('store listing reads', () => {
         expect(database.methods()).toContain('selectDistinctOn')
         expect(
             database.calls.find((call) => call.method === 'limit')?.args,
-        ).toEqual([60])
+        ).toEqual([APP_STORE_CONFIG.catalogLimit])
     })
 })
 

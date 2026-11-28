@@ -36,7 +36,7 @@ vi.mock('@tanstack/react-router', () => ({
         hash?: string
     }) => createElement('a', { ...props, href: hash ? `${to}#${hash}` : to }),
 }))
-vi.mock('@/features/MarketplaceApps/Components/PublishedApps.tsx', () => ({
+vi.mock('@/features/AppCatalog/Components/AppCatalog.tsx', () => ({
     default: () => createElement('section', null, 'Published apps'),
 }))
 

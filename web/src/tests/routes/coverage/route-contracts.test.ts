@@ -111,6 +111,9 @@ mock.module('@/features/MarketplaceHome/index.tsx', () => ({
 mock.module('@/features/MarketplaceApps/index.tsx', () => ({
     default: () => createElement('section', null, 'Marketplace apps screen'),
 }))
+mock.module('@/features/AppCatalog/index.tsx', () => ({
+    default: () => createElement('div', null, 'App catalog page'),
+}))
 mock.module('@/features/MarketplaceBlog/index.tsx', () => ({
     default: () => createElement('section', null, 'Marketplace blog screen'),
 }))
@@ -160,7 +163,7 @@ await import('@/routes/__root.tsx')
 await import('@/routes/_authenticated/route.tsx')
 await import('@/routes/_authenticated/admin/route.tsx')
 await import('@/routes/_authenticated/user/route.tsx')
-await import('@/routes/_authenticated/user/dashboard.tsx')
+await import('@/routes/_authenticated/user/catalog.tsx')
 await import('@/routes/_public/route.tsx')
 await import('@/routes/_public/login.tsx')
 await import('@/routes/_public/maintenance.tsx')
@@ -197,8 +200,8 @@ beforeEach(() => {
 
 describe('Thin route boundary contracts', () => {
     it('hydrates the authenticated session cache and ensures system settings after authentication', async () => {
-        await route('/_authenticated').beforeLoad?.(params('/user/dashboard'))
-        expect(authenticate).toHaveBeenCalledWith('/user/dashboard')
+        await route('/_authenticated').beforeLoad?.(params('/user/catalog'))
+        expect(authenticate).toHaveBeenCalledWith('/user/catalog')
         expect(cacheSession).toHaveBeenCalledWith(client, session)
         expect(client.ensureQueryData).toHaveBeenCalledWith(queryOptions)
         expect(
@@ -238,14 +241,11 @@ describe('Thin route boundary contracts', () => {
         },
     )
 
-    it('renders the translated user dashboard heading and authenticated message', () => {
+    it('renders the app catalog as the signed-in landing page', () => {
         const html = renderToStaticMarkup(
-            createElement(route('/_authenticated/user/dashboard').component!),
+            createElement(route('/_authenticated/user/catalog').component!),
         )
-        expect(html).toContain('aria-labelledby="user-dashboard-title"')
-        expect(html).toContain('<h2 id="user-dashboard-title"')
-        expect(html).toContain('user.dashboard.title')
-        expect(html).toContain('user.dashboard.loggedIn')
+        expect(html).toContain('App catalog page')
     })
 
     it('redirects public visitors to required setup and otherwise loads public settings', async () => {

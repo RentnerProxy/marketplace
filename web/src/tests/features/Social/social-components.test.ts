@@ -504,7 +504,7 @@ describe('profile app card', () => {
                 canEdit: true,
             }),
         )
-        expect(html).toContain('href="/user/app-store/$appId"')
+        expect(html).toContain('href="/user/app-submissions/$appId"')
         expect(html).toContain('data-tooltip="appStore.edit"')
     })
 })

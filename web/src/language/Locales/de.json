@@ -1,6 +1,6 @@
 {
     "submissions": {
-        "title": "App-Einreichungen",
+        "title": "Apps einreichen",
         "description": "Reiche eine App-Version aus einem festen GitHub-Commit ein und verfolge ihren Status.",
         "reviewTitle": "App-Freigaben",
         "reviewDescription": "Prüfe die versiegelten Pakete und entscheide über die konkrete App-Version.",
@@ -109,6 +109,15 @@
             "buildsUnavailable": "Validierungsbuilds sind derzeit nicht verfügbar.",
             "invalidInput": "Prüfe die Pflichtfelder und übernimm die Metadaten aus dem App-Manifest.",
             "error": "Die Aktion konnte nicht abgeschlossen werden. Versuche es erneut."
+        },
+        "steps": {
+            "proofTitle": "Repository nachweisen",
+            "proofDescription": "Fordere einen Besitznachweis an und hinterlege den Wert im Repository. Danach kannst du aus diesem Repository einreichen.",
+            "versionTitle": "Version einreichen",
+            "versionDescription": "Name, Kurzbeschreibung und Lizenz müssen exakt mit der app.json im angegebenen Commit übereinstimmen. Beim Einreichen prüfen wir, ob der Besitznachweis im Repository liegt.",
+            "versionLocked": "Fordere zuerst einen Besitznachweis an und wähle das Repository aus.",
+            "storeTitle": "Store-Eintrag gestalten",
+            "storeDescription": "Logo, Screenshots und Langbeschreibung kannst du jederzeit ändern – auch während der Prüfung und ohne neue Version."
         }
     },
     "common": {
@@ -177,7 +186,8 @@
         "staffInvitations": "Einladungen",
         "staffAccounts": "Teamkonten",
         "profile": "Profil",
-        "people": "Leute"
+        "people": "Leute",
+        "catalog": "App-Katalog"
     },
     "auth": {
         "experience": {
@@ -783,8 +793,8 @@
                     "description": "Darf Teamkonten einladen und verwalten sowie Teamrechte konfigurieren."
                 },
                 "userDashboard": {
-                    "name": "User Dashboard",
-                    "description": "Darf das User Dashboard öffnen."
+                    "name": "App-Katalog",
+                    "description": "Darf den App-Katalog im Konto öffnen."
                 },
                 "auditLogs": {
                     "name": "Audit Logs",
@@ -1066,12 +1076,6 @@
             }
         }
     },
-    "user": {
-        "dashboard": {
-            "title": "User Dashboard",
-            "loggedIn": "Du bist als Benutzer angemeldet."
-        }
-    },
     "shared": {
         "calendar": {
             "keyboardHelp": "Mit Pfeiltasten navigieren."
@@ -1262,7 +1266,7 @@
             "eyebrow": "Der App-Katalog",
             "title": "Apps für dein RentnerProxy.",
             "description": "Hier bekommen offizielle Apps und Erweiterungen ihr Zuhause. Entdecke, was für deinen Stack geplant ist.",
-            "note": "Alle Einträge sind geplant. Die Apps können noch nicht heruntergeladen oder installiert werden.",
+            "note": "Die folgenden Karten zeigen geplante Erweiterungen. Sie lassen sich noch nicht herunterladen oder installieren.",
             "backToFlow": "So soll der Marketplace funktionieren"
         },
         "blog": {
@@ -1507,6 +1511,28 @@
             "closeLightbox": "Großansicht schließen",
             "by": "von {{username}}",
             "published": "Veröffentlicht am {{date}}"
-        }
+        },
+        "overviewEmpty": "Sobald du eine Version eingereicht hast, pflegst du hier Logo, Screenshots und Beschreibung deiner Apps."
+    },
+    "catalog": {
+        "title": "App-Katalog",
+        "description": "Alle veröffentlichten Apps auf einen Blick.",
+        "loading": "Apps werden geladen …",
+        "searchPlaceholder": "Nach Name, Beschreibung, App-ID oder Publisher suchen …",
+        "sortLabel": "Sortieren",
+        "sort": {
+            "newest": "Neueste zuerst",
+            "stars": "Meiste Stars",
+            "name": "Name A–Z"
+        },
+        "starredOnly": "Nur meine Stars",
+        "resultCount": "{{count}} von {{total}} Apps",
+        "noMatches": "Keine App passt zu deiner Suche.",
+        "resetFilters": "Filter zurücksetzen",
+        "emptyTitle": "Noch keine Apps veröffentlicht",
+        "emptyDescription": "Sobald die ersten Apps die Prüfung bestanden haben, erscheinen sie hier.",
+        "submitCta": "App einreichen",
+        "loadError": "Der App-Katalog konnte nicht geladen werden.",
+        "retry": "Erneut versuchen"
     }
 }

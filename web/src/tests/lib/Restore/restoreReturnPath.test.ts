@@ -114,15 +114,15 @@ describe('Restore-Return-Pfad', function () {
         stubTestGlobal('window', createWindowMock())
         rememberRestoreReturnPath('/admin/backups', PRE_RESTORE_USER_ID)
 
-        expect(
-            rememberRestoreReturnPath('/user/dashboard', OTHER_USER_ID),
-        ).toBe('/user/dashboard')
+        expect(rememberRestoreReturnPath('/user/catalog', OTHER_USER_ID)).toBe(
+            '/user/catalog',
+        )
         expect(
             consumePermittedRestoreReturnPath({
                 currentUserId: OTHER_USER_ID,
                 permissions: [PERMISSIONS.USER_DASHBOARD],
             }),
-        ).toBe('/user/dashboard')
+        ).toBe('/user/catalog')
     })
 
     it('legt ohne gültige Pre-Restore-Benutzer-ID keinen Rücksprung an', function () {

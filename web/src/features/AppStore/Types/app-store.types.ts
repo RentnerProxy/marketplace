@@ -1,4 +1,5 @@
 import type { z } from 'zod'
+import type { ProfileApp } from '@/features/Social/Types/social.types.ts'
 import type { SubmissionStatus } from '@/lib/Marketplace/Types/submission.types.ts'
 import type {
     reorderStoreScreenshotsInputSchema,
@@ -66,4 +67,9 @@ export type AppDetail = {
     isStarred: boolean
     canEdit: boolean
     publisher: AppDetailPublisher | null
+}
+
+/** Published app in the catalog, with the username of its visible publisher. */
+export type CatalogApp = ProfileApp & {
+    publisher: string | null
 }

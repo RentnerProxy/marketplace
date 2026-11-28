@@ -1,6 +1,6 @@
 {
     "submissions": {
-        "title": "App submissions",
+        "title": "Submit apps",
         "description": "Submit an app version from an exact GitHub commit and track its status.",
         "reviewTitle": "App reviews",
         "reviewDescription": "Inspect the sealed packages and decide on the exact app version.",
@@ -109,6 +109,15 @@
             "buildsUnavailable": "Validation builds are currently unavailable.",
             "invalidInput": "Check the required fields and use the metadata from the app manifest.",
             "error": "The action could not be completed. Try again."
+        },
+        "steps": {
+            "proofTitle": "Prove the repository",
+            "proofDescription": "Request an ownership proof and store the value in the repository. You can then submit from this repository.",
+            "versionTitle": "Submit a version",
+            "versionDescription": "Name, summary and license must match the app.json at the given commit exactly. On submission we check that the ownership proof is in the repository.",
+            "versionLocked": "Request an ownership proof and select the repository first.",
+            "storeTitle": "Shape the store listing",
+            "storeDescription": "Change the logo, screenshots and long description at any time – also during review and without a new version."
         }
     },
     "common": {
@@ -177,7 +186,8 @@
         "staffInvitations": "Invitations",
         "staffAccounts": "Staff accounts",
         "profile": "Profile",
-        "people": "People"
+        "people": "People",
+        "catalog": "App catalog"
     },
     "auth": {
         "experience": {
@@ -783,8 +793,8 @@
                     "description": "Can invite and manage staff accounts and configure staff permissions."
                 },
                 "userDashboard": {
-                    "name": "User dashboard",
-                    "description": "Can open the user dashboard."
+                    "name": "App catalog",
+                    "description": "Can open the app catalog in the account."
                 },
                 "auditLogs": {
                     "name": "Audit logs",
@@ -1066,12 +1076,6 @@
             }
         }
     },
-    "user": {
-        "dashboard": {
-            "title": "User dashboard",
-            "loggedIn": "You are logged in as a user."
-        }
-    },
     "shared": {
         "calendar": {
             "keyboardHelp": "Navigate with arrow keys."
@@ -1262,7 +1266,7 @@
             "eyebrow": "The app catalog",
             "title": "Apps for your RentnerProxy.",
             "description": "A home for official apps and extensions. Discover what's planned for your stack.",
-            "note": "Every listing is planned. These apps cannot be downloaded or installed yet.",
+            "note": "The following cards show planned extensions. They cannot be downloaded or installed yet.",
             "backToFlow": "How the marketplace is planned to work"
         },
         "blog": {
@@ -1507,6 +1511,28 @@
             "closeLightbox": "Close full size view",
             "by": "by {{username}}",
             "published": "Published on {{date}}"
-        }
+        },
+        "overviewEmpty": "Once you have submitted a version, you manage the logo, screenshots and description of your apps here."
+    },
+    "catalog": {
+        "title": "App catalog",
+        "description": "Every published app at a glance.",
+        "loading": "Loading apps …",
+        "searchPlaceholder": "Search by name, description, app ID or publisher …",
+        "sortLabel": "Sort",
+        "sort": {
+            "newest": "Newest first",
+            "stars": "Most stars",
+            "name": "Name A–Z"
+        },
+        "starredOnly": "Only my stars",
+        "resultCount": "{{count}} of {{total}} apps",
+        "noMatches": "No app matches your search.",
+        "resetFilters": "Reset filters",
+        "emptyTitle": "No apps published yet",
+        "emptyDescription": "As soon as the first apps pass review, they appear here.",
+        "submitCta": "Submit an app",
+        "loadError": "The app catalog could not be loaded.",
+        "retry": "Try again"
     }
 }

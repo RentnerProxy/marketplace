@@ -1,4 +1,16 @@
 {
+    "submissions": {
+        "title": "Zgłoś aplikacje",
+        "steps": {
+            "proofTitle": "Potwierdź repozytorium",
+            "proofDescription": "Poproś o dowód własności i zapisz wartość w repozytorium. Potem możesz zgłaszać z tego repozytorium.",
+            "versionTitle": "Zgłoś wersję",
+            "versionDescription": "Nazwa, podsumowanie i licencja muszą dokładnie odpowiadać plikowi app.json we wskazanym commicie. Przy zgłoszeniu sprawdzamy, czy dowód własności znajduje się w repozytorium.",
+            "versionLocked": "Najpierw poproś o dowód własności i wybierz repozytorium.",
+            "storeTitle": "Przygotuj wpis w sklepie",
+            "storeDescription": "Zmieniaj logo, zrzuty ekranu i długi opis w dowolnym momencie – także w trakcie weryfikacji i bez nowej wersji."
+        }
+    },
     "common": {
         "active": "Aktywne",
         "actions": "Działania",
@@ -65,7 +77,8 @@
         "staffInvitations": "Zaproszenia",
         "staffAccounts": "Konta zespołu",
         "profile": "Profil",
-        "people": "Ludzie"
+        "people": "Ludzie",
+        "catalog": "Katalog aplikacji"
     },
     "auth": {
         "experience": {
@@ -588,7 +601,7 @@
             "eyebrow": "Katalog aplikacji",
             "title": "Aplikacje dla Twojego RentnerProxy.",
             "description": "Miejsce dla oficjalnych aplikacji i rozszerzeń. Zobacz, co planujemy dla Twojej instalacji.",
-            "note": "Wszystkie pozycje są planowane. Tych aplikacji nie można jeszcze pobrać ani zainstalować.",
+            "note": "Poniższe karty pokazują planowane rozszerzenia. Nie można ich jeszcze pobrać ani zainstalować.",
             "backToFlow": "Jak ma działać marketplace"
         },
         "blog": {
@@ -836,6 +849,28 @@
             "closeLightbox": "Zamknij widok pełnego rozmiaru",
             "by": "autor: {{username}}",
             "published": "Opublikowano {{date}}"
-        }
+        },
+        "overviewEmpty": "Po zgłoszeniu wersji zarządzasz tutaj logo, zrzutami ekranu i opisem swoich aplikacji."
+    },
+    "catalog": {
+        "title": "Katalog aplikacji",
+        "description": "Wszystkie opublikowane aplikacje w jednym miejscu.",
+        "loading": "Wczytywanie aplikacji …",
+        "searchPlaceholder": "Szukaj po nazwie, opisie, ID aplikacji lub wydawcy …",
+        "sortLabel": "Sortuj",
+        "sort": {
+            "newest": "Najnowsze",
+            "stars": "Najwięcej gwiazdek",
+            "name": "Nazwa A–Z"
+        },
+        "starredOnly": "Tylko moje gwiazdki",
+        "resultCount": "{{count}} z {{total}} aplikacji",
+        "noMatches": "Żadna aplikacja nie pasuje do wyszukiwania.",
+        "resetFilters": "Wyczyść filtry",
+        "emptyTitle": "Brak opublikowanych aplikacji",
+        "emptyDescription": "Gdy pierwsze aplikacje przejdą weryfikację, pojawią się tutaj.",
+        "submitCta": "Zgłoś aplikację",
+        "loadError": "Nie udało się wczytać katalogu aplikacji.",
+        "retry": "Spróbuj ponownie"
     }
 }
