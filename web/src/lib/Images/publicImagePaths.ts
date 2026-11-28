@@ -64,3 +64,37 @@ export function getSystemLogoPublicImagePaths() {
         absoluteFavicon: path.join(publicStorageRoot, 'favicon.ico'),
     }
 }
+
+const APP_STORE_APP_ID_PATTERN =
+    /^[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?\.[a-z](?:[a-z0-9-]{0,62}[a-z0-9])?$/
+const APP_STORE_FILE_ID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+function assertStoreImageFileId(fileId: string) {
+    if (!APP_STORE_FILE_ID_PATTERN.test(fileId)) {
+        throw new Error('Invalid store image file id')
+    }
+    return fileId
+}
+
+/** Store images live in public storage under unguessable per-upload file ids. */
+export function getAppStoreImagePaths(appId: string) {
+    if (!APP_STORE_APP_ID_PATTERN.test(appId)) {
+        throw new Error('Invalid app id for store image paths')
+    }
+
+    const absoluteDir = path.join(
+        getPublicStorageRoot(),
+        'images',
+        'apps',
+        appId,
+    )
+
+    return {
+        absoluteDir,
+        absoluteFile: (fileId: string) =>
+            path.join(absoluteDir, `${assertStoreImageFileId(fileId)}.webp`),
+        relativeFile: (fileId: string) =>
+            `/images/apps/${appId}/${assertStoreImageFileId(fileId)}.webp`,
+    }
+}

@@ -16,6 +16,7 @@ todos.json
 .idea
 web/public/images/user
 web/public/images/system
+web/public/images/apps
 web/public/favicon.ico
 /public/images/user/
 /public/images/system/

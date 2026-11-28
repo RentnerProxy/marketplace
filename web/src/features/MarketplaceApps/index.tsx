@@ -10,6 +10,7 @@ import {
 import { Link } from '@tanstack/react-router'
 import CardWave from '@/shared/Brand/CardWave.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import PublishedApps from './Components/PublishedApps.tsx'
 
 export default function MarketplaceApps() {
     const { t } = useTranslationStore()
@@ -21,22 +22,23 @@ export default function MarketplaceApps() {
                 className="mx-auto max-w-[1440px] px-5 pb-20 pt-14 sm:px-8 sm:pb-28 sm:pt-20 lg:px-12"
             >
                 <header className="mb-12 max-w-3xl">
-                    <p className="mb-5 text-xs font-bold uppercase tracking-[0.2em] text-[#0d6d2b]">
+                    <p className="comic-caption mb-5">
                         {t('marketplace.catalog.eyebrow')}
                     </p>
                     <h1
                         id="catalog-title"
-                        className="font-display text-[clamp(2rem,6vw,3rem)] leading-[1.03] tracking-tight sm:text-6xl lg:text-7xl"
+                        className="comic-title text-[clamp(2.8rem,7vw,4rem)] sm:text-7xl lg:text-8xl"
                     >
                         {t('marketplace.catalog.title')}
                     </h1>
-                    <p className="mt-6 max-w-2xl text-base leading-8 text-[#52675d] sm:text-lg">
+                    <p className="mt-6 max-w-2xl text-base leading-8 text-steel-600 sm:text-lg">
                         {t('marketplace.catalog.description')}
                     </p>
-                    <p className="mt-4 max-w-2xl text-sm leading-7 text-[#52675d]">
+                    <p className="mt-4 max-w-2xl text-sm leading-7 text-steel-600">
                         {t('marketplace.catalog.note')}
                     </p>
                 </header>
+                <PublishedApps />
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {(
                         [
@@ -50,11 +52,11 @@ export default function MarketplaceApps() {
                     ).map(({ id, Icon, number }) => (
                         <article
                             key={id}
-                            className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-marketplace-void px-7 py-10 text-white shadow-[0_16px_40px_rgba(6,18,15,0.12)] sm:px-8 sm:py-11"
+                            className="comic-card comic-dark relative isolate overflow-hidden px-7 py-10 sm:px-8 sm:py-11"
                         >
                             <CardWave />
                             <div className="mb-7 flex items-start justify-between gap-4">
-                                <div className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+                                <div className="grid h-12 w-12 place-items-center rounded-md border-[3px] border-ink bg-proxy-400 text-ink shadow-[3px_3px_0_0_var(--color-proxy-500)]">
                                     <Icon
                                         aria-hidden="true"
                                         className="h-6 w-6"
@@ -62,18 +64,18 @@ export default function MarketplaceApps() {
                                 </div>
                                 <span
                                     aria-hidden="true"
-                                    className="font-display text-3xl text-primary/25"
+                                    className="font-display text-4xl text-proxy-400/40"
                                 >
                                     {number}
                                 </span>
                             </div>
-                            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a3ffb8]">
+                            <span className="comic-chip comic-chip-ink text-[11px] uppercase">
                                 {t('common.planned')}
                             </span>
-                            <h2 className="mt-4 text-2xl tracking-tight">
+                            <h2 className="comic-title mt-5 text-3xl">
                                 {t(`marketplace.apps.${id}.title`)}
                             </h2>
-                            <p className="mt-3 text-sm leading-7 text-[#c1d2c9]">
+                            <p className="mt-3 text-sm leading-7 text-mist-200">
                                 {t(`marketplace.apps.${id}.description`)}
                             </p>
                         </article>
@@ -82,7 +84,7 @@ export default function MarketplaceApps() {
                 <Link
                     to="/"
                     hash="marketplace-flow"
-                    className="mt-12 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#0d6d2b] underline-offset-4 hover:underline"
+                    className="comic-btn comic-btn-sm comic-btn-white mt-12"
                 >
                     <ArrowLeft aria-hidden="true" className="h-4 w-4" />
                     {t('marketplace.catalog.backToFlow')}
