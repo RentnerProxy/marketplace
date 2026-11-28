@@ -14,5 +14,4 @@ export type HeadingIconProps = {
 export type HeadingIconSizeClasses = {
     frame: string
     icon: string
-    rail: string
 }

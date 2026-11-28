@@ -5,12 +5,15 @@ import {
     resetHooks,
     runEffects,
 } from '../hook-harness.ts'
+import { DEFAULT_PRIMARY_COLOR } from '@/config/user-theme-colors.config.ts'
+import { getPrimaryThemeColors } from '@/lib/Theme/primaryColor.ts'
 
 const navigate = vi.fn(async () => {})
 const applyTheme = vi.fn()
 const resetTheme = vi.fn()
 const remember = vi.fn()
 const expand = vi.fn()
+const toggleCollapse = vi.fn()
 const favicon = { rel: '', href: '', parentNode: null }
 const append = vi.fn()
 let session: unknown
@@ -79,6 +82,7 @@ vi.mock(
             handler: {
                 expandMaintenanceBanner: expand,
                 minimizeMaintenanceBanner: vi.fn(),
+                toggleCollapse,
             },
         }),
     }),
@@ -125,6 +129,18 @@ it('provides anonymous defaults and applies and cleans up the shell theme', () =
     expect(result.state.showMaintenanceBanner).toBe(false)
     expect(result.state.pendingMaintenanceExtensionRequest).toBeNull()
     expect(result.state.shellStyle.fontSize).toMatch(/px$/u)
+    expect(result.state.shellStyle).toMatchObject({
+        '--color-background-dark': getPrimaryThemeColors(
+            result.state.themeMode,
+            DEFAULT_PRIMARY_COLOR,
+        ).background,
+        '--color-surface-dark': getPrimaryThemeColors(
+            result.state.themeMode,
+            DEFAULT_PRIMARY_COLOR,
+        ).surface,
+    })
+    result.handler.toggleCollapse()
+    expect(toggleCollapse).toHaveBeenCalledTimes(1)
     const cleanup = runEffects()
     expect(applyTheme).toHaveBeenCalledWith(
         expect.objectContaining({ themeMode: result.state.themeMode }),

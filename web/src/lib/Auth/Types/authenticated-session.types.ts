@@ -10,12 +10,7 @@ export type AuthenticatedSessionQueryData = {
     user: {
         customBackgroundDarkness: number | null
         customBackgroundUpdatedAt: string | null
-        firstName: string | null
-        lastName: string | null
-        street: string | null
-        houseNumber: string | null
-        postalCode: string | null
-        city: string | null
+        bio: string | null
         id: string
         primaryColor: string | null
         themeMode: UserThemeMode | null

@@ -110,7 +110,6 @@ describe('private first setup controller', function () {
         },
         { changed: { email: 'invalid' }, reason: 'email' },
         { changed: { username: '' }, reason: 'username' },
-        { changed: { firstName: 'A'.repeat(101) }, reason: 'invalid-data' },
     ] as const)(
         'preserves form validation error $reason',
         async function ({ changed, reason }) {

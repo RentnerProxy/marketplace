@@ -1,8 +1,9 @@
 import { TextInput } from '@rentnerkev/inputs'
 import { CustomSelect } from '@rentnerkev/select'
 import { CANDIDATE_PIPELINE } from '@/config/submissions.config.ts'
+import EditableStoreApps from '@/features/AppStore/Components/EditableStoreApps.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import { SubmissionQueue } from './Components/SubmissionQueue.tsx'
+import { SubmissionQueue } from './Components/SubmissionQueue/index.tsx'
 import { useDeveloperSubmissionsLogic } from './Hooks/useDeveloperSubmissionsLogic.ts'
 
 export default function DeveloperSubmissions({ userId }: { userId: string }) {
@@ -11,7 +12,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
     const editingDisabled = state.claimPending || state.submitPending
     return (
         <div className="space-y-5">
-            <section className="space-y-5 rounded-xl border border-border-dark bg-surface-dark p-5">
+            <section className="marketplace-content-panel space-y-5 rounded-2xl border border-border-dark bg-surface-dark p-5 sm:p-6">
                 <form
                     onSubmit={handler.submitClaim}
                     className="flex flex-wrap items-end gap-3"
@@ -29,7 +30,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                     </div>
                     <button
                         type="submit"
-                        className="rounded-lg border border-border-dark px-4 py-2 text-sm font-medium disabled:opacity-45"
+                        className="min-h-12 rounded-xl border border-border-dark bg-input-dark px-4 py-2 text-sm font-extrabold text-(color:--marketplace-ink-soft) disabled:opacity-55"
                         disabled={editingDisabled}
                     >
                         {t('submissions.requestProof')}
@@ -119,7 +120,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                                     editingDisabled ||
                                     !state.claims.data?.buildsEnabled
                                 }
-                                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-45"
+                                className="min-h-12 rounded-xl bg-primary px-4 py-2 text-sm font-extrabold text-primary-foreground enabled:hover:bg-primary-hover disabled:opacity-55"
                             >
                                 {t('submissions.submit')}
                             </button>
@@ -127,6 +128,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                     </>
                 )}
             </section>
+            <EditableStoreApps />
             <SubmissionQueue mode="developer" userId={userId} />
         </div>
     )

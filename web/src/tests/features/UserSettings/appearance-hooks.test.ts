@@ -213,24 +213,40 @@ describe('appearance preference actions', function () {
         const invalidate = vi.spyOn(client, 'invalidateQueries')
         render(useMainThemeLogic).handler.handleThemeModeChange('light')
         render(useMainThemeLogic).handler.handleSaveThemeMode()
+        expect(render(useMainThemeLogic).state.isSavingThemeMode).toBe(true)
         await settle()
         expect(themeMode).toHaveBeenCalledWith({ data: { themeMode: 'light' } })
         expect(invalidate).toHaveBeenCalledWith({ queryKey: ['session'] })
         expect(success).toHaveBeenCalledTimes(1)
+        expect(render(useMainThemeLogic).state.isSavingThemeMode).toBe(false)
         invalidate.mockRestore()
+    })
+
+    it('leaves the existing theme write in flight when another control tries to save', function () {
+        const isMutating = vi.spyOn(client, 'isMutating').mockReturnValue(1)
+        try {
+            render(useMainThemeLogic).handler.handleSaveThemeMode()
+            expect(isMutating).toHaveBeenCalledWith({
+                mutationKey: ['current-user-theme-mode'],
+                exact: true,
+            })
+            expect(themeMode).not.toHaveBeenCalled()
+        } finally {
+            isMutating.mockRestore()
+        }
     })
 
     it('adopts an external theme change and ignores an invalid stored mode', function () {
         render(useMainThemeLogic)
-        query.mockReturnValue({ data: { user: { themeMode: 'light' } } })
+        query.mockReturnValue({ data: { user: { themeMode: 'dark' } } })
         render(useMainThemeLogic)
         expect(render(useMainThemeLogic).state).toMatchObject({
-            themeMode: 'light',
-            selectedThemeMode: 'light',
+            themeMode: 'dark',
+            selectedThemeMode: 'dark',
         })
         query.mockReturnValue({ data: { user: { themeMode: 'invalid' } } })
         render(useMainThemeLogic)
-        expect(render(useMainThemeLogic).state.selectedThemeMode).toBe('dark')
+        expect(render(useMainThemeLogic).state.selectedThemeMode).toBe('light')
     })
 
     it('reports a rejected theme change without announcing success or refetching', async function () {

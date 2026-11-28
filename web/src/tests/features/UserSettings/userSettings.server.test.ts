@@ -46,7 +46,7 @@ function mockOperation<T>(name: string, result: T) {
 }
 
 const services = {
-    personalInfo: mockOperation('personal-info', successResult),
+    bio: mockOperation('bio', successResult),
     passwordReset: mockOperation('password-reset', successResult),
     profileImage: mockOperation('profile-image', successResult),
     primaryColor: mockOperation('primary-color', successResult),
@@ -102,7 +102,7 @@ vi.mock('@/server/Auth/currentSession.ts', function () {
 rateLimits.install()
 vi.mock('@/server/UserSettings/profile.service.ts', function () {
     return {
-        updateCurrentUserPersonalInfoService: services.personalInfo,
+        updateCurrentUserBioService: services.bio,
         updateCurrentUserProfileImageService: services.profileImage,
     }
 })
@@ -153,14 +153,6 @@ vi.mock('@/server/Auth/Passkey/registration.service.ts', function () {
 })
 
 const handlers = await import('@/features/UserSettings/middleware.ts')
-const personalInfo = {
-    firstName: 'Test',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
-}
 const imageInput = {
     imageDataUrl: 'data:image/webp;base64,dGVzdA==',
     crop: { x: 0, y: 0, width: 8, height: 8 },
@@ -190,14 +182,14 @@ const passkeyDeletion = {
 
 const operations = [
     {
-        name: 'updateCurrentUserPersonalInfoHandler',
+        name: 'updateCurrentUserBioHandler',
         invoke: () =>
-            handlers.updateCurrentUserPersonalInfoHandler({
-                data: personalInfo,
+            handlers.updateCurrentUserBioHandler({
+                data: { bio: ' Hello ' },
             }),
-        service: services.personalInfo,
+        service: services.bio,
         expected: successResult,
-        args: [personalInfo],
+        args: [{ bio: 'Hello' }],
     },
     {
         name: 'requestCurrentUserPasswordResetHandler',
@@ -361,7 +353,7 @@ const operations = [
 ]
 
 const settingsMutationNames = new Set([
-    'updateCurrentUserPersonalInfoHandler',
+    'updateCurrentUserBioHandler',
     'updateCurrentUserProfileImageHandler',
     'updateCurrentUserPrimaryColorHandler',
     'resetCurrentUserPrimaryColorHandler',
@@ -525,8 +517,8 @@ describe('UserSettings: serverseitige Wartungsgrenze', function () {
         )
         rateLimits.state.now += 60_001
         await expect(
-            handlers.updateCurrentUserPersonalInfoHandler({
-                data: personalInfo,
+            handlers.updateCurrentUserBioHandler({
+                data: { bio: 'Over the daily quota' },
             }),
         ).rejects.toMatchObject({
             name: 'RateLimitError',
@@ -534,7 +526,7 @@ describe('UserSettings: serverseitige Wartungsgrenze', function () {
         })
         expect(services.themeMode).toHaveBeenCalledTimes(150)
         expect(services.resetPrimaryColor).toHaveBeenCalledTimes(150)
-        expect(services.personalInfo).not.toHaveBeenCalled()
+        expect(services.bio).not.toHaveBeenCalled()
     })
 
     it('berechnet für beide GET-Handler keine Mutationsquote', async function () {
@@ -547,14 +539,14 @@ describe('UserSettings: serverseitige Wartungsgrenze', function () {
 
     it('erhält Fehler des Domainservices nach erfolgreicher Quotenprüfung', async function () {
         const error = new Error('synthetic domain failure')
-        services.personalInfo.mockRejectedValueOnce(error)
+        services.bio.mockRejectedValueOnce(error)
         await expect(
-            handlers.updateCurrentUserPersonalInfoHandler({
-                data: personalInfo,
+            handlers.updateCurrentUserBioHandler({
+                data: { bio: 'Domain failure' },
             }),
         ).rejects.toBe(error)
         expect(accessMocks.enforceRateLimit).toHaveBeenCalledTimes(2)
-        expect(services.personalInfo).toHaveBeenCalledTimes(1)
+        expect(services.bio).toHaveBeenCalledTimes(1)
     })
 
     it('ordnet jedem exportierten Handler einen geprüften Eintrittspunkt zu', function () {

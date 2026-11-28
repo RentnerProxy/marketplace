@@ -19,12 +19,6 @@ const user: UserManagementUser = {
     id: 'member',
     username: 'Ada',
     email: 'ada@example.invalid',
-    firstName: 'Augusta',
-    lastName: 'Lovelace',
-    street: null,
-    houseNumber: null,
-    postalCode: null,
-    city: null,
     isActive: true,
     isSuperUser: false,
     isCurrentUser: false,
@@ -108,6 +102,15 @@ describe('users table view', () => {
         expect(table.columnSettings).toBe(true)
         expect(table.resizableColumns).toBe(true)
         expect(table.columnWidthMode).toBe('scroll')
+        expect(table.portalContainer).toBeNull()
+        expect(
+            table.columns.find((column) => column.id === 'actions'),
+        ).toMatchObject({
+            header: 'common.actions',
+            enableHiding: false,
+            enableResizing: false,
+            meta: { align: 'right' },
+        })
         expect(table.pageSizeOptions).toEqual(
             [5, 10, 20, 50].map((value) => ({
                 value,
@@ -133,30 +136,22 @@ describe('users table view', () => {
         expect(table.getRowId(user, 0)).toBe(user.id)
     })
 
-    it('supplies all identity fields, including names without columns, to the table search', () => {
+    it('supplies the account identity fields to the table search', () => {
         const getSearchValues = renderTable().getSearchValues
         if (!getSearchValues) throw new Error('Missing user search values')
         expect(renderTable().getSearchValues).toBe(getSearchValues)
-        expect(getSearchValues(user)).toEqual([
-            user.username,
-            user.email,
-            user.firstName,
-            user.lastName,
-        ])
-        expect(
-            getSearchValues({ ...user, firstName: null, lastName: null }),
-        ).toEqual([user.username, user.email, null, null])
+        expect(getSearchValues(user)).toEqual([user.username, user.email])
     })
 
-    it('filters hidden names and exact permissions through the table instance', () => {
+    it('filters by account identity and exact permissions through the table instance', () => {
         const options = renderTable()
         const data = [
             { ...user, permissions: ['a.read', 'z.read'] },
             {
                 ...user,
                 id: 'other',
-                firstName: null,
-                lastName: null,
+                username: 'Grace',
+                email: 'grace@example.invalid',
                 permissions: ['a.read.extended'],
             },
         ]
@@ -171,7 +166,7 @@ describe('users table view', () => {
         const rowIds = () =>
             table.getFilteredRowModel().rows.map((row) => row.id)
 
-        for (const search of [' augusta ', 'LOVELACE']) {
+        for (const search of [' ada ', 'ADA@EXAMPLE']) {
             handler.handleSearch(search)
             expect(rowIds()).toEqual([user.id])
         }
@@ -311,14 +306,14 @@ describe('user row actions', () => {
         expect(state.isDeleteDisabled).toBe(true)
         expect(state.isToggleStatusDisabled).toBe(true)
         expect(state.isPasswordResetDisabled).toBe(true)
-        expect(state.editTooltip).toBe('admin.users.editForbiddenShort')
-        expect(state.toggleStatusTooltip).toBe(
+        expect(state.editRestriction).toBe('admin.users.editForbiddenShort')
+        expect(state.toggleStatusRestriction).toBe(
             'admin.users.statusForbiddenShort',
         )
-        expect(state.passwordResetTooltip).toBe(
+        expect(state.passwordResetRestriction).toBe(
             'admin.users.passwordResetForbiddenShort',
         )
-        expect(state.deleteTooltip).toBe('admin.users.deleteForbiddenShort')
+        expect(state.deleteRestriction).toBe('admin.users.deleteForbiddenShort')
     })
 
     it('prevents self deletion/deactivation and offers activation for inactive users', () => {
@@ -329,10 +324,10 @@ describe('user row actions', () => {
             }),
         )
         expect(hook.state.isDeleteDisabled).toBe(true)
-        expect(hook.state.toggleStatusTooltip).toBe(
+        expect(hook.state.toggleStatusRestriction).toBe(
             'admin.users.deactivateSelfForbiddenShort',
         )
-        expect(hook.state.deleteTooltip).toBe(
+        expect(hook.state.deleteRestriction).toBe(
             'admin.users.deleteSelfForbiddenShort',
         )
         hook = render(() =>
@@ -342,9 +337,9 @@ describe('user row actions', () => {
             }),
         )
         expect(hook.state.isToggleStatusDisabled).toBe(false)
-        expect(hook.state.toggleStatusTooltip).toBe('common.activate')
+        expect(hook.state.toggleStatusRestriction).toBeUndefined()
         expect(hook.state.isPasswordResetDisabled).toBe(true)
-        expect(hook.state.passwordResetTooltip).toBe(
+        expect(hook.state.passwordResetRestriction).toBe(
             'admin.users.passwordResetInactiveShort',
         )
     })

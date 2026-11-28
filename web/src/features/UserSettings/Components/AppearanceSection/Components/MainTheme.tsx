@@ -39,10 +39,10 @@ export default function MainTheme() {
                                 )
                             }
                             className={[
-                                'flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold transition-colors',
+                                'flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border-2 px-3 font-comic text-sm font-bold transition-[color,border-color,transform]',
                                 isSelected
-                                    ? 'border-border-dark bg-input-dark text-white shadow-[inset_3px_0_0_var(--color-primary)]'
-                                    : 'border-border-dark bg-background-dark text-secondary-text hover:text-white',
+                                    ? 'comic-selected'
+                                    : 'border-border-dark bg-background-dark text-secondary-text hover:-translate-x-px hover:-translate-y-px hover:border-primary hover:text-foreground',
                             ].join(' ')}
                         >
                             <span className="flex items-center justify-center">

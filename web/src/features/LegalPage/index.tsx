@@ -11,23 +11,21 @@ export default function LegalPage({ kind }: LegalPageProps) {
         <article
             lang={state.contentLanguage}
             aria-labelledby="legal-title"
-            className="relative isolate w-full overflow-hidden rounded-[2rem] border border-marketplace-void/10 bg-white px-6 py-12 text-marketplace-void shadow-[0_16px_50px_rgba(5,35,21,0.06)] sm:px-10 sm:py-14"
+            className="comic-panel relative isolate w-full overflow-hidden bg-white px-6 py-12 text-ink sm:px-10 sm:py-14"
         >
             <CardWave />
-            <header className="border-b border-[#dce6df] pb-8">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0d6d2b]">
-                    {state.page.eyebrow}
-                </p>
+            <header className="border-b-[3px] border-dashed border-ink pb-8">
+                <p className="comic-caption">{state.page.eyebrow}</p>
                 <h1
                     id="legal-title"
-                    className="mt-4 font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl"
+                    className="comic-title mt-5 text-5xl sm:text-6xl"
                 >
                     {state.page.title}
                 </h1>
-                <p className="mt-4 text-sm leading-7 text-[#52675d]">
+                <p className="mt-4 text-sm leading-7 text-steel-600">
                     {state.page.intro}
                 </p>
-                <p className="mt-4 text-xs text-[#52675d]">
+                <p className="mt-4 text-xs text-steel-600">
                     {state.page.updatedLabel}: {state.page.updated}
                 </p>
             </header>
@@ -39,11 +37,11 @@ export default function LegalPage({ kind }: LegalPageProps) {
                     >
                         <h2
                             id={`legal-section-${index}`}
-                            className="font-display text-2xl leading-tight sm:text-3xl"
+                            className="comic-title text-3xl sm:text-4xl"
                         >
                             {section.title}
                         </h2>
-                        <div className="mt-4 space-y-3 text-sm leading-7 text-[#52675d]">
+                        <div className="mt-4 space-y-3 text-sm leading-7 text-steel-700">
                             {section.body.map((paragraph) => (
                                 <p key={paragraph} className="break-words">
                                     {paragraph}
@@ -55,7 +53,7 @@ export default function LegalPage({ kind }: LegalPageProps) {
             </div>
             <nav
                 aria-label={state.page.eyebrow}
-                className="flex flex-wrap items-center gap-5 border-t border-[#dce6df] pt-6 text-sm font-bold text-[#0d6d2b]"
+                className="comic-lettering flex flex-wrap items-center gap-5 border-t-[3px] border-dashed border-ink pt-6 text-sm text-proxy-800"
             >
                 <a
                     href={`mailto:${state.email}`}

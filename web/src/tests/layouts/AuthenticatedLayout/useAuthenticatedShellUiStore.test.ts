@@ -14,39 +14,39 @@ vi.mock('react', function () {
 })
 
 describe('useAuthenticatedShellUiStore', function () {
-    it('verwaltet Sidebar, Wartungsbanner, Gruppen und User-Settings gemeinsam', function () {
+    it('verwaltet Sidebar, Wartungsbanner, und Gruppen gemeinsam', function () {
         const initialStore = useAuthenticatedShellUiStore()
 
         expect(initialStore.state).toEqual({
             isCollapsed: false,
             isMaintenanceBannerMinimized: false,
-            isUserSettingsOpen: false,
             openGroups: {},
         })
 
-        initialStore.handler.openUserSettings()
-        initialStore.handler.toggleCollapse()
         initialStore.handler.minimizeMaintenanceBanner()
         initialStore.handler.toggleGroup('navigation.admin')
 
         const updatedStore = useAuthenticatedShellUiStore()
 
         expect(updatedStore.state).toEqual({
-            isCollapsed: true,
+            isCollapsed: false,
             isMaintenanceBannerMinimized: true,
-            isUserSettingsOpen: true,
-            openGroups: { 'navigation.admin': true },
+            openGroups: { 'navigation.admin': false },
         })
 
-        updatedStore.handler.closeUserSettings()
         updatedStore.handler.expandMaintenanceBanner()
         updatedStore.handler.toggleCollapse()
         updatedStore.handler.toggleGroup('navigation.admin')
 
         expect(useAuthenticatedShellUiStore().state).toEqual({
-            isCollapsed: false,
+            isCollapsed: true,
             isMaintenanceBannerMinimized: false,
-            isUserSettingsOpen: false,
+            openGroups: { 'navigation.admin': true },
+        })
+
+        updatedStore.handler.toggleGroup('navigation.admin')
+        expect(useAuthenticatedShellUiStore().state).toMatchObject({
+            isCollapsed: true,
             openGroups: { 'navigation.admin': false },
         })
     })

@@ -8,7 +8,6 @@ const subscribers = new Set<() => void>()
 let state: AuthenticatedShellUiState = {
     isCollapsed: false,
     isMaintenanceBannerMinimized: false,
-    isUserSettingsOpen: false,
     openGroups: {},
 }
 
@@ -35,14 +34,6 @@ function getSnapshot() {
     return state
 }
 
-function closeUserSettings() {
-    setState({ isUserSettingsOpen: false })
-}
-
-function openUserSettings() {
-    setState({ isUserSettingsOpen: true })
-}
-
 function toggleCollapse() {
     setState((current) => ({
         isCollapsed: !current.isCollapsed,
@@ -61,7 +52,7 @@ function toggleGroup(labelKey: string) {
     setState((current) => ({
         openGroups: {
             ...current.openGroups,
-            [labelKey]: !current.openGroups[labelKey],
+            [labelKey]: !(current.openGroups[labelKey] ?? true),
         },
     }))
 }
@@ -72,10 +63,8 @@ export default function useAuthenticatedShellUiStore() {
     return {
         state: uiState,
         handler: {
-            closeUserSettings,
             expandMaintenanceBanner,
             minimizeMaintenanceBanner,
-            openUserSettings,
             toggleCollapse,
             toggleGroup,
         },

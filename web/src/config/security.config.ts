@@ -74,6 +74,12 @@ export const RATE_LIMITS = {
     marketplaceMutation: { limit: 20, windowMs: 60 * 60_000 },
     marketplaceSubmission: { limit: 5, windowMs: 60 * 60_000 },
     marketplaceBuildBudget: { limit: 12, windowMs: 60 * 60_000 },
+    socialProfileRead: { limit: 240, windowMs: 60_000 },
+    socialSearch: { limit: 60, windowMs: 60_000 },
+    socialFollow: { limit: 120, windowMs: 60 * 60_000 },
+    appStar: { limit: 120, windowMs: 60 * 60_000 },
+    appStoreRead: { limit: 240, windowMs: 60_000 },
+    appStoreEdit: { limit: 120, windowMs: 60 * 60_000 },
 } as const
 
 export const REGISTRATION_POLICY = {

@@ -6,7 +6,12 @@ function isPublicStorageAssetPath(pathname: string) {
         pathname === '/images/default.webp' ||
         pathname === '/images/default-64.webp' ||
         /^\/images\/system\/logo(?:-64)?\.webp$/.test(pathname) ||
-        /^\/images\/user\/[0-9a-f-]{36}\/profile(?:-64)?\.webp$/i.test(pathname)
+        /^\/images\/user\/[0-9a-f-]{36}\/profile(?:-64)?\.webp$/i.test(
+            pathname,
+        ) ||
+        /^\/images\/apps\/[a-z](?:[a-z0-9-]{0,30}[a-z0-9])?\.[a-z](?:[a-z0-9-]{0,62}[a-z0-9])?\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/.test(
+            pathname,
+        )
     )
 }
 

@@ -37,8 +37,6 @@ const user: PermissionManagementUser = {
     id: '01941f29-7c00-7000-8000-000000000001',
     username: 'Testbenutzer',
     email: 'test@example.invalid',
-    firstName: null,
-    lastName: null,
     isActive: true,
     isSuperUser: false,
     isCurrentUser: false,

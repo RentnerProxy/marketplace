@@ -25,6 +25,7 @@
         "targets": "Targets",
         "submit": "Submit for review",
         "queue": "Submissions",
+        "createdAt": "Submitted at",
         "empty": "There are no submissions yet.",
         "loading": "Loading…",
         "loadError": "Could not load the data.",
@@ -114,6 +115,9 @@
         "active": "Active",
         "activate": "Activate",
         "actions": "Actions",
+        "openActions": "Open actions",
+        "details": "Details",
+        "close": "Close",
         "all": "All",
         "approve": "Approve",
         "backToLogin": "Back to login",
@@ -171,7 +175,9 @@
         "accounts": "Accounts",
         "staff": "Staff",
         "staffInvitations": "Invitations",
-        "staffAccounts": "Staff accounts"
+        "staffAccounts": "Staff accounts",
+        "profile": "Profile",
+        "people": "People"
     },
     "auth": {
         "experience": {
@@ -203,8 +209,6 @@
             "checkingSetupLink": "Checking setup link …",
             "setupLinkRequired": "Find the setup link in the app logs",
             "setupLinkDescription": "For local development, find the setup link in the bun run dev terminal. For a Komodo deployment, open the stack logs and select the “app” service. Copy the entire latest setup link and open it in your browser. The link is valid for ten minutes and is renewed automatically until initial setup is complete.",
-            "personalInfoTitle": "Personal information",
-            "personalInfoDescription": "These details are optional and can be changed later.",
             "create": "Create superuser",
             "creating": "Creating superuser...",
             "created": "The first superuser was created. You can now log in.",
@@ -404,17 +408,6 @@
             "subtitle": "Settings for {{username}}",
             "title": "User Settings"
         },
-        "personalInfo": {
-            "city": "City",
-            "description": "These details are optional.",
-            "firstName": "First name",
-            "houseNumber": "House number",
-            "lastName": "Last name",
-            "postalCode": "Postal code",
-            "save": "Save details",
-            "street": "Street",
-            "title": "Personal details"
-        },
         "profileImage": {
             "choose": "Choose image",
             "description": "Select an image and crop it to fit.",
@@ -494,7 +487,7 @@
             "route": "Route",
             "created": "Created",
             "details": "Details",
-            "showDetails": "Show audit details",
+            "entryId": "Entry ID",
             "system": "System",
             "searchPlaceholder": "Search audit logs...",
             "userFilterPlaceholder": "Filter users...",
@@ -508,8 +501,11 @@
             "title": "Admin dashboard",
             "loggedIn": "You are logged in as an admin.",
             "description": "Current status of the core services.",
+            "connections": "Connection map",
+            "serviceStatus": "Service status",
             "console": {
                 "open": "Open console",
+                "chooseService": "Select a service to inspect its live console.",
                 "opened": "Console open",
                 "title": "{{service}} · Console",
                 "emptyTitle": "Service console",
@@ -874,8 +870,6 @@
             "editDescription": "Manage general account and profile data.",
             "accountTitle": "Account",
             "accountDescription": "Basic data for login and contact.",
-            "additionalInfoTitle": "Additional information",
-            "additionalInfoDescription": "Optional profile and address data.",
             "permissionsTitle": "Permissions",
             "permissionsDescription": "Define which areas the user is allowed to access.",
             "permissionsLoading": "Loading permissions...",
@@ -1082,10 +1076,6 @@
         "calendar": {
             "keyboardHelp": "Navigate with arrow keys."
         },
-        "addressSearch": {
-            "noSuggestions": "No suggestions found.",
-            "placeholder": "Search address"
-        },
         "notFound": {
             "title": "Page not found",
             "description": "Oops! The requested page does not exist or has been moved. Maybe you made a typo in the URL?",
@@ -1155,7 +1145,6 @@
         "passwordResetSent": "The password reset email was sent.",
         "passkeyAdded": "Passkey was added. Please sign in again on all your devices.",
         "passkeyDeleted": "Passkey was removed. Please sign in again on all your devices.",
-        "personalInfoSaved": "User details were saved.",
         "primaryColorReset": "System color was reset.",
         "primaryColorSaved": "System color was saved.",
         "primaryColorInvalid": "Please choose a valid system color.",
@@ -1375,6 +1364,149 @@
                     "description": "Users are intended to choose approved apps through their RentnerProxy platform, then optionally download and install them. App updates are planned to work independently of platform updates."
                 }
             }
+        }
+    },
+    "profile": {
+        "title": "Profile",
+        "description": "Your page in the RentnerProxy Marketplace.",
+        "cancel": "Cancel",
+        "tabs": {
+            "apps": "Apps"
+        },
+        "banner": {
+            "change": "Change banner",
+            "remove": "Remove banner",
+            "save": "Save banner",
+            "hint": "Drag to position the image. Recommended: at least 1500 × 500 px.",
+            "saved": "Banner saved.",
+            "removed": "Banner removed.",
+            "failed": "The banner could not be uploaded.",
+            "alt": "Profile banner of {{username}}",
+            "removeTitle": "Remove banner?",
+            "removeQuestion": "Do you really want to remove your profile banner? Your profile then shows the default banner again."
+        },
+        "bio": {
+            "title": "Bio",
+            "placeholder": "Tell the community what you build …",
+            "empty": "No bio yet.",
+            "save": "Save bio",
+            "saved": "Bio saved.",
+            "edit": "Edit bio"
+        },
+        "stats": {
+            "apps": "Apps",
+            "downloads": "Downloads",
+            "comingSoon": "Soon",
+            "stars": "Stars"
+        },
+        "apps": {
+            "title": "Your apps",
+            "description": "The apps you publish in the Marketplace will show up here.",
+            "placeholder": "App slot {{number}}"
+        },
+        "avatar": {
+            "change": "Change profile image",
+            "cropTitle": "Crop profile image",
+            "hint": "Drag and zoom until everything fits the circle."
+        }
+    },
+    "social": {
+        "title": "Find people",
+        "description": "Search for developers and community members and follow them.",
+        "searchPlaceholder": "Search by username …",
+        "searchHint": "Enter at least 2 characters.",
+        "empty": "Nobody found for “{{query}}”.",
+        "follow": "Follow",
+        "following": "Following",
+        "unfollow": "Unfollow",
+        "followers": "Followers",
+        "followingList": "Following",
+        "loginToFollow": "Log in to follow",
+        "team": "Team",
+        "you": "You",
+        "joined": "Joined {{date}}",
+        "notFoundTitle": "Profile not found",
+        "notFoundDescription": "This account does not exist or is no longer public.",
+        "emptyFollowers": "No followers yet.",
+        "emptyFollowing": "Not following anyone yet.",
+        "loadMore": "Load more",
+        "followed": "You now follow {{username}}.",
+        "unfollowed": "You no longer follow {{username}}.",
+        "viewPublicProfile": "View public profile",
+        "backToSearch": "Find more people",
+        "appsTitle": "Apps",
+        "star": "Star",
+        "unstar": "Unstar",
+        "starred": "You starred “{{name}}”.",
+        "unstarred": "You removed your star from “{{name}}”.",
+        "loginToStar": "Sign in to star apps",
+        "appsLoading": "Loading apps …",
+        "appVersion": "Version {{version}}",
+        "appsEmpty": "{{username}} has not published any apps yet."
+    },
+    "appStore": {
+        "title": "Store listing",
+        "uploadFailed": "The image could not be uploaded.",
+        "noImage": "Please choose an image first.",
+        "cropHint": "Drag and zoom until the crop fits.",
+        "loading": "Loading store listing …",
+        "notAllowedTitle": "No access to this store listing",
+        "notAllowedDescription": "Only the account that submitted the app and marketplace admins can edit this listing.",
+        "backToSubmissions": "Back to submissions",
+        "editorEyebrow": "Edit store listing",
+        "viewPublic": "View public page",
+        "notPublishedHint": "Publicly visible once a version is published. You can prepare everything now.",
+        "edit": "Edit store listing",
+        "overviewTitle": "Store listings",
+        "overviewDescription": "Logo, screenshots and description of your apps – change them any time without a new version.",
+        "catalogTitle": "Published apps",
+        "logo": {
+            "title": "Logo",
+            "hint": "Square, cropped to 512 × 512 px. PNG, JPEG or WebP up to 8 MB.",
+            "upload": "Upload logo",
+            "change": "Change logo",
+            "remove": "Remove logo",
+            "save": "Save logo",
+            "saved": "The logo has been saved.",
+            "removed": "The logo has been removed.",
+            "cropTitle": "Crop logo",
+            "removeTitle": "Remove logo?",
+            "removeQuestion": "Do you really want to remove the logo? The default icon will be shown again."
+        },
+        "screenshots": {
+            "title": "Screenshots",
+            "hint": "Up to 8 images in 16:9, stored at 1920 × 1080 px. The order defines the gallery.",
+            "add": "Add screenshot",
+            "save": "Save screenshot",
+            "saved": "The screenshot has been added.",
+            "removed": "The screenshot has been deleted.",
+            "reordered": "The order has been saved.",
+            "alt": "Screenshot {{number}}",
+            "moveLeft": "Move earlier",
+            "moveRight": "Move later",
+            "remove": "Delete screenshot",
+            "cropTitle": "Crop screenshot",
+            "removeTitle": "Delete screenshot?",
+            "removeQuestion": "Do you really want to delete this screenshot?"
+        },
+        "description": {
+            "title": "Description",
+            "hint": "Plain text, paragraphs are kept. At most 5000 characters.",
+            "placeholder": "What does your app do, who is it for and what does it need?",
+            "save": "Save description",
+            "saved": "The description has been saved."
+        },
+        "detail": {
+            "notFoundTitle": "App not found",
+            "notFoundDescription": "This app does not exist or has not been published yet.",
+            "backToApps": "All apps",
+            "screenshotAlt": "Screenshot {{number}} of {{total}} – {{name}}",
+            "previous": "Previous screenshot",
+            "next": "Next screenshot",
+            "openLightbox": "Show screenshot full size",
+            "closeLightbox": "Close full size view",
+            "by": "by {{username}}",
+            "published": "Published on {{date}}"
         }
     }
 }

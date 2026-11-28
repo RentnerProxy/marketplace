@@ -65,12 +65,6 @@ function updateInput(id = ADMIN_TARGET_ID): UpdateUserProfileInput {
         accountType: 'staff',
         username: String(user.username),
         email: 'changed@example.test',
-        firstName: 'After',
-        lastName: '',
-        street: '',
-        houseNumber: '',
-        postalCode: '',
-        city: '',
     }
 }
 function expectNoPublishing() {
@@ -137,7 +131,7 @@ describe('Administrative mutations with required audit persistence', function ()
                 .map((event) => event.operation),
         ).toEqual(['begin', 'lock:identity', 'lock:update'])
     })
-    it('commits profile, identity, revocation and audit together', async function () {
+    it('commits identity, revocation and audit together', async function () {
         adminAuditDb.state.rows.users[0].emailVerifiedAt = new Date()
         const previousPermissions = structuredClone(
             adminAuditDb.state.rows.staffUserPermissions,
@@ -152,10 +146,6 @@ describe('Administrative mutations with required audit persistence', function ()
             email: 'changed@example.test',
             emailVerifiedAt: null,
         })
-        expect(
-            rows.user_profiles.find((row) => row.userId === ADMIN_TARGET_ID)
-                ?.firstName,
-        ).toBe('After')
         expect(
             rows.sessions.some((row) => row.userId === ADMIN_TARGET_ID),
         ).toBe(false)

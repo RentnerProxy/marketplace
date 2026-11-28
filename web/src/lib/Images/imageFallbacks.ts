@@ -4,6 +4,7 @@ import { getImageSrcKey } from '@/lib/Images/imageSrcKeys.ts'
 export const DEFAULT_IMAGE_SRC = '/rentnerproxy-logo.png'
 export const DEFAULT_IMAGE_64_SRC = '/rentnerproxy-logo.png'
 export const DEFAULT_FAVICON_SRC = '/rentnerproxy-logo.png'
+export const DEFAULT_SYSTEM_LOGO_SRC = '/images/default.webp'
 
 export function applyImageFallback(
     event: SyntheticEvent<HTMLImageElement>,

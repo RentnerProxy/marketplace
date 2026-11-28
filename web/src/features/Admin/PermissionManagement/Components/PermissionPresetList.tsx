@@ -3,6 +3,7 @@ import { PERMISSIONS } from '@/config/permissions.config.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import type { PermissionPresetListProps } from '../Types/permission-management-component-props.types.ts'
 import HeadingIcon from '@/shared/HeadingIcon.tsx'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
 
 export default function PermissionPresetList({
     presets,
@@ -74,27 +75,30 @@ export default function PermissionPresetList({
                                     </p>
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onStartEdit(preset)}
-                                        aria-label={t(
-                                            'admin.permissions.presets.editAriaLabel',
-                                        )}
-                                        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border-dark bg-input-dark text-secondary-text transition-colors hover:text-white"
-                                    >
-                                        <Pencil className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onAskDelete(preset)}
-                                        aria-label={t(
-                                            'admin.permissions.presets.deleteAriaLabel',
-                                        )}
-                                        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border-dark bg-input-dark text-danger transition-colors hover:border-danger hover:text-white"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                <div className="self-center justify-self-end">
+                                    <ActionMenu
+                                        items={[
+                                            {
+                                                id: 'edit',
+                                                label: t(
+                                                    'admin.permissions.presets.editAriaLabel',
+                                                ),
+                                                icon: <Pencil />,
+                                                onSelect: () =>
+                                                    onStartEdit(preset),
+                                            },
+                                            {
+                                                id: 'delete',
+                                                label: t(
+                                                    'admin.permissions.presets.deleteAriaLabel',
+                                                ),
+                                                icon: <Trash2 />,
+                                                destructive: true,
+                                                onSelect: () =>
+                                                    onAskDelete(preset),
+                                            },
+                                        ]}
+                                    />
                                 </div>
                             </article>
                         )

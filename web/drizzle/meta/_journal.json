@@ -113,6 +113,41 @@
       "when": 1795648394319,
       "tag": "0015_bored_omega_red",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795819753628,
+      "tag": "0016_user_profile_bio",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795822111972,
+      "tag": "0017_remove_personal_profile_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795824736166,
+      "tag": "0018_user_follows",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795825611434,
+      "tag": "0019_app_stars",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795827144788,
+      "tag": "0020_app_store_entries",
+      "breakpoints": true
     }
   ]
 }

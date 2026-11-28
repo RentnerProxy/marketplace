@@ -56,12 +56,6 @@ const input = {
     password: 'password',
     confirmPassword: 'password',
     setupToken: 'synthetic-setup-access',
-    firstName: '',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
 }
 
 beforeEach(function () {

@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'bun:test'
 import {
+    BRAND_THEME_PALETTE,
+    USER_THEME_MODE_COLORS,
     DEFAULT_PRIMARY_COLOR,
     DEFAULT_PRIMARY_COLOR_HOVER,
     USER_PRIMARY_COLOR_PRESETS,
 } from '@/config/user-theme-colors.config.ts'
 import {
+    getPrimaryThemeColors,
+    getPrimaryThemePalette,
     getPrimaryColorForeground,
     getPrimaryColorHover,
     getPrimaryTextColor,
@@ -137,4 +141,73 @@ describe('getPrimaryTextColor', function () {
             DEFAULT_PRIMARY_COLOR_HOVER,
         )
     })
+})
+
+describe('getPrimaryThemePalette', function () {
+    it('keeps the exact landing palette for the default system color', function () {
+        expect(getPrimaryThemePalette(DEFAULT_PRIMARY_COLOR)).toEqual(
+            BRAND_THEME_PALETTE,
+        )
+        expect(getPrimaryThemePalette('not-a-color')).toEqual(
+            BRAND_THEME_PALETTE,
+        )
+    })
+
+    it('derives accents, foreground and neutral grays from a custom color', function () {
+        const palette = getPrimaryThemePalette('#0891B2')
+        expect(palette['--color-proxy-400']).toBe('#0891b2')
+        expect(palette['--color-proxy-50']).toBe('#e6f4f7')
+        expect(palette['--color-proxy-900']).toBe('#033a47')
+        expect(palette['--color-on-proxy']).toBe(
+            getPrimaryColorForeground('#0891b2'),
+        )
+        const brandPalette: Record<string, string> = BRAND_THEME_PALETTE
+        for (const neutral of [
+            '--color-night',
+            '--color-steel-700',
+            '--color-mist-200',
+        ]) {
+            expect(palette[neutral]).not.toBe(brandPalette[neutral])
+        }
+        expect(Object.keys(palette).toSorted()).toEqual(
+            Object.keys(BRAND_THEME_PALETTE).toSorted(),
+        )
+    })
+})
+
+describe('getPrimaryThemeColors', function () {
+    it('returns the configured theme colors for the default system color', function () {
+        for (const mode of ['dark', 'light'] as const) {
+            expect(getPrimaryThemeColors(mode, DEFAULT_PRIMARY_COLOR)).toBe(
+                USER_THEME_MODE_COLORS[mode],
+            )
+        }
+    })
+
+    it.each(
+        USER_PRIMARY_COLOR_PRESETS.filter(
+            (color) => color !== DEFAULT_PRIMARY_COLOR,
+        ),
+    )(
+        'tints neutrals for %s while keeping text readable',
+        function (primaryColor) {
+            for (const mode of ['dark', 'light'] as const) {
+                const colors = getPrimaryThemeColors(mode, primaryColor)
+                const base = USER_THEME_MODE_COLORS[mode]
+                expect(colors.background).not.toBe(base.background)
+                expect(colors.secondaryText).not.toBe(base.secondaryText)
+                expect(colors.success).toBe(base.success)
+                expect(colors.danger).toBe(base.danger)
+                expect(
+                    getTestContrastRatio(
+                        colors.secondaryText,
+                        colors.background,
+                    ),
+                ).toBeGreaterThanOrEqual(4.5)
+                expect(
+                    getTestContrastRatio(colors.secondaryText, colors.surface),
+                ).toBeGreaterThanOrEqual(4.5)
+            }
+        },
+    )
 })

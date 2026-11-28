@@ -25,19 +25,14 @@ function createSessionData(): AuthenticatedSessionQueryData & {
     return {
         permissions: ['admin.dashboard.read'],
         user: {
-            city: 'Berlin',
+            bio: null,
             customBackgroundDarkness: 45,
             customBackgroundUpdatedAt: null,
-            firstName: 'Kevin',
             fontFamily: 'inter',
             fontSize: 16,
-            houseNumber: '1',
             id: 'user-1',
-            lastName: 'Beispiel',
-            postalCode: '10115',
             primaryColor: '#2346d8',
             profileImageVersion: 1,
-            street: 'Teststraße',
             themeMode: 'dark',
             username: 'kevin',
         },
@@ -51,7 +46,6 @@ describe('updateAuthenticatedSessionUserCache', function () {
         queryClient.setQueryData(queryMocks.queryKey, sessionData)
 
         updateAuthenticatedSessionUserCache(queryClient, {
-            firstName: 'K.',
             primaryColor: null,
         })
 
@@ -63,7 +57,6 @@ describe('updateAuthenticatedSessionUserCache', function () {
             ...sessionData,
             user: {
                 ...sessionData.user,
-                firstName: 'K.',
                 primaryColor: null,
             },
         })
@@ -74,9 +67,7 @@ describe('updateAuthenticatedSessionUserCache', function () {
         const signedOutSession: AuthenticatedSessionQueryData = { user: null }
         queryClient.setQueryData(queryMocks.queryKey, signedOutSession)
 
-        updateAuthenticatedSessionUserCache(queryClient, {
-            firstName: 'K.',
-        })
+        updateAuthenticatedSessionUserCache(queryClient, {})
 
         expect(
             queryClient.getQueryData<AuthenticatedSessionQueryData>(

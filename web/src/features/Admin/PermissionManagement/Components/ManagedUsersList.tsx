@@ -88,10 +88,10 @@ export default function ManagedUsersList({
                                         onClick={() =>
                                             handler.handleSelectUser(user)
                                         }
-                                        className={`w-full cursor-pointer rounded-lg border p-3 text-left transition-colors ${
+                                        className={`w-full cursor-pointer rounded-md border-2 p-3 text-left transition-[background-color,border-color,transform] ${
                                             isSelected
-                                                ? 'border-border-dark bg-input-dark shadow-[inset_3px_0_0_var(--color-primary)]'
-                                                : 'border-border-dark bg-input-dark/30 hover:bg-input-dark'
+                                                ? 'comic-selected [&_.text-white]:text-primary-foreground [&_.text-secondary-text]:text-primary-foreground/80'
+                                                : 'border-border-dark bg-input-dark/30 hover:-translate-x-px hover:-translate-y-px hover:border-primary hover:bg-input-dark'
                                         }`}
                                     >
                                         <span className="flex flex-wrap items-center gap-2">

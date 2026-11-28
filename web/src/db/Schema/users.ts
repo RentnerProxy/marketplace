@@ -83,13 +83,7 @@ export const user_profiles = appSchema.table('user_profiles', {
             },
         ),
 
-    firstName: varchar('firstName', { length: 100 }),
-    lastName: varchar('lastName', { length: 100 }),
-
-    street: varchar('street', { length: 100 }),
-    houseNumber: varchar('houseNumber', { length: 20 }),
-    postalCode: varchar('postalCode', { length: 20 }),
-    city: varchar('city', { length: 100 }),
+    bio: varchar('bio', { length: 280 }),
     profileImageUpdatedAt: timestamp('profileImageUpdatedAt', {
         withTimezone: true,
         mode: 'date',

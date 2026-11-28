@@ -1,30 +1,26 @@
-import { CustomTooltip } from '@rentnerkev/tooltips'
+import { Link } from '@tanstack/react-router'
 import type { UserProfileButtonProps } from '../Types/authenticated-layout-component-props.types.ts'
-import useAuthenticatedSidebarLogic from '../Hooks/useAuthenticatedSidebarLogic.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import { DEFAULT_IMAGE_64_SRC } from '@/lib/Images/imageFallbacks.ts'
 import useResolvedImageSrc from '@/shared/Images/Hooks/useResolvedImageSrc.ts'
 
 export default function UserProfileButton({
-    isCollapsed,
     username,
     profileImageSrc,
+    onNavigate,
 }: UserProfileButtonProps) {
-    const { handler } = useAuthenticatedSidebarLogic()
     const { t } = useTranslationStore()
-
     const profileImage = useResolvedImageSrc(
         profileImageSrc || DEFAULT_IMAGE_64_SRC,
         DEFAULT_IMAGE_64_SRC,
     )
 
-    const profileButton = (
-        <button
-            type="button"
-            onClick={handler.handleOpenUserSettings}
-            className={`mb-2 flex h-13 w-full cursor-pointer items-center rounded-md border border-border-dark bg-input-dark/60 transition-colors hover:border-primary/40 hover:bg-input-dark ${
-                isCollapsed ? 'justify-center' : 'gap-3 px-3 text-left'
-            }`}
+    return (
+        <Link
+            to="/profile"
+            preload={false}
+            onClick={onNavigate}
+            className="comic-focus mb-2 flex min-h-13 w-full items-center gap-3 rounded-md border-2 border-ink bg-white px-2.5 text-ink shadow-[3px_3px_0_0_var(--color-proxy-500)] transition-[transform,background-color] hover:-translate-x-px hover:-translate-y-px data-[status=active]:bg-proxy-400 data-[status=active]:text-on-proxy motion-reduce:transition-none"
         >
             <img
                 src={profileImage.state.imageSrc || DEFAULT_IMAGE_64_SRC}
@@ -33,28 +29,16 @@ export default function UserProfileButton({
                 decoding="sync"
                 fetchPriority="high"
                 onError={profileImage.handler.handleImageError}
-                className="h-9 w-9 shrink-0 rounded-md border border-border-dark bg-background-dark object-contain"
+                className="size-9 shrink-0 rounded-full border-2 border-ink bg-mist-100 object-cover"
             />
-            {!isCollapsed && (
-                <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-white">
-                        {username}
-                    </p>
-                    <p className="truncate text-xs text-secondary-text">
-                        {t('userSettings.settingsLabel')}
-                    </p>
-                </div>
-            )}
-        </button>
+            <div className="min-w-0">
+                <p className="truncate font-comic text-sm font-bold">
+                    {username}
+                </p>
+                <p className="comic-lettering truncate text-[11px] opacity-75">
+                    {t('nav.profile')}
+                </p>
+            </div>
+        </Link>
     )
-
-    if (isCollapsed) {
-        return (
-            <CustomTooltip side="right" content={username}>
-                {profileButton}
-            </CustomTooltip>
-        )
-    }
-
-    return profileButton
 }

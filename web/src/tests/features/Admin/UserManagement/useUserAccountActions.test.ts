@@ -31,12 +31,6 @@ const user: UserManagementUser = {
     id: 'member',
     username: 'member',
     email: 'member@example.invalid',
-    firstName: null,
-    lastName: null,
-    street: null,
-    houseNumber: null,
-    postalCode: null,
-    city: null,
     isActive: true,
     isSuperUser: false,
     isCurrentUser: false,
@@ -298,8 +292,6 @@ describe('user editor', () => {
         expect(hook.state.isEditModalOpen).toBe(true)
         expect(hook.state.editForm).toMatchObject({
             id: user.id,
-            firstName: '',
-            city: '',
         })
         hook.handler.handleCloseEditModal()
         hook = render(() => useUserEditor('public', false))
@@ -313,8 +305,6 @@ describe('user editor', () => {
             {
                 ...user,
                 isSuperUser: true,
-                firstName: 'Ada',
-                city: 'Berlin',
             },
         )
         let hook = render(() => useUserEditor('public', true))

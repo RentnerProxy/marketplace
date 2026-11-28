@@ -2,6 +2,9 @@
     "common": {
         "active": "Actief",
         "actions": "Acties",
+        "openActions": "Acties openen",
+        "details": "Details",
+        "close": "Sluiten",
         "all": "Alle",
         "cancel": "Annuleren",
         "delete": "Verwijderen",
@@ -60,7 +63,9 @@
         "accounts": "Accounts",
         "staff": "Team",
         "staffInvitations": "Uitnodigingen",
-        "staffAccounts": "Teamaccounts"
+        "staffAccounts": "Teamaccounts",
+        "profile": "Profiel",
+        "people": "Mensen"
     },
     "auth": {
         "experience": {
@@ -92,8 +97,6 @@
             "checkingSetupLink": "Installatielink controleren…",
             "setupLinkRequired": "Zoek de installatielink in de app-logboeken",
             "setupLinkDescription": "Zoek bij lokale ontwikkeling de installatielink in de terminal van bun run dev. Open bij een Komodo-installatie de stacklogboeken en kies de service ‘app’. Kopieer de volledige nieuwste link en open deze in je browser. De link is tien minuten geldig en wordt automatisch vernieuwd totdat de eerste installatie is voltooid.",
-            "personalInfoTitle": "Persoonlijke gegevens",
-            "personalInfoDescription": "Deze gegevens zijn optioneel en kunnen later worden gewijzigd.",
             "create": "Supergebruiker aanmaken",
             "creating": "Supergebruiker aanmaken...",
             "created": "De eerste supergebruiker is aangemaakt. Je kunt je nu aanmelden.",
@@ -330,16 +333,6 @@
             "save": "Thema opslaan",
             "title": "Hoofdthema"
         },
-        "personalInfo": {
-            "city": "Plaats",
-            "firstName": "Voornaam",
-            "houseNumber": "Huisnummer",
-            "lastName": "Achternaam",
-            "postalCode": "Postcode",
-            "save": "Gegevens opslaan",
-            "street": "Straat",
-            "title": "Persoonlijke gegevens"
-        },
         "profileImage": {
             "choose": "Afbeelding kiezen",
             "save": "Profielfoto opslaan",
@@ -361,7 +354,7 @@
             "newValue": "+ Nieuw",
             "message": "Bericht",
             "route": "Route",
-            "showDetails": "Auditdetails tonen",
+            "entryId": "Item-ID",
             "searchPlaceholder": "Auditlogboeken doorzoeken...",
             "userFilterPlaceholder": "Gebruikers filteren...",
             "messageFilterPlaceholder": "Berichten filteren...",
@@ -701,5 +694,148 @@
     },
     "maintenance": {
         "requestSent": "Verzenden..."
+    },
+    "profile": {
+        "title": "Profiel",
+        "description": "Jouw pagina in de RentnerProxy Marketplace.",
+        "cancel": "Annuleren",
+        "tabs": {
+            "apps": "Apps"
+        },
+        "banner": {
+            "change": "Banner wijzigen",
+            "remove": "Banner verwijderen",
+            "save": "Banner opslaan",
+            "hint": "Sleep om de afbeelding te plaatsen. Aanbevolen: minstens 1500 × 500 px.",
+            "saved": "Banner opgeslagen.",
+            "removed": "Banner verwijderd.",
+            "failed": "De banner kon niet worden geüpload.",
+            "alt": "Profielbanner van {{username}}",
+            "removeTitle": "Banner verwijderen?",
+            "removeQuestion": "Wil je je profielbanner echt verwijderen? Daarna toont je profiel weer de standaardbanner."
+        },
+        "bio": {
+            "title": "Bio",
+            "placeholder": "Vertel de community wat je bouwt …",
+            "empty": "Nog geen bio.",
+            "save": "Bio opslaan",
+            "saved": "Bio opgeslagen.",
+            "edit": "Bio bewerken"
+        },
+        "stats": {
+            "apps": "Apps",
+            "downloads": "Downloads",
+            "comingSoon": "Binnenkort",
+            "stars": "Sterren"
+        },
+        "apps": {
+            "title": "Jouw apps",
+            "description": "Hier verschijnen de apps die je in de Marketplace publiceert.",
+            "placeholder": "App-plek {{number}}"
+        },
+        "avatar": {
+            "change": "Profielfoto wijzigen",
+            "cropTitle": "Profielfoto bijsnijden",
+            "hint": "Sleep en zoom tot alles in de cirkel past."
+        }
+    },
+    "social": {
+        "title": "Mensen vinden",
+        "description": "Zoek ontwikkelaars en communityleden en volg ze.",
+        "searchPlaceholder": "Zoeken op gebruikersnaam …",
+        "searchHint": "Voer minstens 2 tekens in.",
+        "empty": "Niemand gevonden voor ‘{{query}}’.",
+        "follow": "Volgen",
+        "following": "Volgend",
+        "unfollow": "Ontvolgen",
+        "followers": "Volgers",
+        "followingList": "Volgend",
+        "loginToFollow": "Log in om te volgen",
+        "team": "Team",
+        "you": "Jij",
+        "joined": "Lid sinds {{date}}",
+        "notFoundTitle": "Profiel niet gevonden",
+        "notFoundDescription": "Dit account bestaat niet of is niet meer openbaar.",
+        "emptyFollowers": "Nog geen volgers.",
+        "emptyFollowing": "Volgt nog niemand.",
+        "loadMore": "Meer laden",
+        "followed": "Je volgt nu {{username}}.",
+        "unfollowed": "Je volgt {{username}} niet meer.",
+        "viewPublicProfile": "Openbaar profiel bekijken",
+        "backToSearch": "Meer mensen vinden",
+        "appsTitle": "Apps",
+        "star": "Ster geven",
+        "unstar": "Ster verwijderen",
+        "starred": "Je hebt „{{name}}” een ster gegeven.",
+        "unstarred": "Je hebt je ster van „{{name}}” verwijderd.",
+        "loginToStar": "Log in om sterren te geven",
+        "appsLoading": "Apps laden …",
+        "appVersion": "Versie {{version}}",
+        "appsEmpty": "{{username}} heeft nog geen apps gepubliceerd."
+    },
+    "appStore": {
+        "title": "Storevermelding",
+        "uploadFailed": "De afbeelding kon niet worden geüpload.",
+        "noImage": "Kies eerst een afbeelding.",
+        "cropHint": "Sleep en zoom tot de uitsnede past.",
+        "loading": "Storevermelding laden …",
+        "notAllowedTitle": "Geen toegang tot deze storevermelding",
+        "notAllowedDescription": "Alleen het account dat de app heeft ingediend en marketplace-beheerders kunnen deze vermelding bewerken.",
+        "backToSubmissions": "Terug naar inzendingen",
+        "editorEyebrow": "Storevermelding bewerken",
+        "viewPublic": "Openbare pagina bekijken",
+        "notPublishedHint": "Openbaar zichtbaar zodra een versie is gepubliceerd. Je kunt nu alles al voorbereiden.",
+        "edit": "Storevermelding bewerken",
+        "overviewTitle": "Storevermeldingen",
+        "overviewDescription": "Logo, screenshots en beschrijving van je apps – altijd aan te passen zonder nieuwe versie.",
+        "catalogTitle": "Gepubliceerde apps",
+        "logo": {
+            "title": "Logo",
+            "hint": "Vierkant, bijgesneden tot 512 × 512 px. PNG, JPEG of WebP tot 8 MB.",
+            "upload": "Logo uploaden",
+            "change": "Logo wijzigen",
+            "remove": "Logo verwijderen",
+            "save": "Logo opslaan",
+            "saved": "Het logo is opgeslagen.",
+            "removed": "Het logo is verwijderd.",
+            "cropTitle": "Logo bijsnijden",
+            "removeTitle": "Logo verwijderen?",
+            "removeQuestion": "Wil je het logo echt verwijderen? Daarna wordt weer het standaardicoon getoond."
+        },
+        "screenshots": {
+            "title": "Screenshots",
+            "hint": "Tot 8 afbeeldingen in 16:9, opgeslagen op 1920 × 1080 px. De volgorde bepaalt de galerij.",
+            "add": "Screenshot toevoegen",
+            "save": "Screenshot opslaan",
+            "saved": "De screenshot is toegevoegd.",
+            "removed": "De screenshot is verwijderd.",
+            "reordered": "De volgorde is opgeslagen.",
+            "alt": "Screenshot {{number}}",
+            "moveLeft": "Naar voren schuiven",
+            "moveRight": "Naar achteren schuiven",
+            "remove": "Screenshot verwijderen",
+            "cropTitle": "Screenshot bijsnijden",
+            "removeTitle": "Screenshot verwijderen?",
+            "removeQuestion": "Wil je deze screenshot echt verwijderen?"
+        },
+        "description": {
+            "title": "Beschrijving",
+            "hint": "Platte tekst, alinea’s blijven behouden. Maximaal 5000 tekens.",
+            "placeholder": "Wat doet je app, voor wie is hij bedoeld en wat heeft hij nodig?",
+            "save": "Beschrijving opslaan",
+            "saved": "De beschrijving is opgeslagen."
+        },
+        "detail": {
+            "notFoundTitle": "App niet gevonden",
+            "notFoundDescription": "Deze app bestaat niet of is nog niet gepubliceerd.",
+            "backToApps": "Alle apps",
+            "screenshotAlt": "Screenshot {{number}} van {{total}} – {{name}}",
+            "previous": "Vorige screenshot",
+            "next": "Volgende screenshot",
+            "openLightbox": "Screenshot groot tonen",
+            "closeLightbox": "Grote weergave sluiten",
+            "by": "door {{username}}",
+            "published": "Gepubliceerd op {{date}}"
+        }
     }
 }

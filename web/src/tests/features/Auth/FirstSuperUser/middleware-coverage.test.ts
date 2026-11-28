@@ -54,12 +54,6 @@ const input = {
     email: '  synthetic@example.invalid  ',
     password: 'synthetic-password',
     confirmPassword: 'synthetic-password',
-    firstName: '',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
     setupToken: '  synthetic-setup-token  ',
 }
 beforeEach(() => {

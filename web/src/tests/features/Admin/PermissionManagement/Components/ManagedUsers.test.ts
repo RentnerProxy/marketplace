@@ -27,8 +27,6 @@ const user: PermissionManagementUser = {
     id: 'u-1',
     username: 'Kevin',
     email: 'kevin@example.test',
-    firstName: null,
-    lastName: null,
     isActive: false,
     isSuperUser: true,
     isCurrentUser: true,

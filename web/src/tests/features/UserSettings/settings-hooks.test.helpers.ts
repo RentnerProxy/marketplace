@@ -8,7 +8,10 @@ const react = { ...React }
 const queryExports = { ...Query }
 const cells: unknown[] = []
 const pending: Array<Promise<unknown>> = []
-const mutations: Array<{ isPending: boolean }> = []
+const mutations: Array<{
+    isPending: boolean
+    mutationKey?: Query.MutationKey
+}> = []
 let stateCursor = 0
 let mutationCursor = 0
 
@@ -51,12 +54,22 @@ vi.mock('@tanstack/react-query', () => ({
     ...queryExports,
     useQuery: query,
     useQueryClient: () => client,
+    useIsMutating({ mutationKey }: Query.MutationFilters) {
+        return mutations.filter(
+            (mutation) =>
+                mutation.isPending && mutation.mutationKey === mutationKey,
+        ).length
+    },
     useMutation<TData, TVariables>(options: {
+        mutationKey?: Query.MutationKey
         mutationFn: (variables: TVariables) => Promise<TData>
         onSuccess?: (result: TData) => unknown
         onError?: (error: unknown) => unknown
     }) {
-        const state = (mutations[mutationCursor++] ??= { isPending: false })
+        const state = (mutations[mutationCursor++] ??= {
+            isPending: false,
+            mutationKey: options.mutationKey,
+        })
         return {
             isPending: state.isPending,
             mutate(variables: TVariables) {
@@ -121,12 +134,7 @@ export function createSession(): AuthenticatedSessionQueryData {
             fontFamily: 'inter',
             fontSize: 16,
             themeMode: 'dark',
-            firstName: 'Ada',
-            lastName: 'Tester',
-            street: null,
-            houseNumber: null,
-            postalCode: null,
-            city: null,
+            bio: null,
             primaryColor: null,
             profileImageVersion: 4,
             customBackgroundDarkness: null,

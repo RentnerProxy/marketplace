@@ -8,9 +8,9 @@ import {
     finishCurrentUserPasskeyRegistrationInputSchema,
     updateCurrentUserBackgroundAppearanceInputSchema,
     updateCurrentUserBackgroundInputSchema,
+    updateCurrentUserBioInputSchema,
     updateCurrentUserFontFamilyInputSchema,
     updateCurrentUserFontSizeInputSchema,
-    updateCurrentUserPersonalInfoInputSchema,
     updateCurrentUserPrimaryColorInputSchema,
     updateCurrentUserProfileImageInputSchema,
     updateCurrentUserThemeModeInputSchema,
@@ -36,7 +36,7 @@ import {
     deleteCurrentUserBackgroundService,
 } from '@/server/UserSettings/background.service.ts'
 import {
-    updateCurrentUserPersonalInfoService,
+    updateCurrentUserBioService,
     updateCurrentUserProfileImageService,
 } from '@/server/UserSettings/profile.service.ts'
 import {
@@ -91,16 +91,16 @@ async function enforceCurrentUserSecurityOperationRateLimit(
     }
 }
 
-export const updateCurrentUserPersonalInfoHandler = createServerFn({
+export const updateCurrentUserBioHandler = createServerFn({
     method: 'POST',
 })
     .validator(function (data: unknown) {
-        return updateCurrentUserPersonalInfoInputSchema.parse(data)
+        return updateCurrentUserBioInputSchema.parse(data)
     })
     .handler(async function ({ data }) {
         const { sessionUser } = await requireAuthenticatedFeatureAccessService()
         await enforceCurrentUserSettingsMutationRateLimits(sessionUser.id)
-        return updateCurrentUserPersonalInfoService(data)
+        return updateCurrentUserBioService(data)
     })
 
 export const requestCurrentUserPasswordResetHandler = createServerFn({

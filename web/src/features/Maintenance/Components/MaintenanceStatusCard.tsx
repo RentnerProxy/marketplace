@@ -51,7 +51,7 @@ export default function MaintenanceStatusCard({
             </div>
 
             {status?.canBypassMaintenance && (
-                <p className="mt-4 rounded-md border border-border-dark border-l-2 border-l-success bg-background-dark px-4 py-3 text-sm text-secondary-text">
+                <p className="comic-notice mt-4 bg-background-dark px-4 py-3 text-sm text-secondary-text [--notice-tone:var(--color-success)]">
                     {t('maintenance.bypassNotice')}
                 </p>
             )}

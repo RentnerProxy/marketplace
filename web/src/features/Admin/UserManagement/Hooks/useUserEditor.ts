@@ -14,12 +14,6 @@ const emptyEditForm: UpdateUserFormValues = {
     id: '',
     username: '',
     email: '',
-    firstName: '',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
 }
 
 export default function useUserEditor(
@@ -80,12 +74,6 @@ export default function useUserEditor(
                 id: user.id,
                 username: user.username,
                 email: user.email,
-                firstName: user.firstName ?? '',
-                lastName: user.lastName ?? '',
-                street: user.street ?? '',
-                houseNumber: user.houseNumber ?? '',
-                postalCode: user.postalCode ?? '',
-                city: user.city ?? '',
             })
             setIsEditModalOpen(true)
         },

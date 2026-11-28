@@ -16,11 +16,11 @@ export default function MarketplaceBlogArticle({
             <article
                 lang={state.contentLanguage}
                 aria-labelledby="blog-article-title"
-                className="relative isolate mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-marketplace-void/10 bg-white px-7 py-12 shadow-[0_16px_50px_rgba(5,35,21,0.06)] sm:px-12 sm:py-16"
+                className="comic-panel relative isolate mx-auto max-w-4xl overflow-hidden bg-white px-7 py-12 sm:px-12 sm:py-16"
             >
                 <CardWave />
-                <header className="border-b border-[#dce6df] pb-8">
-                    <p className="flex flex-wrap items-center gap-3 font-mono text-xs text-[#0d6d2b]">
+                <header className="border-b-[3px] border-dashed border-ink pb-8">
+                    <p className="comic-lettering flex flex-wrap items-center gap-3 text-xs text-proxy-800">
                         <span>{state.post.version}</span>
                         <span aria-hidden="true">/</span>
                         <time dateTime={state.post.publishedAt}>
@@ -29,15 +29,15 @@ export default function MarketplaceBlogArticle({
                     </p>
                     <h1
                         id="blog-article-title"
-                        className="mt-5 font-display text-4xl leading-tight tracking-tight sm:text-6xl"
+                        className="comic-title mt-5 text-5xl sm:text-7xl"
                     >
                         {state.content.title}
                     </h1>
-                    <p className="mt-6 text-lg leading-8 text-[#52675d]">
+                    <p className="mt-6 text-lg leading-8 text-steel-600">
                         {state.content.summary}
                     </p>
                 </header>
-                <div className="space-y-6 pt-8 text-base leading-8 text-[#52675d]">
+                <div className="space-y-6 pt-8 text-base leading-8 text-steel-700">
                     {state.paragraphs.map((paragraph) => (
                         <p
                             key={paragraph.key}
@@ -50,7 +50,7 @@ export default function MarketplaceBlogArticle({
             </article>
             <Link
                 to="/blog"
-                className="mx-auto mt-8 flex min-h-11 max-w-4xl items-center gap-2 text-sm font-bold text-[#0d6d2b] underline-offset-4 hover:underline"
+                className="comic-btn comic-btn-sm comic-btn-white mx-auto mt-8 flex w-fit max-w-4xl"
             >
                 <ArrowLeft aria-hidden="true" className="h-4 w-4" />
                 {t('marketplace.blog.archiveTitle')}

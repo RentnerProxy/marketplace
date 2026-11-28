@@ -1,0 +1,1 @@
+ALTER TABLE "marketplace"."user_profiles" ADD COLUMN "bio" varchar(280);

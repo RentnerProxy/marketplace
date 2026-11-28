@@ -39,7 +39,7 @@ import GeneralUserInfo from '@/features/Admin/UserManagement/Components/UserEdit
 import Header from '@/features/Admin/UserManagement/Components/UserEditModal/Components/Header.tsx'
 import Footer from '@/features/Admin/UserManagement/Components/UserEditModal/Components/Footer.tsx'
 import UserAvatar from '@/features/Admin/UserManagement/Components/UserAvatar.tsx'
-import TableActionButton from '@/shared/Table/TableActionButton.tsx'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
 import UserTableActions from '@/features/Admin/UserManagement/Components/UsersTable/Components/UserTableActions.tsx'
 import useUserEditModalLogic from '@/features/Admin/UserManagement/Components/UserEditModal/Hooks/useUserEditModalLogic.ts'
 const { default: EditUserModal } =
@@ -68,12 +68,6 @@ const values: UpdateUserFormValues = {
     id: 'member',
     username: 'Ada',
     email: 'ada@example.invalid',
-    firstName: '',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
 }
 
 beforeEach(() => {
@@ -143,6 +137,8 @@ describe('user management components', () => {
             }),
         )
         const html = renderToStaticMarkup(dialog)
+        expect(html).toContain('marketplace-signed-in')
+        expect(html).toContain('marketplace-dialog-panel')
         expect(html).toContain('admin.users.editTitle')
         expect(html).toContain('ada@example.invalid')
         expect(html).toContain('common.saving')
@@ -153,21 +149,19 @@ describe('user management components', () => {
         expect(onSubmit).toHaveBeenCalledWith(values)
     })
 
-    it('wires every account/name input to the matching edit field', () => {
+    it('wires every account input to the matching edit field', () => {
         const onFieldChange = vi.fn()
         const tree = GeneralUserInfo({ draftForm: values, onFieldChange })
         const fields = elements(tree).filter(
             (element) => typeof element.props.onValueChange === 'function',
         )
-        expect(fields).toHaveLength(4)
+        expect(fields).toHaveLength(2)
         fields.forEach((field, index) => {
             invoke(field, 'onValueChange', `changed-${index}`)
         })
         expect(onFieldChange.mock.calls).toEqual([
             ['username', 'changed-0'],
             ['email', 'changed-1'],
-            ['firstName', 'changed-2'],
-            ['lastName', 'changed-3'],
         ])
     })
 
@@ -203,7 +197,7 @@ describe('user management components', () => {
         expect(imageError).toHaveBeenCalledTimes(1)
     })
 
-    it('provides labeled row action buttons and disables protected or pending actions', () => {
+    it('provides one row action menu with labeled items and the matching callbacks', () => {
         const callbacks = {
             onEditUser: vi.fn(),
             onDeleteUser: vi.fn(),
@@ -231,33 +225,52 @@ describe('user management components', () => {
             canConvertAccounts: false,
             onConvertAccount: vi.fn(),
         }
-        const html = renderToStaticMarkup(UserTableActions(props))
-        expect(html).toContain('admin.users.editAriaLabel')
-        expect(html).toContain('admin.users.passwordResetAriaLabel')
-        const blockedHtml = renderToStaticMarkup(
-            UserTableActions({
-                ...props,
-                user: { ...user, isSuperUser: true },
-            }),
-        )
-        expect(blockedHtml.match(/disabled=""/g)).toHaveLength(4)
-        const inactiveHtml = renderToStaticMarkup(
-            UserTableActions({ ...props, user: { ...user, isActive: false } }),
-        )
-        expect(inactiveHtml.match(/disabled=""/g)).toHaveLength(1)
-        const onClick = vi.fn()
-        const buttonTree = TableActionButton({
-            ariaLabel: 'Edit Ada',
-            children: 'Edit',
-            className: '',
-            disabled: false,
-            onClick,
-            tooltip: 'Edit',
-        })
-        const button = elements(buttonTree).find(
-            (element) => element.type === 'button',
-        )
-        invoke(button, 'onClick')
-        expect(onClick).toHaveBeenCalledTimes(1)
+        const menu = UserTableActions(props)
+        expect(menu.type).toBe(ActionMenu)
+        const { items } = menu.props as Parameters<typeof ActionMenu>[0]
+        expect(items.map((item) => item.label)).toEqual([
+            'admin.users.editAriaLabel',
+            'common.deactivate',
+            'admin.users.passwordResetAriaLabel',
+            'admin.users.deleteAriaLabel',
+        ])
+        expect(
+            items
+                .filter((item) => 'destructive' in item && item.destructive)
+                .map((item) => item.id),
+        ).toEqual(['delete'])
+        expect(items.every((item) => !item.disabled)).toBe(true)
+        for (const item of items) {
+            if (!item.onSelect)
+                throw new Error(`Expected callback for ${item.id}`)
+            item.onSelect()
+        }
+        for (const callback of Object.values(callbacks))
+            expect(callback).toHaveBeenCalledWith(user)
+
+        const blocked = UserTableActions({
+            ...props,
+            canConvertAccounts: true,
+            user: { ...user, isSuperUser: true },
+        }).props as Parameters<typeof ActionMenu>[0]
+        expect(blocked.items).toHaveLength(4)
+        expect(
+            blocked.items.every((item) => item.disabled && item.description),
+        ).toBe(true)
+
+        const inactive = UserTableActions({
+            ...props,
+            user: { ...user, isActive: false },
+            canConvertAccounts: true,
+            isConvertingAccount: true,
+        }).props as Parameters<typeof ActionMenu>[0]
+        expect(
+            inactive.items.find((item) => item.id === 'toggle-status'),
+        ).toMatchObject({ label: 'common.activate', disabled: false })
+        expect(
+            inactive.items
+                .filter((item) => item.disabled)
+                .map((item) => item.id),
+        ).toEqual(['password-reset', 'convert-account'])
     })
 })

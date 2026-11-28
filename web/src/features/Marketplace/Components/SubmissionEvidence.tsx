@@ -12,11 +12,11 @@ export function SubmissionEvidence({
     const { candidate, bundle, evidence, report } = validation
 
     return (
-        <section className="space-y-4 border-t border-border-dark pt-4">
-            <h3 className="font-semibold text-white">
+        <section className="space-y-4 border-t border-border-dark pt-5">
+            <h3 className="font-extrabold text-(color:--marketplace-ink-soft)">
                 {t('submissions.evidence')}
             </h3>
-            <dl className="space-y-2 text-sm [&_dd]:wrap-anywhere [&_dt]:text-secondary-text">
+            <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 [&_dd]:wrap-anywhere [&_dt]:mb-1 [&_dt]:text-xs [&_dt]:font-medium [&_dt]:text-secondary-text">
                 <div>
                     <dt>{t('submissions.candidateId')}</dt>
                     <dd className="font-mono">{candidate.id}</dd>
@@ -51,16 +51,16 @@ export function SubmissionEvidence({
             </dl>
             <a
                 href={`https://github.com/${CANDIDATE_PIPELINE.repository}/actions/runs/${candidate.build.runId}/artifacts/${bundle.id}`}
-                className="text-sm font-medium text-primary underline"
+                className="text-sm font-medium text-primary-text underline"
             >
                 {t('submissions.openArtifact')}
             </a>
             {report.targets.map(({ package: pkg, checks, applianceImage }) => (
                 <details
                     key={pkg.manifest.target}
-                    className="rounded-lg border border-border-dark bg-background-dark/35 p-4"
+                    className="rounded-xl border border-border-dark bg-(--marketplace-surface-subtle) p-4"
                 >
-                    <summary className="cursor-pointer font-semibold text-white">
+                    <summary className="cursor-pointer rounded-sm font-bold text-(color:--marketplace-ink-soft) focus-visible:outline-offset-4">
                         {pkg.manifest.target}
                     </summary>
                     <dl className="mt-3 space-y-2 text-sm [&_dd]:wrap-anywhere [&_dt]:text-secondary-text">

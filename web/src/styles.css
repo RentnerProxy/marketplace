@@ -6,40 +6,160 @@
 @import '@rentnerkev/select/tailwind.css';
 @import '@rentnerkev/picker/tailwind.css';
 @import '@rentnerkev/table/tailwind.css';
+@import './styles/signed-in.css';
+@import './styles/signed-in-tables.css';
 
 @font-face {
-    font-family: 'Lilita One';
+    font-family: 'Bangers';
     font-style: normal;
     font-weight: 400;
     font-display: swap;
-    src: url('/brand/lilita-one-latin.woff2') format('woff2');
+    src: url('/brand/bangers-latin-400.woff2') format('woff2');
 }
 
+@font-face {
+    font-family: 'Comic Neue';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/brand/comic-neue-latin-400.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Comic Neue';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/brand/comic-neue-latin-700.woff2') format('woff2');
+}
+
+/* Tokens mirror the RentnerProxy landing page (proxy.rentner.dev). */
 @theme {
     --font-display:
-        'Lilita One', 'Arial Rounded MT Bold', 'Trebuchet MS',
-        'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
-    --color-marketplace-canvas: #f7faf8;
-    --color-marketplace-ink: #06120f;
-    --color-marketplace-void: #020a0b;
+        'Bangers', 'Impact', 'Arial Narrow Bold', 'Segoe UI Variable',
+        ui-sans-serif, system-ui, sans-serif;
+    --font-comic:
+        'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI Variable',
+        ui-sans-serif, system-ui, sans-serif;
     --font-sans:
         'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui,
         -apple-system, BlinkMacSystemFont, sans-serif;
+
+    --color-canvas: #e2efe6;
+    --color-night: #121a16;
+    --color-night-input: #1b2620;
+    --color-night-muted: #a3b8ad;
+    --color-ink: #06120f;
+    --color-void: #020a0b;
+    --color-marketplace-canvas: #e2efe6;
+    --color-marketplace-ink: #06120f;
+    --color-marketplace-void: #020a0b;
+
+    --color-proxy-50: #e9fff0;
+    --color-proxy-100: #d2ffdd;
+    --color-proxy-200: #a3ffb8;
+    --color-proxy-300: #65f586;
+    --color-proxy-400: #30ee61;
+    --color-proxy-500: #18d348;
+    --color-proxy-600: #0fb33a;
+    --color-proxy-700: #0d8a31;
+    --color-proxy-800: #0d6d2b;
+    --color-proxy-900: #0d5926;
+    /* Text on accent fills; follows the system color in the signed-in app. */
+    --color-on-proxy: #06120f;
+
+    --color-mist-50: #f7faf8;
+    --color-mist-100: #eef4f1;
+    --color-mist-200: #dde9e3;
+    --color-mist-300: #c1d2c9;
+    --color-mist-400: #91a99d;
+    --color-mist-500: #6e867a;
+
+    --color-steel-500: #657a70;
+    --color-steel-600: #52675d;
+    --color-steel-700: #3d5148;
+
     --color-primary: #30ee61;
     --color-primary-hover: #65f586;
     --color-primary-foreground: #020a0b;
     --color-primary-hover-foreground: #020a0b;
     --color-primary-text: #65f586;
-    --color-background-dark: #0f1014;
-    --color-surface-dark: #181a1f;
-    --color-input-dark: #22252b;
-    --color-border-dark: #2e323b;
-    --color-secondary-text: #9ca3af;
+    --color-background-dark: #040807;
+    --color-surface-dark: #0a110e;
+    --color-input-dark: #101814;
+    --color-border-dark: #2f4238;
+    --color-secondary-text: #9bb0a5;
     --color-foreground: #ffffff;
     --color-focus-ring: #65f586;
-    --color-success: #a7f3d0;
+    --color-success: #a3ffb8;
     --color-warning: #fde68a;
     --color-danger: #fca5a5;
+
+    --animate-head-blink: head-blink 5.2s step-end infinite;
+    --animate-mascot-bob: mascot-bob 4.6s ease-in-out infinite;
+    --animate-mascot-wiggle: mascot-wiggle 0.7s ease-in-out;
+
+    @keyframes head-blink {
+        0% {
+            transform: translateX(0);
+        }
+        84% {
+            transform: translateX(-11.111%);
+        }
+        85.4% {
+            transform: translateX(-22.222%);
+        }
+        86.8% {
+            transform: translateX(-33.333%);
+        }
+        88.2% {
+            transform: translateX(-44.444%);
+        }
+        89.6% {
+            transform: translateX(-55.556%);
+        }
+        91% {
+            transform: translateX(-66.667%);
+        }
+        92.4% {
+            transform: translateX(-77.778%);
+        }
+        93.8% {
+            transform: translateX(-88.889%);
+        }
+        95.2% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes mascot-bob {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-9px);
+        }
+    }
+
+    @keyframes mascot-wiggle {
+        0%,
+        100% {
+            transform: rotate(0) scale(1);
+        }
+        20% {
+            transform: rotate(-7deg) scale(1.04);
+        }
+        45% {
+            transform: rotate(6deg) scale(1.04);
+        }
+        70% {
+            transform: rotate(-3deg) scale(1.02);
+        }
+    }
 }
 
 html,
@@ -54,8 +174,8 @@ html {
 }
 
 ::selection {
-    background: var(--color-primary);
-    color: var(--color-primary-foreground);
+    background: var(--color-proxy-300);
+    color: var(--color-void);
     text-shadow: none;
 }
 
@@ -229,99 +349,9 @@ html {
         font-family: var(--font-display);
         font-weight: 400;
         font-synthesis: none;
+        letter-spacing: 0.025em;
         text-shadow: none;
         overflow-wrap: break-word;
-    }
-}
-
-@keyframes marketplace-float {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-14px);
-    }
-}
-@keyframes marketplace-orbit {
-    from {
-        rotate: -12deg;
-    }
-    to {
-        rotate: 348deg;
-    }
-}
-@keyframes marketplace-spin {
-    to {
-        rotate: 360deg;
-    }
-}
-@keyframes marketplace-wave {
-    from {
-        transform: translateX(-2%) scaleX(1.08);
-    }
-    to {
-        transform: translateX(2%) scaleX(1.08);
-    }
-}
-@keyframes marketplace-breathe {
-    0%,
-    100% {
-        opacity: 0.5;
-        transform: scale(0.95);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.05);
-    }
-}
-.marketplace-orbit {
-    animation: marketplace-orbit 90s linear infinite;
-}
-.marketplace-orbit-reverse {
-    animation: marketplace-orbit 110s linear -25s infinite reverse;
-}
-.marketplace-spin {
-    animation: marketplace-spin 32s linear infinite;
-}
-.marketplace-breathe {
-    animation: marketplace-breathe 12s ease-in-out infinite;
-}
-.marketplace-wave path {
-    transform-origin: center;
-    animation: marketplace-wave 12s ease-in-out infinite alternate;
-}
-.marketplace-wave path:nth-child(2) {
-    animation-delay: -4s;
-}
-.marketplace-wave path:nth-child(3) {
-    animation-delay: -8s;
-}
-@media (prefers-reduced-motion: reduce) {
-    .marketplace-orbit,
-    .marketplace-orbit-reverse,
-    .marketplace-spin,
-    .marketplace-breathe,
-    .marketplace-wave path {
-        animation: none;
-    }
-}
-
-.marketplace-art {
-    animation: marketplace-float 11s ease-in-out infinite;
-    mask-image: linear-gradient(
-        90deg,
-        #000,
-        #000c 18%,
-        transparent 34%,
-        transparent 66%,
-        #000c 82%,
-        #000
-    );
-}
-@media (prefers-reduced-motion: reduce) {
-    .marketplace-art {
-        animation: none;
     }
 }
 
@@ -379,8 +409,375 @@ html {
     .text-base,
     .text-lg
 ) {
-    font-family: var(--font-sans);
-    font-weight: 500;
+    font-family: var(--font-comic);
+    font-weight: 700;
     font-synthesis: none;
+    letter-spacing: 0.01em;
     text-shadow: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Comic design system from the landing page: ink outlines and hard, offset
+ * shadows. An element never shares the colour of its surface, and its shadow
+ * never shares its own fill. Surfaces publish the shadow colour per fill.
+ * ------------------------------------------------------------------------- */
+
+:root {
+    --edge-shadow-light: var(--color-ink);
+    --edge-shadow-green: var(--color-ink);
+    --edge-shadow-dark: var(--color-proxy-500);
+}
+
+.comic-on-green {
+    --edge-shadow-light: var(--color-ink);
+    --edge-shadow-dark: white;
+}
+
+.comic-on-light {
+    --edge-shadow-light: var(--color-ink);
+    --edge-shadow-green: var(--color-ink);
+    --edge-shadow-dark: var(--color-proxy-500);
+}
+
+/* Dark comic surfaces keep dark tokens in both app themes, like the landing header. */
+.comic-dark {
+    --comic-edge: var(--color-ink);
+    --edge-shadow-light: var(--color-proxy-500);
+    --edge-shadow-green: white;
+    --color-background-dark: var(--color-night);
+    --color-surface-dark: var(--color-night);
+    --color-input-dark: var(--color-night-input);
+    --color-border-dark: var(--color-steel-700);
+    --color-secondary-text: var(--color-night-muted);
+    --color-foreground: #ffffff;
+    --color-focus-ring: var(--color-proxy-300);
+    --color-primary-text: var(--color-primary);
+    --color-success: #a3ffb8;
+    --color-warning: #fde68a;
+    --color-danger: #fca5a5;
+    --rentner-control: var(--color-night-input);
+    --rentner-control-hover: var(--color-steel-700);
+    --rentner-surface: var(--color-night);
+    --rentner-foreground: #ffffff;
+    --rentner-muted: var(--color-night-muted);
+    --rentner-border: var(--color-steel-700);
+    background-color: var(--color-night);
+    color: white;
+    color-scheme: dark;
+}
+
+.comic-panel,
+.comic-card {
+    --comic-fill-shadow: var(--edge-shadow-light);
+}
+
+.comic-panel {
+    border: 4px solid var(--comic-edge, var(--color-ink));
+    border-radius: 6px;
+    box-shadow: 7px 7px 0 0 var(--comic-shadow, var(--comic-fill-shadow));
+}
+
+.comic-card {
+    border: 3px solid var(--comic-edge, var(--color-ink));
+    border-radius: 6px;
+    box-shadow: 5px 5px 0 0 var(--comic-shadow, var(--comic-fill-shadow));
+}
+
+.comic-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.015em;
+    line-height: 0.92;
+    text-transform: uppercase;
+}
+
+.comic-title-outline {
+    color: white;
+    paint-order: stroke fill;
+    -webkit-text-stroke: 0.14em var(--color-ink);
+    text-shadow: 0.07em 0.07em 0 var(--color-ink);
+}
+
+.comic-lettering {
+    font-family: var(--font-comic);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+}
+
+.comic-caption {
+    --comic-fill-shadow: var(--edge-shadow-green);
+    display: inline-block;
+    padding: 0.3rem 0.75rem 0.25rem;
+    border: 3px solid var(--comic-edge, var(--color-ink));
+    background: var(--color-proxy-400);
+    box-shadow: 3px 3px 0 0 var(--comic-shadow, var(--comic-fill-shadow));
+    color: var(--color-on-proxy);
+    font-family: var(--font-comic);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.comic-caption-ink {
+    --comic-fill-shadow: var(--edge-shadow-dark);
+    background: var(--color-ink);
+    color: var(--color-proxy-300);
+}
+
+.comic-caption-white {
+    --comic-fill-shadow: var(--edge-shadow-light);
+    background: white;
+    color: var(--color-ink);
+}
+
+.comic-chip {
+    --comic-fill-shadow: var(--edge-shadow-light);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border: 2px solid var(--comic-edge, var(--color-ink));
+    border-radius: 6px;
+    background: white;
+    box-shadow: 2px 2px 0 0 var(--comic-shadow, var(--comic-fill-shadow));
+    color: var(--color-ink);
+    font-family: var(--font-comic);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.comic-chip-ink {
+    --comic-fill-shadow: var(--edge-shadow-dark);
+    background: var(--color-ink);
+    color: var(--color-proxy-300);
+}
+
+.comic-chip-green {
+    --comic-fill-shadow: var(--edge-shadow-green);
+    background: var(--color-proxy-400);
+    color: var(--color-on-proxy);
+}
+
+.comic-btn {
+    --comic-btn-bg: var(--color-proxy-400);
+    --comic-btn-fg: var(--color-on-proxy);
+    --comic-fill-shadow: var(--edge-shadow-green);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.6rem 1.3rem 0.5rem;
+    border: 3px solid var(--comic-edge, var(--color-ink));
+    border-radius: 10px;
+    background: var(--comic-btn-bg);
+    box-shadow: 4px 4px 0 0 var(--comic-shadow, var(--comic-fill-shadow));
+    color: var(--comic-btn-fg);
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition:
+        transform 110ms ease,
+        box-shadow 110ms ease,
+        background-color 110ms ease;
+}
+
+.comic-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 0 var(--comic-shadow, var(--comic-fill-shadow));
+}
+
+.comic-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 0 var(--comic-shadow, var(--comic-fill-shadow));
+}
+
+.comic-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+}
+
+.comic-btn:focus-visible,
+.comic-chip:focus-visible {
+    outline: 3px dashed var(--color-ink);
+    outline-offset: 5px;
+}
+
+.comic-dark .comic-btn:focus-visible,
+.comic-dark .comic-chip:focus-visible {
+    outline-color: white;
+}
+
+.comic-focus:focus-visible {
+    outline: 3px dashed currentColor;
+    outline-offset: 5px;
+}
+
+.comic-btn-ink {
+    --comic-btn-bg: var(--color-ink);
+    --comic-btn-fg: white;
+    --comic-fill-shadow: var(--edge-shadow-dark);
+}
+
+.comic-btn-ink:hover {
+    --comic-btn-fg: var(--color-proxy-300);
+}
+
+.comic-btn-white {
+    --comic-btn-bg: white;
+    --comic-btn-fg: var(--color-ink);
+    --comic-fill-shadow: var(--edge-shadow-light);
+}
+
+.comic-btn-sm {
+    min-height: 2.5rem;
+    padding: 0.45rem 0.9rem 0.35rem;
+    font-size: 1.05rem;
+}
+
+.comic-dark,
+.comic-fill-dark {
+    --comic-fill-shadow: var(--edge-shadow-dark);
+}
+
+.comic-on-green,
+.comic-fill-green {
+    --comic-fill-shadow: var(--edge-shadow-green);
+}
+
+/* Comic splash backgrounds: action rays and pen hatching, never dots. */
+.comic-rays {
+    background-image: repeating-conic-gradient(
+        from 0deg at var(--rays-x, 50%) var(--rays-y, 50%),
+        var(--rays-a, rgba(255, 255, 255, 0.22)) 0deg 6deg,
+        transparent 6deg 14deg
+    );
+}
+
+.comic-hatch {
+    background-image: repeating-linear-gradient(
+        -45deg,
+        var(--hatch-color, rgba(6, 18, 15, 0.12)) 0 2px,
+        transparent 2px 11px
+    );
+}
+
+.comic-speedlines {
+    background-image: repeating-linear-gradient(
+        180deg,
+        var(--speed-color, rgba(255, 255, 255, 0.07)) 0 2px,
+        transparent 2px 22px
+    );
+}
+
+/* ---------------------------------------------------------------------------
+ * Signed-in app bridge: existing panels and primary actions pick up the
+ * comic outline from the theme tokens, so feature screens need no rewrite.
+ * ------------------------------------------------------------------------- */
+
+.app-theme-light {
+    --app-comic-edge: var(--color-ink);
+    --app-comic-shadow: var(--color-ink);
+    --app-comic-pop: var(--color-ink);
+}
+
+.app-theme-dark {
+    --comic-edge: var(--color-border-dark);
+    --edge-shadow-light: var(--color-proxy-500);
+    --app-comic-edge: var(--color-border-dark);
+    --app-comic-shadow: var(--color-proxy-700);
+    --app-comic-pop: var(--color-mist-200);
+}
+
+.comic-dark {
+    --app-comic-pop: white;
+}
+
+/* In the dark app theme, dark comic panels share the theme surface tokens. */
+.app-theme-dark .comic-dark {
+    --color-background-dark: inherit;
+    --color-surface-dark: inherit;
+    --color-input-dark: inherit;
+    --color-border-dark: inherit;
+    --color-secondary-text: inherit;
+    --rentner-surface: inherit;
+    --rentner-control: inherit;
+    --rentner-control-hover: inherit;
+    --rentner-border: inherit;
+    --rentner-muted: inherit;
+    background-color: var(--color-surface-dark);
+}
+
+:is(.app-theme-light, .app-theme-dark)
+    :is(.rounded-lg, .rounded-xl, .rounded-2xl).border.bg-surface-dark {
+    border-width: 2px;
+    border-color: var(--app-comic-edge);
+    border-radius: 6px;
+    box-shadow: 4px 4px 0 0 var(--app-comic-shadow);
+}
+
+/* Settings and detail sections are cards too. */
+:is(.app-theme-light, .app-theme-dark)
+    section:is(.rounded-lg, .rounded-xl).border {
+    border-width: 2px;
+    border-color: var(--app-comic-edge);
+    border-radius: 6px;
+    box-shadow: 3px 3px 0 0 var(--app-comic-shadow);
+}
+
+/* Selected choice: green fill, ink outline, hard shadow; never a side stripe. */
+.comic-selected {
+    border-color: var(--color-ink);
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    box-shadow: 3px 3px 0 0 var(--app-comic-pop, var(--color-ink));
+}
+
+/* Notices outline in their tone instead of a coloured left edge. */
+.comic-notice {
+    border: 2px solid var(--notice-tone, var(--color-border-dark));
+    border-radius: 6px;
+    box-shadow: 3px 3px 0 0 var(--notice-tone, var(--color-border-dark));
+}
+
+:is(.app-theme-light, .app-theme-dark, .comic-surface)
+    :is(button, a).bg-primary:not([role='switch']):not(.comic-btn) {
+    box-shadow:
+        0 0 0 2px var(--color-ink),
+        3px 3px 0 2px var(--app-comic-pop, var(--color-ink));
+    font-family: var(--font-comic);
+    font-weight: 700;
+    transition:
+        transform 110ms ease,
+        box-shadow 110ms ease,
+        background-color 110ms ease;
+}
+
+@media (hover: hover) {
+    :is(.app-theme-light, .app-theme-dark, .comic-surface)
+        :is(button, a).bg-primary:not([role='switch']):not(.comic-btn):not(
+            :disabled
+        ):hover {
+        transform: translate(-1px, -1px);
+        box-shadow:
+            0 0 0 2px var(--color-ink),
+            4px 4px 0 2px var(--app-comic-pop, var(--color-ink));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .comic-btn,
+    .animate-head-blink,
+    .animate-mascot-bob,
+    :is(button, a).bg-primary {
+        animation: none;
+        transition: none;
+    }
 }

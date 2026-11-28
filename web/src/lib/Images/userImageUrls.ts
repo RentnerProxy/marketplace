@@ -29,3 +29,14 @@ export function getUserBackgroundSrc(
 
     return `/api/user/background?v=${encodeURIComponent(version)}`
 }
+
+export function getPublicProfileBannerSrc(
+    userId: string,
+    version: string | null,
+) {
+    if (!version) {
+        return null
+    }
+
+    return `/api/profiles/${encodeURIComponent(userId)}/banner?v=${encodeURIComponent(version)}`
+}

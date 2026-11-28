@@ -25,16 +25,13 @@ export default function LanguageSwitcher({
             portalClassName="[&_.rentnerselect-scrollbar]:max-h-none"
             classNames={{
                 root: 'w-14 shrink-0 sm:w-32',
-                trigger:
-                    tone === 'light'
-                        ? 'cursor-pointer rounded-xl border border-[#d7e2d9] bg-white pl-2 pr-7 text-left text-xs font-medium tracking-normal normal-case text-[#264732] transition-colors hover:border-[#7da78a] hover:bg-[#edf4ed] focus-visible:border-[#0d6d2b] focus-visible:ring-2 focus-visible:ring-[#0d6d2b]/25 data-[state=open]:border-[#0d6d2b] motion-reduce:transition-none'
-                        : 'cursor-pointer rounded-xl border border-white/20 bg-white/5 pl-2 pr-7 text-left text-xs font-medium tracking-normal normal-case text-white transition-colors hover:border-primary/60 hover:bg-white/10 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/25 data-[state=open]:border-primary/60 motion-reduce:transition-none',
-                trailing: tone === 'light' ? 'text-[#53675a]' : 'text-white/60',
+                trigger: `cursor-pointer rounded-[10px] border-2 border-ink bg-white pl-2 pr-7 text-left font-comic text-xs font-bold tracking-normal normal-case text-ink transition-[transform,box-shadow] hover:-translate-x-px hover:-translate-y-px focus-visible:outline-dashed focus-visible:outline-[3px] focus-visible:outline-offset-4 motion-reduce:transition-none ${tone === 'light' ? 'shadow-[3px_3px_0_0_var(--color-ink)] focus-visible:outline-ink' : 'shadow-[3px_3px_0_0_var(--color-proxy-500)] focus-visible:outline-white'}`,
+                trailing: 'text-ink',
                 content:
-                    'min-w-44 rounded-xl border border-white/15 bg-[#07120e] p-1 text-white shadow-[0_18px_60px_rgba(0,0,0,0.5)]',
+                    'min-w-44 rounded-lg border-[3px] border-ink bg-white p-1 text-ink shadow-[6px_6px_0_0_var(--color-ink)]',
                 viewport: 'p-0',
-                option: 'min-h-11 rounded-lg py-2 pl-9 pr-3 text-xs sm:min-h-9 font-medium tracking-normal normal-case text-white/85 transition-colors hover:bg-white/10 focus:bg-white/10 data-[state=checked]:bg-primary/15 data-[state=checked]:text-primary motion-reduce:transition-none',
-                optionIndicator: 'h-4 w-4 text-primary',
+                option: 'min-h-11 rounded-md py-2 pl-9 pr-3 font-comic text-xs font-bold tracking-normal normal-case text-ink transition-colors hover:bg-proxy-200 focus:bg-proxy-200 data-[state=checked]:bg-proxy-400 data-[state=checked]:text-ink sm:min-h-9 motion-reduce:transition-none',
+                optionIndicator: 'h-4 w-4 text-ink',
             }}
             renderValue={(options) =>
                 options.map((option) => (

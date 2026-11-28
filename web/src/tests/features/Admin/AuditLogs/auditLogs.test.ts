@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'bun:test'
-import { createElement } from 'react'
-import type { ReactElement } from 'react'
+import { createElement, isValidElement } from 'react'
+import type { ComponentProps, ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
     cleanup,
@@ -11,7 +11,14 @@ import {
 } from '../UserManagement/user-management-hooks.test.helpers.ts'
 import type { AuditLogEntry } from '@/lib/AuditLogs/Types/auditLog.types.ts'
 import type { RealtimeEvent } from '@/websockets/Types/events.ts'
-import type { DataTableProps, TableRow } from '@rentnerkev/table'
+import type { DataTableProps } from '@rentnerkev/table'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
+import RowDetailsDialog from '@/shared/Table/RowDetailsDialog.tsx'
+import {
+    elements,
+    findElement,
+    invoke,
+} from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
 
 let tableProps: DataTableProps<AuditLogEntry>
 let receiveEvent: (event: RealtimeEvent) => void
@@ -39,6 +46,7 @@ vi.mock('@rentnerkev/table', () => ({
     },
 }))
 import AuditLogs from '@/features/Admin/AuditLogs/index.tsx'
+import AuditTable from '@/features/Admin/AuditLogs/Components/AuditTable/index.tsx'
 import useAuditLogic from '@/features/Admin/AuditLogs/Hooks/useAuditLogic.ts'
 import { AuditLogDetails } from '@/features/Admin/AuditLogs/Components/AuditTable/Components/AuditLogDetails.tsx'
 
@@ -72,8 +80,17 @@ function renderAuditLogs() {
     return renderToStaticMarkup(render(AuditLogs))
 }
 
-function tableRow(original: AuditLogEntry): TableRow<AuditLogEntry> {
-    return { id: original.id, original } as TableRow<AuditLogEntry>
+function renderAuditTable() {
+    return render(() =>
+        AuditTable({
+            auditLogs: [entry, systemEntry, secondEntry],
+            isLoadingAuditLogs: false,
+        }),
+    )
+}
+
+function isDetailsDialog(element: ReactElement) {
+    return element.type === RowDetailsDialog
 }
 
 function cell(
@@ -207,20 +224,51 @@ describe('audit table behavior', () => {
         expect(actorColumn.accessorFn(systemEntry, 0)).toBe('system')
     })
 
-    it('opts into single expansion for rows with audit details', () => {
+    it('offers details for every entry in the Actions column and closes back to the table', () => {
         renderAuditLogs()
-        const getRowCanExpand = tableProps.tableOptions?.getRowCanExpand
-        if (!getRowCanExpand) throw new Error('Missing audit row eligibility')
-        expect(tableProps.expansionMode).toBe('single')
-        expect(tableProps.expandedRowId).toBeUndefined()
-        expect(getRowCanExpand(tableRow(entry))).toBe(true)
-        expect(getRowCanExpand(tableRow(systemEntry))).toBe(false)
-        const locale = tableProps.locale
-        if (typeof locale !== 'object') throw new Error('Missing audit locale')
-        expect(locale.messages?.expandRow?.('')).toBe('admin.auditLogs.details')
-        expect(tableProps.getRowLabel?.(entry)).not.toBe(
-            tableProps.getRowLabel?.(secondEntry),
-        )
+        expect(tableProps.columns[6]).toMatchObject({
+            id: 'actions',
+            enableHiding: false,
+        })
+        expect(tableProps.renderExpandedRow).toBeUndefined()
+
+        expect(elements(renderAuditTable()).some(isDetailsDialog)).toBe(false)
+
+        for (const auditEntry of [entry, systemEntry]) {
+            const menu = cell(6, auditEntry)
+            if (
+                !isValidElement<ComponentProps<typeof ActionMenu>>(menu) ||
+                menu.type !== ActionMenu
+            )
+                throw new Error('Missing audit action menu')
+            expect(menu.props.ariaLabel).toContain(auditEntry.id)
+            expect(menu.props.items).toHaveLength(1)
+            const details = menu.props.items[0]
+            expect(details?.label).toBe('common.details')
+            details?.onSelect?.()
+
+            const dialog = findElement(renderAuditTable(), isDetailsDialog)
+            expect(dialog.props.title).toBe('admin.auditLogs.details')
+            const html = renderToStaticMarkup(dialog.props.children)
+            expect(html).toContain(auditEntry.id)
+            expect(html).toContain(auditEntry.action)
+            if (auditEntry === systemEntry) {
+                expect(html).toContain('admin.auditLogs.system')
+                expect(html).toContain('admin.auditLogs.emptyDiff')
+            } else {
+                expect(html).toContain('Ada')
+                expect(html).toContain('actor-1')
+                expect(html).toContain('User changed')
+                expect(html).toContain('POST')
+                expect(html).toContain('/admin/users')
+                expect(html).toContain('Old')
+                expect(html).toContain('New')
+            }
+            invoke(dialog, 'onClose')
+            expect(elements(renderAuditTable()).some(isDetailsDialog)).toBe(
+                false,
+            )
+        }
     })
 
     it('formats changed values only and renders the before/after diff and empty state', () => {
@@ -236,16 +284,11 @@ describe('audit table behavior', () => {
         expect(empty).toContain('admin.auditLogs.emptyDiff')
     })
 
-    it('forwards loading status and renders the diff for the requested row', () => {
+    it('forwards loading status and the fetched entries', () => {
         loading = true
         const html = renderAuditLogs()
         expect(html).toContain('admin.auditLogs.entriesTitle')
         expect(tableProps.isLoading).toBe(true)
         expect(tableProps.data).toEqual([entry, systemEntry, secondEntry])
-        const diff = renderToStaticMarkup(
-            tableProps.renderExpandedRow?.(tableRow(entry)),
-        )
-        expect(diff).toContain('Old')
-        expect(diff).toContain('New')
     })
 })

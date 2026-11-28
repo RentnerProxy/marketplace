@@ -14,6 +14,8 @@ import type {
     PermissionPreset,
 } from '@/features/Admin/PermissionManagement/Types/permission-management-domain.types.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
+import type { ActionMenuItem } from '@/shared/ActionMenu/Types/action-menu.types.ts'
 import {
     elements,
     findElement,
@@ -220,24 +222,11 @@ describe('Permission presets', () => {
             ),
             'onClick',
         )
-        invoke(
-            findElement(
-                tree,
-                (element) =>
-                    element.props['aria-label'] ===
-                    'admin.permissions.presets.editAriaLabel',
-            ),
-            'onClick',
-        )
-        invoke(
-            findElement(
-                tree,
-                (element) =>
-                    element.props['aria-label'] ===
-                    'admin.permissions.presets.deleteAriaLabel',
-            ),
-            'onClick',
-        )
+        const menu = findElement(tree, (element) => element.type === ActionMenu)
+        const items = menu.props.items as ActionMenuItem[]
+        expect(items.map(({ id }) => id)).toEqual(['edit', 'delete'])
+        expect(items[1]).toMatchObject({ destructive: true })
+        for (const item of items) item.onSelect?.()
         expect(callbacks.onStartCreate).toHaveBeenCalledTimes(1)
         expect(callbacks.onStartEdit).toHaveBeenCalledWith(preset)
         expect(callbacks.onAskDelete).toHaveBeenCalledWith(preset)

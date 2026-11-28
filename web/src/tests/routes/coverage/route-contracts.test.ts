@@ -242,7 +242,8 @@ describe('Thin route boundary contracts', () => {
         const html = renderToStaticMarkup(
             createElement(route('/_authenticated/user/dashboard').component!),
         )
-        expect(html).toContain('<h1')
+        expect(html).toContain('aria-labelledby="user-dashboard-title"')
+        expect(html).toContain('<h2 id="user-dashboard-title"')
         expect(html).toContain('user.dashboard.title')
         expect(html).toContain('user.dashboard.loggedIn')
     })

@@ -7,18 +7,12 @@ function createInput() {
         id: '019f72d1-dc60-7040-bdac-9e201573f094',
         username: '  kevin  ',
         email: '  KEVIN@example.test  ',
-        firstName: '  Kevin  ',
-        lastName: '  ',
-        street: '',
-        houseNumber: '  10  ',
-        postalCode: ' 12345 ',
-        city: ' Berlin ',
         permissionKeys: ['admin.userManagement'],
     }
 }
 
 describe('UserManagement Update-Normalisierung', function () {
-    it('normalisiert Identität und optionale Profildaten', function () {
+    it('normalisiert die Kontoidentität', function () {
         expect(normalizeUserProfileUpdate(createInput())).toEqual({
             success: true,
             input: {
@@ -26,14 +20,6 @@ describe('UserManagement Update-Normalisierung', function () {
                 id: '019f72d1-dc60-7040-bdac-9e201573f094',
                 username: 'kevin',
                 email: 'kevin@example.test',
-                profile: {
-                    firstName: 'Kevin',
-                    lastName: null,
-                    street: null,
-                    houseNumber: '10',
-                    postalCode: '12345',
-                    city: 'Berlin',
-                },
             },
         })
     })
@@ -49,14 +35,6 @@ describe('UserManagement Update-Normalisierung', function () {
                 id: '019f72d1-dc60-7040-bdac-9e201573f094',
                 username: 'kevin',
                 email: 'kevin@example.test',
-                profile: {
-                    firstName: 'Kevin',
-                    lastName: null,
-                    street: null,
-                    houseNumber: '10',
-                    postalCode: '12345',
-                    city: 'Berlin',
-                },
             },
         })
     })

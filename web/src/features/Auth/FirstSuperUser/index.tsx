@@ -1,5 +1,4 @@
 import AccountSection from './Components/AccountSection.tsx'
-import PersonalInfoSection from './Components/PersonalInfoSection.tsx'
 import SetupHeader from './Components/SetupHeader.tsx'
 import SetupSubmitButton from './Components/SetupSubmitButton.tsx'
 import SetupAccessNotice from './Components/SetupAccessNotice.tsx'
@@ -28,11 +27,6 @@ export default function CreateFirstSuperUserAccountPage() {
 
                 <form onSubmit={handler.handleSubmit} className="space-y-6">
                     <AccountSection
-                        values={state.formValues}
-                        onFieldChange={setter.setFieldValue}
-                    />
-
-                    <PersonalInfoSection
                         values={state.formValues}
                         onFieldChange={setter.setFieldValue}
                     />

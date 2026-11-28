@@ -6,7 +6,7 @@ export default function SecurityChangeLoginNotice() {
     return (
         <div
             role="status"
-            className="rounded-md border border-border-dark border-l-2 border-l-primary bg-background-dark p-3 text-sm text-secondary-text"
+            className="comic-notice bg-background-dark [--notice-tone:var(--color-primary)] p-3 text-sm text-secondary-text"
         >
             <p>{t('userSettings.security.signInAgainAllDevices')}</p>
             <Link

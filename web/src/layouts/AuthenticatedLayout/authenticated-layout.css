@@ -1,0 +1,63 @@
+.marketplace-signed-in {
+    --marketplace-banner: url('/brand/marketplace-sidebar-texture.webp');
+}
+
+.marketplace-sidebar-mask {
+    mask-image:
+        linear-gradient(#fff, #fff),
+        url('/brand/application-sidebar-surface-desktop.svg');
+    mask-position: left, right;
+    mask-repeat: no-repeat;
+    mask-size:
+        calc(100% - var(--marketplace-sidebar-tail) + 1px) 100%,
+        var(--marketplace-sidebar-tail) 100%;
+}
+
+.marketplace-sidebar-trim {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 89%, #fff),
+        color-mix(in srgb, var(--color-primary) 57%, #020a0b)
+    );
+}
+
+.marketplace-sidebar-texture {
+    background:
+        linear-gradient(180deg, rgb(2 10 11 / 52%), rgb(2 10 11 / 24%)),
+        var(--marketplace-banner) right center / cover no-repeat
+            var(--color-marketplace-void);
+}
+
+@media (min-width: 90rem) {
+    .marketplace-content-header {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .marketplace-content-header::before {
+        position: absolute;
+        z-index: -1;
+        inset-block: -1.25rem;
+        inset-inline-end: 0;
+        width: min(38%, 24rem);
+        background: var(--marketplace-banner) right 72% / cover no-repeat;
+        content: '';
+        mask-image: radial-gradient(
+            ellipse closest-side,
+            #000 22%,
+            transparent
+        );
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    .marketplace-signed-in.app-theme-light .marketplace-content-header::before {
+        filter: invert(1) hue-rotate(180deg);
+        opacity: 0.4;
+    }
+}
+
+.marketplace-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(193 210 201 / 34%) transparent;
+}

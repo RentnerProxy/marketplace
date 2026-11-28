@@ -1,11 +1,6 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
-import {
-    permissions,
-    staffUserPermissions,
-    user_profiles,
-    users,
-} from '@/db/schema.ts'
+import { permissions, staffUserPermissions, users } from '@/db/schema.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import type { PermissionManagementUser } from '@/features/Admin/PermissionManagement/Types/permission-management-domain.types.ts'
 import { hasSuperUserPermission } from '@/lib/Permissions/permissions.ts'
@@ -23,12 +18,9 @@ export async function getPermissionManagementUsersService(
             id: users.id,
             username: users.username,
             email: users.email,
-            firstName: user_profiles.firstName,
-            lastName: user_profiles.lastName,
             isActive: users.isActive,
         })
         .from(users)
-        .leftJoin(user_profiles, eq(user_profiles.userId, users.id))
         .where(and(eq(users.isDeleted, false), eq(users.accountType, 'staff')))
         .orderBy(desc(users.createdAt), asc(users.id))
     const permissionRows = userRows.length
@@ -68,8 +60,6 @@ export async function getPermissionManagementUsersService(
             id: user.id,
             username: user.username,
             email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
             isActive: user.isActive,
             isSuperUser: hasSuperUserPermission(permissionKeys),
             isCurrentUser: user.id === actorUserId,

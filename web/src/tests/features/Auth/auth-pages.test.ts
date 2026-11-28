@@ -87,12 +87,6 @@ const setupState: CreateFirstSuperUserAccountLogicReturn['state'] = {
         email: 'admin@example.test',
         password: '',
         confirmPassword: '',
-        firstName: 'Ada',
-        lastName: 'Tester',
-        street: 'Teststraße',
-        houseNumber: '12',
-        postalCode: '12345',
-        city: 'Teststadt',
     },
 }
 const headerState = {
@@ -111,10 +105,6 @@ vi.mock('@tanstack/react-router', () => ({
         ...props
     }: AnchorHTMLAttributes<HTMLAnchorElement> & { to: string }) =>
         createElement('a', { ...props, href: to }, children),
-}))
-vi.mock('@/shared/AddressFormFields/index.tsx', () => ({
-    default: ({ values: address }: { values: { city: string } }) =>
-        createElement('output', null, address.city),
 }))
 vi.mock('@/features/Auth/Login/Hooks/useLoginLogic.ts', () => ({
     default: () => ({
@@ -413,14 +403,12 @@ describe('authentication page states', function () {
     )
 
     it.each([false, true])(
-        'renders initial account/personal data and protects pending submissions=%s',
+        'renders initial account data and protects pending submissions=%s',
         function (pending) {
             setupState.isCreating = pending
             const html = renderToStaticMarkup(createElement(Setup))
             expect(html).toContain('<form')
             expect(html).toContain('admin@example.test')
-            expect(html).toContain('value="Ada"')
-            expect(html).toContain('Teststadt')
             expect(html).toContain('first-setup-password-policy')
             expect(html).toContain(
                 pending ? 'auth.firstSetup.creating' : 'auth.firstSetup.create',

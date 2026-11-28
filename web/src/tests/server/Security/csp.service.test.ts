@@ -32,11 +32,7 @@ describe('request content security policies', function () {
         expect(parsed.get('script-src')).toEqual(["'none'"])
         expect(parsed.get('script-src-attr')).toEqual(["'none'"])
         expect(parsed.get('style-src')).toEqual(["'self'", "'unsafe-inline'"])
-        expect(parsed.get('connect-src')).toEqual([
-            "'self'",
-            'https://photon.komoot.io',
-            'https://nominatim.openstreetmap.org',
-        ])
+        expect(parsed.get('connect-src')).toEqual(["'self'"])
         expect(policy).not.toContain("'unsafe-eval'")
         expect(policy).not.toContain("'nonce-")
         expect(

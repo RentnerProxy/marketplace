@@ -23,13 +23,17 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as StaffInvitationRouteImport } from './routes/staff-invitation'
 import { Route as UpdateInProgressRouteImport } from './routes/update-in-progress'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as AuthenticatedPeopleRouteImport } from './routes/_authenticated/people'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedUserRouteRouteImport } from './routes/_authenticated/user/route'
 import { Route as PublicForgotPasswordRouteImport } from './routes/_public/forgot-password'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicMaintenanceRouteImport } from './routes/_public/maintenance'
 import { Route as PublicPasswordResetRouteImport } from './routes/_public/password-reset'
 import { Route as PublicTermsRouteImport } from './routes/_public/terms'
+import { Route as AppsAppIdRouteImport } from './routes/apps_/$appId'
 import { Route as BlogSlugRouteImport } from './routes/blog_/$slug'
+import { Route as UUsernameRouteImport } from './routes/u/$username'
 import { Route as AuthenticatedAdminAppNamespacesRouteImport } from './routes/_authenticated/admin/app-namespaces'
 import { Route as AuthenticatedAdminAppReviewsRouteImport } from './routes/_authenticated/admin/app-reviews'
 import { Route as AuthenticatedAdminAuditLogsRouteImport } from './routes/_authenticated/admin/audit-logs'
@@ -44,12 +48,14 @@ import { Route as AuthenticatedUserAppSubmissionsRouteImport } from './routes/_a
 import { Route as AuthenticatedUserDashboardRouteImport } from './routes/_authenticated/user/dashboard'
 import { Route as ApiSystemRestoreStatusRouteImport } from './routes/api/system/restore-status'
 import { Route as ApiUserBackgroundRouteImport } from './routes/api/user/background'
+import { Route as AuthenticatedUserAppStoreAppIdRouteImport } from './routes/_authenticated/user/app-store.$appId'
 import { Route as ApiAdminBackupsBackupIdRouteImport } from './routes/api/admin/backups/$backupId'
 import { Route as ApiAdminBackupsDownloadRouteImport } from './routes/api/admin/backups/download'
 import { Route as ApiAdminBackupsImportRouteImport } from './routes/api/admin/backups/import'
 import { Route as ApiAuthProviderCallbackRouteImport } from './routes/api/auth/$provider/callback'
 import { Route as ApiAuthProviderCompleteRouteImport } from './routes/api/auth/$provider/complete'
 import { Route as ApiMarketplaceV1CatalogPublicationRouteImport } from './routes/api/marketplace/v1/catalog-publication'
+import { Route as ApiProfilesUserIdBannerRouteImport } from './routes/api/profiles/$userId/banner'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -119,6 +125,16 @@ const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPeopleRoute = AuthenticatedPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedUserRouteRoute = AuthenticatedUserRouteRouteImport.update({
   id: '/user',
   path: '/user',
@@ -149,9 +165,19 @@ const PublicTermsRoute = PublicTermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => PublicRouteRoute,
 } as any)
+const AppsAppIdRoute = AppsAppIdRouteImport.update({
+  id: '/apps_/$appId',
+  path: '/apps/$appId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/blog_/$slug',
   path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminAppNamespacesRoute =
@@ -234,6 +260,12 @@ const ApiUserBackgroundRoute = ApiUserBackgroundRouteImport.update({
   path: '/api/user/background',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedUserAppStoreAppIdRoute =
+  AuthenticatedUserAppStoreAppIdRouteImport.update({
+    id: '/app-store/$appId',
+    path: '/app-store/$appId',
+    getParentRoute: () => AuthenticatedUserRouteRoute,
+  } as any)
 const ApiAdminBackupsBackupIdRoute = ApiAdminBackupsBackupIdRouteImport.update({
   id: '/api/admin/backups/$backupId',
   path: '/api/admin/backups/$backupId',
@@ -265,6 +297,11 @@ const ApiMarketplaceV1CatalogPublicationRoute =
     path: '/api/marketplace/v1/catalog-publication',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiProfilesUserIdBannerRoute = ApiProfilesUserIdBannerRouteImport.update({
+  id: '/api/profiles/$userId/banner',
+  path: '/api/profiles/$userId/banner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -280,12 +317,16 @@ export interface FileRoutesByFullPath {
   '/update-in-progress': typeof UpdateInProgressRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/user': typeof AuthenticatedUserRouteRouteWithChildren
+  '/people': typeof AuthenticatedPeopleRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/forgot-password': typeof PublicForgotPasswordRoute
   '/login': typeof PublicLoginRoute
   '/maintenance': typeof PublicMaintenanceRoute
   '/password-reset': typeof PublicPasswordResetRoute
   '/terms': typeof PublicTermsRoute
+  '/apps/$appId': typeof AppsAppIdRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/admin/app-namespaces': typeof AuthenticatedAdminAppNamespacesRoute
   '/admin/app-reviews': typeof AuthenticatedAdminAppReviewsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
@@ -300,12 +341,14 @@ export interface FileRoutesByFullPath {
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
+  '/user/app-store/$appId': typeof AuthenticatedUserAppStoreAppIdRoute
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
   '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
   '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
   '/api/marketplace/v1/catalog-publication': typeof ApiMarketplaceV1CatalogPublicationRoute
+  '/api/profiles/$userId/banner': typeof ApiProfilesUserIdBannerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -321,12 +364,16 @@ export interface FileRoutesByTo {
   '/update-in-progress': typeof UpdateInProgressRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/user': typeof AuthenticatedUserRouteRouteWithChildren
+  '/people': typeof AuthenticatedPeopleRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/forgot-password': typeof PublicForgotPasswordRoute
   '/login': typeof PublicLoginRoute
   '/maintenance': typeof PublicMaintenanceRoute
   '/password-reset': typeof PublicPasswordResetRoute
   '/terms': typeof PublicTermsRoute
+  '/apps/$appId': typeof AppsAppIdRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/admin/app-namespaces': typeof AuthenticatedAdminAppNamespacesRoute
   '/admin/app-reviews': typeof AuthenticatedAdminAppReviewsRoute
   '/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
@@ -341,12 +388,14 @@ export interface FileRoutesByTo {
   '/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
+  '/user/app-store/$appId': typeof AuthenticatedUserAppStoreAppIdRoute
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
   '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
   '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
   '/api/marketplace/v1/catalog-publication': typeof ApiMarketplaceV1CatalogPublicationRoute
+  '/api/profiles/$userId/banner': typeof ApiProfilesUserIdBannerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -365,12 +414,16 @@ export interface FileRoutesById {
   '/update-in-progress': typeof UpdateInProgressRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/user': typeof AuthenticatedUserRouteRouteWithChildren
+  '/_authenticated/people': typeof AuthenticatedPeopleRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_public/forgot-password': typeof PublicForgotPasswordRoute
   '/_public/login': typeof PublicLoginRoute
   '/_public/maintenance': typeof PublicMaintenanceRoute
   '/_public/password-reset': typeof PublicPasswordResetRoute
   '/_public/terms': typeof PublicTermsRoute
+  '/apps_/$appId': typeof AppsAppIdRoute
   '/blog_/$slug': typeof BlogSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/_authenticated/admin/app-namespaces': typeof AuthenticatedAdminAppNamespacesRoute
   '/_authenticated/admin/app-reviews': typeof AuthenticatedAdminAppReviewsRoute
   '/_authenticated/admin/audit-logs': typeof AuthenticatedAdminAuditLogsRoute
@@ -385,12 +438,14 @@ export interface FileRoutesById {
   '/_authenticated/user/dashboard': typeof AuthenticatedUserDashboardRoute
   '/api/system/restore-status': typeof ApiSystemRestoreStatusRoute
   '/api/user/background': typeof ApiUserBackgroundRoute
+  '/_authenticated/user/app-store/$appId': typeof AuthenticatedUserAppStoreAppIdRoute
   '/api/admin/backups/$backupId': typeof ApiAdminBackupsBackupIdRoute
   '/api/admin/backups/download': typeof ApiAdminBackupsDownloadRoute
   '/api/admin/backups/import': typeof ApiAdminBackupsImportRoute
   '/api/auth/$provider/callback': typeof ApiAuthProviderCallbackRoute
   '/api/auth/$provider/complete': typeof ApiAuthProviderCompleteRoute
   '/api/marketplace/v1/catalog-publication': typeof ApiMarketplaceV1CatalogPublicationRoute
+  '/api/profiles/$userId/banner': typeof ApiProfilesUserIdBannerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -408,12 +463,16 @@ export interface FileRouteTypes {
     | '/update-in-progress'
     | '/admin'
     | '/user'
+    | '/people'
+    | '/profile'
     | '/forgot-password'
     | '/login'
     | '/maintenance'
     | '/password-reset'
     | '/terms'
+    | '/apps/$appId'
     | '/blog/$slug'
+    | '/u/$username'
     | '/admin/app-namespaces'
     | '/admin/app-reviews'
     | '/admin/audit-logs'
@@ -428,12 +487,14 @@ export interface FileRouteTypes {
     | '/user/dashboard'
     | '/api/system/restore-status'
     | '/api/user/background'
+    | '/user/app-store/$appId'
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
     | '/api/auth/$provider/callback'
     | '/api/auth/$provider/complete'
     | '/api/marketplace/v1/catalog-publication'
+    | '/api/profiles/$userId/banner'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -449,12 +510,16 @@ export interface FileRouteTypes {
     | '/update-in-progress'
     | '/admin'
     | '/user'
+    | '/people'
+    | '/profile'
     | '/forgot-password'
     | '/login'
     | '/maintenance'
     | '/password-reset'
     | '/terms'
+    | '/apps/$appId'
     | '/blog/$slug'
+    | '/u/$username'
     | '/admin/app-namespaces'
     | '/admin/app-reviews'
     | '/admin/audit-logs'
@@ -469,12 +534,14 @@ export interface FileRouteTypes {
     | '/user/dashboard'
     | '/api/system/restore-status'
     | '/api/user/background'
+    | '/user/app-store/$appId'
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
     | '/api/auth/$provider/callback'
     | '/api/auth/$provider/complete'
     | '/api/marketplace/v1/catalog-publication'
+    | '/api/profiles/$userId/banner'
   id:
     | '__root__'
     | '/'
@@ -492,12 +559,16 @@ export interface FileRouteTypes {
     | '/update-in-progress'
     | '/_authenticated/admin'
     | '/_authenticated/user'
+    | '/_authenticated/people'
+    | '/_authenticated/profile'
     | '/_public/forgot-password'
     | '/_public/login'
     | '/_public/maintenance'
     | '/_public/password-reset'
     | '/_public/terms'
+    | '/apps_/$appId'
     | '/blog_/$slug'
+    | '/u/$username'
     | '/_authenticated/admin/app-namespaces'
     | '/_authenticated/admin/app-reviews'
     | '/_authenticated/admin/audit-logs'
@@ -512,12 +583,14 @@ export interface FileRouteTypes {
     | '/_authenticated/user/dashboard'
     | '/api/system/restore-status'
     | '/api/user/background'
+    | '/_authenticated/user/app-store/$appId'
     | '/api/admin/backups/$backupId'
     | '/api/admin/backups/download'
     | '/api/admin/backups/import'
     | '/api/auth/$provider/callback'
     | '/api/auth/$provider/complete'
     | '/api/marketplace/v1/catalog-publication'
+    | '/api/profiles/$userId/banner'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -534,7 +607,9 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   StaffInvitationRoute: typeof StaffInvitationRoute
   UpdateInProgressRoute: typeof UpdateInProgressRoute
+  AppsAppIdRoute: typeof AppsAppIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  UUsernameRoute: typeof UUsernameRoute
   ApiSystemRestoreStatusRoute: typeof ApiSystemRestoreStatusRoute
   ApiUserBackgroundRoute: typeof ApiUserBackgroundRoute
   ApiAdminBackupsBackupIdRoute: typeof ApiAdminBackupsBackupIdRoute
@@ -543,6 +618,7 @@ export interface RootRouteChildren {
   ApiAuthProviderCallbackRoute: typeof ApiAuthProviderCallbackRoute
   ApiAuthProviderCompleteRoute: typeof ApiAuthProviderCompleteRoute
   ApiMarketplaceV1CatalogPublicationRoute: typeof ApiMarketplaceV1CatalogPublicationRoute
+  ApiProfilesUserIdBannerRoute: typeof ApiProfilesUserIdBannerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -645,6 +721,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/people': {
+      id: '/_authenticated/people'
+      path: '/people'
+      fullPath: '/people'
+      preLoaderRoute: typeof AuthenticatedPeopleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/user': {
       id: '/_authenticated/user'
       path: '/user'
@@ -687,11 +777,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicTermsRouteImport
       parentRoute: typeof PublicRouteRoute
     }
+    '/apps_/$appId': {
+      id: '/apps_/$appId'
+      path: '/apps/$appId'
+      fullPath: '/apps/$appId'
+      preLoaderRoute: typeof AppsAppIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog_/$slug': {
       id: '/blog_/$slug'
       path: '/blog/$slug'
       fullPath: '/blog/$slug'
       preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/app-namespaces': {
@@ -792,6 +896,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUserBackgroundRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/user/app-store/$appId': {
+      id: '/_authenticated/user/app-store/$appId'
+      path: '/app-store/$appId'
+      fullPath: '/user/app-store/$appId'
+      preLoaderRoute: typeof AuthenticatedUserAppStoreAppIdRouteImport
+      parentRoute: typeof AuthenticatedUserRouteRoute
+    }
     '/api/admin/backups/$backupId': {
       id: '/api/admin/backups/$backupId'
       path: '/api/admin/backups/$backupId'
@@ -834,6 +945,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketplaceV1CatalogPublicationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/profiles/$userId/banner': {
+      id: '/api/profiles/$userId/banner'
+      path: '/api/profiles/$userId/banner'
+      fullPath: '/api/profiles/$userId/banner'
+      preLoaderRoute: typeof ApiProfilesUserIdBannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -874,12 +992,14 @@ const AuthenticatedAdminRouteRouteWithChildren =
 interface AuthenticatedUserRouteRouteChildren {
   AuthenticatedUserAppSubmissionsRoute: typeof AuthenticatedUserAppSubmissionsRoute
   AuthenticatedUserDashboardRoute: typeof AuthenticatedUserDashboardRoute
+  AuthenticatedUserAppStoreAppIdRoute: typeof AuthenticatedUserAppStoreAppIdRoute
 }
 
 const AuthenticatedUserRouteRouteChildren: AuthenticatedUserRouteRouteChildren =
   {
     AuthenticatedUserAppSubmissionsRoute: AuthenticatedUserAppSubmissionsRoute,
     AuthenticatedUserDashboardRoute: AuthenticatedUserDashboardRoute,
+    AuthenticatedUserAppStoreAppIdRoute: AuthenticatedUserAppStoreAppIdRoute,
   }
 
 const AuthenticatedUserRouteRouteWithChildren =
@@ -890,11 +1010,15 @@ const AuthenticatedUserRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedUserRouteRoute: typeof AuthenticatedUserRouteRouteWithChildren
+  AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedUserRouteRoute: AuthenticatedUserRouteRouteWithChildren,
+  AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -934,7 +1058,9 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   StaffInvitationRoute: StaffInvitationRoute,
   UpdateInProgressRoute: UpdateInProgressRoute,
+  AppsAppIdRoute: AppsAppIdRoute,
   BlogSlugRoute: BlogSlugRoute,
+  UUsernameRoute: UUsernameRoute,
   ApiSystemRestoreStatusRoute: ApiSystemRestoreStatusRoute,
   ApiUserBackgroundRoute: ApiUserBackgroundRoute,
   ApiAdminBackupsBackupIdRoute: ApiAdminBackupsBackupIdRoute,
@@ -944,6 +1070,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthProviderCompleteRoute: ApiAuthProviderCompleteRoute,
   ApiMarketplaceV1CatalogPublicationRoute:
     ApiMarketplaceV1CatalogPublicationRoute,
+  ApiProfilesUserIdBannerRoute: ApiProfilesUserIdBannerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

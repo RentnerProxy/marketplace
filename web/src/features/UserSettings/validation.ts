@@ -11,6 +11,7 @@ import {
     webAuthnResponseSchema,
 } from '@/lib/Validation/zodSchemas.ts'
 import { authCredentialPasswordSchema } from '@/lib/Auth/validation.ts'
+import { USER_PROFILE_CONFIG } from '@/config/user-profile.config.ts'
 
 const userPrimaryColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/)
 const userThemeModeSchema = z.enum(USER_THEME_MODES)
@@ -18,13 +19,8 @@ const userFontFamilySchema = z.enum(USER_FONT_FAMILIES)
 const userBackgroundDarknessSchema = z.number().int().min(0).max(95)
 const userFontSizeSchema = z.literal(USER_FONT_SIZES)
 
-export const updateCurrentUserPersonalInfoInputSchema = z.object({
-    firstName: optionalTextSchema(100),
-    lastName: optionalTextSchema(100),
-    street: optionalTextSchema(100),
-    houseNumber: optionalTextSchema(20),
-    postalCode: optionalTextSchema(20),
-    city: optionalTextSchema(100),
+export const updateCurrentUserBioInputSchema = z.object({
+    bio: optionalTextSchema(USER_PROFILE_CONFIG.bioMaxLength),
 })
 
 export const updateCurrentUserProfileImageInputSchema = z.object({

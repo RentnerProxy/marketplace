@@ -1,6 +1,8 @@
 import { describe, expect, it, mock } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import BackupRestorePanel from '@/features/Admin/Backups/Components/BackupRestorePanel.tsx'
+import BackupRestorePanel, {
+    BackupRestoreActions,
+} from '@/features/Admin/Backups/Components/BackupRestorePanel.tsx'
 import type { BackupRestorePanelProps } from '@/features/Admin/Backups/Types/backup-component-props.types.ts'
 import {
     findElement,
@@ -39,7 +41,7 @@ describe('Backup restore confirmation', () => {
         expect(html).toContain('aria-describedby="restore-warning-backup-1"')
         expect(
             findElement(
-                tree,
+                BackupRestoreActions(fixture),
                 (element) =>
                     element.props.onClick ===
                     fixture.handler.handleRestoreBackup,
@@ -61,7 +63,7 @@ describe('Backup restore confirmation', () => {
     it('requires exact confirmation and locks restore and cancellation during execution', () => {
         const fixture = props()
         fixture.state.restoreConfirmation = 'WIEDERHERSTELLEN'
-        const tree = BackupRestorePanel(fixture)
+        const tree = BackupRestoreActions(fixture)
         const restore = findElement(
             tree,
             (element) =>
@@ -81,7 +83,7 @@ describe('Backup restore confirmation', () => {
         expect(fixture.handler.handleRestoreBackup).toHaveBeenCalledTimes(1)
         expect(fixture.handler.handleCancelRestore).toHaveBeenCalledTimes(1)
         fixture.state.activeActionId = 'backup-1'
-        const pending = BackupRestorePanel(fixture)
+        const pending = BackupRestoreActions(fixture)
         expect(
             findElement(
                 pending,
@@ -100,7 +102,7 @@ describe('Backup restore confirmation', () => {
         ).toBe(true)
         expect(
             findElement(
-                pending,
+                BackupRestorePanel(fixture),
                 (element) => element.props.placeholder === 'WIEDERHERSTELLEN',
             ).props.disabled,
         ).toBe(true)

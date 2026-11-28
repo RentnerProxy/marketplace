@@ -26,12 +26,6 @@ const emptyFormValues: FirstSuperUserFormValues = {
     email: '',
     password: '',
     confirmPassword: '',
-    firstName: '',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
 }
 
 export default function useCreateFirstSuperUserAccountLogic(): CreateFirstSuperUserAccountLogicReturn {

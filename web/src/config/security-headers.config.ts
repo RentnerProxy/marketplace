@@ -17,10 +17,7 @@ export const CSP_SECURITY_CONFIG = {
         "style-src 'self' 'unsafe-inline'",
         "script-src-attr 'none'",
     ],
-    connectOrigins: [
-        'https://photon.komoot.io',
-        'https://nominatim.openstreetmap.org',
-    ],
+    connectOrigins: [] as Array<string>,
 } as const
 
 export const DEFAULT_SECURITY_HEADERS = {

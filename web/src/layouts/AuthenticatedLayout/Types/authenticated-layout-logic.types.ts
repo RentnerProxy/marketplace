@@ -1,4 +1,9 @@
-import type { CSSProperties } from 'react'
+import type {
+    CSSProperties,
+    KeyboardEvent,
+    PointerEvent,
+    RefObject,
+} from 'react'
 import type {
     UserFontFamily,
     UserFontSize,
@@ -12,7 +17,6 @@ import type {
 export type AuthenticatedShellUiState = {
     isCollapsed: boolean
     isMaintenanceBannerMinimized: boolean
-    isUserSettingsOpen: boolean
     openGroups: Record<string, boolean>
 }
 
@@ -26,7 +30,8 @@ type AuthenticatedShellState = {
     userId: string | null
     username: string
     companyName: string
-    systemLogoSrc64: string
+    systemLogoSrc: string
+    hasCustomSystemLogo: boolean
     systemFaviconSrc: string
     profileImageSrc64: string
     primaryColor: string
@@ -57,25 +62,46 @@ export type AuthenticatedShellLogicReturn = {
     handler: {
         expandMaintenanceBanner: () => void
         minimizeMaintenanceBanner: () => void
+        toggleCollapse: () => void
     }
 }
 
 export type AuthenticatedSidebarLogicReturn = {
     state: {
-        isCollapsed: boolean
         isLoggingOut: boolean
         openGroups: Record<string, boolean>
     }
     handler: {
         handleLogout: () => void
-        handleOpenUserSettings: () => void
-        handleToggleCollapse: () => void
         handleToggleGroup: (group: string) => void
     }
 }
 
-export type AuthenticatedTopbarLogicReturn = {
-    state: { title: string; description: string }
+export type SidebarScrollGripPosition = {
+    style: Pick<CSSProperties, 'height' | 'left' | 'top'>
+    scrollTop: number
+    maxScroll: number
+    travel: number
+}
+
+export type SidebarScrollGripLogicReturn = {
+    state: { position: SidebarScrollGripPosition | null }
+    handler: {
+        handlePointerDown: (event: PointerEvent<HTMLDivElement>) => void
+        handlePointerMove: (event: PointerEvent<HTMLDivElement>) => void
+        handlePointerEnd: (event: PointerEvent<HTMLDivElement>) => void
+        handleKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
+    }
+    refs: { navigation: RefObject<HTMLElement | null> }
+}
+
+export type AuthenticatedPageHeaderLogicReturn = {
+    state: {
+        groupKey: string | null
+        eyebrow: string | null
+        title: string
+        description: string
+    }
 }
 
 export type MaintenanceBannerLogicReturn = {

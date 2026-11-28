@@ -1,14 +1,6 @@
-import { Database, Layers, Workflow } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import HeadingIcon from '@/shared/HeadingIcon.tsx'
 import ServiceStatusCard from './ServiceStatusCard.tsx'
 import type { ServiceGroupProps } from '../Types/dashboard-component-props.types.ts'
-
-const groupIcons = {
-    application: Layers,
-    processing: Workflow,
-    infrastructure: Database,
-}
 
 export default function ServiceGroup({
     group,
@@ -17,26 +9,21 @@ export default function ServiceGroup({
     onSelect,
 }: ServiceGroupProps) {
     const { t } = useTranslationStore()
+    const groupId = `dashboard-group-${group.id}`
     return (
-        <section
-            aria-labelledby={`dashboard-group-${group.id}`}
-            className="min-w-0 rounded-lg border border-border-dark bg-surface-dark p-3.5 sm:p-4"
+        <div
+            id={groupId}
+            role="group"
+            aria-labelledby={`${groupId}-heading`}
+            className="flex min-w-0 flex-col gap-3"
         >
-            <div className="mb-4 flex items-center gap-3">
-                <HeadingIcon icon={groupIcons[group.id]} size="sm" />
-                <div className="min-w-0">
-                    <h2
-                        id={`dashboard-group-${group.id}`}
-                        className="text-base font-semibold text-foreground"
-                    >
-                        {t(`admin.dashboard.groups.${group.id}.title`)}
-                    </h2>
-                    <p className="mt-0.5 text-xs leading-5 text-secondary-text">
-                        {t(`admin.dashboard.groups.${group.id}.description`)}
-                    </p>
-                </div>
-            </div>
-            <div className="flex flex-col gap-2">
+            <h3
+                id={`${groupId}-heading`}
+                className="text-sm font-bold text-foreground"
+            >
+                {t(`admin.dashboard.groups.${group.id}.title`)}
+            </h3>
+            <div className="grid flex-1 auto-rows-fr gap-3">
                 {group.services.map((service) => (
                     <ServiceStatusCard
                         key={service}
@@ -47,6 +34,6 @@ export default function ServiceGroup({
                     />
                 ))}
             </div>
-        </section>
+        </div>
     )
 }

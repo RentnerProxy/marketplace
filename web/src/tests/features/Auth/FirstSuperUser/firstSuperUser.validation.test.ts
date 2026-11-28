@@ -9,12 +9,6 @@ const validInput = {
     email: 'admin@example.com',
     password: 'secure-password',
     confirmPassword: 'secure-password',
-    firstName: '',
-    lastName: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
 }
 
 describe('First-Superuser-Validierung', function () {
@@ -65,7 +59,7 @@ describe('separate first setup form and server contracts', function () {
             setupToken: 'synthetic-not-a-form-field',
         })
         expect('setupToken' in parsed).toBe(false)
-        expect(Object.keys(parsed)).toHaveLength(10)
+        expect(Object.keys(parsed)).toHaveLength(4)
     })
 
     it('preserves the existing server token default, trim and bound', function () {

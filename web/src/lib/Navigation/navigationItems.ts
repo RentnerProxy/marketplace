@@ -35,12 +35,3 @@ export function getVisibleNavigationItems(
         ]
     })
 }
-
-export function flattenNavigationRoutes(
-    navItems: Array<AuthenticatedNavItem>,
-): Array<AuthenticatedNavItem> {
-    return navItems.flatMap((item) => [
-        ...(item.to ? [{ ...item, children: undefined }] : []),
-        ...flattenNavigationRoutes(item.children ?? []),
-    ])
-}

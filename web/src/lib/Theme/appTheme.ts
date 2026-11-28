@@ -5,13 +5,14 @@ import {
     DEFAULT_PRIMARY_COLOR_HOVER,
     DEFAULT_THEME_MODE,
     USER_FONT_FAMILY_STYLES,
-    USER_THEME_MODE_COLORS,
 } from '@/config/user-theme-colors.config.ts'
 import type { AppThemeSettings } from './Types/userTheme.types.ts'
 
 import {
     getPrimaryColorForeground,
     getPrimaryTextColor,
+    getPrimaryThemeColors,
+    getPrimaryThemePalette,
 } from './primaryColor.ts'
 
 const DEFAULT_APP_THEME_SETTINGS: AppThemeSettings = {
@@ -22,11 +23,58 @@ const DEFAULT_APP_THEME_SETTINGS: AppThemeSettings = {
     themeMode: DEFAULT_THEME_MODE,
 }
 
+function getAppThemeProperties(
+    settings: AppThemeSettings,
+): Record<string, string> {
+    const themeColors = getPrimaryThemeColors(
+        settings.themeMode,
+        settings.primaryColor,
+    )
+    const primaryForeground = getPrimaryColorForeground(settings.primaryColor)
+
+    return {
+        '--color-primary': settings.primaryColor,
+        '--color-primary-foreground': primaryForeground,
+        '--color-primary-hover-foreground': primaryForeground,
+        '--color-primary-text': getPrimaryTextColor(
+            settings.primaryColor,
+            themeColors.surface,
+        ),
+        '--color-primary-hover': settings.primaryColorHover,
+        '--color-background-dark': themeColors.background,
+        '--color-border-dark': themeColors.border,
+        '--color-danger': themeColors.danger,
+        '--color-focus-ring': themeColors.focusRing,
+        '--color-foreground': themeColors.foreground,
+        '--color-input-dark': themeColors.input,
+        '--color-secondary-text': themeColors.secondaryText,
+        '--color-success': themeColors.success,
+        '--color-surface-dark': themeColors.surface,
+        '--color-warning': themeColors.warning,
+        '--rentner-control': themeColors.input,
+        '--rentner-control-hover':
+            settings.themeMode === 'light'
+                ? themeColors.background
+                : themeColors.border,
+        '--rentner-surface': themeColors.surface,
+        '--rentner-foreground': themeColors.foreground,
+        '--rentner-muted': themeColors.secondaryText,
+        '--rentner-border': themeColors.border,
+        '--rentner-accent': settings.primaryColor,
+        '--rentner-accent-hover': settings.primaryColorHover,
+        '--rentner-accent-foreground': primaryForeground,
+        '--rentner-danger': themeColors.danger,
+        '--rentner-success': themeColors.success,
+        '--rentner-warning': themeColors.warning,
+        '--rentner-info': themeColors.focusRing,
+        '--font-sans': USER_FONT_FAMILY_STYLES[settings.fontFamily],
+        ...getPrimaryThemePalette(settings.primaryColor),
+    }
+}
+
 export function applyAppThemeSettings(settings: AppThemeSettings) {
-    const themeColors = USER_THEME_MODE_COLORS[settings.themeMode]
     const rootElement = document.documentElement
     const rootStyle = rootElement.style
-    const primaryForeground = getPrimaryColorForeground(settings.primaryColor)
 
     rootElement.classList.toggle(
         'app-theme-light',
@@ -37,51 +85,33 @@ export function applyAppThemeSettings(settings: AppThemeSettings) {
         settings.themeMode === 'dark',
     )
 
-    rootStyle.setProperty('--color-primary', settings.primaryColor)
-    rootStyle.setProperty('--color-primary-foreground', primaryForeground)
-    rootStyle.setProperty('--color-primary-hover-foreground', primaryForeground)
-    rootStyle.setProperty(
-        '--color-primary-text',
-        getPrimaryTextColor(settings.primaryColor, themeColors.surface),
-    )
-    rootStyle.setProperty('--color-primary-hover', settings.primaryColorHover)
-    rootStyle.setProperty('--color-background-dark', themeColors.background)
-    rootStyle.setProperty('--color-border-dark', themeColors.border)
-    rootStyle.setProperty('--color-danger', themeColors.danger)
-    rootStyle.setProperty('--color-focus-ring', themeColors.focusRing)
-    rootStyle.setProperty('--color-foreground', themeColors.foreground)
-    rootStyle.setProperty('--color-input-dark', themeColors.input)
-    rootStyle.setProperty('--color-secondary-text', themeColors.secondaryText)
-    rootStyle.setProperty('--color-success', themeColors.success)
-    rootStyle.setProperty('--color-surface-dark', themeColors.surface)
-    rootStyle.setProperty('--color-warning', themeColors.warning)
+    for (const [property, value] of Object.entries(
+        getAppThemeProperties(settings),
+    )) {
+        rootStyle.setProperty(property, value)
+    }
 
-    rootStyle.setProperty('--rentner-control', themeColors.input)
-    rootStyle.setProperty(
-        '--rentner-control-hover',
-        settings.themeMode === 'light'
-            ? themeColors.background
-            : themeColors.border,
-    )
-    rootStyle.setProperty('--rentner-surface', themeColors.surface)
-    rootStyle.setProperty('--rentner-foreground', themeColors.foreground)
-    rootStyle.setProperty('--rentner-muted', themeColors.secondaryText)
-    rootStyle.setProperty('--rentner-border', themeColors.border)
-    rootStyle.setProperty('--rentner-accent', settings.primaryColor)
-    rootStyle.setProperty('--rentner-accent-hover', settings.primaryColorHover)
-    rootStyle.setProperty('--rentner-accent-foreground', primaryForeground)
-    rootStyle.setProperty('--rentner-danger', themeColors.danger)
-    rootStyle.setProperty('--rentner-success', themeColors.success)
-    rootStyle.setProperty('--rentner-warning', themeColors.warning)
-    rootStyle.setProperty('--rentner-info', themeColors.focusRing)
-    rootStyle.setProperty(
-        '--font-sans',
-        USER_FONT_FAMILY_STYLES[settings.fontFamily],
-    )
     rootStyle.colorScheme = settings.themeMode
     rootStyle.fontSize = `${settings.fontSize}px`
 }
 
+/**
+ * Returns the document to the public stylesheet once the signed-in shell
+ * unmounts, so public pages never inherit a signed-in theme.
+ */
 export function resetAppThemeSettings() {
-    applyAppThemeSettings(DEFAULT_APP_THEME_SETTINGS)
+    const rootElement = document.documentElement
+    const rootStyle = rootElement.style
+
+    rootElement.classList.toggle('app-theme-light', false)
+    rootElement.classList.toggle('app-theme-dark', false)
+
+    for (const property of Object.keys(
+        getAppThemeProperties(DEFAULT_APP_THEME_SETTINGS),
+    )) {
+        rootStyle.removeProperty(property)
+    }
+
+    rootStyle.colorScheme = ''
+    rootStyle.fontSize = ''
 }

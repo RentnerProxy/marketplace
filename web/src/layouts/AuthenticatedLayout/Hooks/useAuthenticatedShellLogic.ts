@@ -7,6 +7,7 @@ import { getCurrentBrowserPath } from '@/lib/Browser/browser.ts'
 import { getProfileImageSrc } from '@/lib/Images/userImageUrls.ts'
 import {
     DEFAULT_FAVICON_SRC,
+    DEFAULT_SYSTEM_LOGO_SRC,
     DEFAULT_IMAGE_64_SRC,
 } from '@/lib/Images/imageFallbacks.ts'
 import {
@@ -23,12 +24,13 @@ import {
     DEFAULT_PRIMARY_COLOR,
     DEFAULT_THEME_MODE,
     USER_FONT_FAMILY_STYLES,
-    USER_THEME_MODE_COLORS,
 } from '@/config/user-theme-colors.config.ts'
 import {
     getPrimaryColorForeground,
     getPrimaryColorHover,
     getPrimaryTextColor,
+    getPrimaryThemeColors,
+    getPrimaryThemePalette,
 } from '@/lib/Theme/primaryColor.ts'
 import {
     applyAppThemeSettings,
@@ -115,11 +117,14 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
         ? getProfileImageSrc(userId, profileImageVersion, 64)
         : DEFAULT_IMAGE_64_SRC
 
-    const systemLogoSrc64 = systemSettings?.logoSrc64 ?? DEFAULT_FAVICON_SRC
+    const systemLogoSrc = systemSettings?.logoSrc ?? DEFAULT_FAVICON_SRC
+    const hasCustomSystemLogo =
+        systemLogoSrc !== DEFAULT_FAVICON_SRC &&
+        systemLogoSrc !== DEFAULT_SYSTEM_LOGO_SRC
     const systemFaviconSrc = systemSettings?.faviconSrc ?? DEFAULT_FAVICON_SRC
     const companyName =
         systemSettings?.companyName ?? PROJECT_CONFIG.defaultName
-    const themeColors = USER_THEME_MODE_COLORS[themeMode]
+    const themeColors = getPrimaryThemeColors(themeMode, primaryColor)
     const primaryForeground = getPrimaryColorForeground(primaryColor)
     const shellStyle = {
         '--color-primary': primaryColor,
@@ -140,6 +145,7 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
         '--color-success': themeColors.success,
         '--color-surface-dark': themeColors.surface,
         '--color-warning': themeColors.warning,
+        ...getPrimaryThemePalette(primaryColor),
         '--font-sans': USER_FONT_FAMILY_STYLES[fontFamily],
         colorScheme: themeMode,
         fontSize: `${fontSize}px`,
@@ -251,7 +257,8 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
             userId: userId ?? null,
             username: sessionData?.user?.username ?? t('nav.user'),
             companyName,
-            systemLogoSrc64,
+            systemLogoSrc,
+            hasCustomSystemLogo,
             systemFaviconSrc,
             profileImageSrc64,
             primaryColor,
@@ -287,6 +294,7 @@ export default function useAuthenticatedShellLogic(): AuthenticatedShellLogicRet
         handler: {
             expandMaintenanceBanner,
             minimizeMaintenanceBanner,
+            toggleCollapse: uiHandler.toggleCollapse,
         },
     }
 }

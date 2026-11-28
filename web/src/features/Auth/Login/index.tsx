@@ -11,11 +11,11 @@ import type { LoginPageProps } from './Types/login-component-props.types.ts'
 
 const inputDesign = {
     bg: 'bg-white',
-    border: 'border-[#cedbd1]',
+    border: 'border-ink',
     text: 'text-marketplace-void',
-    labelText: 'text-[#294b35]',
-    placeholder: 'placeholder:text-[#728578]',
-    iconColor: 'text-[#728578]',
+    labelText: 'text-ink',
+    placeholder: 'placeholder:text-steel-600',
+    iconColor: 'text-steel-600',
 }
 
 export default function LoginPage({ redirectReason }: LoginPageProps) {
@@ -45,15 +45,15 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                         onSubmit={handler.handleSubmit}
                         className="mt-4 space-y-4"
                     >
-                        <div className="flex items-center gap-4 text-xs font-medium text-[#65786c]">
+                        <div className="flex items-center gap-4 text-xs font-medium text-steel-600">
                             <span
                                 aria-hidden="true"
-                                className="h-px flex-1 bg-[#d7e2d9]"
+                                className="h-px flex-1 bg-ink/25"
                             />
                             <span>{t('auth.experience.credentials')}</span>
                             <span
                                 aria-hidden="true"
-                                className="h-px flex-1 bg-[#d7e2d9]"
+                                className="h-px flex-1 bg-ink/25"
                             />
                         </div>
 
@@ -104,7 +104,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                         <div className="flex justify-end">
                             <Link
                                 to="/forgot-password"
-                                className="rounded text-sm font-semibold text-[#176b34] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                                className="rounded text-sm font-semibold text-proxy-800 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
                             >
                                 {t('auth.login.forgotPassword')}
                             </Link>
@@ -114,7 +114,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                             <button
                                 type="submit"
                                 disabled={state.isLoading}
-                                className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                                className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                             >
                                 {state.isLoading ? (
                                     <LoaderCircle
@@ -137,7 +137,7 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                                 disabled={state.isPasskeyLoading}
                                 onClick={handler.handlePasskeyLogin}
                                 aria-describedby="passkey-login-description"
-                                className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#cedbd1] bg-transparent px-4 py-3 text-sm font-semibold text-[#294b35] transition-colors hover:border-[#81a78c] hover:bg-[#edf4ed] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                                className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 border-ink bg-white px-4 py-3 font-comic text-sm font-bold text-ink shadow-[3px_3px_0_0_var(--color-ink)] transition-colors hover:border-proxy-700 hover:bg-proxy-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                             >
                                 {state.isPasskeyLoading ? (
                                     <LoaderCircle
@@ -161,11 +161,11 @@ export default function LoginPage({ redirectReason }: LoginPageProps) {
                     </form>
 
                     {state.isPublicRegistrationEnabled && (
-                        <p className="mt-5 border-t border-[#d7e2d9] pt-4 text-center text-sm text-[#65786c]">
+                        <p className="mt-5 border-t border-dashed border-ink/40 pt-4 text-center text-sm text-steel-600">
                             {t('auth.login.newHere')}{' '}
                             <Link
                                 to="/register"
-                                className="rounded font-bold text-[#176b34] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                                className="rounded font-bold text-proxy-800 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
                             >
                                 {t('auth.login.discoverRegistration')}
                             </Link>

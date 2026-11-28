@@ -17,12 +17,6 @@ function createValidUpdateUserInput() {
         accountType: 'public',
         username,
         email,
-        firstName: 'Alex',
-        lastName: 'Example',
-        street: 'Example Street',
-        houseNumber: '12A',
-        postalCode: '12345',
-        city: 'Example City',
         permissionKeys: ['admin.dashboard', 'admin.userManagement'],
     }
 }
@@ -68,15 +62,6 @@ describe('UserManagement Validierung', function () {
         expect(
             updateUserProfileInputSchema.safeParse(profileInput).success,
         ).toBe(true)
-    })
-
-    it('lehnt zu lange optionale Profildaten ab', function () {
-        const result = updateUserProfileInputSchema.safeParse({
-            ...createValidUpdateUserInput(),
-            city: 'a'.repeat(101),
-        })
-
-        expect(result.success).toBe(false)
     })
 
     it('lehnt ungültige User-IDs für Admin-Aktionen ab', function () {

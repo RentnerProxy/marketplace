@@ -11,7 +11,6 @@ import {
     updateCurrentUserBackgroundInputSchema,
     updateCurrentUserFontFamilyInputSchema,
     updateCurrentUserFontSizeInputSchema,
-    updateCurrentUserPersonalInfoInputSchema,
     updateCurrentUserPrimaryColorInputSchema,
     updateCurrentUserProfileImageInputSchema,
 } from '@/features/UserSettings/validation.ts'
@@ -23,19 +22,6 @@ const passkeyId = '01941f29-7c00-7000-8000-000000000002'
 const challengeId = '01941f29-7c00-7000-8000-000000000001'
 
 describe('UserSettings Validierung', function () {
-    it('akzeptiert gültige persönliche Daten', function () {
-        const result = updateCurrentUserPersonalInfoInputSchema.safeParse({
-            firstName: 'Alex',
-            lastName: 'Example',
-            street: 'Example Street',
-            houseNumber: '12A',
-            postalCode: '12345',
-            city: 'Example City',
-        })
-
-        expect(result.success).toBe(true)
-    })
-
     it('akzeptiert gültige Profilbild-Daten', function () {
         const result = updateCurrentUserProfileImageInputSchema.safeParse({
             imageDataUrl,

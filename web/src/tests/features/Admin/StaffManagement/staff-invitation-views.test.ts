@@ -8,6 +8,7 @@ import type { StaffInvitationSummary } from '@/features/Admin/StaffManagement/Ty
 import type { StaffInvitationActionsProps } from '@/features/Admin/StaffManagement/Components/StaffInvitationManagement/Types/staff-invitation-management.types.ts'
 import type { StaffInvitationPermissionFieldsProps } from '@/features/Admin/StaffManagement/Types/staff-invitations-logic.types.ts'
 import { STAFF_INVITATIONS_QUERY_KEY } from '@/lib/Permissions/permissionManagementCache.ts'
+import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
 import SafeDeleteModal from '@/shared/SafeDeleteModal/index.tsx'
 import {
     findElement,
@@ -121,7 +122,7 @@ function revokeModal() {
     )
 }
 
-function clickRowAction(invitation: StaffInvitationSummary, label: string) {
+function rowActionMenu(invitation: StaffInvitationSummary) {
     const { table } = tableView()
     const renderCell = table.columns.find(
         (column) => column.id === 'actions',
@@ -133,11 +134,22 @@ function clickRowAction(invitation: StaffInvitationSummary, label: string) {
     >[0])
     if (!isValidElement<StaffInvitationActionsProps>(action))
         throw new Error('Expected invitation row controls')
-    const actions = StaffInvitationActions(action.props)
-    invoke(
-        findElement(actions, (element) => element.props.ariaLabel === label),
-        'onClick',
+    const menu = StaffInvitationActions(action.props)
+    if (
+        menu.type !== ActionMenu ||
+        !isValidElement<Parameters<typeof ActionMenu>[0]>(menu)
     )
+        throw new Error('Expected invitation action menu')
+    return menu.props
+}
+
+function clickRowAction(invitation: StaffInvitationSummary, label: string) {
+    const item = rowActionMenu(invitation).items.find(
+        (entry) => entry.label === label,
+    )
+    if (!item?.onSelect || item.disabled)
+        throw new Error(`Expected enabled action ${label}`)
+    item.onSelect()
 }
 
 beforeEach(() => {
@@ -291,7 +303,19 @@ describe('staff invitation management table', () => {
     })
 
     it('resends and toggles invitation status, and withdraws only on confirmation', async () => {
+        expect(
+            rowActionMenu(activeInvitation)
+                .items.filter(
+                    (item) => 'destructive' in item && item.destructive,
+                )
+                .map((item) => item.label),
+        ).toEqual(['admin.staff.invitations.revoke'])
         clickRowAction(activeInvitation, 'admin.staff.invitations.resend')
+        expect(
+            rowActionMenu(activeInvitation).items.every(
+                (item) => item.disabled,
+            ),
+        ).toBe(true)
         await settle()
         clickRowAction(disabledInvitation, 'common.activate')
         await settle()

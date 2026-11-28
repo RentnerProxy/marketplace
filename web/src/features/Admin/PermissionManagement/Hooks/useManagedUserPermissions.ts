@@ -67,12 +67,6 @@ const managedUsersColumns = managedUsersColumnHelper.columns([
     managedUsersColumnHelper.accessor('email', {
         enableGlobalFilter: true,
     }),
-    managedUsersColumnHelper.accessor('firstName', {
-        enableGlobalFilter: true,
-    }),
-    managedUsersColumnHelper.accessor('lastName', {
-        enableGlobalFilter: true,
-    }),
 ])
 const managedUsersInitialState = {
     pagination: {

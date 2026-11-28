@@ -27,7 +27,7 @@ export default function TwoFactorForm({
                         size="lg"
                     />
                 </div>
-                <h1 className="font-display text-3xl text-marketplace-void">
+                <h1 className="comic-title text-5xl text-ink">
                     {t('auth.twoFactor.title')}
                 </h1>
                 <p className="text-sm text-[#52675d]">
@@ -38,8 +38,8 @@ export default function TwoFactorForm({
             <div className="my-4">
                 <OtpInput
                     customDesign={{
-                        bg: 'bg-[#f5f8f6]',
-                        border: 'border-[#cbd9d0]',
+                        bg: 'bg-mist-50',
+                        border: 'border-ink',
                         text: 'text-marketplace-void',
                     }}
                     value={code}
@@ -61,8 +61,8 @@ export default function TwoFactorForm({
             <label
                 className={`flex cursor-pointer items-start gap-3 rounded-md border p-3.5 transition-colors ${
                     trustThisDevice
-                        ? 'border-[#a2c7ae] bg-[#e9fff0] shadow-[inset_3px_0_0_var(--color-primary)]'
-                        : 'border-[#dce6df] bg-[#f5f8f6] hover:border-[#a2c7ae]'
+                        ? 'border-ink bg-proxy-300 shadow-[3px_3px_0_0_var(--color-ink)]'
+                        : 'border-ink/40 bg-mist-50 hover:border-proxy-700'
                 } ${isLoading ? 'pointer-events-none opacity-50' : ''}`}
             >
                 <div className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
@@ -91,7 +91,7 @@ export default function TwoFactorForm({
                     </span>
                 </div>
                 <div className="flex gap-2 text-left">
-                    <Laptop className="mt-0.5 h-4 w-4 shrink-0 text-[#0d6d2b]" />
+                    <Laptop className="mt-0.5 h-4 w-4 shrink-0 text-proxy-800" />
                     <div>
                         <span className="block text-sm font-medium text-marketplace-void">
                             {t('auth.twoFactor.rememberDevice')}

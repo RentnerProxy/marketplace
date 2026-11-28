@@ -12,26 +12,26 @@ import {
 
 const inputDesign = {
     bg: 'bg-white',
-    border: 'border-[#cedbd1]',
+    border: 'border-ink',
     text: 'text-marketplace-void',
-    labelText: 'text-[#294b35]',
-    placeholder: 'placeholder:text-[#728578]',
-    iconColor: 'text-[#728578]',
+    labelText: 'text-ink',
+    placeholder: 'placeholder:text-steel-600',
+    iconColor: 'text-steel-600',
 }
 
 export function RegistrationClosed() {
     const { t } = useTranslationStore()
     return (
         <AuthLayout>
-            <h1 className="font-display text-3xl leading-[1.1] tracking-tight sm:text-4xl">
+            <h1 className="comic-title text-5xl sm:text-6xl">
                 {t('auth.register.title')}
             </h1>
-            <p className="mt-3 text-sm leading-6 text-[#65786c]">
+            <p className="mt-3 text-sm leading-6 text-steel-600">
                 {t('auth.register.disabled')}
             </p>
             <Link
                 to="/login"
-                className="mt-5 inline-block rounded font-bold text-[#176b34] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                className="mt-5 inline-block rounded font-bold text-proxy-800 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
             >
                 {t('auth.login.login')}
             </Link>
@@ -45,16 +45,16 @@ export default function RegisterPage() {
     return (
         <AuthLayout>
             <section aria-labelledby="register-title">
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#176b34]">
+                <p className="comic-caption mb-4">
                     {t('auth.register.eyebrow')}
                 </p>
                 <h1
                     id="register-title"
-                    className="font-display text-3xl leading-[1.1] tracking-tight sm:text-4xl"
+                    className="comic-title text-5xl sm:text-6xl"
                 >
                     {t('auth.register.title')}
                 </h1>
-                <p className="mb-4 mt-2 text-sm leading-5 text-[#65786c]">
+                <p className="mb-4 mt-2 text-sm leading-5 text-steel-600">
                     {t('auth.experience.emailHint')}
                 </p>
                 {state.phase === 'form' ? (
@@ -65,17 +65,17 @@ export default function RegisterPage() {
                             className="mt-4 space-y-3"
                         >
                             {!state.isSocial && (
-                                <div className="flex items-center gap-4 text-xs font-medium text-[#65786c]">
+                                <div className="flex items-center gap-4 text-xs font-medium text-steel-600">
                                     <span
                                         aria-hidden="true"
-                                        className="h-px flex-1 bg-[#d7e2d9]"
+                                        className="h-px flex-1 bg-ink/25"
                                     />
                                     <span>
                                         {t('auth.experience.emailRegistration')}
                                     </span>
                                     <span
                                         aria-hidden="true"
-                                        className="h-px flex-1 bg-[#d7e2d9]"
+                                        className="h-px flex-1 bg-ink/25"
                                     />
                                 </div>
                             )}
@@ -89,7 +89,7 @@ export default function RegisterPage() {
                                 {state.isSocial && (
                                     <p
                                         role="status"
-                                        className="flex items-start gap-3 rounded-xl border border-[#cce4d1] bg-[#edf6ed] p-4 text-sm leading-6 text-[#294b35]"
+                                        className="flex items-start gap-3 rounded-md border-2 border-ink bg-proxy-50 p-4 shadow-[3px_3px_0_0_var(--color-ink)] text-sm leading-6 text-ink"
                                     >
                                         <UserRound
                                             aria-hidden="true"
@@ -195,14 +195,14 @@ export default function RegisterPage() {
                                 {!state.isSocial && (
                                     <p
                                         id="registration-password-policy"
-                                        className="text-xs leading-5 text-[#65786c]"
+                                        className="text-xs leading-5 text-steel-600"
                                     >
                                         {t('auth.register.passwordPolicy', {
                                             min: REGISTRATION_POLICY.minimumPasswordLength,
                                         })}
                                     </p>
                                 )}
-                                <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-[#65786c]">
+                                <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-steel-600">
                                     <input
                                         type="checkbox"
                                         name="acceptTerms"
@@ -221,20 +221,20 @@ export default function RegisterPage() {
                                                 event.target.checked,
                                             )
                                         }
-                                        className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded accent-[#0d6d2b] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                                        className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded accent-[#0d6d2b] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
                                     />
                                     <span>
                                         {t('auth.register.acceptTerms')}{' '}
                                         <Link
                                             to="/terms"
-                                            className="font-bold text-[#0d6d2b] underline"
+                                            className="font-bold text-proxy-800 underline"
                                         >
                                             {t('auth.register.terms')}
                                         </Link>{' '}
                                         {t('auth.register.and')}{' '}
                                         <Link
                                             to="/privacy"
-                                            className="font-bold text-[#0d6d2b] underline"
+                                            className="font-bold text-proxy-800 underline"
                                         >
                                             {t('auth.register.privacy')}
                                         </Link>
@@ -253,7 +253,7 @@ export default function RegisterPage() {
                                 <button
                                     type="submit"
                                     disabled={state.isPending}
-                                    className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                                    className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                                 >
                                     {t(
                                         state.isPending
@@ -270,7 +270,7 @@ export default function RegisterPage() {
                                         type="button"
                                         onClick={handler.handleCancelSocial}
                                         disabled={state.isPending}
-                                        className="min-h-11 w-full cursor-pointer rounded-lg text-sm text-[#176b34] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="min-h-11 w-full cursor-pointer rounded-lg text-sm text-proxy-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {t('auth.social.cancel')}
                                     </button>
@@ -279,12 +279,12 @@ export default function RegisterPage() {
                         </form>
                     </>
                 ) : state.phase === 'verify' ? (
-                    <div className="mt-7 space-y-5 rounded-2xl border border-[#cce4d1] bg-white p-6">
+                    <div className="mt-7 space-y-5 rounded-md border-[3px] border-ink bg-white p-6 shadow-[5px_5px_0_0_var(--color-ink)]">
                         <MailCheck
                             aria-hidden="true"
-                            className="h-9 w-9 text-[#176b34]"
+                            className="h-9 w-9 text-proxy-800"
                         />
-                        <p className="text-sm leading-7 text-[#53675a]">
+                        <p className="text-sm leading-7 text-steel-600">
                             {t(
                                 state.canVerify
                                     ? 'auth.register.verifyDescription'
@@ -295,7 +295,7 @@ export default function RegisterPage() {
                             type="button"
                             disabled={state.isPending || !state.canVerify}
                             onClick={handler.handleVerify}
-                            className="min-h-[52px] w-full cursor-pointer rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                            className="min-h-[52px] w-full cursor-pointer rounded-xl bg-primary px-5 py-3 text-sm font-bold text-marketplace-void transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                         >
                             {t(
                                 state.isPending
@@ -307,17 +307,17 @@ export default function RegisterPage() {
                 ) : (
                     <p
                         role="status"
-                        className="mt-7 flex items-start gap-4 rounded-2xl border border-[#cce4d1] bg-white p-6 text-sm leading-7 text-[#294b35]"
+                        className="mt-7 flex items-start gap-4 rounded-md border-[3px] border-ink bg-white p-6 shadow-[5px_5px_0_0_var(--color-ink)] text-sm leading-7 text-ink"
                     >
                         {state.phase === 'inbox' ? (
                             <MailCheck
                                 aria-hidden="true"
-                                className="mt-1 h-6 w-6 shrink-0 text-[#176b34]"
+                                className="mt-1 h-6 w-6 shrink-0 text-proxy-800"
                             />
                         ) : (
                             <CheckCircle2
                                 aria-hidden="true"
-                                className="mt-1 h-6 w-6 shrink-0 text-[#176b34]"
+                                className="mt-1 h-6 w-6 shrink-0 text-proxy-800"
                             />
                         )}
                         {t(
@@ -332,16 +332,16 @@ export default function RegisterPage() {
                         type="button"
                         onClick={handler.handleRetry}
                         disabled={state.isPending}
-                        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg text-sm text-[#176b34] underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-2 min-h-11 w-full cursor-pointer rounded-lg text-sm text-proxy-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {t('auth.register.retryRegistration')}
                     </button>
                 )}
-                <p className="mt-5 border-t border-[#d7e2d9] pt-4 text-center text-sm text-[#65786c]">
+                <p className="mt-5 border-t border-dashed border-ink/40 pt-4 text-center text-sm text-steel-600">
                     {t('auth.register.alreadyRegistered')}{' '}
                     <Link
                         to="/login"
-                        className="rounded font-bold text-[#176b34] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                        className="rounded font-bold text-proxy-800 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
                     >
                         {t('auth.login.login')}
                     </Link>

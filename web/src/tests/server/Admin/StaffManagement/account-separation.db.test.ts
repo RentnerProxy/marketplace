@@ -429,7 +429,7 @@ describe('public and staff account separation in PostgreSQL', () => {
         const promotion = { id, accountType: 'public' as const }
         await db
             .update(user_profiles)
-            .set({ firstName: 'Test profile' })
+            .set({ bio: 'Test profile' })
             .where(eq(user_profiles.userId, id))
         await db.insert(sessions).values({
             id: crypto.randomUUID(),
@@ -479,7 +479,7 @@ describe('public and staff account separation in PostgreSQL', () => {
                 .select()
                 .from(user_profiles)
                 .where(eq(user_profiles.userId, id)),
-        ).toMatchObject([{ firstName: 'Test profile' }])
+        ).toMatchObject([{ bio: 'Test profile' }])
         expect(await getUserPermissionKeys(id)).toEqual([
             ...DEFAULT_PUBLIC_PERMISSION_KEYS,
         ])

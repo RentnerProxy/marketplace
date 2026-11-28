@@ -9,9 +9,9 @@ import type {
     finishCurrentUserPasskeyRegistrationInputSchema,
     updateCurrentUserBackgroundAppearanceInputSchema,
     updateCurrentUserBackgroundInputSchema,
+    updateCurrentUserBioInputSchema,
     updateCurrentUserFontFamilyInputSchema,
     updateCurrentUserFontSizeInputSchema,
-    updateCurrentUserPersonalInfoInputSchema,
     updateCurrentUserPrimaryColorInputSchema,
     updateCurrentUserProfileImageInputSchema,
     updateCurrentUserThemeModeInputSchema,
@@ -44,14 +44,14 @@ export type UpdateCurrentUserBackgroundAppearanceInput = z.infer<
 export type UpdateCurrentUserBackgroundInput = z.infer<
     typeof updateCurrentUserBackgroundInputSchema
 >
+export type UpdateCurrentUserBioInput = z.infer<
+    typeof updateCurrentUserBioInputSchema
+>
 export type UpdateCurrentUserFontFamilyInput = z.infer<
     typeof updateCurrentUserFontFamilyInputSchema
 >
 export type UpdateCurrentUserFontSizeInput = z.infer<
     typeof updateCurrentUserFontSizeInputSchema
->
-export type UpdateCurrentUserPersonalInfoInput = z.infer<
-    typeof updateCurrentUserPersonalInfoInputSchema
 >
 export type UpdateCurrentUserPrimaryColorInput = z.infer<
     typeof updateCurrentUserPrimaryColorInputSchema

@@ -63,12 +63,7 @@ export async function validateSessionService() {
     void passwordHash
     const safeUser = {
         ...sessionUser,
-        firstName: session.profile?.firstName ?? null,
-        lastName: session.profile?.lastName ?? null,
-        street: session.profile?.street ?? null,
-        houseNumber: session.profile?.houseNumber ?? null,
-        postalCode: session.profile?.postalCode ?? null,
-        city: session.profile?.city ?? null,
+        bio: session.profile?.bio ?? null,
         primaryColor: session.settings?.primaryColor ?? null,
         themeMode: isUserThemeMode(session.settings?.themeMode)
             ? session.settings.themeMode
