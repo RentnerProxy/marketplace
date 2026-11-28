@@ -58,5 +58,5 @@ jobs:
         uses: ./.github/workflows/app-candidate.yml
         with:
             source_repository: RentnerProxy/app-template-rs
-            source_commit: caf873f06a334e81bfc41912c5630fc72fcb231d
+            source_commit: c0991159677a56514f65d25610f45b3167681f5b
             artifact_prefix: template-rs
