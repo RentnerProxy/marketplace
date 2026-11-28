@@ -1209,6 +1209,111 @@
                 }
             }
         },
+        "/platform/v1/incidents/{incidentKey}": {
+            "post": {
+                "operationId": "setIncident",
+                "summary": "Open, update or resolve an app incident in platform notifications",
+                "description": "Requires notifications.incidents.manage.v1. The incident key is app-chosen and stays the same while the incident lasts. The platform deduplicates incidents per installation and key, and resolves the open incidents of an installation that stops, loses the grant or is removed.",
+                "x-rentnerproxy-socket": "core.sock",
+                "security": [
+                    {
+                        "CoreCredential": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/Installation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Generation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/Delegation"
+                    },
+                    {
+                        "$ref": "#/components/parameters/incidentKey"
+                    },
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AppIncidentChange"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "The operation completed."
+                    },
+                    "401": {
+                        "description": "The request credential is absent or invalid.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "The installation, generation, actor, or resource is unauthorized.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The resource is unavailable to this installation.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The category is not declared, or the idempotency key was used for a different change.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "4XX": {
+                        "description": "The request was rejected with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "5XX": {
+                        "description": "The operation failed with a stable problem code.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/platform/v1/audit-events": {
             "post": {
                 "operationId": "recordAuditEvent",
@@ -2283,6 +2388,14 @@
                     "$ref": "#/components/schemas/RecordId"
                 }
             },
+            "incidentKey": {
+                "name": "incidentKey",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/RecordId"
+                }
+            },
             "domain": {
                 "name": "domain",
                 "in": "path",
@@ -2399,6 +2512,9 @@
             },
             "AppNotification": {
                 "$ref": "./contracts.schema.json#/$defs/AppNotification"
+            },
+            "AppIncidentChange": {
+                "$ref": "./contracts.schema.json#/$defs/AppIncidentChange"
             },
             "AppAuditEvent": {
                 "$ref": "./contracts.schema.json#/$defs/AppAuditEvent"

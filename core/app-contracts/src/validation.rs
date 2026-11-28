@@ -120,6 +120,17 @@ pub(super) fn validate_manifest(manifest: &Value) -> Result<(), ContractError> {
     {
         return Err(ContractError::InvalidManifest);
     }
+    let categories = manifest.get("incidentCategories");
+    let manages_incidents = array(&manifest["capabilities"])
+        .iter()
+        .any(|item| string(&item["id"]) == "notifications.incidents.manage.v1");
+    if manages_incidents != categories.is_some()
+        || categories.is_some_and(|categories| {
+            !unique_strings(array(categories).iter().map(|item| string(&item["id"])))
+        })
+    {
+        return Err(ContractError::InvalidManifest);
+    }
     Ok(())
 }
 

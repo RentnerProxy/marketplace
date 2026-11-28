@@ -1129,6 +1129,217 @@
             "valid": false
         },
         {
+            "title": "an open incident names its category, severity, plain text and resource",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "an incident without a resource omits it",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "app-health",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "The upstream did not answer within 3 seconds after 3 checks."
+            },
+            "valid": true
+        },
+        {
+            "title": "a resolved incident carries only its status",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "resolved"
+            },
+            "valid": true
+        },
+        {
+            "title": "a resolved incident takes no text",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "resolved",
+                "message": "Recovered"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident severity has no info level",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "info",
+                "title": "app.example.net is unreachable",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a URL",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Details at https://status.example.net",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a bare web address",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "See www.example.net",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a mail link",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Write to mailto:ops@example.net",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain format characters",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net‮tnemhcatta",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain line breaks",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First line\nSecond line",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a line separator",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First Second",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a paragraph separator",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First Second",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text keeps spaces and emoji",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "Upstream down 🚨",
+                "message": "Still down after 3 checks — investigating.",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "incident text folds only ASCII letters when it looks for a scheme",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Marked ſ://example.net as unreachable",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "incident text rejects an upper case URL scheme",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Details at HTTPS://status.example.net",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "an incident title stays within 80 characters",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "an incident message stays within 400 characters",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
             "title": "app-owned JSON preserves arbitrary decoded application keys",
             "schema": "AppApiPayload",
             "document": {

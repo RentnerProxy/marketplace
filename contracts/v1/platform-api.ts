@@ -153,6 +153,52 @@ const notification = z.strictObject({
     message: summary,
 })
 
+/** A link-like run that a mail client could turn into a link, after ASCII-only lowercasing. */
+const linkLike = /(?:[a-z][a-z0-9+.-]*:\/\/|www\.|mailto:)/u
+/** Lowercase ASCII letters only, as the Rust SDK does, so both SDKs fold case alike. */
+function asciiLowercase(value: string) {
+    return value.replace(/[A-Z]/gu, (letter) => letter.toLowerCase())
+}
+/**
+ * Plain incident text on one line: no control, surrogate, format, line or paragraph separator
+ * characters, and no links.
+ */
+function incidentText(maximum: number) {
+    return z
+        .string()
+        .regex(
+            new RegExp(
+                `^[^\\p{Cc}\\p{Cs}\\p{Cf}\\p{Zl}\\p{Zp}]{1,${maximum}}$`,
+                'u',
+            ),
+        )
+        .refine(
+            (value) => !linkLike.test(asciiLowercase(value)),
+            'Incident text cannot contain links.',
+        )
+}
+const appIncidentChange = z
+    .discriminatedUnion('status', [
+        z.strictObject({
+            status: z.literal('open'),
+            category: recordId.describe(
+                'An incident category the manifest declares.',
+            ),
+            severity: z.enum(['warning', 'error', 'critical']),
+            title: incidentText(80),
+            message: incidentText(400),
+            resourceId: recordId
+                .optional()
+                .describe(
+                    'Required for a proxyHost category and absent otherwise: the listed host ID the incident refers to. The app must hold a read or probe grant that covers the host.',
+                ),
+        }),
+        z.strictObject({ status: z.literal('resolved') }),
+    ])
+    .describe(
+        "Assert the current state of the incident the path key names. Open creates or updates it and resolve closes it. The SDK rejects link-like text. The platform renders title and message as plain text in its own templates, delivers through mail and webhook channels to users who subscribe to the category and may see the resource, and never sends a notification twice for a repeated state. Send the current state again with every observation: while notifications are paused after a restore, the platform keeps no incidents. Derive the idempotency key from the incident key and the asserted state, so a repeated observation reuses it and stays within the platform's idempotency record limit.",
+    )
+
 export const jsonValue = z.json()
 
 const maxLegacyHandoffParts = 1_024
@@ -307,6 +353,7 @@ export const platformApiSchemas = {
         })
         .describe('One result for every requested probe, in request order.'),
     AppNotification: notification,
+    AppIncidentChange: appIncidentChange,
     AppAuditEvent: z.strictObject({
         action: recordId,
         outcome: z.enum(['succeeded', 'rejected', 'failed']),

@@ -145,6 +145,21 @@ export const generatedHttpOperations = {
         "status": 204,
         "summary": "Publish an app-owned notification"
     },
+    setIncident: {
+        "description": "Requires notifications.incidents.manage.v1. The incident key is app-chosen and stays the same while the incident lasts. The platform deduplicates incidents per installation and key, and resolves the open incidents of an installation that stops, loses the grant or is removed.",
+        "failures": {
+            "404": "The resource is unavailable to this installation.",
+            "409": "The category is not declared, or the idempotency key was used for a different change."
+        },
+        "idempotencyKey": true,
+        "method": "POST",
+        "path": "/platform/v1/incidents/{incidentKey}",
+        "pathParameter": "incidentKey",
+        "request": "AppIncidentChange",
+        "socket": "core.sock",
+        "status": 204,
+        "summary": "Open, update or resolve an app incident in platform notifications"
+    },
     recordAuditEvent: {
         "description": "The platform supplies app, installation, actor and timestamp provenance from authenticated context.",
         "idempotencyKey": true,

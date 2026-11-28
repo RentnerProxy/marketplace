@@ -157,6 +157,20 @@ function validateManifest(manifest: AppManifest) {
             'Inconsistent data versions or migrations.',
         )
     }
+    const { incidentCategories } = manifest
+    const managesIncidents = capabilities.some(
+        ({ id }) => id === 'notifications.incidents.manage.v1',
+    )
+    if (
+        managesIncidents !== (incidentCategories !== undefined) ||
+        (incidentCategories !== undefined &&
+            !unique(incidentCategories.map(({ id }) => id)))
+    ) {
+        throw new ContractError(
+            'invalidManifest',
+            'Incident categories and their capability must be declared together, with unique IDs.',
+        )
+    }
 }
 
 function orderedRecord(record: object) {

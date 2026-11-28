@@ -6,6 +6,7 @@ import {
     formatVersion,
     packagePath,
     protocolRange,
+    recordId,
     runtimeProfile,
     sourceIdentity,
     stateVersion,
@@ -19,6 +20,7 @@ const capabilities = [
     ['diagnostics.upstream.probe.v1', 'proxyHosts'],
     ['diagnostics.upstream.probe.v2', 'proxyHosts'],
     ['notifications.publish.v1', 'installation'],
+    ['notifications.incidents.manage.v1', 'installation'],
     ['docker.inventory.observe.v1', 'dockerConnections'],
     ['dns.challenge.manage.v1', 'dnsZones'],
     ['engine.contributions.submit.v1', 'ownedEngineResources'],
@@ -113,6 +115,31 @@ export const appManifest = z
                 'App-owned permission keys. The platform qualifies keys with the app ID.',
             ),
         data: data.optional(),
+        incidentCategories: z
+            .array(
+                z.strictObject({
+                    id: recordId.describe(
+                        'App-local category ID. Keep it stable across releases: subscriptions refer to it together with the app ID.',
+                    ),
+                    name: z
+                        .string()
+                        .regex(/^[^\p{Cc}\p{Cs}\p{Cf}\p{Zl}\p{Zp}]{1,80}$/u)
+                        .describe(
+                            'Name users see when they subscribe and in notifications: one line of plain text without format characters.',
+                        ),
+                    resource: z
+                        .enum(['proxyHost', 'none'])
+                        .describe(
+                            'What each incident of the category refers to. A proxyHost incident names a host the app may read or probe, and only users who may view that host receive it.',
+                        ),
+                }),
+            )
+            .min(1)
+            .max(16)
+            .optional()
+            .describe(
+                'Incident categories the app opens with notifications.incidents.manage.v1. Users subscribe to each category. The SDK checks unique IDs, and that the categories and the capability are declared together.',
+            ),
         resources: z.strictObject({
             startupTimeoutMs: z.number().int().min(100).max(120_000),
             drainTimeoutMs: z.number().int().min(100).max(120_000),
