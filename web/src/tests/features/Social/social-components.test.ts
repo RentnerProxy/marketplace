@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { createElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import {
+    findElement,
+    invoke,
+} from '@/tests/shared/RouteErrorComponent/renderHelpers.ts'
+import {
+    DEFAULT_IMAGE_64_SRC,
+    DEFAULT_IMAGE_SRC,
+} from '@/lib/Images/imageFallbacks.ts'
 import type usePeopleSearchLogic from '@/features/People/Hooks/usePeopleSearchLogic.ts'
 import type usePublicProfilePageLogic from '@/features/PublicProfile/Hooks/usePublicProfilePageLogic.ts'
 import type useFollowButtonLogic from '@/features/Social/Hooks/useFollowButtonLogic.ts'
@@ -106,6 +114,8 @@ const { default: ProfileAppCard } =
     await import('@/features/Social/Components/ProfileAppCard.tsx')
 const { buildPublicProfileHead } =
     await import('@/features/PublicProfile/seo.ts')
+const { default: PublicProfileHero } =
+    await import('@/features/PublicProfile/Components/PublicProfileHero.tsx')
 
 const profile: ProfileSummary = {
     id: '019f72d1-dc60-7040-bdac-9e201573f002',
@@ -310,6 +320,80 @@ describe('public profile page', () => {
             name: 'robots',
             content: 'noindex, nofollow, nosnippet',
         })
+    })
+})
+
+function imageEvent(src: string) {
+    const currentTarget = {
+        currentSrc: src,
+        src,
+        removeAttribute: mock((_name: string) => {}),
+    }
+    return { currentTarget }
+}
+
+function image(tree: ReactNode, alt: string) {
+    return findElement(
+        tree,
+        (element) => element.type === 'img' && element.props.alt === alt,
+    )
+}
+
+describe('profile image fallbacks and follow list controls', () => {
+    it('opens the follower and following lists from the hero counters', () => {
+        const onShowList = mock((_list: string) => {})
+        const tree = PublicProfileHero({
+            bannerSrc: null,
+            isSignedIn: true,
+            joinedLabel: 'Januar 2026',
+            profile: publicProfile,
+            profileImageSrc: '/profile.png',
+            onShowList,
+        })
+        for (const [label, list] of [
+            ['social.followers', 'followers'],
+            ['social.followingList', 'following'],
+        ] as const) {
+            invoke(
+                findElement(
+                    tree,
+                    (element) =>
+                        element.type === 'button' &&
+                        Array.isArray(element.props.children) &&
+                        element.props.children.includes(label),
+                ),
+                'onClick',
+            )
+            expect(onShowList).toHaveBeenLastCalledWith(list)
+        }
+        expect(onShowList).toHaveBeenCalledTimes(2)
+    })
+
+    it('falls back to the default avatar once and then drops the broken source', () => {
+        const tree = PublicProfileHero({
+            bannerSrc: null,
+            isSignedIn: false,
+            joinedLabel: 'Januar 2026',
+            profile: publicProfile,
+            profileImageSrc: '/profile.png',
+            onShowList: mock(),
+        })
+        const broken = imageEvent('/profile.png')
+        invoke(image(tree, 'kevin'), 'onError', broken)
+        expect(broken.currentTarget.src).toBe(DEFAULT_IMAGE_SRC)
+
+        const fallback = imageEvent(DEFAULT_IMAGE_SRC)
+        invoke(image(tree, 'kevin'), 'onError', fallback)
+        expect(fallback.currentTarget.removeAttribute).toHaveBeenCalledWith(
+            'src',
+        )
+    })
+
+    it('replaces a broken profile card avatar with the small default image', () => {
+        const tree = ProfileCard({ profile, isSignedIn: true })
+        const broken = imageEvent('/images/users/kevin/profile-64.webp?v=9')
+        invoke(image(tree, ''), 'onError', broken)
+        expect(broken.currentTarget.src).toBe(DEFAULT_IMAGE_64_SRC)
     })
 })
 
