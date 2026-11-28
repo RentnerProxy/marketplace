@@ -9,10 +9,7 @@ import type {
     SidebarContentProps,
 } from '../Types/authenticated-layout-component-props.types.ts'
 import useAuthenticatedSidebarLogic from '../Hooks/useAuthenticatedSidebarLogic.ts'
-import useSidebarScrollGrip from '../Hooks/useSidebarScrollGrip.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-
-const desktopNavigationId = 'marketplace-desktop-navigation-links'
 
 export function SidebarContent({
     title,
@@ -24,18 +21,14 @@ export function SidebarContent({
     username,
     userIconSrc,
     activeGroupKey,
-    isDesktop = false,
-    navigationRef,
     onNavigate,
 }: SidebarContentProps) {
     const { t } = useTranslationStore()
     const { state, handler } = useAuthenticatedSidebarLogic()
 
     return (
-        <div
-            className={`relative flex min-h-0 w-full flex-1 flex-col gap-6 pt-5 pb-1 text-[#f4f5f7] lg:pt-7 ${isDesktop ? 'marketplace-sidebar-mask' : ''}`}
-        >
-            <div className="px-5 lg:pr-15 lg:pl-[1.35rem]">
+        <div className="relative flex min-h-0 w-full flex-1 flex-col gap-6 pt-5 pb-1 text-[#f4f5f7] lg:pt-7 lg:pr-3">
+            <div className="px-5">
                 <SidebarHeader
                     title={title}
                     subtitle={subtitle}
@@ -47,12 +40,8 @@ export function SidebarContent({
             </div>
 
             <nav
-                id={isDesktop ? desktopNavigationId : undefined}
-                ref={navigationRef}
                 aria-label={t('nav.navigation')}
-                className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain ${
-                    isDesktop ? 'scrollbar-none' : 'marketplace-sidebar-scroll'
-                }`}
+                className="marketplace-sidebar-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
             >
                 <div className="space-y-2.5">
                     {navItems.map((item) => (
@@ -69,7 +58,7 @@ export function SidebarContent({
                 </div>
             </nav>
 
-            <div className="shrink-0 border-t-[3px] border-dashed border-white/25 px-5 py-3 lg:pr-16 lg:pl-6">
+            <div className="shrink-0 border-t-[3px] border-dashed border-white/25 px-5 py-3">
                 <UserProfileButton
                     username={username}
                     profileImageSrc={userIconSrc}
@@ -81,42 +70,15 @@ export function SidebarContent({
     )
 }
 
+/** Straight comic panel: dark surface, speed lines and a system-colour edge. */
 function ExpandedSidebar(sidebar: AuthenticatedSidebarContentProps) {
-    const { t } = useTranslationStore()
-    const { state, handler, refs } = useSidebarScrollGrip()
-
     return (
         <aside
             id="marketplace-desktop-navigation"
-            className="fixed inset-y-0 left-0 z-30 isolate hidden w-(--marketplace-navigation-width) overflow-hidden [--marketplace-sidebar-tail:5rem] lg:flex"
+            className="fixed inset-y-0 left-0 z-30 isolate hidden w-(--marketplace-navigation-width) overflow-hidden lg:flex"
         >
             <SidebarSurface />
-            <SidebarContent
-                {...sidebar}
-                navigationRef={refs.navigation}
-                isDesktop
-            />
-            {state.position && (
-                <div
-                    role="scrollbar"
-                    tabIndex={0}
-                    aria-label={t('nav.navigation')}
-                    aria-controls={desktopNavigationId}
-                    aria-orientation="vertical"
-                    aria-valuemin={0}
-                    aria-valuemax={state.position.maxScroll}
-                    aria-valuenow={Math.round(state.position.scrollTop)}
-                    className="absolute z-10 flex w-6 -translate-x-1/2 cursor-grab touch-none flex-col items-center justify-center gap-1 rounded-md border-2 border-ink bg-proxy-400 shadow-[2px_2px_0_0_var(--color-ink)] select-none hover:bg-proxy-300 focus-visible:outline-dashed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-proxy-300 active:cursor-grabbing"
-                    style={state.position.style}
-                    onPointerDown={handler.handlePointerDown}
-                    onPointerMove={handler.handlePointerMove}
-                    onLostPointerCapture={handler.handlePointerEnd}
-                    onKeyDown={handler.handleKeyDown}
-                >
-                    <span aria-hidden="true" className="h-0.5 w-2.5 bg-ink" />
-                    <span aria-hidden="true" className="h-0.5 w-2.5 bg-ink" />
-                </div>
-            )}
+            <SidebarContent {...sidebar} />
         </aside>
     )
 }

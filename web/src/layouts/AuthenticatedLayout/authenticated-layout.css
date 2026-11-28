@@ -2,32 +2,6 @@
     --marketplace-banner: url('/brand/marketplace-sidebar-texture.webp');
 }
 
-.marketplace-sidebar-mask {
-    mask-image:
-        linear-gradient(#fff, #fff),
-        url('/brand/application-sidebar-surface-desktop.svg');
-    mask-position: left, right;
-    mask-repeat: no-repeat;
-    mask-size:
-        calc(100% - var(--marketplace-sidebar-tail) + 1px) 100%,
-        var(--marketplace-sidebar-tail) 100%;
-}
-
-.marketplace-sidebar-trim {
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--color-primary) 89%, #fff),
-        color-mix(in srgb, var(--color-primary) 57%, #020a0b)
-    );
-}
-
-.marketplace-sidebar-texture {
-    background:
-        linear-gradient(180deg, rgb(2 10 11 / 52%), rgb(2 10 11 / 24%)),
-        var(--marketplace-banner) right center / cover no-repeat
-            var(--color-marketplace-void);
-}
-
 @media (min-width: 90rem) {
     .marketplace-content-header {
         position: relative;

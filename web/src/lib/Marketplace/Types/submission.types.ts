@@ -3,7 +3,7 @@ import type {
     Approval,
     Candidate,
     Publication,
-} from '../../../../../contracts/v1/index.ts'
+} from '@rentnerproxy/app-contracts'
 import type { validationReport } from '../candidateEvidence.ts'
 import type { submitInput } from '@/features/Marketplace/validation.ts'
 import type { CatalogRevocation } from '../catalogPublication.ts'

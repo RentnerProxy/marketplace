@@ -12,7 +12,8 @@ function findNavigationItem(
     groupKey: NavigationLabelKey | null = null,
 ): { item: AuthenticatedNavItem; groupKey: NavigationLabelKey | null } | null {
     for (const item of items) {
-        if (item.to === pathname) {
+        // Sub-pages such as a store listing keep the heading of their section.
+        if (item.to === pathname || pathname.startsWith(`${item.to}/`)) {
             return { item, groupKey }
         }
 

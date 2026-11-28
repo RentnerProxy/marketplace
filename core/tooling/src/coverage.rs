@@ -1,4 +1,4 @@
-use marketplace_artifacts::{invalid, read_file};
+use rentnerproxy_artifacts::{invalid, read_file};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};

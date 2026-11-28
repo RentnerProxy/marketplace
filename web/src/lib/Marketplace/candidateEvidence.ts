@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { packageArtifact } from '../../../../contracts/v1/catalog.ts'
-import type { AppManifest, Candidate } from '../../../../contracts/v1/index.ts'
-import { candidate } from '../../../../contracts/v1/publication.ts'
+import type { AppManifest, Candidate } from '@rentnerproxy/app-contracts'
+import { candidate, packageArtifact } from '@rentnerproxy/app-contracts/schemas'
 import { runNativeTool } from '../Core/native-tool.ts'
 
 export type BuildIdentity = Candidate['build']

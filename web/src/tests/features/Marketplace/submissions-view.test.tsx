@@ -166,6 +166,10 @@ test('shows the ownership challenge, version fields and withdrawal for a develop
     expect(html).toContain('submissions.commit')
     expect(html).toContain('submissions.configSchema')
     expect(html).toContain('submissions.submit')
+    expect(html).toContain('submissions.steps.proofTitle')
+    expect(html).toContain('submissions.steps.versionTitle')
+    expect(html).toContain('submissions.steps.storeTitle')
+    expect(html).not.toContain('submissions.steps.versionLocked')
     expect(html).not.toContain('value="withdraw"')
     const details = renderDetails(fixture)
     expect(details).toContain('value="withdraw"')
@@ -196,4 +200,15 @@ test('shows official app assignments and their own controls', () => {
     expect(html).toContain(claim.id)
     expect(html).toContain('submissions.noAssignment')
     expect(html).toContain('submissions.removeAssignment')
+})
+
+test('locks the version step until a proven repository is selected', () => {
+    const { client, userId } = queueFixture('developer', 'awaitingReview')
+    client.setQueryData(['marketplace-claims', userId], {
+        buildsEnabled: true,
+        claims: [],
+    })
+    const html = render(client, <DeveloperSubmissions userId={userId} />)
+    expect(html).toContain('submissions.steps.versionLocked')
+    expect(html).not.toContain('submissions.commit')
 })

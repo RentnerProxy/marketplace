@@ -6,16 +6,16 @@ rust-version = "1.99"
 publish = false
 
 [dependencies]
-ed25519-dalek = { version = "3.0", features = ["pem"] }
-hex = "0.4.3"
-marketplace-artifacts = { path = "../artifacts" }
-olpc-cjson = "0.1.4"
-rentnerproxy-app-contracts = { path = "../app-contracts" }
+rentnerproxy-app-catalog = "1.1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.11.1"
 time = { version = "0.3", features = ["formatting", "parsing"] }
 zip = { version = "9.7.0", default-features = false, features = [
     "deflate-flate2-zlib-rs",
 ] }
 zeroize = "1.9"
+
+[dev-dependencies]
+ed25519-dalek = { version = "3.0", features = ["pem"] }
+hex = "0.4.3"
+sha2 = "0.11.1"

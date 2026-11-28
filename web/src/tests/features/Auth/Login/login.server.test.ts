@@ -295,7 +295,7 @@ describe('Login-Lockout-Handler', function () {
     it('setzt den Account-Zähler nur nach vollständigem Login zurück', async function () {
         mockedLoginService.mockResolvedValueOnce({
             success: true,
-            redirectTo: '/user/dashboard',
+            redirectTo: '/user/catalog',
             user: {
                 id: 'user-1',
                 username: 'kevin',
@@ -318,7 +318,7 @@ describe('Login-Lockout-Handler', function () {
     it('liefert einen erfolgreichen Login trotz Valkey-Abschlussfehler aus', async function () {
         const successfulLogin = {
             success: true as const,
-            redirectTo: '/user/dashboard',
+            redirectTo: '/user/catalog',
             user: {
                 id: 'user-1',
                 username: 'kevin',
@@ -366,7 +366,7 @@ describe('Login-Lockout-Handler', function () {
         }
         const success = {
             success: true as const,
-            redirectTo: '/user/dashboard',
+            redirectTo: '/user/catalog',
             user: {
                 id: 'user-1',
                 username: 'kevin',

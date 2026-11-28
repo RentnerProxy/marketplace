@@ -59,7 +59,7 @@ beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     status = null
-    returnPath = '/user/dashboard'
+    returnPath = '/user/catalog'
     client.clear()
     client.setQueryData(['private-pre-restore-data'], ['synthetic marker'])
     client.setQueryData(['system-restore-status'], { status: 'completed' })
@@ -98,7 +98,7 @@ it.each([
         expect(client.getQueryData(['private-pre-restore-data'])).toBeDefined()
         vi.advanceTimersByTime(1)
         expect(navigate).toHaveBeenCalledWith({
-            href: '/user/dashboard',
+            href: '/user/catalog',
             replace: true,
         })
         expect(

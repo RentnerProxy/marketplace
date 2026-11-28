@@ -10,7 +10,7 @@ import {
 import { Link } from '@tanstack/react-router'
 import CardWave from '@/shared/Brand/CardWave.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import PublishedApps from './Components/PublishedApps.tsx'
+import AppCatalog from '@/features/AppCatalog/Components/AppCatalog.tsx'
 
 export default function MarketplaceApps() {
     const { t } = useTranslationStore()
@@ -34,11 +34,16 @@ export default function MarketplaceApps() {
                     <p className="mt-6 max-w-2xl text-base leading-8 text-steel-600 sm:text-lg">
                         {t('marketplace.catalog.description')}
                     </p>
-                    <p className="mt-4 max-w-2xl text-sm leading-7 text-steel-600">
-                        {t('marketplace.catalog.note')}
-                    </p>
                 </header>
-                <PublishedApps />
+                <div className="mb-16">
+                    <AppCatalog
+                        hideWhenEmpty
+                        title={t('appStore.catalogTitle')}
+                    />
+                </div>
+                <p className="mb-6 max-w-2xl text-sm leading-7 text-steel-600">
+                    {t('marketplace.catalog.note')}
+                </p>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                     {(
                         [

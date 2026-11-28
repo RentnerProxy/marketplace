@@ -9,9 +9,9 @@ import {
 import { APP_STORE_CONFIG } from '@/config/app-store.config.ts'
 import type {
     AppDetail,
+    CatalogApp,
     StoreAppInput,
 } from '@/features/AppStore/Types/app-store.types.ts'
-import type { ProfileApp } from '@/features/Social/Types/social.types.ts'
 import { buildProfileAppsService } from '@/server/Social/profileApps.service.ts'
 import {
     getAppStarCountsService,
@@ -94,7 +94,7 @@ export async function getAppDetailService(
 /** All published apps (latest version each), newest first. */
 export async function listPublishedAppsService(
     viewerId: string | null,
-): Promise<Array<ProfileApp>> {
+): Promise<Array<CatalogApp>> {
     const rows = await db
         .selectDistinctOn([marketplaceSubmissions.appId], {
             appId: marketplaceSubmissions.appId,
@@ -103,11 +103,19 @@ export async function listPublishedAppsService(
             publication: marketplaceSubmissions.publication,
             createdAt: marketplaceSubmissions.createdAt,
             logoFileId: app_store_entries.logoFileId,
+            publisher: users.username,
         })
         .from(marketplaceSubmissions)
         .leftJoin(
             app_store_entries,
             eq(app_store_entries.appId, marketplaceSubmissions.appId),
+        )
+        .leftJoin(
+            users,
+            and(
+                eq(users.id, marketplaceSubmissions.submitterId),
+                visibleAccount,
+            ),
         )
         .where(eq(marketplaceSubmissions.status, 'published'))
         .orderBy(
@@ -115,6 +123,10 @@ export async function listPublishedAppsService(
             desc(marketplaceSubmissions.createdAt),
         )
         .limit(APP_STORE_CONFIG.catalogLimit)
+    const publishers = new Map(rows.map((row) => [row.appId, row.publisher]))
+    const apps = await buildProfileAppsService(rows, viewerId)
 
-    return buildProfileAppsService(rows, viewerId)
+    return apps.map((app) =>
+        Object.assign(app, { publisher: publishers.get(app.appId) ?? null }),
+    )
 }

@@ -1,7 +1,5 @@
-import {
-    contractVersion,
-    type AppManifest,
-} from '../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
+import contractSchema from '@rentnerproxy/app-contracts/contracts.schema.json'
 import { runAppPipeline } from '../../native-tools.ts'
 import {
     appUser,
@@ -13,6 +11,11 @@ import {
 } from './sandbox-docker.ts'
 
 const fixtureUser = '21002:21004'
+// Candidates negotiate the protocol version the bootstrap descriptor pins; additive
+// contract releases raise the package version but keep this protocol version.
+const appProtocol =
+    contractSchema.$defs.BootstrapDescriptor.properties.versions.properties
+        .appProtocol.const
 
 export async function smokeInSandbox(options: {
     packageDirectory: string
@@ -25,7 +28,7 @@ export async function smokeInSandbox(options: {
     const bootstrap = JSON.stringify(
         await runAppPipeline('smoke-bootstrap', {
             manifest,
-            version: contractVersion,
+            version: appProtocol,
         }),
     )
 

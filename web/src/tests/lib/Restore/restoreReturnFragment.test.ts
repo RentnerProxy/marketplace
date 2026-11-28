@@ -109,7 +109,7 @@ describe('Restore-Return-Fragment', function () {
 
     it('gibt einem vorhandenen Event- oder Polling-Record Vorrang', function () {
         const windowMock = createWindowMock(
-            `#return=${encodeURIComponent('/user/dashboard')}`,
+            `#return=${encodeURIComponent('/user/catalog')}`,
         )
         stubTestGlobal('window', windowMock)
         rememberRestoreReturnPath('/admin/backups', PRE_RESTORE_USER_ID)

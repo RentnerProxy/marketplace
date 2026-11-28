@@ -652,7 +652,7 @@ describe('Start password-reset privacy middleware', () => {
         '/login',
         '/register',
         '/admin/users',
-        '/user/dashboard',
+        '/user/catalog',
         '/blog/unpublished',
     ])('prevents indexing nonpublic or unknown content at %s', async (path) => {
         const response = await frameworkEntry.fetch(requestFor(path), {})

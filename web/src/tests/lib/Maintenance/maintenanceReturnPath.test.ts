@@ -41,10 +41,10 @@ describe('maintenance return navigation', function () {
     })
 
     it('never replaces a return path with the maintenance page or an empty path', function () {
-        rememberMaintenanceReturnPath('/user/dashboard')
+        rememberMaintenanceReturnPath('/user/catalog')
         rememberMaintenanceReturnPath('/maintenance')
         rememberMaintenanceReturnPath(null)
-        expect(getStoredMaintenanceReturnPath()).toBe('/user/dashboard')
+        expect(getStoredMaintenanceReturnPath()).toBe('/user/catalog')
     })
 
     it('is safe during server rendering without browser globals', function () {

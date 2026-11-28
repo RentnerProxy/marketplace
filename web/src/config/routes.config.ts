@@ -7,7 +7,7 @@ export const DEFAULT_ROUTE_PRIORITY = [
     },
     {
         permission: PERMISSIONS.USER_DASHBOARD,
-        route: '/user/dashboard',
+        route: '/user/catalog',
     },
 ] as const
 
@@ -18,7 +18,7 @@ export const ROUTE_PERMISSIONS = {
     '/admin/staff': PERMISSIONS.ADMIN_SUPER_USER,
     '/admin/staff-invitations': PERMISSIONS.ADMIN_SUPER_USER,
     '/admin/system-settings': PERMISSIONS.ADMIN_SYSTEM_SETTINGS,
-    '/user/dashboard': PERMISSIONS.USER_DASHBOARD,
+    '/user/catalog': PERMISSIONS.USER_DASHBOARD,
     '/admin/audit-logs': PERMISSIONS.ADMIN_AUDIT_LOGS,
     '/admin/backups': PERMISSIONS.ADMIN_BACKUPS,
     '/admin/app-reviews': PERMISSIONS.ADMIN_MARKETPLACE_REVIEW,

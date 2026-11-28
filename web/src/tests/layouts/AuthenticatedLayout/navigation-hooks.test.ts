@@ -23,7 +23,7 @@ it.each([
     { permissions: [], homeTo: '/people', subtitle: 'nav.navigation' },
     {
         permissions: [PERMISSIONS.USER_DASHBOARD],
-        homeTo: '/user/dashboard',
+        homeTo: '/user/catalog',
         subtitle: 'nav.user',
     },
     {
@@ -70,10 +70,16 @@ it.each([
         description: 'admin.dashboard.description',
     },
     {
-        path: '/user/dashboard',
+        path: '/user/catalog',
         groupKey: null,
-        title: 'user.dashboard.title',
-        description: 'user.dashboard.loggedIn',
+        title: 'catalog.title',
+        description: 'catalog.description',
+    },
+    {
+        path: '/user/app-submissions/rentner.weather',
+        groupKey: null,
+        title: 'submissions.title',
+        description: 'submissions.description',
     },
     {
         path: '/missing',

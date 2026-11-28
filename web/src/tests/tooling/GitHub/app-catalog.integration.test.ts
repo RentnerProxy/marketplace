@@ -5,11 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { deflateRawSync } from 'node:zlib'
 import type { z } from 'zod'
-import fixtures from '../../../../../contracts/v1/fixtures.json'
-import {
-    parseApproval,
-    parseCatalog,
-} from '../../../../../contracts/v1/index.ts'
+import fixtures from '@rentnerproxy/app-contracts/fixtures.json'
+import { parseApproval, parseCatalog } from '@rentnerproxy/app-contracts'
 import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
 import { assetNames } from '@/lib/Marketplace/candidateEvidence.ts'
 import type {

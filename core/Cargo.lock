@@ -867,9 +867,9 @@ dependencies = [
 
 [[package]]
 name = "jsonschema"
-version = "0.63.1"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f048e101172edb2c5f0351d7e3bc3796ac89b7f150e64b0cbd20dd82215b2160"
+checksum = "b0802aebc749a4ef12e76aee083622b100249be0dc6d2103d84bbb2f7936a1ae"
 dependencies = [
  "ahash",
  "bytecount",
@@ -895,18 +895,18 @@ dependencies = [
 
 [[package]]
 name = "jsonschema-regex"
-version = "0.63.1"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3ef369677a99a8c7381196491eb4e0a718c337756cf82bdb91303933789f181"
+checksum = "ba1527289dfcb1400df61b5c591218e8e30031376671f611faecb5b9a1ff4987"
 dependencies = [
  "regex-syntax",
 ]
 
 [[package]]
 name = "jsonschema-value"
-version = "0.63.1"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d698d83c2661d1e6f289b567a73e95d5549ec155775260e93165110a583296f4"
+checksum = "a95285ab129d630f01cf2f1345c28662116340fac1a35eb0795e5dbbf0ef990d"
 dependencies = [
  "ahash",
  "bytecount",
@@ -952,9 +952,7 @@ version = "0.1.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
- "marketplace-artifacts",
- "olpc-cjson",
- "rentnerproxy-app-contracts",
+ "rentnerproxy-app-catalog",
  "serde",
  "serde_json",
  "sha2",
@@ -967,34 +965,9 @@ dependencies = [
 name = "marketplace-app-pipeline"
 version = "0.1.0"
 dependencies = [
- "getrandom 0.4.3",
- "hex",
- "httparse",
- "libc",
- "marketplace-artifacts",
- "regex",
- "rentnerproxy-app-contracts",
- "rustix",
- "serde",
+ "rentnerproxy-app-pipeline",
+ "rentnerproxy-artifacts",
  "serde_json",
- "sha2",
- "tempfile",
- "time",
- "uuid",
- "windows-sys 0.61.2",
- "zstd",
-]
-
-[[package]]
-name = "marketplace-artifacts"
-version = "0.1.0"
-dependencies = [
- "cap-fs-ext",
- "cap-std",
- "hex",
- "serde",
- "serde_json",
- "sha2",
  "tempfile",
 ]
 
@@ -1042,8 +1015,8 @@ dependencies = [
 name = "marketplace-tooling"
 version = "0.1.0"
 dependencies = [
- "marketplace-artifacts",
  "regex",
+ "rentnerproxy-artifacts",
  "serde",
  "serde_json",
  "sha2",
@@ -1358,9 +1331,9 @@ dependencies = [
 
 [[package]]
 name = "referencing"
-version = "0.63.1"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f768339da7ef756decd99f3c6ada0c0ffdc0a7522c37032916bed80db94d0b5c"
+checksum = "858eb92e3a3c1d120695a04d5c6e8861915ee4394b8f77c90adbf686d6ddbf6e"
 dependencies = [
  "ahash",
  "fluent-uri",
@@ -1409,11 +1382,69 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d902046e6a28a1e4c3cab97258a0ce11e994903f01c2d97a9447a0b3df85f4f6"
 
 [[package]]
+name = "rentnerproxy-app-catalog"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e22ecd38d1d424326a3d2ce62b770375d6ce82489b88d6771ca381058ffeeab"
+dependencies = [
+ "ed25519-dalek",
+ "hex",
+ "olpc-cjson",
+ "rentnerproxy-app-contracts",
+ "rentnerproxy-artifacts",
+ "serde",
+ "serde_json",
+ "sha2",
+ "time",
+ "zip",
+]
+
+[[package]]
 name = "rentnerproxy-app-contracts"
-version = "1.0.0"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bffaa44f0819b3e9d5153d541a619fbe616d480f1bf9318e94f56801014f0b1"
 dependencies = [
  "jsonschema",
  "serde_json",
+]
+
+[[package]]
+name = "rentnerproxy-app-pipeline"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "199a840f422ca87be5a91dc114c9b8cbdec4458d0a1796c3f58d655a53b611ef"
+dependencies = [
+ "getrandom 0.4.3",
+ "hex",
+ "httparse",
+ "libc",
+ "regex",
+ "rentnerproxy-app-contracts",
+ "rentnerproxy-artifacts",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "time",
+ "uuid",
+ "windows-sys 0.61.2",
+ "zstd",
+]
+
+[[package]]
+name = "rentnerproxy-artifacts"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "087c6e679d88a4f099e17f1223aaa14db8ee5701f19df5e9d4d9fd4c88384c46"
+dependencies = [
+ "cap-fs-ext",
+ "cap-std",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
 ]
 
 [[package]]

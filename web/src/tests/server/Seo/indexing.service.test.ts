@@ -48,7 +48,7 @@ describe('Marketplace indexing response policy', () => {
         '/setup',
         '/setup/',
         '/admin/users',
-        '/user/dashboard',
+        '/user/catalog',
         '/api/admin/users',
         '/_serverFn/opaque',
         '/blog/coming-soon',

@@ -1,5 +1,5 @@
 use crate::security::{files, invalid, lower_hex, string};
-use marketplace_artifacts::{file_identity, parse_json};
+use rentnerproxy_artifacts::{file_identity, parse_json};
 use serde_json::{Value, json};
 use std::fs;
 use std::io::{self, Write};
@@ -41,7 +41,7 @@ fn require_archive_hash(path: &Path, expected: &str, error: &str) -> io::Result<
 fn handoff_bytes(input: &Value, directory: &Path) -> io::Result<Vec<u8>> {
     let bytes = files::read(&directory.join(CANDIDATE), archive::MAX_JSON)?;
     let expected = string(input, "expectedEvidenceSha256")?;
-    if !lower_hex(expected, 64) || marketplace_artifacts::digest(&bytes) != expected {
+    if !lower_hex(expected, 64) || rentnerproxy_artifacts::digest(&bytes) != expected {
         return Err(invalid("Assessed candidate artifact hash mismatch"));
     }
     Ok(bytes)
@@ -91,7 +91,7 @@ fn save_evidence(directory: &Path, name: &str, evidence: &Value) -> io::Result<S
     temporary
         .persist(directory.join(name))
         .map_err(|error| error.error)?;
-    Ok(marketplace_artifacts::digest(&bytes))
+    Ok(rentnerproxy_artifacts::digest(&bytes))
 }
 
 fn run_dev(operation: &str, input: &Value) -> io::Result<Value> {

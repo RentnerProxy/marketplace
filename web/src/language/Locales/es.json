@@ -1,4 +1,16 @@
 {
+    "submissions": {
+        "title": "Enviar apps",
+        "steps": {
+            "proofTitle": "Demostrar el repositorio",
+            "proofDescription": "Solicita una prueba de propiedad y guarda el valor en el repositorio. Después podrás enviar desde ese repositorio.",
+            "versionTitle": "Enviar una versión",
+            "versionDescription": "El nombre, el resumen y la licencia deben coincidir exactamente con el app.json del commit indicado. Al enviar comprobamos que la prueba de propiedad esté en el repositorio.",
+            "versionLocked": "Primero solicita una prueba de propiedad y selecciona el repositorio.",
+            "storeTitle": "Diseñar la ficha de la tienda",
+            "storeDescription": "Cambia el logo, las capturas y la descripción larga cuando quieras, también durante la revisión y sin nueva versión."
+        }
+    },
     "common": {
         "active": "Activo",
         "actions": "Acciones",
@@ -65,7 +77,8 @@
         "staffInvitations": "Invitaciones",
         "staffAccounts": "Cuentas del equipo",
         "profile": "Perfil",
-        "people": "Personas"
+        "people": "Personas",
+        "catalog": "Catálogo de apps"
     },
     "auth": {
         "experience": {
@@ -588,7 +601,7 @@
             "eyebrow": "El catálogo de aplicaciones",
             "title": "Aplicaciones para tu RentnerProxy.",
             "description": "Un hogar para aplicaciones y extensiones oficiales. Descubre lo que está previsto para tu stack.",
-            "note": "Todas las aplicaciones están previstas. Todavía no se pueden descargar ni instalar.",
+            "note": "Las siguientes tarjetas muestran extensiones previstas. Todavía no se pueden descargar ni instalar.",
             "backToFlow": "Cómo está previsto que funcione el marketplace"
         },
         "blog": {
@@ -836,6 +849,28 @@
             "closeLightbox": "Cerrar vista completa",
             "by": "de {{username}}",
             "published": "Publicada el {{date}}"
-        }
+        },
+        "overviewEmpty": "Cuando hayas enviado una versión, aquí gestionas el logo, las capturas y la descripción de tus apps."
+    },
+    "catalog": {
+        "title": "Catálogo de apps",
+        "description": "Todas las apps publicadas de un vistazo.",
+        "loading": "Cargando apps …",
+        "searchPlaceholder": "Buscar por nombre, descripción, ID de app o editor …",
+        "sortLabel": "Ordenar",
+        "sort": {
+            "newest": "Más recientes",
+            "stars": "Más estrellas",
+            "name": "Nombre A–Z"
+        },
+        "starredOnly": "Solo mis estrellas",
+        "resultCount": "{{count}} de {{total}} apps",
+        "noMatches": "Ninguna app coincide con tu búsqueda.",
+        "resetFilters": "Restablecer filtros",
+        "emptyTitle": "Todavía no hay apps publicadas",
+        "emptyDescription": "En cuanto las primeras apps superen la revisión, aparecerán aquí.",
+        "submitCta": "Enviar una app",
+        "loadError": "No se pudo cargar el catálogo de apps.",
+        "retry": "Reintentar"
     }
 }
