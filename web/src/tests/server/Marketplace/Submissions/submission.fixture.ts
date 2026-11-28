@@ -10,7 +10,7 @@ import type { marketplaceRepositoryClaims } from '@/db/schema.ts'
 import { candidateNamespace } from '@/server/Marketplace/Submissions/ownership.service.ts'
 import type { CandidateRun } from '@/server/Marketplace/Submissions/candidate-run.service.ts'
 import type { Submission } from '@/server/Marketplace/Submissions/submission-store.service.ts'
-import fixtures from '../../../../../../contracts/v1/fixtures.json'
+import fixtures from '@rentnerproxy/app-contracts/fixtures.json'
 
 export const repository = {
     id: 701,

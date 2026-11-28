@@ -1,6 +1,6 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
-import type { AppManifest } from '../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
 import { runAppPipeline } from '../../native-tools.ts'
 import { applianceLibraryVersions, type ElfLinkage } from './elf-appliance.ts'
 

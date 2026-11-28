@@ -1,11 +1,8 @@
 import { lstat, mkdir, mkdtemp, realpath, rm } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { z } from 'zod'
-import {
-    parseCandidate,
-    type AppManifest,
-} from '../../../../contracts/v1/index.ts'
-import { target } from '../../../../contracts/v1/primitives.ts'
+import { parseCandidate, type AppManifest } from '@rentnerproxy/app-contracts'
+import { target } from '@rentnerproxy/app-contracts/schemas'
 import { runAppPipeline } from '../../native-tools.ts'
 import { validateCandidatePackage } from './archive.ts'
 import {

@@ -6,7 +6,7 @@ import type {
     decisionInput,
     stopInput,
 } from '@/features/Marketplace/validation.ts'
-import { parseApproval } from '../../../../../contracts/v1/index.ts'
+import { parseApproval } from '@rentnerproxy/app-contracts'
 import type { SubmissionStatus } from '@/lib/Marketplace/Types/submission.types.ts'
 import { assertRetainedCandidate } from './candidate-review.service.ts'
 import { InvalidCandidateError } from './candidate-run.service.ts'

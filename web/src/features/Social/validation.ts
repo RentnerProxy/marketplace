@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { PROFILE_FOLLOW_LISTS, SOCIAL_CONFIG } from '@/config/social.config.ts'
-import { appId } from '../../../../contracts/v1/primitives.ts'
+import { appId } from '@rentnerproxy/app-contracts/schemas'
 
 const profileUsernameSchema = z.string().trim().min(1).max(50)
 

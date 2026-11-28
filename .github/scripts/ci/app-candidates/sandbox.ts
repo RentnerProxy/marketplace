@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { link, mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import type { AppManifest } from '../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
 import { prepareDependencies } from './sandbox-dependencies.ts'
 import {
     attach,

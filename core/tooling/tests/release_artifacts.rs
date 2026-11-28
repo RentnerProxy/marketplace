@@ -1,5 +1,5 @@
-use marketplace_artifacts::digest;
 use marketplace_tooling::{release, security};
+use rentnerproxy_artifacts::digest;
 use serde_json::json;
 use std::{fs, io};
 use tempfile::TempDir;
