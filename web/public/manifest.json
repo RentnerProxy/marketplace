@@ -3,13 +3,20 @@
     "name": "RentnerProxy Marketplace",
     "icons": [
         {
-            "src": "/rentnerproxy-logo.png",
-            "sizes": "1254x1254",
-            "type": "image/png"
+            "src": "/brand/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/brand/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
         }
     ],
     "start_url": "/",
     "display": "standalone",
-    "theme_color": "#0d6d2b",
-    "background_color": "#ffffff"
+    "theme_color": "#121a16",
+    "background_color": "#e2efe6"
 }

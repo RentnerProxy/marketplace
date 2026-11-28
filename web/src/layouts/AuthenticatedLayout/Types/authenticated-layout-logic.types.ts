@@ -17,7 +17,6 @@ import type {
 export type AuthenticatedShellUiState = {
     isCollapsed: boolean
     isMaintenanceBannerMinimized: boolean
-    isUserSettingsOpen: boolean
     openGroups: Record<string, boolean>
 }
 
@@ -32,6 +31,7 @@ type AuthenticatedShellState = {
     username: string
     companyName: string
     systemLogoSrc: string
+    hasCustomSystemLogo: boolean
     systemFaviconSrc: string
     profileImageSrc64: string
     primaryColor: string
@@ -73,7 +73,6 @@ export type AuthenticatedSidebarLogicReturn = {
     }
     handler: {
         handleLogout: () => void
-        handleOpenUserSettings: () => void
         handleToggleGroup: (group: string) => void
     }
 }

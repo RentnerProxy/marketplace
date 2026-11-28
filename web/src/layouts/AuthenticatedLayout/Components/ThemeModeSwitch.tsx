@@ -25,7 +25,7 @@ export default function ThemeModeSwitch({
                     handler.saveThemeMode(isDark ? 'light' : 'dark')
                 }
             }}
-            className="group relative isolate grid h-12 w-24 shrink-0 cursor-pointer grid-cols-2 place-items-center rounded-full border border-(--marketplace-border-strong) bg-input-dark p-1 text-secondary-text transition-colors hover:border-primary/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-disabled:cursor-wait aria-disabled:opacity-70 motion-reduce:transition-none"
+            className="group relative isolate grid h-12 w-24 shrink-0 cursor-pointer grid-cols-2 place-items-center rounded-full border-2 border-ink bg-input-dark p-1 shadow-[2px_2px_0_0_var(--color-ink)] text-secondary-text transition-colors hover:border-primary/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring aria-disabled:cursor-wait aria-disabled:opacity-70 motion-reduce:transition-none"
         >
             <span
                 aria-hidden="true"

@@ -238,15 +238,15 @@ describe('appearance preference actions', function () {
 
     it('adopts an external theme change and ignores an invalid stored mode', function () {
         render(useMainThemeLogic)
-        query.mockReturnValue({ data: { user: { themeMode: 'light' } } })
+        query.mockReturnValue({ data: { user: { themeMode: 'dark' } } })
         render(useMainThemeLogic)
         expect(render(useMainThemeLogic).state).toMatchObject({
-            themeMode: 'light',
-            selectedThemeMode: 'light',
+            themeMode: 'dark',
+            selectedThemeMode: 'dark',
         })
         query.mockReturnValue({ data: { user: { themeMode: 'invalid' } } })
         render(useMainThemeLogic)
-        expect(render(useMainThemeLogic).state.selectedThemeMode).toBe('dark')
+        expect(render(useMainThemeLogic).state.selectedThemeMode).toBe('light')
     })
 
     it('reports a rejected theme change without announcing success or refetching', async function () {

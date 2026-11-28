@@ -1,6 +1,7 @@
 import { TextInput } from '@rentnerkev/inputs'
 import { CustomSelect } from '@rentnerkev/select'
 import { CANDIDATE_PIPELINE } from '@/config/submissions.config.ts'
+import EditableStoreApps from '@/features/AppStore/Components/EditableStoreApps.tsx'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import { SubmissionQueue } from './Components/SubmissionQueue/index.tsx'
 import { useDeveloperSubmissionsLogic } from './Hooks/useDeveloperSubmissionsLogic.ts'
@@ -127,6 +128,7 @@ export default function DeveloperSubmissions({ userId }: { userId: string }) {
                     </>
                 )}
             </section>
+            <EditableStoreApps />
             <SubmissionQueue mode="developer" userId={userId} />
         </div>
     )

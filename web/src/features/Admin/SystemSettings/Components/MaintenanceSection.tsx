@@ -119,7 +119,7 @@ export default function MaintenanceSection({
                 </div>
 
                 {request && (
-                    <div className="rounded-xl border border-warning/35 bg-warning/5 p-4">
+                    <div className="comic-notice bg-background-dark p-4 [--notice-tone:var(--color-warning)]">
                         <h3 className="text-sm font-semibold text-foreground">
                             {t('admin.systemSettings.extensionRequest')}
                         </h3>

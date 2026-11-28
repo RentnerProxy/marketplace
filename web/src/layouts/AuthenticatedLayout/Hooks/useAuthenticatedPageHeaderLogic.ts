@@ -1,7 +1,7 @@
 import type { AuthenticatedPageHeaderLogicReturn } from '../Types/authenticated-layout-logic.types.ts'
 import { useRouterState } from '@tanstack/react-router'
 import useTranslationStore from '@/language/useTranslationStore.ts'
-import { NAVBAR_ITEMS } from '@/config/navbar.config.ts'
+import { ACCOUNT_PAGE_ITEMS, NAVBAR_ITEMS } from '@/config/navbar.config.ts'
 import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
 
 type NavigationLabelKey = AuthenticatedNavItem['labelKey']
@@ -34,7 +34,10 @@ export default function useAuthenticatedPageHeaderLogic(): AuthenticatedPageHead
     const pathname = useRouterState({
         select: (state) => state.location.pathname,
     })
-    const match = findNavigationItem(NAVBAR_ITEMS, pathname)
+    const match = findNavigationItem(
+        [...NAVBAR_ITEMS, ...ACCOUNT_PAGE_ITEMS],
+        pathname,
+    )
 
     return {
         state: {

@@ -5,10 +5,9 @@ import useTranslationStore from '@/language/useTranslationStore.ts'
 import SocialProviderIcon from './SocialProviderIcon.tsx'
 
 const providerStyles: Record<SocialProviderId, string> = {
-    google: 'border-[#dadce0] bg-white text-[#1f1f1f] enabled:hover:border-[#bdc1c6] enabled:hover:bg-[#f8faff]',
-    github: 'border-[#24292f] bg-[#24292f] text-white enabled:hover:border-[#32383f] enabled:hover:bg-[#32383f]',
-    discord:
-        'border-[#5865f2] bg-[#5865f2] text-white enabled:hover:border-[#4752c4] enabled:hover:bg-[#4752c4]',
+    google: 'border-ink bg-white text-[#1f1f1f] enabled:hover:bg-[#f8faff]',
+    github: 'border-ink bg-[#24292f] text-white enabled:hover:bg-[#32383f]',
+    discord: 'border-ink bg-[#5865f2] text-white enabled:hover:bg-[#4752c4]',
 }
 
 export default function SocialLogin() {
@@ -45,8 +44,8 @@ export default function SocialLogin() {
                         }
                         onValueChange={setter.setCode}
                         customDesign={{
-                            bg: 'bg-[#f5f8f6]',
-                            border: 'border-[#cbd9d0]',
+                            bg: 'bg-mist-50',
+                            border: 'border-ink',
                             text: 'text-marketplace-void',
                         }}
                     />
@@ -61,7 +60,7 @@ export default function SocialLogin() {
                     )}
                     <button
                         disabled={state.isPending}
-                        className="min-h-[52px] w-full cursor-pointer rounded-xl bg-[#0d6d2b] px-4 py-3 font-bold text-white transition-colors enabled:hover:bg-[#09551f] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                        className="min-h-[52px] w-full cursor-pointer rounded-xl bg-ink px-4 py-3 font-bold text-white transition-colors enabled:hover:bg-steel-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                     >
                         {t('auth.social.confirm')}
                     </button>
@@ -69,7 +68,7 @@ export default function SocialLogin() {
                         type="button"
                         disabled={state.isPending}
                         onClick={handler.handleCancel}
-                        className="min-h-11 w-full cursor-pointer rounded-xl text-sm underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="min-h-11 w-full cursor-pointer rounded-xl text-sm underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {t('auth.social.cancel')}
                     </button>
@@ -92,7 +91,7 @@ export default function SocialLogin() {
                                     provider: provider.name,
                                 })}
                                 onClick={() => handler.handleBegin(provider.id)}
-                                className={`flex min-h-12 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-xs font-semibold shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${providerStyles[provider.id]}`}
+                                className={`flex min-h-12 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-[10px] border-2 px-2 py-2 font-comic text-xs font-bold shadow-[3px_3px_0_0_var(--color-ink)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:flex-row sm:gap-2 sm:px-3 sm:text-sm ${providerStyles[provider.id]}`}
                             >
                                 <SocialProviderIcon provider={provider.id} />
                                 <span className="text-center leading-5">

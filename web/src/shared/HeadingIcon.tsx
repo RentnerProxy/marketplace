@@ -5,31 +5,29 @@ import type {
     HeadingIconTone,
 } from '@/shared/Types/heading-icon.types.ts'
 
-const accentClassNameByTone: Record<HeadingIconTone, string> = {
-    primary: 'bg-primary',
-    success: 'bg-success',
-    warning: 'bg-warning',
-    danger: 'bg-danger',
+const fillClassNameByTone: Record<HeadingIconTone, string> = {
+    primary: 'bg-primary text-primary-foreground',
+    success: 'bg-success text-background-dark',
+    warning: 'bg-warning text-background-dark',
+    danger: 'bg-danger text-background-dark',
 }
 
 const sizeClassNames: Record<HeadingIconSize, HeadingIconSizeClasses> = {
     sm: {
-        frame: 'h-9 w-9 rounded-md',
+        frame: 'h-9 w-9',
         icon: 'h-4 w-4',
-        rail: 'w-1',
     },
     md: {
-        frame: 'h-11 w-11 rounded-md',
+        frame: 'h-11 w-11',
         icon: 'h-5 w-5',
-        rail: 'w-1',
     },
     lg: {
-        frame: 'h-14 w-14 rounded-lg',
+        frame: 'h-14 w-14',
         icon: 'h-7 w-7',
-        rail: 'w-1.5',
     },
 }
 
+/** Comic icon tile: tone fill, ink outline and a hard offset shadow. */
 export default function HeadingIcon({
     icon: Icon,
     tone = 'primary',
@@ -42,14 +40,9 @@ export default function HeadingIcon({
     return (
         <span
             aria-hidden="true"
-            className={`relative flex shrink-0 items-center justify-center overflow-hidden border border-border-dark bg-background-dark text-foreground ${sizeClassName.frame} ${className}`}
+            className={`relative flex shrink-0 items-center justify-center rounded-md border-2 border-ink shadow-[2px_2px_0_0_var(--app-comic-pop,var(--color-ink))] ${fillClassNameByTone[tone]} ${sizeClassName.frame} ${className}`}
         >
-            <span
-                className={`absolute inset-y-0 left-0 ${sizeClassName.rail} ${accentClassNameByTone[tone]}`}
-            />
-            <Icon
-                className={`${sizeClassName.icon} translate-x-0.5 ${iconClassName}`}
-            />
+            <Icon className={`${sizeClassName.icon} ${iconClassName}`} />
         </span>
     )
 }

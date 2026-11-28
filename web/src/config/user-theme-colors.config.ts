@@ -7,8 +7,84 @@ import type {
 
 export const DEFAULT_PRIMARY_COLOR = '#30ee61'
 export const DEFAULT_PRIMARY_COLOR_HOVER = '#65f586'
+
+/** Landing page palette; custom system colors derive their own values. */
+export const BRAND_THEME_PALETTE = {
+    '--color-proxy-50': '#e9fff0',
+    '--color-proxy-100': '#d2ffdd',
+    '--color-proxy-200': '#a3ffb8',
+    '--color-proxy-300': '#65f586',
+    '--color-proxy-400': '#30ee61',
+    '--color-proxy-500': '#18d348',
+    '--color-proxy-600': '#0fb33a',
+    '--color-proxy-700': '#0d8a31',
+    '--color-proxy-800': '#0d6d2b',
+    '--color-proxy-900': '#0d5926',
+    '--color-on-proxy': '#06120f',
+    '--color-night': '#121a16',
+    '--color-night-input': '#1b2620',
+    '--color-night-muted': '#a3b8ad',
+    '--color-steel-500': '#657a70',
+    '--color-steel-600': '#52675d',
+    '--color-steel-700': '#3d5148',
+    '--color-mist-50': '#f7faf8',
+    '--color-mist-100': '#eef4f1',
+    '--color-mist-200': '#dde9e3',
+    '--color-mist-300': '#c1d2c9',
+    '--color-mist-400': '#91a99d',
+    '--color-mist-500': '#6e867a',
+} as const
+
+/** Share of white (negative) or black (positive) mixed into a custom accent. */
+export const ACCENT_PALETTE_STEPS = {
+    '--color-proxy-50': -0.9,
+    '--color-proxy-100': -0.8,
+    '--color-proxy-200': -0.6,
+    '--color-proxy-300': -0.3,
+    '--color-proxy-400': 0,
+    '--color-proxy-500': 0.12,
+    '--color-proxy-600': 0.25,
+    '--color-proxy-700': 0.4,
+    '--color-proxy-800': 0.52,
+    '--color-proxy-900': 0.6,
+} as const
+
+/** Neutral gray plus a share of the custom system color, so nothing stays green. */
+export const NEUTRAL_TINT_STEPS = {
+    '--color-night': ['#141414', 0.08],
+    '--color-night-input': ['#1e1e1e', 0.08],
+    '--color-night-muted': ['#ababab', 0.12],
+    '--color-steel-500': ['#6e6e6e', 0.14],
+    '--color-steel-600': ['#5a5a5a', 0.14],
+    '--color-steel-700': ['#434343', 0.14],
+    '--color-mist-50': ['#f9f9f9', 0.04],
+    '--color-mist-100': ['#f1f1f1', 0.06],
+    '--color-mist-200': ['#e3e3e3', 0.08],
+    '--color-mist-300': ['#cacaca', 0.1],
+    '--color-mist-400': ['#a0a0a0', 0.12],
+    '--color-mist-500': ['#7d7d7d', 0.12],
+} as const
+
+export const USER_THEME_MODE_TINTS: Record<
+    UserThemeMode,
+    Partial<Record<keyof UserThemeColors, readonly [string, number]>>
+> = {
+    dark: {
+        background: ['#030303', 0.04],
+        surface: ['#0a0a0a', 0.06],
+        input: ['#121212', 0.07],
+        border: ['#2e2e2e', 0.18],
+        secondaryText: ['#a6a6a6', 0.12],
+    },
+    light: {
+        background: ['#ececec', 0.12],
+        input: ['#f8f8f8', 0.04],
+        secondaryText: ['#4d4d4d', 0.16],
+    },
+}
+
 export const DEFAULT_BACKGROUND_DARKNESS = 55
-export const DEFAULT_THEME_MODE = 'dark'
+export const DEFAULT_THEME_MODE = 'light'
 export const DEFAULT_FONT_FAMILY = 'inter'
 export const DEFAULT_FONT_SIZE = 16
 
@@ -28,58 +104,28 @@ export const USER_FONT_SIZES = [
 
 export const USER_THEME_MODE_COLORS: Record<UserThemeMode, UserThemeColors> = {
     dark: {
-        background: '#0f1014',
-        border: '#2e323b',
+        background: '#040807',
+        border: '#2f4238',
         danger: '#fca5a5',
         focusRing: '#65f586',
         foreground: '#ffffff',
-        input: '#22252b',
-        secondaryText: '#9ca3af',
-        success: '#a7f3d0',
-        surface: '#181a1f',
+        input: '#101814',
+        secondaryText: '#9bb0a5',
+        success: '#a3ffb8',
+        surface: '#0a110e',
         warning: '#fde68a',
     },
     light: {
-        background: '#f1f5f9',
-        border: '#7c8da3',
+        background: '#e2efe6',
+        border: '#06120f',
         danger: '#b91c1c',
-        focusRing: '#1d4ed8',
-        foreground: '#0f172a',
-        input: '#ffffff',
-        secondaryText: '#475569',
-        success: '#047857',
+        focusRing: '#06120f',
+        foreground: '#06120f',
+        input: '#f7faf8',
+        secondaryText: '#52675d',
+        success: '#0d6d2b',
         surface: '#ffffff',
         warning: '#854d0e',
-    },
-}
-
-export const AUTHENTICATED_THEME_MODE_COLORS: Record<
-    UserThemeMode,
-    UserThemeColors
-> = {
-    dark: {
-        background: '#07080a',
-        border: '#282c33',
-        danger: '#ffb0b0',
-        focusRing: '#65f586',
-        foreground: '#f4f5f7',
-        input: '#121419',
-        secondaryText: '#a0a5ae',
-        success: '#76f895',
-        surface: '#0d0f12',
-        warning: '#ffbd66',
-    },
-    light: {
-        background: '#eef4f0',
-        border: '#d6e0da',
-        danger: '#8d1818',
-        focusRing: '#0c7f2d',
-        foreground: '#06120f',
-        input: '#ffffff',
-        secondaryText: '#52665c',
-        success: '#086c27',
-        surface: '#fbfdfc',
-        warning: '#9a5d12',
     },
 }
 

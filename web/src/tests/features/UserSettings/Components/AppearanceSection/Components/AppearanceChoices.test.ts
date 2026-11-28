@@ -95,7 +95,8 @@ describe('Appearance choices', () => {
             (element) => element.type === 'button',
         )
         expect(options).toHaveLength(2)
-        expect(options[0]!.props.className).toContain('shadow-')
+        expect(options[0]!.props.className).toContain('comic-selected')
+        expect(options[1]!.props.className).not.toContain('comic-selected')
         for (const option of options) invoke(option, 'onClick')
         expect(theme.handler.handleThemeModeChange).toHaveBeenCalledWith('dark')
         expect(theme.handler.handleThemeModeChange).toHaveBeenCalledWith(

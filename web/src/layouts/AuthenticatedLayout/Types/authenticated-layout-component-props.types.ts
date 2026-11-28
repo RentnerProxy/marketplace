@@ -9,6 +9,7 @@ export type SidebarContentProps = {
     title: string
     subtitle: string
     logoSrc: string
+    hasCustomLogo?: boolean
     homeTo: AuthenticatedRoute
     navItems: Array<AuthenticatedNavItem>
     username: string
@@ -59,6 +60,7 @@ export type SidebarHeaderProps = {
     title: string
     subtitle: string
     logoSrc: string
+    hasCustomLogo?: boolean
     homeTo: AuthenticatedRoute
     onNavigate?: () => void
 }

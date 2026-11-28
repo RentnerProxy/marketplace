@@ -15,9 +15,9 @@ export default function NavigationItem({
     const Icon = item.icon
     const label = t(item.labelKey)
     const isOpen = openGroups[navigationKey] ?? true
-    const itemSpacing = 'gap-2.5 px-3.5 lg:pr-14 lg:pl-[2.2rem]'
+    const itemSpacing = 'mx-3 gap-3 px-3 lg:mr-12 lg:ml-5'
     const focusStyle =
-        'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary'
+        'focus-visible:outline-dashed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-proxy-300'
 
     if (item.children?.length) {
         return (
@@ -27,16 +27,16 @@ export default function NavigationItem({
                     onClick={() => onToggleGroup(navigationKey)}
                     aria-expanded={isOpen}
                     data-active={activeGroupKey === item.labelKey}
-                    className={`group relative flex min-h-11 w-full cursor-pointer items-center border-y border-transparent bg-white/[0.025] font-(family-name:--marketplace-mono) text-[0.67rem] font-bold tracking-[0.09em] text-[#c1d2c9] uppercase transition-colors before:absolute before:top-1/2 before:left-1 before:h-5 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-white/20 hover:border-white/10 hover:bg-white/[0.055] hover:text-[#f4f5f7] data-[active=true]:border-primary/20 data-[active=true]:bg-primary/12 data-[active=true]:text-primary data-[active=true]:before:bg-primary motion-reduce:transition-none ${itemSpacing} ${focusStyle}`}
+                    className={`comic-lettering group relative flex min-h-10 w-[calc(100%-1.5rem)] cursor-pointer items-center rounded-md text-xs text-mist-300 transition-colors hover:bg-white/10 hover:text-proxy-300 data-[active=true]:text-proxy-300 motion-reduce:transition-none lg:w-[calc(100%-4.25rem)] ${itemSpacing} ${focusStyle}`}
                 >
                     <span
                         aria-hidden="true"
-                        className="size-1.5 shrink-0 rounded-full bg-[#9fb5a9]/70 group-data-[active=true]:bg-primary group-data-[active=true]:shadow-[0_0_8px_var(--color-primary)]"
+                        className="size-2 shrink-0 rotate-45 border-2 border-current group-data-[active=true]:bg-proxy-400"
                     />
                     <span className="min-w-0 flex-1 text-left">{label}</span>
                     <span
                         aria-hidden="true"
-                        className="flex shrink-0 items-center gap-2 text-[#9fb5a9]"
+                        className="flex shrink-0 items-center gap-2 text-mist-400"
                     >
                         <span className="tabular-nums">
                             {item.children.length}
@@ -75,9 +75,9 @@ export default function NavigationItem({
             to={item.to}
             preload={false}
             onClick={onNavigate}
-            className={`relative flex min-h-11 items-center border-y border-transparent py-[0.72rem] text-[0.85rem] font-[750] text-[#c1d2c9] transition-colors before:absolute before:inset-y-2 before:left-1 before:w-0.5 before:rounded-full hover:border-white/10 hover:bg-white/[0.055] hover:text-[#f4f5f7] aria-[current=page]:border-primary/20 aria-[current=page]:bg-primary/12 aria-[current=page]:text-[#f4f5f7] aria-[current=page]:before:bg-primary motion-reduce:transition-none ${itemSpacing} ${focusStyle}`}
+            className={`comic-lettering relative flex min-h-11 items-center rounded-md border-2 border-transparent text-sm text-mist-200 transition-[color,background-color,transform] hover:bg-white/10 hover:text-proxy-300 aria-[current=page]:-translate-x-px aria-[current=page]:-translate-y-px aria-[current=page]:border-ink aria-[current=page]:bg-proxy-400 aria-[current=page]:text-on-proxy aria-[current=page]:shadow-[3px_3px_0_0_white] motion-reduce:transition-none ${itemSpacing} ${focusStyle}`}
         >
-            <Icon aria-hidden="true" className="size-4 shrink-0" />
+            <Icon aria-hidden="true" className="size-5 shrink-0" />
             <span className="wrap-anywhere">{label}</span>
         </Link>
     )

@@ -1,7 +1,16 @@
 import {
+    ACCENT_PALETTE_STEPS,
+    BRAND_THEME_PALETTE,
     DEFAULT_PRIMARY_COLOR,
     DEFAULT_PRIMARY_COLOR_HOVER,
+    NEUTRAL_TINT_STEPS,
+    USER_THEME_MODE_COLORS,
+    USER_THEME_MODE_TINTS,
 } from '@/config/user-theme-colors.config.ts'
+import type {
+    UserThemeColors,
+    UserThemeMode,
+} from '@/lib/Theme/Types/userTheme.types.ts'
 
 const LIGHT_PRIMARY_FOREGROUND = '#ffffff'
 const DARK_PRIMARY_FOREGROUND = '#000000'
@@ -175,4 +184,92 @@ export function getPrimaryTextColor(
     }
 
     return targetColor
+}
+
+const TINTABLE_THEME_TOKENS: Array<keyof UserThemeColors> = [
+    'background',
+    'border',
+    'input',
+    'secondaryText',
+    'surface',
+]
+
+function getCustomPrimaryColor(primaryColor: string) {
+    const normalizedColor = (
+        primaryColor.startsWith('#') ? primaryColor : `#${primaryColor}`
+    ).toLowerCase()
+
+    return normalizedColor !== DEFAULT_PRIMARY_COLOR &&
+        /^#[0-9a-f]{6}$/.test(normalizedColor)
+        ? normalizedColor
+        : null
+}
+
+/**
+ * Palette for the comic UI. The default color keeps the exact landing
+ * palette; any other system color gets tints and shades of itself for the
+ * accents, a readable foreground for accent fills and neutral grays with a
+ * hint of itself instead of the green-tinted landing neutrals.
+ */
+export function getPrimaryThemePalette(
+    primaryColor: string,
+): Record<string, string> {
+    const customColor = getCustomPrimaryColor(primaryColor)
+
+    if (!customColor) {
+        return { ...BRAND_THEME_PALETTE }
+    }
+
+    const palette: Record<string, string> = {
+        '--color-on-proxy': getPrimaryColorForeground(customColor),
+    }
+
+    for (const [property, step] of Object.entries(ACCENT_PALETTE_STEPS)) {
+        palette[property] =
+            step === 0
+                ? customColor
+                : mixColor(
+                      customColor,
+                      step < 0 ? '#ffffff' : '#000000',
+                      Math.abs(step),
+                  )
+    }
+
+    for (const [property, [neutral, share]] of Object.entries(
+        NEUTRAL_TINT_STEPS,
+    )) {
+        palette[property] = mixColor(neutral, customColor, share)
+    }
+
+    return palette
+}
+
+/** Theme mode colors whose neutrals follow a custom system color. */
+export function getPrimaryThemeColors(
+    themeMode: UserThemeMode,
+    primaryColor: string,
+): UserThemeColors {
+    const themeColors = USER_THEME_MODE_COLORS[themeMode]
+    const customColor = getCustomPrimaryColor(primaryColor)
+
+    if (!customColor) {
+        return themeColors
+    }
+
+    const tints = USER_THEME_MODE_TINTS[themeMode]
+    const tintedColors: UserThemeColors = { ...themeColors }
+
+    for (const token of TINTABLE_THEME_TOKENS) {
+        const tint = tints[token]
+
+        if (tint) {
+            tintedColors[token] = mixColor(tint[0], customColor, tint[1])
+        }
+    }
+
+    if (themeMode === 'dark') {
+        tintedColors.focusRing = mixColor(customColor, '#ffffff', 0.3)
+    }
+
+    return tintedColors
 }

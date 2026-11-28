@@ -18,6 +18,7 @@ export function SidebarContent({
     title,
     subtitle,
     logoSrc,
+    hasCustomLogo = false,
     homeTo,
     navItems,
     username,
@@ -39,6 +40,7 @@ export function SidebarContent({
                     title={title}
                     subtitle={subtitle}
                     logoSrc={logoSrc}
+                    hasCustomLogo={hasCustomLogo}
                     homeTo={homeTo}
                     onNavigate={onNavigate}
                 />
@@ -67,7 +69,7 @@ export function SidebarContent({
                 </div>
             </nav>
 
-            <div className="shrink-0 border-y border-white/10 bg-[#020a0b]/80 px-5 py-3 backdrop-blur-sm lg:pr-16 lg:pl-9">
+            <div className="shrink-0 border-t-[3px] border-dashed border-white/25 px-5 py-3 lg:pr-16 lg:pl-6">
                 <UserProfileButton
                     username={username}
                     profileImageSrc={userIconSrc}
@@ -104,21 +106,15 @@ function ExpandedSidebar(sidebar: AuthenticatedSidebarContentProps) {
                     aria-valuemin={0}
                     aria-valuemax={state.position.maxScroll}
                     aria-valuenow={Math.round(state.position.scrollTop)}
-                    className="absolute z-10 flex w-6 -translate-x-1/2 cursor-grab touch-none flex-col items-center justify-center gap-1 rounded-lg border border-primary/65 bg-[#0b1e17] shadow-sm shadow-black/60 select-none hover:bg-[#16392a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:cursor-grabbing"
+                    className="absolute z-10 flex w-6 -translate-x-1/2 cursor-grab touch-none flex-col items-center justify-center gap-1 rounded-md border-2 border-ink bg-proxy-400 shadow-[2px_2px_0_0_var(--color-ink)] select-none hover:bg-proxy-300 focus-visible:outline-dashed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-proxy-300 active:cursor-grabbing"
                     style={state.position.style}
                     onPointerDown={handler.handlePointerDown}
                     onPointerMove={handler.handlePointerMove}
                     onLostPointerCapture={handler.handlePointerEnd}
                     onKeyDown={handler.handleKeyDown}
                 >
-                    <span
-                        aria-hidden="true"
-                        className="h-px w-2.5 bg-primary"
-                    />
-                    <span
-                        aria-hidden="true"
-                        className="h-px w-2.5 bg-primary"
-                    />
+                    <span aria-hidden="true" className="h-0.5 w-2.5 bg-ink" />
+                    <span aria-hidden="true" className="h-0.5 w-2.5 bg-ink" />
                 </div>
             )}
         </aside>

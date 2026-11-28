@@ -44,7 +44,6 @@ export default function useAuthenticatedSidebarLogic(): AuthenticatedSidebarLogi
         },
         handler: {
             handleLogout,
-            handleOpenUserSettings: handler.openUserSettings,
             handleToggleGroup: handler.toggleGroup,
         },
     }

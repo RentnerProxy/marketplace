@@ -38,10 +38,10 @@ export default function FontsSection() {
                                     availableFontFamily,
                                 )
                             }
-                            className={`flex h-11 cursor-pointer items-center justify-center rounded-md border px-3 text-sm font-semibold transition-colors ${
+                            className={`flex h-11 cursor-pointer items-center justify-center rounded-md border-2 px-3 text-sm font-semibold transition-[color,border-color,transform] ${
                                 isSelected
-                                    ? 'border-border-dark bg-input-dark text-white shadow-[inset_3px_0_0_var(--color-primary)]'
-                                    : 'border-border-dark bg-background-dark text-secondary-text hover:text-white'
+                                    ? 'comic-selected'
+                                    : 'border-border-dark bg-background-dark text-secondary-text hover:-translate-x-px hover:-translate-y-px hover:border-primary hover:text-foreground'
                             }`}
                             style={{
                                 fontFamily:

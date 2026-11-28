@@ -16,7 +16,7 @@ export function buildMarketplaceHead(
     article = false,
 ) {
     const canonical = marketplaceCanonicalUrl(page.path)
-    const image = marketplaceCanonicalUrl('/brand/marketplace-logo-1280.webp')
+    const image = marketplaceCanonicalUrl('/brand/icon-512.png')
     return {
         meta: [
             { title: page.title },
@@ -28,11 +28,11 @@ export function buildMarketplaceHead(
             { property: 'og:description', content: page.description },
             { property: 'og:url', content: canonical },
             { property: 'og:image', content: image },
-            { property: 'og:image:type', content: 'image/webp' },
-            { property: 'og:image:width', content: '1280' },
-            { property: 'og:image:height', content: '480' },
+            { property: 'og:image:type', content: 'image/png' },
+            { property: 'og:image:width', content: '512' },
+            { property: 'og:image:height', content: '512' },
             { property: 'og:image:alt', content: PROJECT_CONFIG.defaultName },
-            { name: 'twitter:card', content: 'summary_large_image' },
+            { name: 'twitter:card', content: 'summary' },
             { name: 'twitter:title', content: page.title },
             { name: 'twitter:description', content: page.description },
             { name: 'twitter:image', content: image },

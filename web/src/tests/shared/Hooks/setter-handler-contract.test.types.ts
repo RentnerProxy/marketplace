@@ -13,7 +13,6 @@ import type useMainThemeLogic from '@/features/UserSettings/Components/Appearanc
 import type useFontsLogic from '@/features/UserSettings/Components/AppearanceSection/Hooks/useFontsLogic.ts'
 import type useNotificationsLogic from '@/features/Notifications/Hooks/useNotificationsLogic.ts'
 import type useProfileImageSettingsLogic from '@/features/UserSettings/Components/Account/Hooks/useProfileImageSettingsLogic.ts'
-import type usePersonalInfoSettingsLogic from '@/features/UserSettings/Components/Account/Hooks/usePersonalInfoSettingsLogic.ts'
 import type useMaintenanceBannerLogic from '@/layouts/AuthenticatedLayout/Hooks/useMaintenanceBannerLogic.ts'
 import type usePermissionPresets from '@/features/Admin/PermissionManagement/Hooks/usePermissionPresets.ts'
 import type usePermissionManagementLogic from '@/features/Admin/PermissionManagement/Hooks/usePermissionManagementLogic.ts'
@@ -69,42 +68,6 @@ export type SetterHandlerContracts = AssertAll<{
             typeof useProfileImageSettingsLogic
         >['handler']['handleZoomChange'],
         number
-    >
-    usePersonalInfoSettingsLogic_handleFirstNameChange: IsValueHandler<
-        ReturnType<
-            typeof usePersonalInfoSettingsLogic
-        >['handler']['handleFirstNameChange'],
-        string
-    >
-    usePersonalInfoSettingsLogic_handleLastNameChange: IsValueHandler<
-        ReturnType<
-            typeof usePersonalInfoSettingsLogic
-        >['handler']['handleLastNameChange'],
-        string
-    >
-    usePersonalInfoSettingsLogic_handleStreetChange: IsValueHandler<
-        ReturnType<
-            typeof usePersonalInfoSettingsLogic
-        >['handler']['handleStreetChange'],
-        string
-    >
-    usePersonalInfoSettingsLogic_handleHouseNumberChange: IsValueHandler<
-        ReturnType<
-            typeof usePersonalInfoSettingsLogic
-        >['handler']['handleHouseNumberChange'],
-        string
-    >
-    usePersonalInfoSettingsLogic_handlePostalCodeChange: IsValueHandler<
-        ReturnType<
-            typeof usePersonalInfoSettingsLogic
-        >['handler']['handlePostalCodeChange'],
-        string
-    >
-    usePersonalInfoSettingsLogic_handleCityChange: IsValueHandler<
-        ReturnType<
-            typeof usePersonalInfoSettingsLogic
-        >['handler']['handleCityChange'],
-        string
     >
     useMaintenanceBannerLogic_handleReasonChange: IsValueHandler<
         ReturnType<

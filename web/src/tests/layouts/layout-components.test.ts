@@ -16,6 +16,15 @@ let mobileOpen = false
 const navItems: AuthenticatedNavItem[] = [
     { labelKey: 'nav.dashboard', to: '/user/dashboard', icon: Home },
 ]
+let publicRegistrationEnabled = false
+vi.mock('@tanstack/react-query', () => ({
+    useQuery: () => ({
+        data: { isPublicRegistrationEnabled: publicRegistrationEnabled },
+    }),
+}))
+vi.mock('@/lib/Queries/appQueries.ts', () => ({
+    systemSettingsQueryOptions: () => ({}),
+}))
 vi.mock('@tanstack/react-router', () => ({
     Outlet: () => createElement('article', null, 'Route content'),
     Link: ({
@@ -158,6 +167,10 @@ vi.mock(
         }),
     }),
 )
+vi.mock(
+    '@/layouts/AuthenticatedLayout/Hooks/useSocialLinkedRedirect.ts',
+    () => ({ default: () => undefined }),
+)
 vi.mock('@/layouts/PublicLayout/Hooks/useFooterLogic.ts', () => ({
     default: () => ({
         state: {
@@ -209,6 +222,7 @@ function callbacks(
 }
 beforeEach(() => {
     vi.clearAllMocks()
+    publicRegistrationEnabled = false
     collapsed = false
     savingTheme = false
     loggingOut = false
@@ -272,6 +286,7 @@ it.each([false, true])(
                 title: 'Company',
                 subtitle: 'Overview',
                 logoSrc: '/logo.png',
+                hasCustomLogo: true,
                 homeTo: '/user/dashboard',
                 navItems,
                 username: 'Kevin',
@@ -288,15 +303,13 @@ it.each([false, true])(
         }
 
         expect(html).toContain('--marketplace-sidebar-tail:5rem')
-        expect(html).toContain(
-            'marketplace-sidebar-mask marketplace-sidebar-trim',
-        )
+        expect(html).toContain('marketplace-sidebar-mask comic-dark')
         expect(html).toContain('src="/logo.png"')
         expect(html).toContain('aria-label="nav.navigation"')
         expect(html).toContain('href="/user/dashboard"')
-        expect(html).toContain('aria-[current=page]:before:bg-primary')
+        expect(html).toContain('aria-[current=page]:bg-proxy-400')
         expect(html).toContain('alt="Kevin"')
-        expect(html).toContain('userSettings.settingsLabel')
+        expect(html).toContain('nav.profile')
         expect(html).toContain('common.loggingOut')
         expect(html).toContain('disabled=""')
     },
@@ -319,7 +332,7 @@ it('toggles visible navigation groups independently of desktop visibility', () =
     ).toContain('nav.dashboard')
     expect(
         renderToStaticMarkup(createElement(NavigationItem, props)),
-    ).toContain('font-(family-name:--marketplace-mono)')
+    ).toContain('comic-lettering')
     expect(
         renderToStaticMarkup(createElement(NavigationItem, props)),
     ).toContain('data-active="true"')
@@ -335,7 +348,10 @@ it('toggles visible navigation groups independently of desktop visibility', () =
         ),
     ).not.toContain('nav.dashboard')
     expect(
-        NavigationItem({ ...props, item: { labelKey: 'nav.overview', icon: Home } }),
+        NavigationItem({
+            ...props,
+            item: { labelKey: 'nav.overview', icon: Home },
+        }),
     ).toBeNull()
 })
 
@@ -427,7 +443,7 @@ it.each([false, true])(
         )
         expect(html).not.toContain('background-image:')
         expect(html).toContain('Backup progress bridge')
-        expect(html).toContain('User settings dialog')
+        expect(html).not.toContain('User settings dialog')
         expect(html).toContain('Route content')
         expect(html.includes('maintenance.pendingOwnRequest')).toBe(
             !isMinimized,
@@ -445,8 +461,8 @@ it('offers expanded mobile navigation even when the desktop rail is collapsed', 
     )
     expect(html).toContain('<dialog id="marketplace-mobile-navigation"')
     expect(html).toContain('id="marketplace-mobile-navigation-title"')
-    expect(html).toContain('>nav.home</span>')
-    expect(html).toContain('userSettings.settingsLabel')
+    expect(html).toContain('>nav.dashboard</span>')
+    expect(html).toContain('nav.profile')
 })
 
 it('uses the Marketplace wordmark for default branding', () => {
@@ -463,6 +479,16 @@ it('uses the Marketplace wordmark for default branding', () => {
     const expanded = renderToStaticMarkup(
         createElement(Sidebar, { ...sidebar, isCollapsed: false }),
     )
-    expect(expanded).toContain('src="/brand/marketplace-logo-640.webp"')
+    expect(expanded).toContain('/brand/head-blink')
     expect(expanded).toContain('aria-label="RentnerProxy Marketplace"')
 })
+
+it.each([false, true])(
+    'shows the public signup link only while registration is enabled (%s)',
+    (enabled) => {
+        publicRegistrationEnabled = enabled
+        const html = renderToStaticMarkup(createElement(PublicLayout))
+        expect(html.includes('href="/register"')).toBe(enabled)
+        expect(html).toContain('href="/login"')
+    },
+)

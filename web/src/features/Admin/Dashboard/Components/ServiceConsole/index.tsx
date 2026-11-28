@@ -115,13 +115,17 @@ export default function ServiceConsole({
                                     key={entry.id}
                                     className="grid grid-cols-[4.5rem_3rem_minmax(0,1fr)] items-start gap-x-3 rounded-sm px-2 py-0.5 hover:bg-surface-dark/70 sm:grid-cols-[5rem_3.5rem_minmax(0,1fr)]"
                                 >
-                                    <time
-                                        dateTime={entry.timestamp}
-                                        title={entry.timestamp}
-                                        className="select-text text-secondary-text/70"
+                                    <CustomTooltip
+                                        side="top"
+                                        content={entry.timestamp}
                                     >
-                                        {entry.time}
-                                    </time>
+                                        <time
+                                            dateTime={entry.timestamp}
+                                            className="select-text text-secondary-text/70"
+                                        >
+                                            {entry.time}
+                                        </time>
+                                    </CustomTooltip>
                                     <span
                                         className={`text-[10px] font-semibold uppercase tracking-wider ${levelClasses[entry.level]}`}
                                     >

@@ -22,7 +22,7 @@ export default function AuthenticatedTopbar({
 
     return (
         <header
-            className={`sticky top-0 z-20 flex min-h-[4.625rem] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border-dark bg-(--marketplace-topbar) px-4 py-3 backdrop-blur-[16px] sm:px-6 2xl:px-8 ${
+            className={`sticky top-0 z-20 flex min-h-[4.625rem] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b-[3px] border-border-dark bg-background-dark/95 px-4 py-3 backdrop-blur-[16px] sm:px-6 2xl:px-8 ${
                 isCollapsed ? '' : 'lg:-ml-12 lg:pl-18 2xl:pl-20'
             }`}
         >
@@ -33,7 +33,7 @@ export default function AuthenticatedTopbar({
                 aria-haspopup="dialog"
                 aria-label={t('nav.expand')}
                 onClick={onOpenMobileNavigation}
-                className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border border-primary/40 bg-primary/10 text-primary-text transition-colors hover:border-primary hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none lg:hidden"
+                className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-md border-2 border-ink bg-proxy-400 text-on-proxy shadow-[2px_2px_0_0_var(--color-ink)] transition-transform hover:-translate-x-px hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none lg:hidden"
             >
                 <EllipsisVertical aria-hidden="true" className="size-5" />
             </button>
@@ -44,7 +44,7 @@ export default function AuthenticatedTopbar({
                     aria-expanded={!isCollapsed}
                     aria-label={collapseLabel}
                     onClick={onToggleCollapse}
-                    className="hidden size-12 shrink-0 cursor-pointer place-items-center rounded-xl border border-(--marketplace-border-strong) bg-(--marketplace-surface-raised) text-secondary-text transition-colors hover:border-primary/45 hover:bg-(--marketplace-surface-hover) hover:text-primary-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none lg:grid"
+                    className="hidden size-11 shrink-0 cursor-pointer place-items-center rounded-md border-2 border-ink bg-white text-ink shadow-[2px_2px_0_0_var(--color-ink)] transition-transform hover:-translate-x-px hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none lg:grid"
                 >
                     <CollapseIcon aria-hidden="true" className="size-4" />
                 </button>

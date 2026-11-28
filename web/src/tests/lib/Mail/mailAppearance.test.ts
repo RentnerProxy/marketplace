@@ -72,7 +72,7 @@ describe('Persönliches Design beim Mailversand', function () {
             const first = sendWithSmtp.mock.calls[0]?.[0]
             expect(first?.html).toContain('border-left:3px solid #7c3aed')
             expect(first?.html).toContain('font-size:18px')
-            expect(first?.html).toContain('bgcolor="#181a1f"')
+            expect(first?.html).toContain('bgcolor="#0a110e"')
 
             appearance = createMailTheme({
                 themeMode: 'light',

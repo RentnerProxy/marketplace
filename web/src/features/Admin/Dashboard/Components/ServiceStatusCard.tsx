@@ -62,10 +62,10 @@ export default function ServiceStatusCard({
                 { service: t(`admin.dashboard.services.${service}`) },
             )}
             onClick={() => onSelect(service)}
-            className={`group flex min-w-0 cursor-pointer flex-col rounded-[0.9rem] border p-4 text-start transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none ${
+            className={`group flex min-w-0 cursor-pointer flex-col rounded-md border-2 p-4 text-start transition-[background-color,border-color,transform,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring motion-reduce:transition-none ${
                 isSelected
-                    ? 'border-primary/40 bg-primary/8'
-                    : 'border-border-dark bg-input-dark hover:border-(--marketplace-border-strong) hover:bg-(--marketplace-surface-hover)'
+                    ? 'comic-selected'
+                    : 'border-border-dark bg-input-dark hover:border-primary'
             }`}
         >
             <span

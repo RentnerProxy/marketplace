@@ -8,7 +8,7 @@ export type SegmentedTabOption<TTab extends string> = {
 
 export type SegmentedTabsProps<TTab extends string> = {
     activeTab: TTab
-    columns: 2 | 3
+    columns: 2 | 3 | 4
     onTabChange: (tab: TTab) => void
     tabs: Array<SegmentedTabOption<TTab>>
 }

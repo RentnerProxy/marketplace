@@ -51,7 +51,7 @@ export default function useRestoreProgressCardLogic({
     const phaseLabel = t(phaseKey)
     let statusLabel = phaseLabel
     let notice = t('restoreProgress.keepOpenNotice')
-    let noticeClassName = 'border-l-primary text-gray-200'
+    let noticeClassName = '[--notice-tone:var(--color-primary)] text-gray-200'
     let headerIcon: LucideIcon = DatabaseBackup
     let headerIconTone: HeadingIconTone = 'primary'
     let progressColor = 'bg-primary'
@@ -60,14 +60,15 @@ export default function useRestoreProgressCardLogic({
         const statusKey = isRecoveryRequired ? 'recoveryRequired' : 'failed'
         statusLabel = t(`restoreProgress.status.${statusKey}`)
         notice = t(`restoreProgress.${statusKey}Notice`)
-        noticeClassName = 'border-l-danger text-red-100'
+        noticeClassName = '[--notice-tone:var(--color-danger)] text-red-100'
         headerIcon = TriangleAlert
         headerIconTone = 'danger'
         progressColor = 'bg-red-400'
     } else if (isCompleted) {
         statusLabel = t('restoreProgress.status.completed')
         notice = t('restoreProgress.completedNotice')
-        noticeClassName = 'border-l-success text-emerald-100'
+        noticeClassName =
+            '[--notice-tone:var(--color-success)] text-emerald-100'
         headerIcon = CheckCircle2
         headerIconTone = 'success'
         progressColor = 'bg-emerald-400'

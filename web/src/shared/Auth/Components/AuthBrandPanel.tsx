@@ -2,86 +2,60 @@ import { Link } from '@tanstack/react-router'
 import { Layers3 } from 'lucide-react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
 import MarketplaceLogo from '@/shared/Brand/MarketplaceLogo.tsx'
+import MascotImage from '@/shared/Brand/MascotImage.tsx'
 
 export default function AuthBrandPanel() {
     const { t } = useTranslationStore()
 
     return (
-        <aside className="relative isolate hidden min-h-svh min-w-0 flex-col overflow-hidden bg-marketplace-void py-6 pl-8 pr-14 text-white lg:flex xl:pl-12 xl:pr-20 2xl:pl-16 2xl:pr-24">
+        <aside className="comic-dark relative isolate hidden min-h-svh min-w-0 flex-col overflow-hidden border-r-4 border-ink py-6 pl-8 pr-12 lg:flex xl:pl-12 xl:pr-16 2xl:pl-16 2xl:pr-20">
             <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
             >
-                <img
-                    src="/brand/marketplace-modules-1536.webp"
-                    srcSet="/brand/marketplace-modules-640.webp 640w, /brand/marketplace-modules-1536.webp 1536w"
-                    sizes="50vw"
-                    alt=""
-                    width="1536"
-                    height="1024"
-                    decoding="async"
-                    className="marketplace-art absolute inset-0 h-full w-full object-cover opacity-55"
-                />
-                <div className="marketplace-orbit absolute left-1/2 top-1/2 h-[65%] w-[145%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border border-white/[0.06]" />
-                <div className="marketplace-orbit-reverse absolute left-1/2 top-1/2 h-[45%] w-[180%] -translate-x-1/2 -translate-y-1/2 rounded-[50%] border border-primary/10" />
+                <div className="comic-rays absolute left-1/2 top-[58%] aspect-square w-[190%] -translate-x-1/2 -translate-y-1/2 [--rays-a:rgba(48,238,97,0.13)]" />
+                <div className="comic-hatch absolute bottom-0 left-0 h-1/3 w-2/3 [--hatch-color:rgba(255,255,255,0.08)] [mask-image:linear-gradient(45deg,black,transparent_70%)]" />
             </div>
+            <div
+                aria-hidden="true"
+                className="absolute inset-y-0 right-0 w-3 border-l-[3px] border-ink bg-proxy-400"
+            />
 
             <Link
                 to="/"
                 aria-label={t('auth.experience.backToMarketplace')}
-                className="w-fit shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+                className="comic-focus w-fit shrink-0 rounded-md"
             >
-                <MarketplaceLogo className="w-44 xl:w-48" sizes="192px" />
+                <MarketplaceLogo priority />
             </Link>
 
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center py-8 text-center">
-                <p className="mb-6 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#a3ffb8] xl:text-xs">
+                <p className="comic-caption mb-6">
                     {t('auth.experience.eyebrow')}
                 </p>
-                <h2 className="font-display text-[clamp(2.3rem,5.1vw,5rem)] leading-[0.91] tracking-[-0.035em]">
-                    <span className="block">RentnerProxy</span>{' '}
-                    <span className="relative mt-2 block text-primary">
+                <h2 className="comic-title text-[clamp(2.6rem,5.2vw,5.4rem)]">
+                    <span className="block text-white">RentnerProxy</span>{' '}
+                    <span className="mt-1 block text-proxy-400">
                         Marketplace
-                        <span
-                            aria-hidden="true"
-                            className="marketplace-spin absolute -right-4 -top-1 text-[0.35em] text-white xl:-right-6"
-                        >
-                            ✳
-                        </span>
                     </span>
                 </h2>
-                <p className="mt-7 max-w-sm text-sm leading-7 text-[#b2c8bc] xl:text-base 2xl:max-w-md 2xl:text-lg">
+                <p className="mt-6 max-w-sm text-sm leading-7 text-mist-200 xl:text-base 2xl:max-w-md">
                     {t('auth.experience.description')}
                 </p>
+                <MascotImage
+                    mascot="thumbsUp"
+                    sizes="(min-width: 1536px) 15rem, 12rem"
+                    className="mt-8 w-48 animate-mascot-bob motion-reduce:animate-none 2xl:w-60"
+                />
             </div>
 
-            <p className="flex shrink-0 items-center justify-center gap-2.5 border-t border-white/10 pt-4 text-center text-xs leading-5 text-[#a0bcaa] xl:text-sm">
+            <p className="comic-lettering flex shrink-0 items-center justify-center gap-2.5 border-t-[3px] border-dashed border-white/30 pt-4 text-center text-xs leading-5 text-mist-200 xl:text-sm">
                 <Layers3
                     aria-hidden="true"
-                    className="h-4 w-4 shrink-0 text-primary"
+                    className="h-4 w-4 shrink-0 text-proxy-400"
                 />
                 {t('auth.experience.community')}
             </p>
-            <svg
-                aria-hidden="true"
-                focusable="false"
-                viewBox="0 0 90 1000"
-                preserveAspectRatio="none"
-                className="marketplace-wave pointer-events-none absolute inset-y-0 right-0 h-full w-10 xl:w-16 2xl:w-20"
-            >
-                <path
-                    d="M22 0C-12 180 70 320 28 510S0 820 32 1000H90V0Z"
-                    fill="#0fb33a"
-                />
-                <path
-                    d="M35 0C1 180 83 320 41 510S13 820 45 1000H90V0Z"
-                    fill="#30ee61"
-                />
-                <path
-                    d="M48 0C14 180 96 320 54 510S26 820 58 1000H90V0Z"
-                    fill="#f7faf8"
-                />
-            </svg>
         </aside>
     )
 }

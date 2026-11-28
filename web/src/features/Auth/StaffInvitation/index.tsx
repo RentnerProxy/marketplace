@@ -8,9 +8,9 @@ import useStaffInvitationLogic from './Hooks/useStaffInvitationLogic.ts'
 
 const inputDesign = {
     bg: 'bg-white',
-    border: 'border-[#cedbd1]',
+    border: 'border-ink',
     text: 'text-marketplace-void',
-    labelText: 'text-[#294b35]',
+    labelText: 'text-ink',
 }
 
 export default function StaffInvitationPage() {
@@ -22,7 +22,7 @@ export default function StaffInvitationPage() {
             <section aria-labelledby="staff-invitation-title">
                 <h1
                     id="staff-invitation-title"
-                    className="font-display text-3xl tracking-tight sm:text-4xl"
+                    className="comic-title text-5xl sm:text-6xl"
                 >
                     {t('auth.staffInvitation.title')}
                 </h1>
@@ -32,7 +32,7 @@ export default function StaffInvitationPage() {
                             disabled={state.isSubmitting}
                             className="space-y-3"
                         >
-                            <legend className="mb-3 text-sm text-[#65786c]">
+                            <legend className="mb-3 text-sm text-steel-600">
                                 {t('auth.staffInvitation.description')}
                             </legend>
                             <PasswordInput
@@ -77,7 +77,7 @@ export default function StaffInvitationPage() {
                         </fieldset>
                     </form>
                 ) : (
-                    <p role="status" className="my-5 text-sm text-[#65786c]">
+                    <p role="status" className="my-5 text-sm text-steel-600">
                         {t(`auth.staffInvitation.${state.phase}`)}
                     </p>
                 )}

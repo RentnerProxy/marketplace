@@ -15,7 +15,7 @@ export default function BackupRestorePanel({
         <div className="space-y-4">
             <p
                 id={`restore-warning-${backupId}`}
-                className="rounded-xl border border-warning/25 bg-warning/5 p-4 text-sm leading-relaxed text-secondary-text"
+                className="comic-notice bg-background-dark p-4 text-sm leading-relaxed text-secondary-text [--notice-tone:var(--color-warning)]"
             >
                 {t('admin.backups.restoreWarning')}
                 <br />

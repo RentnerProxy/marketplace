@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     const { t } = useTranslationStore()
 
     return (
-        <div className="relative isolate grid min-h-svh overflow-x-clip bg-marketplace-canvas text-marketplace-ink [color-scheme:light] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="comic-surface relative isolate grid min-h-svh overflow-x-clip bg-marketplace-canvas text-marketplace-ink [color-scheme:light] lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
             <a
                 href="#main-content"
                 className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-3 focus:font-semibold focus:text-marketplace-void"
@@ -21,15 +21,16 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             <AuthBrandPanel />
 
             <div className="flex min-w-0 flex-col">
-                <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 px-5 py-2 sm:px-10 xl:px-14">
+                <header className="flex min-h-16 shrink-0 items-center justify-between gap-4 px-5 py-3 sm:px-10 xl:px-14">
                     <Link
                         to="/"
                         aria-label={t('auth.experience.backToMarketplace')}
-                        className="group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-[#53675a] transition-colors hover:text-[#17472a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                        className="comic-lettering comic-focus group inline-flex items-center gap-2 rounded-md text-sm text-ink decoration-proxy-700 decoration-wavy decoration-2 underline-offset-[6px] hover:underline"
                     >
                         <MarketplaceLogo
-                            className="w-36 sm:w-44 lg:hidden"
-                            sizes="176px"
+                            className="lg:hidden"
+                            size="sm"
+                            tone="ink"
                         />
                         <ArrowLeft
                             aria-hidden="true"
@@ -50,7 +51,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                     <div className="w-full max-w-[640px]">{children}</div>
                 </main>
 
-                <footer className="flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 py-3 text-[11px] leading-4 text-[#65786c] sm:px-10">
+                <footer className="comic-lettering flex shrink-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 py-3 text-[11px] leading-4 text-steel-600 sm:px-10">
                     <span className="inline-flex items-center gap-1.5">
                         <ShieldCheck
                             aria-hidden="true"
@@ -60,13 +61,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
                     </span>
                     <Link
                         to="/privacy"
-                        className="rounded underline-offset-4 hover:text-[#17472a] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                        className="comic-focus rounded underline-offset-4 hover:text-ink hover:underline"
                     >
                         {t('auth.register.privacy')}
                     </Link>
                     <Link
                         to="/imprint"
-                        className="rounded underline-offset-4 hover:text-[#17472a] hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+                        className="comic-focus rounded underline-offset-4 hover:text-ink hover:underline"
                     >
                         {t('layout.footer.imprint')}
                     </Link>

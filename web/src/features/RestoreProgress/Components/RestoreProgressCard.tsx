@@ -90,13 +90,13 @@ export default function RestoreProgressCard({
             </div>
 
             {isError && (
-                <p className="mt-5 rounded-md border border-border-dark border-l-2 border-l-warning bg-background-dark px-4 py-3 text-sm text-secondary-text">
+                <p className="comic-notice mt-5 bg-background-dark px-4 py-3 text-sm text-secondary-text [--notice-tone:var(--color-warning)]">
                     {t('restoreProgress.statusUnavailable')}
                 </p>
             )}
 
             <p
-                className={`mt-5 rounded-md border border-border-dark border-l-2 bg-background-dark px-4 py-3 text-sm leading-6 ${state.noticeClassName}`}
+                className={`comic-notice mt-5 bg-background-dark px-4 py-3 text-sm leading-6 ${state.noticeClassName}`}
             >
                 {state.notice}
             </p>

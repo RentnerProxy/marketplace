@@ -5,7 +5,8 @@ import {
     resetHooks,
     runEffects,
 } from '../hook-harness.ts'
-import { AUTHENTICATED_THEME_MODE_COLORS } from '@/config/user-theme-colors.config.ts'
+import { DEFAULT_PRIMARY_COLOR } from '@/config/user-theme-colors.config.ts'
+import { getPrimaryThemeColors } from '@/lib/Theme/primaryColor.ts'
 
 const navigate = vi.fn(async () => {})
 const applyTheme = vi.fn()
@@ -129,9 +130,14 @@ it('provides anonymous defaults and applies and cleans up the shell theme', () =
     expect(result.state.pendingMaintenanceExtensionRequest).toBeNull()
     expect(result.state.shellStyle.fontSize).toMatch(/px$/u)
     expect(result.state.shellStyle).toMatchObject({
-        '--color-background-dark':
-            AUTHENTICATED_THEME_MODE_COLORS.dark.background,
-        '--color-surface-dark': AUTHENTICATED_THEME_MODE_COLORS.dark.surface,
+        '--color-background-dark': getPrimaryThemeColors(
+            result.state.themeMode,
+            DEFAULT_PRIMARY_COLOR,
+        ).background,
+        '--color-surface-dark': getPrimaryThemeColors(
+            result.state.themeMode,
+            DEFAULT_PRIMARY_COLOR,
+        ).surface,
     })
     result.handler.toggleCollapse()
     expect(toggleCollapse).toHaveBeenCalledTimes(1)

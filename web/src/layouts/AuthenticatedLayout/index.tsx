@@ -4,11 +4,11 @@ import AuthenticatedSidebar from './Components/AuthenticatedSidebar.tsx'
 import AuthenticatedTopbar from './Components/AuthenticatedTopbar.tsx'
 import MaintenanceBanner from './Components/MaintenanceBanner.tsx'
 import MobileNavigation from './Components/MobileNavigation.tsx'
-import UserSettingsModal from '@/features/UserSettings/index.tsx'
 import BackupCreationProgressBridge from '@/features/Admin/Backups/Components/BackupCreationProgressBridge.tsx'
 import useAuthenticatedShellLogic from './Hooks/useAuthenticatedShellLogic.ts'
 import useAuthenticatedPageHeaderLogic from './Hooks/useAuthenticatedPageHeaderLogic.ts'
 import useMobileNavigationLogic from './Hooks/useMobileNavigationLogic.ts'
+import useSocialLinkedRedirect from './Hooks/useSocialLinkedRedirect.ts'
 import { authenticatedTableClassNames } from '@/lib/Table/authenticatedTableStyles.ts'
 // oxlint-disable-next-line import/no-unassigned-import -- Vite loads the sidebar mask and texture stylesheet.
 import './authenticated-layout.css'
@@ -17,10 +17,12 @@ export default function AuthenticatedShell() {
     const { state, handler } = useAuthenticatedShellLogic()
     const { state: pageHeader } = useAuthenticatedPageHeaderLogic()
     const mobileNavigation = useMobileNavigationLogic()
+    useSocialLinkedRedirect()
     const sidebar = {
         title: state.companyName,
         subtitle: state.navigationSubtitle,
         logoSrc: state.systemLogoSrc,
+        hasCustomLogo: state.hasCustomSystemLogo,
         homeTo: state.homeTo,
         navItems: state.visibleNavItems,
         username: state.username,
@@ -103,8 +105,6 @@ export default function AuthenticatedShell() {
                     userId={state.userId}
                 />
             )}
-
-            <UserSettingsModal username={state.username} />
         </div>
     )
 }

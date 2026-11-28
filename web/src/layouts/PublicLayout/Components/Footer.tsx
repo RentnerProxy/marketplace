@@ -5,67 +5,51 @@ import { PROJECT_CONFIG } from '@/config/app.config.ts'
 import MarketplaceLogo from '@/shared/Brand/MarketplaceLogo.tsx'
 import useFooterLogic from '../Hooks/useFooterLogic.ts'
 
+const footerLinkClassName =
+    'comic-focus max-w-full rounded-sm [overflow-wrap:anywhere] transition-colors hover:text-proxy-300 hover:underline hover:decoration-wavy hover:decoration-2 hover:underline-offset-4'
+
 export default function Footer() {
     const { t } = useTranslationStore()
     const { state } = useFooterLogic()
 
     return (
-        <footer className="relative overflow-hidden bg-marketplace-void text-white">
-            <svg
-                aria-hidden="true"
-                focusable="false"
-                viewBox="0 0 1440 120"
-                preserveAspectRatio="none"
-                className="marketplace-wave pointer-events-none absolute inset-x-0 top-0 h-16 w-full sm:h-24"
-            >
-                <path
-                    d="M0 75C220 19 468 29 720 71S1190 127 1440 55V0H0Z"
-                    fill="#0fb33a"
+        <footer className="bg-marketplace-canvas px-2 pb-2 pt-10 sm:px-4 sm:pb-4">
+            <div className="comic-panel comic-dark relative isolate mx-auto max-w-[1440px] overflow-hidden px-5 pb-5 pt-10 text-mist-200 sm:px-8 sm:pt-12 lg:px-12">
+                <div
+                    aria-hidden="true"
+                    className="comic-speedlines pointer-events-none absolute inset-0 -z-10"
                 />
-                <path
-                    d="M0 64C220 8 468 18 720 60S1190 116 1440 44V0H0Z"
-                    fill="#f7faf8"
-                />
-            </svg>
-            <div
-                aria-hidden="true"
-                className="marketplace-breathe absolute -right-20 top-4 h-72 w-72 rounded-full border-[40px] border-primary/5"
-            />
-            <div className="relative mx-auto max-w-[1440px] px-5 pb-6 pt-28 sm:px-8 sm:pt-36 lg:px-12">
-                <div className="grid gap-12 pb-12 md:grid-cols-[1.4fr_1fr] lg:gap-24">
+                <div className="grid gap-12 pb-10 md:grid-cols-[1.4fr_1fr] lg:gap-24">
                     <div>
                         <Link
                             to="/"
                             aria-label={state.companyName}
-                            className="inline-flex items-center gap-3"
+                            className="comic-focus inline-flex rounded-md"
                         >
-                            <MarketplaceLogo
-                                className="w-64 sm:w-72"
-                                sizes="(min-width: 640px) 288px, 256px"
-                            />
+                            <MarketplaceLogo size="lg" />
                         </Link>
-                        <p className="mt-7 max-w-lg font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+                        <p className="comic-title mt-7 max-w-lg text-4xl text-white sm:text-5xl">
                             {t('marketplace.footerHeadline')}
                         </p>
-                        <p className="mt-4 max-w-sm text-sm leading-7 text-[#91a99d]">
+                        <p className="mt-4 max-w-sm text-sm leading-7 text-mist-300">
                             {t('marketplace.footerDescription')}
                         </p>
                     </div>
                     <div className="grid grid-cols-2 gap-8 pt-2">
                         <nav aria-label={t('marketplace.footerExplore')}>
-                            <h2 className="text-lg text-white">
+                            <h2 className="comic-caption">
                                 {t('marketplace.footerExplore')}
                             </h2>
-                            <div className="mt-5 flex flex-col items-start gap-4 text-sm text-[#c1d2c9]">
+                            <div className="comic-lettering mt-5 flex flex-col items-start gap-4 text-sm text-white">
                                 <Link
                                     to="/apps"
-                                    className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
+                                    className={footerLinkClassName}
                                 >
                                     {t('marketplace.browseApps')}
                                 </Link>
                                 <Link
                                     to="/blog"
-                                    className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
+                                    className={footerLinkClassName}
                                 >
                                     {t('marketplace.navigation.blog')}
                                 </Link>
@@ -73,7 +57,7 @@ export default function Footer() {
                                     href={PROJECT_CONFIG.repositoryUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 transition-colors hover:text-primary"
+                                    className={`inline-flex items-center gap-2 ${footerLinkClassName}`}
                                 >
                                     GitHub
                                     <ArrowUpRight
@@ -83,26 +67,26 @@ export default function Footer() {
                                 </a>
                                 <Link
                                     to="/login"
-                                    className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
+                                    className={footerLinkClassName}
                                 >
                                     {t('marketplace.login')}
                                 </Link>
                             </div>
                         </nav>
                         <nav aria-label={t('marketplace.footerLegal')}>
-                            <h2 className="text-lg text-white">
+                            <h2 className="comic-caption comic-caption-white">
                                 {t('marketplace.footerLegal')}
                             </h2>
-                            <div className="mt-5 flex flex-col items-start gap-4 text-sm text-[#c1d2c9]">
+                            <div className="comic-lettering mt-5 flex flex-col items-start gap-4 text-sm text-white">
                                 <Link
                                     to="/imprint"
-                                    className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
+                                    className={footerLinkClassName}
                                 >
                                     {t('layout.footer.imprint')}
                                 </Link>
                                 <Link
                                     to="/privacy"
-                                    className="max-w-full [overflow-wrap:anywhere] transition-colors hover:text-primary"
+                                    className={footerLinkClassName}
                                 >
                                     {t('layout.footer.privacy')}
                                 </Link>
@@ -110,11 +94,11 @@ export default function Footer() {
                         </nav>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-5 border-t border-white/10 pt-6 text-xs text-[#91a99d]">
+                <div className="comic-lettering flex flex-wrap items-center justify-between gap-5 border-t-[3px] border-dashed border-white/35 pt-5 text-xs text-mist-300">
                     <span>
                         © {state.currentYear} {state.companyName}
                     </span>
-                    <span className="font-mono text-[10px]">
+                    <span className="font-mono text-[10px] normal-case">
                         {state.appVersion}
                     </span>
                 </div>

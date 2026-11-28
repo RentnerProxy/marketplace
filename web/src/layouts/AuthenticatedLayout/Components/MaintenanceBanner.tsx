@@ -16,7 +16,7 @@ export default function MaintenanceBanner({
     const { state, handler } = useMaintenanceBannerLogic()
 
     return (
-        <section className="relative w-full rounded-lg border border-border-dark border-l-2 border-l-warning bg-surface-dark p-3 pr-14 text-white shadow-lg shadow-black/20">
+        <section className="comic-notice relative w-full bg-surface-dark p-3 pr-14 text-white [--notice-tone:var(--color-warning)]">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)] lg:items-start">
                 <div className="min-w-0">
                     <div className="flex items-center gap-2 text-sm font-semibold text-white">

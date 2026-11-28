@@ -50,7 +50,7 @@ export default function SafeDeleteModal({
             aria-labelledby={titleId}
             aria-describedby={questionId}
             onCancel={handler.handleCancel}
-            className="marketplace-signed-in marketplace-dialog-panel fixed inset-0 m-auto h-fit max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md flex-col overflow-hidden rounded-2xl border border-border-dark bg-surface-dark text-foreground open:flex backdrop:bg-marketplace-void/70 backdrop:backdrop-blur-[2px] sm:max-h-[min(44rem,calc(100dvh-3rem))] sm:w-[calc(100%-3rem)]"
+            className="marketplace-signed-in marketplace-dialog-panel fixed inset-0 m-auto h-fit max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] max-w-md flex-col overflow-hidden comic-panel bg-surface-dark text-foreground open:flex backdrop:bg-marketplace-void/70 backdrop:backdrop-blur-[2px] sm:max-h-[min(44rem,calc(100dvh-3rem))] sm:w-[calc(100%-3rem)]"
         >
             <header className="marketplace-dialog-header flex shrink-0 items-center justify-between gap-5 border-b border-border-dark px-5 py-4 sm:px-6">
                 <div className="flex min-w-0 items-start gap-3">
@@ -59,7 +59,7 @@ export default function SafeDeleteModal({
                     <div className="min-w-0">
                         <h2
                             id={titleId}
-                            className="wrap-anywhere text-lg leading-tight font-extrabold text-(color:--marketplace-ink-soft) sm:text-xl"
+                            className="comic-title wrap-anywhere text-3xl text-foreground"
                         >
                             {resolvedTitle}
                         </h2>
@@ -100,7 +100,7 @@ export default function SafeDeleteModal({
                     type="button"
                     onClick={onClose}
                     disabled={isConfirming}
-                    className="inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl border border-rentner-border bg-rentner-control px-4 py-2 text-sm font-extrabold text-(color:--marketplace-ink-soft) transition-colors enabled:hover:border-focus-ring/40 enabled:hover:text-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none"
+                    className="flex h-11 cursor-pointer items-center justify-center rounded-md border-2 border-border-dark bg-input-dark px-4 font-comic text-sm font-bold text-secondary-text transition-colors hover:border-primary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     {resolvedCancelLabel}
                 </button>
@@ -109,7 +109,7 @@ export default function SafeDeleteModal({
                     type="button"
                     onClick={onConfirm}
                     disabled={isConfirming}
-                    className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-danger/25 bg-danger/10 px-4 py-2 text-sm font-extrabold text-danger transition-colors enabled:hover:border-danger/45 enabled:hover:bg-danger/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:transition-none"
+                    className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-ink bg-red-600 px-4 font-comic text-sm font-bold text-white shadow-[3px_3px_0_0_var(--app-comic-pop,var(--color-ink))] transition-[background-color,transform] hover:-translate-x-px hover:-translate-y-px hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     <ConfirmIcon
                         aria-hidden="true"
