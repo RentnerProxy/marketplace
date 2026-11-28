@@ -3,7 +3,7 @@ import os from 'node:os'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import type { FileHandle } from 'node:fs/promises'
-import type { BackupImportContext } from '@/server/Admin/Backups/import.types.ts'
+import type { BackupImportContext } from '@/server/Admin/Backups/Types/import.types.ts'
 
 const release = vi.fn(async () => undefined)
 let context: BackupImportContext

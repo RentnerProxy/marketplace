@@ -3,11 +3,10 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { z } from 'zod'
-import { runCoreCommandService } from '@/server/Core/command.service.ts'
-import { restoreJournalRecordSchema } from '@/server/Admin/Backups/restore-journal.validation.ts'
 import {
     independentlySignRecord,
     JOURNAL_BINDING,
+    restoreJournalRecordSchema,
     SYNTHETIC_JOURNAL_KEY,
 } from './restore-journal.test.helpers.ts'
 
@@ -91,41 +90,6 @@ describe('native retained restore journal session', () => {
                 record.occurredAt,
             )
         }
-    })
-
-    test('verifies an independent Node fixture through the coarse native validation boundary', async () => {
-        const fixture = z
-            .object({
-                binding: z.unknown(),
-                keyBase64: z.string(),
-                contentBase64: z.string(),
-                records: z.array(restoreJournalRecordSchema),
-            })
-            .passthrough()
-            .parse(
-                JSON.parse(
-                    await readFile(
-                        'core/tests/fixtures/restore-journal-v1.json',
-                        'utf8',
-                    ),
-                ),
-            )
-        const records = await runCoreCommandService(
-            'storage',
-            {
-                operation: 'journalValidate',
-                binding: fixture.binding,
-                keyBase64: fixture.keyBase64,
-                contentBase64: fixture.contentBase64,
-            },
-            {
-                validateResult: (value) =>
-                    z.array(restoreJournalRecordSchema).parse(value),
-            },
-        )
-        expect(records).toEqual(fixture.records)
-        for (const record of records)
-            expect(record.hmacSha256).toBe(independentlySignRecord(record))
     })
 
     test('rejects authenticated same-inode content replacement before the next append', async () => {

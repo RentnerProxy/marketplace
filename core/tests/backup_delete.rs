@@ -1,16 +1,31 @@
 use marketplace_core::{protocol::OperationContext, storage::execute};
 use serde_json::{Value, json};
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 fn request(temp: &Path, names: Value) -> Value {
     json!({"operation":"backupDeleteFiles","backupDirectory":temp.join("backups"),"storageDirectory":temp.join("storage"),"fileNames":names})
 }
 
+fn create_backup_directory(parent: &Path) -> PathBuf {
+    let backup = parent.join("backups");
+    #[allow(unused_mut)]
+    let mut builder = fs::DirBuilder::new();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    builder.create(&backup).unwrap();
+    backup
+}
+
 #[test]
 fn deletes_regular_files_and_accepts_absent_files_and_empty_batches() {
     let temp = tempfile::tempdir().unwrap();
-    let backup = temp.path().join("backups");
-    fs::create_dir(&backup).unwrap();
+    let backup = create_backup_directory(temp.path());
     for name in ["a.tar", "b.tar"] {
         fs::write(backup.join(name), b"backup").unwrap();
     }
@@ -59,7 +74,7 @@ fn validates_the_complete_name_batch_before_root_io_or_any_unlink() {
         ));
         assert!(!temp.path().join("backups").exists());
         assert!(!temp.path().join("storage").exists());
-        fs::create_dir(temp.path().join("backups")).unwrap();
+        create_backup_directory(temp.path());
         fs::write(temp.path().join("backups/valid.tar"), b"preserved").unwrap();
         assert!(execute(request(temp.path(), names), &OperationContext::cleanup()).is_err());
         assert_eq!(
@@ -72,8 +87,7 @@ fn validates_the_complete_name_batch_before_root_io_or_any_unlink() {
 #[test]
 fn prevalidates_all_file_types_and_hardlinks_before_unlink() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join("backups");
-    fs::create_dir(&root).unwrap();
+    let root = create_backup_directory(temp.path());
     fs::write(root.join("valid.tar"), b"preserved").unwrap();
     fs::create_dir(root.join("directory")).unwrap();
     fs::write(root.join("linked.tar"), b"linked").unwrap();
@@ -95,7 +109,7 @@ fn prevalidates_all_file_types_and_hardlinks_before_unlink() {
 #[test]
 fn cancelled_requests_preserve_files() {
     let temp = tempfile::tempdir().unwrap();
-    fs::create_dir(temp.path().join("backups")).unwrap();
+    create_backup_directory(temp.path());
     fs::write(temp.path().join("backups/a.tar"), b"preserved").unwrap();
     let context = OperationContext::cleanup();
     context.cancel();
@@ -116,8 +130,7 @@ fn cancelled_requests_preserve_files() {
 fn later_unlink_failure_is_uncertain_without_retrying_or_removing_the_locked_file() {
     use std::os::windows::fs::OpenOptionsExt;
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join("backups");
-    fs::create_dir(&root).unwrap();
+    let root = create_backup_directory(temp.path());
     fs::write(root.join("first.tar"), b"first").unwrap();
     fs::write(root.join("locked.tar"), b"locked").unwrap();
     // Allow normal reads/writes, but deny delete sharing for this externally
@@ -166,8 +179,7 @@ fn windows_alias_names_are_rejected_before_root_io() {
 fn rejects_symlink_files_roots_and_exchanged_roots_on_fresh_invocations() {
     use std::os::unix::fs::symlink;
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join("backups");
-    fs::create_dir(&root).unwrap();
+    let root = create_backup_directory(temp.path());
     fs::write(root.join("valid.tar"), b"preserved").unwrap();
     let outside = temp.path().join("outside");
     fs::create_dir(&outside).unwrap();
@@ -210,8 +222,7 @@ fn concurrent_cancellation_never_reports_partial_deletion_as_success() {
         time::{Duration, Instant},
     };
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join("backups");
-    fs::create_dir(&root).unwrap();
+    let root = create_backup_directory(temp.path());
     let names: Vec<_> = (0..512).map(|index| format!("{index:04}.tar")).collect();
     for name in &names {
         fs::write(root.join(name), b"backup").unwrap();

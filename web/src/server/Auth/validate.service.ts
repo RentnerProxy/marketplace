@@ -1,17 +1,11 @@
 import { getCookie } from '@tanstack/react-start/server'
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
-import {
-    permissions,
-    sessions,
-    accountPermissions,
-    user_profiles,
-    user_settings,
-    users,
-} from '@/db/schema.ts'
+import { sessions, user_profiles, user_settings, users } from '@/db/schema.ts'
 import { SESSION_COOKIE_NAME } from '@/config/session.config.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { hasPermission } from '@/lib/Permissions/permissions.ts'
+import { getUserPermissionKeys } from '@/lib/Permissions/userPermissions.ts'
 import { getSessionTokenCandidateService } from './session-token.service.ts'
 import {
     isUserFontFamily,
@@ -93,19 +87,10 @@ export async function validateSessionService() {
             session.profile?.profileImageUpdatedAt?.getTime() ?? null,
     }
 
-    const permissionRows = await db
-        .select({ key: permissions.key })
-        .from(accountPermissions)
-        .innerJoin(
-            permissions,
-            eq(permissions.id, accountPermissions.permissionId),
-        )
-        .where(eq(accountPermissions.userId, session.user.id))
-
-    const userPermissionKeys = permissionRows.map(
-        (permission) => permission.key,
-    )
-    const maintenance = await getMaintenanceStateService()
+    const [userPermissionKeys, maintenance] = await Promise.all([
+        getUserPermissionKeys(session.user.id),
+        getMaintenanceStateService(),
+    ])
     const expiresAtMs = Math.min(
         session.expiresAt.getTime(),
         candidate.absoluteExpiresAt.getTime(),

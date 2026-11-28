@@ -1,3 +1,4 @@
+import type { TranslationKey } from '@/language/translation.ts'
 import { Textarea } from '@rentnerkev/inputs'
 import { useId } from 'react'
 import { CANDIDATE_PIPELINE } from '@/config/submissions.config.ts'
@@ -92,7 +93,7 @@ function CandidateDetails({
                             className="space-y-1 border-l border-border-dark pl-3"
                         >
                             <p>
-                                {t('submissions.status.' + event.status)} ·{' '}
+                                {t(`submissions.status.${event.status}`)} ·{' '}
                                 <time
                                     dateTime={event.at}
                                     className="text-secondary-text"
@@ -114,7 +115,7 @@ function CandidateDetails({
                             )}
                             {event.failure && (
                                 <p className="text-secondary-text">
-                                    {t('submissions.failure.' + event.failure)}
+                                    {t(`submissions.failure.${event.failure}`)}
                                 </p>
                             )}
                         </li>
@@ -139,18 +140,18 @@ export function SubmissionDetails({
     )
     const formId = useId()
     const detail = state.detail
-    const actions = [
+    const actions: Array<{ value: string; label: TranslationKey }> = [
         ...(state.canReview
             ? [
-                  { value: 'approve', label: 'common.approve' },
-                  { value: 'reject', label: 'common.reject' },
+                  { value: 'approve', label: 'common.approve' as const },
+                  { value: 'reject', label: 'common.reject' as const },
               ]
             : []),
         ...(state.canRevoke
-            ? [{ value: 'revoke', label: 'submissions.revoke' }]
+            ? [{ value: 'revoke', label: 'submissions.revoke' as const }]
             : []),
         ...(state.canWithdraw
-            ? [{ value: 'withdraw', label: 'submissions.withdraw' }]
+            ? [{ value: 'withdraw', label: 'submissions.withdraw' as const }]
             : []),
     ]
     return (

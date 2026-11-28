@@ -7,10 +7,12 @@ use cap_std::fs::Dir;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
+    collections::HashMap,
     io::{Read, Write},
     path::{Path, PathBuf},
     time::Duration,
 };
+use zeroize::Zeroizing;
 
 const MAX_ENTRIES: usize = 100_000;
 const MAX_BYTES: u64 = 25 * 1024 * 1024 * 1024;
@@ -104,8 +106,13 @@ fn walk_frame(directory: Dir) -> CoreResult<WalkFrame> {
     Ok(WalkFrame { directory, entries })
 }
 
-fn sync_tree(dir: &Dir, context: &OperationContext, entries: &mut usize) -> CoreResult<()> {
-    let mut frames = vec![walk_frame(dir.try_clone()?)?];
+fn sync_tree(
+    dir: Dir,
+    directories_only: bool,
+    context: &OperationContext,
+    entries: &mut usize,
+) -> CoreResult<()> {
+    let mut frames = vec![walk_frame(dir)?];
     while let Some(frame) = frames.last_mut() {
         context.check()?;
         let Some(entry) = frame.entries.next() else {
@@ -129,15 +136,26 @@ fn sync_tree(dir: &Dir, context: &OperationContext, entries: &mut usize) -> Core
             }
             frames.push(walk_frame(child)?);
         } else if metadata.is_file() {
-            open_sync(&frame.directory, Path::new(&name))?.sync_all()?;
+            if !directories_only {
+                open_sync(&frame.directory, Path::new(&name))?.sync_all()?;
+            }
         } else {
             return Err(invalid());
         }
     }
     Ok(())
 }
-pub(super) fn sync_tree_path(path: &str, context: &OperationContext) -> CoreResult<()> {
-    sync_tree(&open_absolute(&absolute(path)?, false)?, context, &mut 0)
+pub(super) fn sync_tree_path(
+    path: &str,
+    directories_only: bool,
+    context: &OperationContext,
+) -> CoreResult<()> {
+    sync_tree(
+        open_absolute(&absolute(path)?, false)?,
+        directories_only,
+        context,
+        &mut 0,
+    )
 }
 
 struct CopyFrame {
@@ -146,17 +164,30 @@ struct CopyFrame {
     entries: cap_std::fs::ReadDir,
 }
 
+#[derive(Default)]
+struct CopyState {
+    entries: usize,
+    bytes: u64,
+    buffer: Option<Zeroizing<Vec<u8>>>,
+}
+
+impl CopyState {
+    fn reset_limits(&mut self) {
+        self.entries = 0;
+        self.bytes = 0;
+    }
+}
+
 fn copy(
     source: &Dir,
     name: &Path,
     destination: &Dir,
     target: &Path,
     context: &OperationContext,
-    entries: &mut usize,
-    bytes: &mut u64,
+    copies: &mut CopyState,
 ) -> CoreResult<()> {
     let mut frames = Vec::new();
-    if let Some(frame) = copy_entry(source, name, destination, target, context, entries, bytes)? {
+    if let Some(frame) = copy_entry(source, name, destination, target, context, copies)? {
         frames.push(frame);
     }
     while let Some(frame) = frames.last_mut() {
@@ -173,8 +204,7 @@ fn copy(
             &frame.destination,
             Path::new(&name),
             context,
-            entries,
-            bytes,
+            copies,
         )? {
             frames.push(child);
         }
@@ -188,12 +218,11 @@ fn copy_entry(
     destination: &Dir,
     target: &Path,
     context: &OperationContext,
-    entries: &mut usize,
-    bytes: &mut u64,
+    copies: &mut CopyState,
 ) -> CoreResult<Option<CopyFrame>> {
     context.check()?;
-    *entries += 1;
-    if *entries > MAX_ENTRIES {
+    copies.entries += 1;
+    if copies.entries > MAX_ENTRIES {
         return Err(invalid());
     }
     let before = source.symlink_metadata(name)?;
@@ -201,17 +230,19 @@ fn copy_entry(
         return Err(invalid());
     }
     if before.is_file() {
-        *bytes = bytes.checked_add(before.len()).ok_or_else(invalid)?;
-        if *bytes > MAX_BYTES {
+        copies.bytes = copies.bytes.checked_add(before.len()).ok_or_else(invalid)?;
+        if copies.bytes > MAX_BYTES {
             return Err(invalid());
         }
         let mut input = open_read(source, name)?;
         let mut output = create_file(destination, target)?;
         let mut copied = 0u64;
-        let mut buffer = vec![0u8; 128 * 1024];
+        let buffer = copies
+            .buffer
+            .get_or_insert_with(|| Zeroizing::new(vec![0; 128 * 1024]));
         loop {
             context.check()?;
-            let count = input.read(&mut buffer)?;
+            let count = input.read(buffer.as_mut_slice())?;
             if count == 0 {
                 break;
             }
@@ -230,7 +261,6 @@ fn copy_entry(
             return Err(invalid());
         }
         output.sync_all()?;
-        sync_dir(destination)?;
         Ok(None)
     } else if before.is_dir() {
         let child = source.open_dir_nofollow(name)?;
@@ -289,7 +319,12 @@ fn entry_parent(root: &Dir, name: &str, create: bool) -> CoreResult<(Dir, PathBu
         return Err(invalid());
     }
     Ok((
-        descend(root, path.parent().unwrap_or(Path::new("")), create, true)?,
+        descend(
+            root,
+            path.parent().unwrap_or(Path::new("")),
+            create,
+            DirectoryPermissions::Private,
+        )?,
         PathBuf::from(path.file_name().ok_or_else(invalid)?),
     ))
 }
@@ -406,6 +441,7 @@ fn move_entry(
     target: &Dir,
     dest: &Path,
     context: &OperationContext,
+    copies: &mut CopyState,
 ) -> CoreResult<()> {
     // Exclusive destination is required; recovery directories are freshly owned.
     if target.symlink_metadata(dest).is_ok() {
@@ -415,21 +451,25 @@ fn move_entry(
         ));
     }
     match rename_retry(source, name, target, dest, context) {
-        Ok(()) => (),
+        Ok(()) => {
+            sync_dir(source)?;
+            sync_dir(target)
+        }
         Err(error) if matches!(error.code.as_str(), "CORE_IO_ERROR" | "EACCES") => {
-            if let Err(error) = copy(source, name, target, dest, context, &mut 0, &mut 0) {
+            copies.reset_limits();
+            if let Err(error) = copy(source, name, target, dest, context, copies) {
                 let _ = remove(target, dest);
                 return Err(error);
             }
             remove(source, name)?;
+            sync_dir(source)
         }
-        Err(error) => return Err(error),
+        Err(error) => Err(error),
     }
-    sync_dir(source)?;
-    sync_dir(target)
 }
 fn rollback(root: &Dir, recovery: &Dir, journal: &Journal) -> CoreResult<()> {
     let context = OperationContext::cleanup();
+    let mut copies = CopyState::default();
     // A failed rollback retains its complete journal and recovery data.
     for entry in journal.installed.iter().rev() {
         let (dir, name) = entry_parent(root, &entry.name, false)?;
@@ -474,7 +514,7 @@ fn rollback(root: &Dir, recovery: &Dir, journal: &Journal) -> CoreResult<()> {
                 return Err(invalid());
             }
         }
-        move_entry(&source, &name, &destination, &target, &context)?;
+        move_entry(&source, &name, &destination, &target, &context, &mut copies)?;
     }
     sync_dir(root)
 }
@@ -495,13 +535,23 @@ pub(super) fn prepare(request: &Value, context: &OperationContext) -> CoreResult
         secure_directory(&root)?;
     }
     let complete = request["completeSnapshot"].as_bool().unwrap_or(true);
+    let mut original_entries = HashMap::new();
     let originals = if private {
         if complete {
-            request["originalEntries"]
+            let entries = request["originalEntries"]
                 .as_array()
-                .ok_or_else(invalid)?
+                .filter(|entries| entries.len() <= MAX_ENTRIES)
+                .ok_or_else(invalid)?;
+            original_entries.reserve(entries.len());
+            entries
                 .iter()
-                .map(|entry| string(entry, "privateRelativePath").map(str::to_owned))
+                .map(|entry| {
+                    let name = string(entry, "privateRelativePath")?;
+                    if original_entries.insert(name, entry).is_some() {
+                        return Err(invalid());
+                    }
+                    Ok(name.to_owned())
+                })
                 .collect::<CoreResult<Vec<_>>>()?
         } else {
             Vec::new()
@@ -554,6 +604,7 @@ pub(super) fn prepare(request: &Value, context: &OperationContext) -> CoreResult
     let result = (|| {
         let total = originals.len() + restored.len();
         let mut processed = 0;
+        let mut copies = CopyState::default();
         for name in originals {
             context.check()?;
             assert_location(&root_path, &root)?;
@@ -564,12 +615,7 @@ pub(super) fn prepare(request: &Value, context: &OperationContext) -> CoreResult
                 return Err(invalid());
             }
             if private {
-                let expected = request["originalEntries"]
-                    .as_array()
-                    .ok_or_else(invalid)?
-                    .iter()
-                    .find(|entry| entry["privateRelativePath"] == name)
-                    .ok_or_else(invalid)?;
+                let expected = original_entries.get(name.as_str()).ok_or_else(invalid)?;
                 if identity(&metadata)? != expected["identity"] || !metadata.is_file() {
                     return Err(invalid());
                 }
@@ -594,14 +640,14 @@ pub(super) fn prepare(request: &Value, context: &OperationContext) -> CoreResult
                 create_directory(&recovery, Path::new(&stage_name))?;
                 let stage = recovery.open_dir_nofollow(&stage_name)?;
                 secure_directory(&stage)?;
+                copies.reset_limits();
                 copy(
                     &from,
                     &base,
                     &stage,
                     Path::new("entry"),
                     context,
-                    &mut 0,
-                    &mut 0,
+                    &mut copies,
                 )?;
                 journal.moved.last_mut().ok_or_else(invalid)?.identity =
                     identity(&stage.symlink_metadata("entry")?)?;
@@ -612,14 +658,14 @@ pub(super) fn prepare(request: &Value, context: &OperationContext) -> CoreResult
                 remove(&from, &base)?;
                 drop(stage);
                 recovery.remove_dir(&stage_name)?;
+            } else {
+                sync_dir(&to)?;
             }
             sync_dir(&from)?;
-            sync_dir(&to)?;
             processed += 1;
             context.progress(json!({"processedEntries":processed,"totalEntries":total}))?;
         }
-        let mut copied_entries = 0;
-        let mut copied_bytes = 0;
+        copies.reset_limits();
         for name in restored {
             context.check()?;
             assert_location(&root_path, &root)?;
@@ -656,8 +702,7 @@ pub(super) fn prepare(request: &Value, context: &OperationContext) -> CoreResult
                 &stage,
                 Path::new("entry"),
                 context,
-                &mut copied_entries,
-                &mut copied_bytes,
+                &mut copies,
             )?;
             journal.installed.push(OwnedEntry {
                 name: name.clone(),
@@ -685,8 +730,8 @@ pub(super) fn prepare(request: &Value, context: &OperationContext) -> CoreResult
                 stage.remove_file("entry")?;
             } else {
                 rename_retry(&stage, Path::new("entry"), &to, &dest, context)?;
+                sync_dir(&to)?;
             }
-            sync_dir(&to)?;
             drop(stage);
             recovery.remove_dir(&stage_name)?;
             sync_dir(&recovery)?;

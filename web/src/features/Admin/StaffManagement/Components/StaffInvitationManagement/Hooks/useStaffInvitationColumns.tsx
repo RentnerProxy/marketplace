@@ -18,7 +18,9 @@ export default function useStaffInvitationColumns(
     actions: Omit<StaffInvitationActionsProps, 'invitation'>,
 ): Array<TableColumn<StaffInvitationSummary>> {
     const { t } = useTranslationStore()
-    const statuses = Object.keys(invitationStatusTone)
+    const statuses = ['active', 'disabled', 'expired'] as const satisfies Array<
+        keyof typeof invitationStatusTone
+    >
 
     return [
         {

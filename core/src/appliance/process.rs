@@ -131,6 +131,8 @@ impl ManagedChild {
                 "-c",
                 "port=5432",
                 "-c",
+                "idle_in_transaction_session_timeout=60000",
+                "-c",
                 "unix_socket_directories=/run/marketplace/postgresql",
                 "-c",
                 "logging_collector=off",
@@ -355,61 +357,52 @@ fn forward(mut stream: impl Read, role: Role, stderr: bool, logs: Arc<LogStore>)
 }
 
 pub fn probe(role: Role, env: &Environment) -> bool {
-    if role == Role::Webserver {
-        return http_probe(3000, "/healthz");
-    }
-    let mut service_env = service_environment(env);
-    service_env.insert("PGCONNECT_TIMEOUT".into(), "3".into());
-    service_env.insert("PGPASSWORD".into(), env["POSTGRES_PASSWORD"].clone());
-    service_env.insert("VALKEYCLI_AUTH".into(), env["VALKEY_PASSWORD"].clone());
-    let (program, args): (&str, Vec<&str>) = match role {
-        Role::Postgresql => (
-            "psql",
-            vec![
-                "-X",
-                "-h",
-                "127.0.0.1",
-                "-p",
-                "5432",
-                "-U",
-                &env["POSTGRES_USER"],
-                "-d",
-                "postgres",
-                "-Atqc",
-                "SELECT 1",
-            ],
-        ),
-        Role::Valkey => ("valkey-cli", vec!["--raw", "ping"]),
-        Role::Worker => {
-            service_env = env.clone();
-            (
-                "su-exec",
-                vec![
-                    "bun:bun",
-                    "bun",
-                    "--no-env-file",
-                    "web/src/server/workerHealthcheck.ts",
+    match role {
+        Role::Postgresql => {
+            let mut service_env = service_environment(env);
+            service_env.insert("PGCONNECT_TIMEOUT".into(), "3".into());
+            service_env.insert("PGPASSWORD".into(), env["POSTGRES_PASSWORD"].clone());
+            command_probe(
+                "psql",
+                &[
+                    "-X",
+                    "-h",
+                    "127.0.0.1",
+                    "-p",
+                    "5432",
+                    "-U",
+                    &env["POSTGRES_USER"],
+                    "-d",
+                    "postgres",
+                    "-Atqc",
+                    "SELECT 1",
                 ],
+                &service_env,
+                "1",
             )
         }
-        Role::Webserver => unreachable!(),
-    };
+        Role::Valkey => {
+            let mut service_env = service_environment(env);
+            service_env.insert("VALKEYCLI_AUTH".into(), env["VALKEY_PASSWORD"].clone());
+            command_probe("valkey-cli", &["--raw", "ping"], &service_env, "PONG")
+        }
+        Role::Webserver => http_probe(3000, "/healthz"),
+        #[cfg(unix)]
+        Role::Worker => super::worker_health::probe(),
+        #[cfg(not(unix))]
+        Role::Worker => false,
+    }
+}
+
+fn command_probe(program: &str, args: &[&str], env: &Environment, expected: &str) -> bool {
     execute(
         program,
-        &args,
-        &service_env,
+        args,
+        env,
         Duration::from_secs(4),
         &AtomicBool::new(false),
     )
-    .is_ok_and(|output| {
-        role == Role::Worker
-            || String::from_utf8_lossy(&output).trim()
-                == if role == Role::Postgresql {
-                    "1"
-                } else {
-                    "PONG"
-                }
-    })
+    .is_ok_and(|output| String::from_utf8_lossy(&output).trim() == expected)
 }
 
 pub fn http_probe(port: u16, path: &str) -> bool {

@@ -15,6 +15,7 @@ import { SOCIAL_AUTH_POLICY } from '@/config/social-auth.config.ts'
 import { RATE_LIMITS } from '@/config/security.config.ts'
 import { enforceRateLimit } from '@/server/RateLimit/rateLimit.service.ts'
 import { getActiveCurrentSessionUser } from '@/server/Auth/currentSession.ts'
+import { isPublicRegistrationEnabledService } from '@/server/Auth/Registration/policy.service.ts'
 import {
     getLockedReauthenticationStateService,
     validateReauthenticationProofService,
@@ -235,6 +236,10 @@ export async function finishSocialCallbackService(
                     '/login#social-error=account_exists',
                 )
         }
+        if (!(await isPublicRegistrationEnabledService()))
+            return socialRedirectResponseService(
+                '/login#social-error=registration_disabled',
+            )
         await createSocialHandoffService(
             SOCIAL_REGISTRATION_COOKIE,
             provider,

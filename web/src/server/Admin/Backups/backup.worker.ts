@@ -1,5 +1,7 @@
-import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-job.types.ts'
-import type { StartBackupWorkerOptions } from '@/server/Admin/Backups/Types/backup-worker.types.ts'
+import type {
+    BackupJobData,
+    StartBackupWorkerOptions,
+} from '@/server/Admin/Backups/Types/backup-worker.types.ts'
 import { UnrecoverableError, Worker, type Job } from 'bullmq'
 import { randomUUID } from 'node:crypto'
 import { BACKUP_QUEUE_NAME, BACKUP_TIMEOUTS } from '@/config/backup.config.ts'

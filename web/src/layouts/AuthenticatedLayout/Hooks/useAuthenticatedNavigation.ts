@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import type { Translate } from '@/language/translation.ts'
 import { NAVBAR_ITEMS } from '@/config/navbar.config.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import {
@@ -12,10 +13,7 @@ import type {
     AuthenticatedRoute,
 } from '@/shared/Types/navigation.types.ts'
 
-function getNavigationSubtitle(
-    permissions: Array<string>,
-    t: (key: string) => string,
-) {
+function getNavigationSubtitle(permissions: Array<string>, t: Translate) {
     if (permissions.some((permission) => permission.startsWith('admin.'))) {
         return t('nav.navigation')
     }

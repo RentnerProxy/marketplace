@@ -3,18 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'bun:test'
 import { getClientIp } from '@/lib/Request/clientRequestMeta.ts'
 import { getValkeyConnection } from '@/server/Valkey/valkey.service.ts'
 import { enforceRateLimit } from '@/server/RateLimit/rateLimit.service.ts'
+import { mockValkeyDefineCommand } from '@/tests/shared/valkey-script.test.helpers.ts'
 
 const rateLimitMocks = (function () {
+    const evalScript = vi.fn(async function (
+        ..._arguments: Array<unknown>
+    ): Promise<unknown> {
+        return [1, 60_000]
+    })
     return {
         getClientIp: vi.fn(function () {
             return '203.0.113.10'
         }),
         valkey: {
-            eval: vi.fn(async function (
-                ..._arguments: Array<unknown>
-            ): Promise<unknown> {
-                return [1, 60_000]
-            }),
+            eval: evalScript,
+            defineCommand: mockValkeyDefineCommand(evalScript),
         },
     }
 })()

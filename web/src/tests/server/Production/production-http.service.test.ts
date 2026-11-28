@@ -1,20 +1,20 @@
 import path from 'node:path'
+import * as files from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it, vi } from 'bun:test'
 import {
-    restoreBunProperties,
-    stubBunProperties,
     restoreTestGlobals,
     stubTestGlobal,
 } from '@/tests/shared/bunTestStubs.ts'
 import { BACKUP_LIMITS } from '@/config/backup.config.ts'
 import { IMAGE_UPLOAD_CONFIG } from '@/config/image-upload.config.ts'
+import { PRODUCTION_HTTP_LIMITS } from '@/config/production-server.config.ts'
 import { parseTrustedProxyRanges } from '@/server/Request/trustedProxy.service.ts'
 import {
     isLegacyUserBackgroundPath,
     serveProductionStorageAssetService,
 } from '@/server/Production/assets.service.ts'
 import {
-    MAX_PRODUCTION_REQUEST_BODY_BYTES,
     getRequestProxyMetadataService,
     proxyToInternalAppService,
 } from '@/server/Production/proxy.service.ts'
@@ -52,9 +52,31 @@ const assetConfig = {
 }
 
 describe('Production HTTP-Services', function () {
-    afterEach(function () {
-        restoreBunProperties()
+    let assetFixture: string | undefined
+
+    async function prepareAsset(relativePath: string, bytes: string) {
+        assetFixture = await files.mkdtemp(
+            path.join(tmpdir(), 'production-http-test-'),
+        )
+        const file = path.join(assetFixture, relativePath)
+        await files.mkdir(path.dirname(file), { recursive: true })
+        await files.writeFile(file, bytes)
+        return {
+            file,
+            config: {
+                publicStorageRoot: assetFixture,
+                defaultPublicRoot: assetFixture,
+            },
+        }
+    }
+
+    afterEach(async function () {
+        vi.restoreAllMocks()
         restoreTestGlobals()
+        if (assetFixture) {
+            await files.rm(assetFixture, { recursive: true, force: true })
+            assetFixture = undefined
+        }
     })
 
     it('ergänzt Security-Header und erhält vorhandene Cache-Regeln', async function () {
@@ -146,27 +168,18 @@ describe('Production HTTP-Services', function () {
         ).resolves.toBeNull()
     })
 
-    it('liest Storage-Assets vollständig unter dem Shared-Lock und erhält Range-Header', async function () {
-        const events: Array<string> = []
-        const bytes = new TextEncoder().encode('asset')
-        const arrayBuffer = vi.fn(async function () {
-            events.push('bytes-read')
-            return bytes.buffer
+    it('opens runtime assets under the shared lock and preserves range responses', async function () {
+        const events: string[] = []
+        const fixture = await prepareAsset(
+            'images/user/019f5b07-80e2-7000-8000-000000000001/profile.webp',
+            'asset',
+        )
+        const open = files.open
+        vi.spyOn(files, 'open').mockImplementation(function (...args) {
+            events.push('file-opened')
+            return open(...args)
         })
-        stubBunProperties({
-            file: vi.fn(function () {
-                return {
-                    arrayBuffer,
-                    exists: vi.fn(async function () {
-                        return true
-                    }),
-                    size: bytes.byteLength,
-                }
-            }),
-        })
-        const withStorageBarrier = async function <TResult>(
-            operation: () => TResult | Promise<TResult>,
-        ) {
+        async function withStorageBarrier<T>(operation: () => T | Promise<T>) {
             events.push('lock-acquired')
             const result = await operation()
             events.push('lock-released')
@@ -178,11 +191,15 @@ describe('Production HTTP-Services', function () {
                 'https://app.example.com/images/user/019f5b07-80e2-7000-8000-000000000001/profile.webp?v=1',
                 { headers: { range: 'bytes=1-3' } },
             ),
-            assetConfig,
+            fixture.config,
             { withStorageBarrier },
         )
 
-        expect(events).toEqual(['lock-acquired', 'bytes-read', 'lock-released'])
+        expect(events).toEqual([
+            'lock-acquired',
+            'file-opened',
+            'lock-released',
+        ])
         expect(response?.status).toBe(206)
         expect(await response?.text()).toBe('sse')
         expect(response?.headers.get('accept-ranges')).toBe('bytes')
@@ -194,50 +211,41 @@ describe('Production HTTP-Services', function () {
         )
     })
 
-    it('puffert deklarierte übergroße Storage-Assets nicht', async function () {
-        const arrayBuffer = vi.fn(async function () {
-            return new ArrayBuffer(0)
+    it('rejects oversized runtime assets before starting the body stream', async function () {
+        const fixture = await prepareAsset('images/system/logo.webp', '')
+        await files.truncate(
+            fixture.file,
+            IMAGE_UPLOAD_CONFIG.maxInputBytes + 1,
+        )
+        const read = vi.fn(() => {
+            throw new Error('Oversized asset must not be streamed.')
         })
-        stubBunProperties({
-            file: vi.fn(function () {
-                return {
-                    arrayBuffer,
-                    exists: vi.fn(async function () {
-                        return true
-                    }),
-                    size: IMAGE_UPLOAD_CONFIG.maxInputBytes + 1,
-                }
-            }),
+        const open = files.open
+        vi.spyOn(files, 'open').mockImplementation(async function (...args) {
+            const file = await open(...args)
+            vi.spyOn(file, 'createReadStream').mockImplementation(read)
+            return file
         })
-
         const response = await serveProductionStorageAssetService(
             new Request('https://app.example.com/images/system/logo.webp'),
-            assetConfig,
+            fixture.config,
         )
-
         expect(response?.status).toBe(413)
-        expect(arrayBuffer).not.toHaveBeenCalled()
+        expect(read).not.toHaveBeenCalled()
     })
 
-    it('behält für fehlende Storage- und Fallback-Dateien den Null-Vertrag bei', async function () {
-        const file = vi.fn(function () {
-            return {
-                arrayBuffer: vi.fn(),
-                exists: vi.fn(async function () {
-                    return false
-                }),
-                size: 0,
-            }
-        })
-        stubBunProperties({ file })
-
+    it('keeps the null contract for missing runtime and bundled assets', async function () {
+        const fixture = await prepareAsset('other-fixture', '')
+        const open = vi.spyOn(files, 'open')
+        const stat = vi.spyOn(files, 'stat')
         await expect(
             serveProductionStorageAssetService(
                 new Request('https://app.example.com/images/system/logo.webp'),
-                assetConfig,
+                fixture.config,
             ),
         ).resolves.toBeNull()
-        expect(file).toHaveBeenCalledTimes(2)
+        expect(open).toHaveBeenCalledTimes(1)
+        expect(stat).toHaveBeenCalledTimes(1)
     })
 
     it('verwendet Headeridentitäten ausschließlich mit konfiguriertem Proxyvertrauen', function () {
@@ -308,7 +316,7 @@ describe('Production HTTP-Services', function () {
         const fetchMock = vi.fn()
         stubTestGlobal('fetch', fetchMock)
 
-        expect(MAX_PRODUCTION_REQUEST_BODY_BYTES).toBe(
+        expect(PRODUCTION_HTTP_LIMITS.maxRequestBodySize).toBe(
             BACKUP_LIMITS.maxArchiveBytes,
         )
         const response = await proxyToInternalAppService(
@@ -317,6 +325,23 @@ describe('Production HTTP-Services', function () {
                 headers: {
                     'content-length': String(BACKUP_LIMITS.maxArchiveBytes + 1),
                 },
+            }),
+            { clientIp: '203.0.113.5', publicProtocol: 'https' },
+            proxyConfig,
+        )
+
+        expect(response.status).toBe(413)
+        expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('applies the normal request body limit to non-POST requests at the backup import path', async function () {
+        const fetchMock = vi.fn()
+        stubTestGlobal('fetch', fetchMock)
+
+        const response = await proxyToInternalAppService(
+            new Request('https://app.example.com/api/admin/backups/import', {
+                method: 'PUT',
+                headers: { 'content-length': String(16 * 1024 * 1024 + 1) },
             }),
             { clientIp: '203.0.113.5', publicProtocol: 'https' },
             proxyConfig,
@@ -457,31 +482,39 @@ describe('Production HTTP-Services', function () {
         },
     )
 
-    it('begrenzt die asynchrone Backup-Annahme mit der normalen Proxy-Deadline', async function () {
-        const fetchMock = vi.fn(async function (
-            _input: string | URL | Request,
-            _init?: RequestInit,
-        ) {
-            return Response.json(
-                { success: true, backupId: 'synthetic-run' },
-                { status: 202 },
+    it.each([
+        ['POST', '/api/admin/backups/download'],
+        ['PUT', '/api/admin/backups/import'],
+        ['GET', '/api/admin/backups/import'],
+    ])(
+        'applies the normal proxy deadline to %s %s',
+        async function (method, pathname) {
+            const fetchMock = vi.fn(async function (
+                _input: string | URL | Request,
+                _init?: RequestInit,
+            ) {
+                return Response.json(
+                    { success: true, backupId: 'synthetic-run' },
+                    { status: 202 },
+                )
+            })
+            stubTestGlobal('fetch', fetchMock)
+            const request = new Request('https://app.example.com' + pathname, {
+                method,
+            })
+
+            await proxyToInternalAppService(
+                request,
+                { clientIp: '203.0.113.5', publicProtocol: 'https' },
+                proxyConfig,
             )
-        })
-        stubTestGlobal('fetch', fetchMock)
-        const request = new Request(
-            'https://app.example.com/api/admin/backups/download',
-            { method: 'POST' },
-        )
 
-        await proxyToInternalAppService(
-            request,
-            { clientIp: '203.0.113.5', publicProtocol: 'https' },
-            proxyConfig,
-        )
-
-        expect(fetchMock.mock.calls[0]?.[1]?.signal).not.toBe(request.signal)
-        expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(false)
-    })
+            expect(fetchMock.mock.calls[0]?.[1]?.signal).not.toBe(
+                request.signal,
+            )
+            expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(false)
+        },
+    )
 
     it.each([
         ['GET', '/api/admin/backups/01941f29-7c00-7000-8000-000000000001'],

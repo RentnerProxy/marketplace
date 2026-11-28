@@ -1,4 +1,3 @@
-/* eslint-disable no-await-in-loop -- Session responses must be consumed in protocol order. */
 import { spawn } from 'node:child_process'
 import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -142,7 +141,7 @@ export async function openCoreSessionService(
         if (exited || cancellationWrite) return
         // Closing stdin wakes a session waiting for its next command. A marker
         // also reaches work currently running inside the native operation.
-        // eslint-disable-next-line promise/no-promise-in-callback -- Synchronous cancellation callbacks must persist the marker without blocking.
+        // oxlint-disable-next-line promise/no-promise-in-callback -- Synchronous cancellation callbacks must persist the marker without blocking.
         cancellationWrite = writeFile(cancellationPath, '', {
             flag: 'wx',
             mode: 0o600,

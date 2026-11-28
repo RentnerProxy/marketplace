@@ -72,10 +72,11 @@ test('autofix uses the real pinned service with a narrow formatter path list and
     expect(steps[apply]?.uses).toMatch(/^autofix-ci\/action@[a-f0-9]{40}$/)
 })
 
-test('CI preserves language, coverage and native contract checks without prepared database actions', async () => {
+test('CI preserves language, coverage and native contract checks and isolates PostgreSQL tests', async () => {
     const ci = await workflow('ci')
     expect(ci.permissions).toEqual({ contents: 'read' })
-    const commands = Object.values(ci.jobs)
+    const { database, ...jobs } = ci.jobs
+    const commands = Object.values(jobs)
         .flatMap((job) => job.steps.map((step) => step.run ?? ''))
         .join('\n')
     for (const command of [
@@ -98,6 +99,46 @@ test('CI preserves language, coverage and native contract checks without prepare
     expect(commands).not.toMatch(
         /test:db|db:prepare|db:push|db:pull|permissions:sync|\.env(?:\s|$)/,
     )
+
+    // Only the dedicated job migrates and tests a disposable PostgreSQL service.
+    const databaseJob = z
+        .object({
+            services: z.object({
+                postgres: z.object({
+                    image: z.string(),
+                    env: z.object({
+                        POSTGRES_DB: z.string(),
+                        POSTGRES_HOST_AUTH_METHOD: z.literal('trust'),
+                    }),
+                    ports: z.array(z.string()),
+                }),
+            }),
+            env: z.object({ TEST_DATABASE_URL: z.string() }),
+        })
+        .parse(database)
+    const { postgres } = databaseJob.services
+    expect(await read('Dockerfile')).toContain(
+        `FROM ${postgres.image} AS postgres-runtime`,
+    )
+    expect(postgres.ports).toEqual(['127.0.0.1:5432:5432'])
+    const testDatabase = new URL(databaseJob.env.TEST_DATABASE_URL)
+    expect(testDatabase.hostname).toBe('127.0.0.1')
+    expect(testDatabase.password).toBe('')
+    expect(testDatabase.pathname).toBe('/' + postgres.env.POSTGRES_DB)
+    expect(postgres.env.POSTGRES_DB).toMatch(/_test$/)
+    const databaseCommands = (database?.steps ?? []).map(
+        (step) => step.run ?? '',
+    )
+    expect(
+        databaseCommands.filter((command) => command.includes('db')),
+    ).toEqual([
+        'bun --no-env-file run test:db:prepare',
+        'bun --no-env-file run test:db',
+    ])
+    expect(databaseCommands.join('\n')).not.toMatch(
+        /db:push|db:pull|permissions:sync|\.env(?:\s|$)/,
+    )
+    expect(JSON.stringify(database)).not.toContain('secrets.')
     expect(ci.jobs.image?.uses).toBe('./.github/workflows/image.yml')
     const integration = await read('.github/scripts/ci/core-integration.sh')
     expect(integration).toContain('--target core-integration')
@@ -116,12 +157,45 @@ test('catalog publication builds the locked native signer before issuing credent
     )
     const token = steps.findIndex((step) => step.id === 'distribution')
     const publish = steps.findIndex((step) =>
-        step.run?.endsWith('app-catalog/run.ts sync'),
+        step.run?.endsWith('app-catalog/run.ts publish'),
     )
     expect(build).toBeGreaterThanOrEqual(0)
     expect(token).toBeGreaterThan(build)
     expect(publish).toBeGreaterThan(token)
     expect(steps[build]?.env).toBeUndefined()
+})
+
+test('catalog metadata renewal needs neither the Marketplace nor the publication switch', async () => {
+    const publication = await workflow('app-catalog-publish')
+    const job = publication.jobs.publish!
+    const steps = job.steps
+    const token = steps.findIndex((step) => step.id === 'distribution')
+    const refresh = steps.findIndex((step) =>
+        step.run?.endsWith('app-catalog/run.ts refresh'),
+    )
+    const network = steps.findIndex((step) => step.id === 'private-network')
+    const publish = steps.findIndex((step) =>
+        step.run?.endsWith('app-catalog/run.ts publish'),
+    )
+    expect(refresh).toBeGreaterThan(token)
+    expect(network).toBeGreaterThan(refresh)
+    expect(publish).toBeGreaterThan(network)
+
+    expect(Object.keys(steps[refresh]?.env ?? {}).toSorted()).toEqual([
+        'APP_CATALOG_DISTRIBUTION_TOKEN',
+        'APP_CATALOG_NEXT_ROOT',
+        'APP_CATALOG_SNAPSHOT_KEY',
+        'APP_CATALOG_TARGETS_KEY',
+        'APP_CATALOG_TIMESTAMP_KEY',
+        'APP_CATALOG_TRUSTED_ROOT',
+    ])
+    expect(steps[refresh]).not.toHaveProperty('if')
+    // A job-level `if` cannot read environment variables, so it must not gate on any.
+    expect(job.if).toBe(
+        "github.repository == 'RentnerProxy/marketplace' && github.ref == 'refs/heads/main'",
+    )
+    for (const index of [network, publish])
+        expect(steps[index]?.if).toBe("vars.APP_CATALOG_ENABLED == 'true'")
 })
 
 test.each(['image', 'release'])(
@@ -306,6 +380,12 @@ test('Bun and Docker toolchain pins agree and actions are maintained through Dep
             'group-by': 'dependency-name',
         },
     })
+    expect(docker?.ignore).toEqual([
+        {
+            'dependency-name': 'postgres',
+            'update-types': ['version-update:semver-major'],
+        },
+    ])
     const compose = config.updates.find(
         (entry) => entry['package-ecosystem'] === 'docker-compose',
     )

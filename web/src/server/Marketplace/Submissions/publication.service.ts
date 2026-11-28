@@ -1,5 +1,15 @@
 import { isDeepStrictEqual } from 'node:util'
-import { and, eq, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm'
+import {
+    and,
+    eq,
+    inArray,
+    isNotNull,
+    isNull,
+    lte,
+    or,
+    sql,
+    type SQLWrapper,
+} from 'drizzle-orm'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { db } from '@/db'
 import { marketplaceSubmissions, users } from '@/db/schema.ts'
@@ -14,7 +24,7 @@ import {
     type Publication,
 } from '../../../../../contracts/v1/index.ts'
 import { candidate } from '../../../../../contracts/v1/publication.ts'
-import { candidateGitHubToken } from './github.service.ts'
+import { candidateGitHubToken } from './github-credentials.service.ts'
 import {
     assertCatalogPublisherRun,
     assertTerminalCatalogPublisherRunService,
@@ -41,6 +51,14 @@ type PublicationIdentity = {
 }
 type PublicationAttempt = PublicationIdentity & { run: Publication['run'] }
 type PriorRun = Pick<Publication['run'], 'runId' | 'attempt'>
+
+function storedSubmissionJson(column: SQLWrapper) {
+    // Older Bun SQL writes stored these records as JSONB strings.
+    return sql`(case when jsonb_typeof(${column}) = 'string'
+        then (${column} #>> '{}')::jsonb else ${column} end)`
+}
+
+const storedApprovalRevision = sql<number>`(${storedSubmissionJson(marketplaceSubmissions.approval)}->>'revision')::integer`
 
 function matchesRun(
     run: Publication['run'] | undefined | null,
@@ -92,7 +110,7 @@ function requireApproval(row: Submission, approvalRevision: number) {
 }
 
 async function validateHandoff(row: Submission) {
-    const token = candidateGitHubToken()
+    const token = await candidateGitHubToken()
     if (!token) throw new Error('buildsUnavailable')
     try {
         return await checkCurrentCandidate(row, token)
@@ -136,20 +154,13 @@ export async function listPendingPublicationsService() {
 }
 
 export async function listCatalogPublicationWorkService() {
-    const {
-        status,
-        publicationRun,
-        publication,
-        approval,
-        createdAt,
-        id,
-        revision,
-    } = marketplaceSubmissions
+    const { status, publicationRun, publication, createdAt, id, revision } =
+        marketplaceSubmissions
     const rows = await db
         .select({
             submissionId: id,
             revision,
-            approvalRevision: sql<number>`(${approval}->>'revision')::integer`,
+            approvalRevision: storedApprovalRevision,
             kind: sql<'publish' | 'recover' | 'revoke'>`case
                 when ${status} = 'approved' then 'publish'
                 when ${publication} is null then 'recover'
@@ -173,7 +184,7 @@ function pendingPublicationWork() {
         marketplaceSubmissions
     return and(
         isNotNull(approval),
-        sql`not (${history} @> '[{"revocation":{}}]'::jsonb)`,
+        sql`not (${storedSubmissionJson(history)} @> '[{"revocation":{}}]'::jsonb)`,
         or(
             eq(status, 'approved'),
             and(
@@ -196,8 +207,7 @@ export async function deferCatalogPublicationWorkService(
     caller: Publication['run'],
 ) {
     assertCatalogPublisherRun(caller)
-    const { id, revision, approval, status, publicationRun } =
-        marketplaceSubmissions
+    const { id, revision, status, publicationRun } = marketplaceSubmissions
     const now = new Date()
     const [deferred] = await db
         .update(marketplaceSubmissions)
@@ -211,10 +221,13 @@ export async function deferCatalogPublicationWorkService(
                     and(
                         eq(status, 'publishing'),
                         eq(revision, input.revision + 1),
-                        eq(publicationRun, caller),
+                        eq(
+                            storedSubmissionJson(publicationRun),
+                            sql.param(caller, publicationRun),
+                        ),
                     ),
                 ),
-                sql`(${approval}->>'revision')::integer = ${input.approvalRevision}`,
+                eq(storedApprovalRevision, input.approvalRevision),
                 pendingPublicationWork(),
                 publicationWorkIsDue(now),
             ),

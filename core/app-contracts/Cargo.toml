@@ -7,8 +7,14 @@ description = "Versioned RentnerProxy app contract types and offline validators"
 license = "MIT"
 repository = "https://github.com/RentnerProxy/marketplace"
 publish = false
-include = ["build.rs", "src/**", "contracts.schema.json", "LICENSE"]
+include = [
+    "build.rs",
+    "src/**",
+    "contracts.schema.json",
+    "upstream-probe-fixtures.json",
+    "LICENSE",
+]
 
 [dependencies]
-jsonschema = { version = "0.61.2", default-features = false }
+jsonschema = { version = "0.63.0", default-features = false }
 serde_json = "1.0"

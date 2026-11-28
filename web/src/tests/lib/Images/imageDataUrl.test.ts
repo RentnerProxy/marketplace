@@ -14,8 +14,9 @@ describe('Bild-Upload-Validierung', function () {
         })
             .png()
             .toBuffer()
+        const base64 = buffer.toString('base64')
         const result = await getImageBufferFromDataUrl(
-            `data:image/png;base64,${buffer.toString('base64')}`,
+            `data:image/png;base64,${base64.slice(0, 24)}\n${base64.slice(24)}`,
             'Ungültiges Bild',
         )
 
@@ -31,5 +32,24 @@ describe('Bild-Upload-Validierung', function () {
                 'Ungültiges Bild',
             ),
         ).rejects.toThrow('Ungültiges Bild')
+    })
+
+    it.each([
+        'data:image/png;base64,',
+        'data:image/png;base64,???',
+        'data:image/png\n;base64,AAAA',
+        'data:image/png;BASE64,AAAA',
+    ])('rejects malformed image data URLs: %s', async function (input) {
+        await expect(
+            getImageBufferFromDataUrl(input, 'Invalid image'),
+        ).rejects.toThrow('Invalid image')
+    })
+
+    it('keeps the error for an unsupported image type', async function () {
+        await expect(
+            getImageBufferFromDataUrl('data:image/gif;base64,AAAA'),
+        ).rejects.toThrow(
+            'Erlaubt sind ausschließlich JPEG-, PNG- und WebP-Bilder.',
+        )
     })
 })

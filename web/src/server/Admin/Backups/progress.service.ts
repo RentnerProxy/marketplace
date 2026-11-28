@@ -1,7 +1,7 @@
-import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-job.types.ts'
-import type { BackupRunRecord } from '@/server/Admin/Backups/Types/run-restore.types.ts'
+import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-worker.types.ts'
+import type { BackupRunRecord } from '@/server/Admin/Backups/Types/backup-run.types.ts'
 import { z } from 'zod'
-import { getStoredBackupErrorMessageService } from './error.service.ts'
+import { getStoredBackupErrorMessageService } from './backup.errors.ts'
 import type { Job } from 'bullmq'
 import type {
     BackupCreationProgress,

@@ -9,7 +9,10 @@ import {
 } from '@/lib/AuditLogs/auditLogs.ts'
 import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import { logError } from '@/server/Logging/logger.ts'
-import { publishMaintenanceStateService } from '@/server/Maintenance/state.service.ts'
+import {
+    invalidateMaintenanceStateService,
+    publishMaintenanceStateService,
+} from '@/server/Maintenance/state.service.ts'
 import { clearPendingMaintenanceExtensionRequest } from '@/server/Maintenance/requestStore.ts'
 import {
     publishMaintenanceExtensionResolvedService,
@@ -83,6 +86,7 @@ export async function updateMaintenanceModeService(
             return { settings, auditReceipt }
         })
 
+    invalidateMaintenanceStateService()
     await publishCommittedAuditLogService(committedReceipt)
     let pendingRequestToReject = null
 

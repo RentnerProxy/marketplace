@@ -1,6 +1,34 @@
 use super::*;
 
 #[test]
+fn windows_postgres_discovery_compares_numeric_majors_and_checks_each_tool() {
+    let root = tempfile::tempdir().unwrap();
+    for (version, tools) in [
+        ("9.6", vec!["pg_dump.exe"]),
+        ("18", vec!["pg_dump.exe", "pg_restore.exe"]),
+        ("20", vec!["pg_restore.exe"]),
+        ("custom", vec!["pg_dump.exe", "psql.exe"]),
+    ] {
+        let directory = root.path().join(version).join("bin");
+        std::fs::create_dir_all(&directory).unwrap();
+        for tool in tools {
+            std::fs::write(directory.join(tool), "").unwrap();
+        }
+    }
+    for (tool, expected) in [
+        ("pg_dump.exe", "18"),
+        ("pg_restore.exe", "20"),
+        ("psql.exe", "custom"),
+    ] {
+        assert_eq!(
+            find_windows_executable(root.path(), tool),
+            Some(root.path().join(expected).join("bin").join(tool))
+        );
+    }
+    assert_eq!(find_windows_executable(root.path(), "missing.exe"), None);
+}
+
+#[test]
 fn private_service_preserves_decoded_uri_options_query_precedence_and_ipv6() {
     let (url,password)=connection("postgresql://name%20with%20spaces:p%0Aass@[::1]:5433/db%2Fname?application_name=my%20app&options=-c%20search_path%3Dpublic&sslmode=require&user=override",None).unwrap();
     assert_eq!(password.as_deref(), Some("p\nass"));

@@ -6,7 +6,7 @@ import type {
 // Nur hier erzeugte, unveränderliche Fragmente dürfen HTML ungeescaped einfügen.
 const trustedMailHtmlFragments = new WeakSet<MailHtmlFragment>()
 
-export function escapeMailHtml(value: string) {
+function escapeMailHtml(value: string) {
     return value
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')

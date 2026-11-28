@@ -1,4 +1,4 @@
-import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-job.types.ts'
+import type { BackupJobData } from '@/server/Admin/Backups/Types/backup-worker.types.ts'
 import { Queue } from 'bullmq'
 import {
     BACKUP_CREATE_JOB_OPTIONS,

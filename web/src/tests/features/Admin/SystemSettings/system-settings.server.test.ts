@@ -25,6 +25,7 @@ const services = {
     company: operation(),
     logo: operation(),
     mode: operation(),
+    publicRegistration: operation(),
     extension: operation(),
 }
 const reads = {
@@ -56,6 +57,9 @@ vi.mock('@/server/Admin/SystemSettings/branding.service.ts', () => ({
 }))
 vi.mock('@/server/Admin/SystemSettings/maintenance-mode.service.ts', () => ({
     updateMaintenanceModeService: services.mode,
+}))
+vi.mock('@/server/Admin/SystemSettings/public-registration.service.ts', () => ({
+    updatePublicRegistrationService: services.publicRegistration,
 }))
 vi.mock(
     '@/server/Admin/SystemSettings/maintenance-extension.service.ts',
@@ -97,6 +101,15 @@ const cases = [
         run: () =>
             handlers.updateMaintenanceModeHandler({
                 data: { ...mode, ...untrustedActor },
+            }),
+    },
+    {
+        name: 'public registration',
+        service: services.publicRegistration,
+        data: true,
+        run: () =>
+            handlers.updatePublicRegistrationHandler({
+                data: { isEnabled: true, ...untrustedActor },
             }),
     },
     {

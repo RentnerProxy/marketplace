@@ -22,7 +22,8 @@ import {
     failureOf,
     invalidateSubmission,
 } from './decision.service.ts'
-import { candidateGitHubToken, GitHubRequestError } from './github.service.ts'
+import { candidateGitHubToken } from './github-credentials.service.ts'
+import { GitHubRequestError } from './github.service.ts'
 import { assertCurrentNamespace } from './namespace.service.ts'
 import { verifyRepositoryClaim } from './ownership.service.ts'
 import {
@@ -144,12 +145,21 @@ async function checkAgain(
         .where(leaseCondition(row))
 }
 
-async function processSubmission(
-    row: Submission,
-    token: string,
-    signal?: AbortSignal,
-) {
-    if (['awaitingReview', 'approved', 'publishing'].includes(row.status)) {
+async function processSubmission(row: Submission, signal?: AbortSignal) {
+    const recheck = ['awaitingReview', 'approved', 'publishing'].includes(
+        row.status,
+    )
+    if (
+        !recheck &&
+        Date.now() - row.createdAt.getTime() >= pipeline.buildTimeoutMs
+    ) {
+        await changeLeased(row, { status: 'failed', failure: 'buildTimedOut' })
+        return
+    }
+
+    const token = await candidateGitHubToken()
+    if (!token || signal?.aborted) return
+    if (recheck) {
         try {
             await checkCurrentCandidate(row, token)
         } catch (error) {
@@ -160,12 +170,6 @@ async function processSubmission(
         await checkAgain(row, expiresOrRecheck(row))
         return
     }
-    const elapsed = Date.now() - row.createdAt.getTime()
-    if (elapsed >= pipeline.buildTimeoutMs) {
-        await changeLeased(row, { status: 'failed', failure: 'buildTimedOut' })
-        return
-    }
-
     try {
         const claim = await readClaim(row.claimId)
         if (!row.dispatchRequestedAt) {
@@ -271,15 +275,12 @@ function boundedRetryAt(row: Submission, retryAt: Date) {
     )
 }
 
-export async function reconcileNextSubmissionService(
-    token: string,
-    signal?: AbortSignal,
-) {
+export async function reconcileNextSubmissionService(signal?: AbortSignal) {
     if (signal?.aborted) return
     const row = await leaseDueSubmission()
     if (!row || signal?.aborted) return
     try {
-        await processSubmission(row, token, signal)
+        await processSubmission(row, signal)
     } catch (error) {
         if (!(error instanceof GitHubRequestError) || !error.retryAt)
             throw error
@@ -294,12 +295,10 @@ export async function runCandidateValidationWorker(
     signal: AbortSignal,
     isRestoreQuiescenceActive: () => Promise<boolean>,
 ) {
-    const token = candidateGitHubToken()
-    if (!token) return
     while (!signal.aborted) {
         // Run one reconciliation at a time. Its durable lease is shared by all workers.
         // oxlint-disable-next-line no-await-in-loop
-        await reconcileUnlessRestoring(token)
+        await reconcileUnlessRestoring()
         try {
             // oxlint-disable-next-line no-await-in-loop
             await delay(pipeline.pollMs, undefined, { signal })
@@ -308,13 +307,13 @@ export async function runCandidateValidationWorker(
         }
     }
 
-    async function reconcileUnlessRestoring(currentToken: string) {
+    async function reconcileUnlessRestoring() {
         try {
             if (signal.aborted || (await isRestoreQuiescenceActive())) return
             await withSharedStorageMutationBarrier(async () => {
                 if (signal.aborted || (await isRestoreQuiescenceActive()))
                     return
-                await reconcileNextSubmissionService(currentToken, signal)
+                await reconcileNextSubmissionService(signal)
             })
         } catch (error) {
             if (!(error instanceof RestoreInProgressError)) {

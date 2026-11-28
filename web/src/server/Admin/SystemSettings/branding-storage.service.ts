@@ -1,8 +1,8 @@
-import { z } from 'zod'
 import { IMAGE_UPLOAD_CONFIG } from '@/config/image-upload.config.ts'
 import { CORE_RUNTIME } from '@/config/core.config.ts'
 import { getPublicStorageRoot } from '@/lib/Images/publicImagePaths.ts'
 import { runCoreCommandService } from '@/server/Core/command.service.ts'
+import { coreSuccessSchema } from '@/server/Core/protocol.ts'
 
 export async function publishSystemBrandingStorageService(
     largeLogo: Buffer,
@@ -42,11 +42,7 @@ export async function publishSystemBrandingStorageService(
                 [largeLogo, smallLogo, favicon],
                 totalBytes,
             ),
-            validateResult: (value) =>
-                z
-                    .object({ ok: z.literal(true) })
-                    .strict()
-                    .parse(value),
+            validateResult: (value) => coreSuccessSchema.parse(value),
         },
     )
 }

@@ -6,6 +6,9 @@ pub type Environment = BTreeMap<String, String>;
 const APPLICATION_KEYS: &[&str] = &[
     "ORIGIN",
     "AUTH_ENCRYPTION_KEY",
+    "MARKETPLACE_CANDIDATE_GITHUB_APP_CLIENT_ID",
+    "MARKETPLACE_CANDIDATE_GITHUB_APP_INSTALLATION_ID",
+    "MARKETPLACE_CANDIDATE_GITHUB_APP_PRIVATE_KEY_FILE",
     "MARKETPLACE_CANDIDATE_GITHUB_TOKEN",
     "SMTP_HOST",
     "SMTP_PORT",
@@ -15,13 +18,30 @@ const APPLICATION_KEYS: &[&str] = &[
     "MAIL_FROM",
     "VITE_APP_VERSION",
     "VITE_REALTIME_WS_URL",
+    "TRUST_PROXY_HEADERS",
+    "TRUSTED_PROXY_RANGES",
+    "PASSKEY_ORIGIN",
+    "PASSKEY_RP_ID",
+    "PASSKEY_RP_NAME",
+    "BACKUP_TIMEZONE",
+    "BACKUP_POSTGRES_TIMEOUT_SECONDS",
+    "DATABASE_POOL_MAX",
+    "DATABASE_POOL_IDLE_TIMEOUT_SECONDS",
+    "DATABASE_POOL_MAX_LIFETIME_SECONDS",
+    "DATABASE_POOL_CONNECTION_TIMEOUT_SECONDS",
+    "CORE_STORAGE_FFI",
 ];
 
 pub(super) fn load_environment(maintenance: bool) -> Result<Environment> {
     let mut input = Environment::new();
-    for key in ["POSTGRES_USER", "POSTGRES_PASSWORD"]
-        .into_iter()
-        .chain(APPLICATION_KEYS.iter().copied())
+    for key in [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "MAIL_FROM_NAME",
+    ]
+    .into_iter()
+    .chain(APPLICATION_KEYS.iter().copied())
     {
         match std::env::var(key) {
             Ok(value) => {
@@ -43,11 +63,38 @@ pub fn create_environment(input: &Environment, maintenance: bool) -> Result<Envi
     let password = input
         .get("POSTGRES_PASSWORD")
         .ok_or("appliance_configuration_invalid: POSTGRES_PASSWORD")?;
+    let database = input
+        .get("POSTGRES_DB")
+        .map_or("rentnerproxy_marketplace", String::as_str);
+    let mail_from_name = input
+        .get("MAIL_FROM_NAME")
+        .map_or("RentnerProxy Marketplace", String::as_str);
+    let trimmed_mail_from_name = mail_from_name.trim();
     if user.is_empty() || user.len() > 63 || user.contains(['\0', '\r', '\n']) {
         return Err("appliance_configuration_invalid: POSTGRES_USER");
     }
     if password.is_empty() || password == "CHANGE_ME" || password.contains(['\0', '\r', '\n']) {
         return Err("appliance_configuration_invalid: POSTGRES_PASSWORD");
+    }
+    if database.len() > 63
+        || matches!(database, "postgres" | "template0" | "template1")
+        || database.starts_with("pg_")
+        || !database
+            .as_bytes()
+            .first()
+            .is_some_and(u8::is_ascii_lowercase)
+        || !database
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+    {
+        return Err("appliance_configuration_invalid: POSTGRES_DB");
+    }
+    if trimmed_mail_from_name.is_empty()
+        || trimmed_mail_from_name.encode_utf16().count() > 200
+        || mail_from_name.contains('"')
+        || mail_from_name.chars().any(char::is_control)
+    {
+        return Err("appliance_configuration_invalid: MAIL_FROM_NAME");
     }
     let mut env: Environment = [
         (
@@ -63,7 +110,7 @@ pub fn create_environment(input: &Environment, maintenance: bool) -> Result<Envi
         ("HOST", "0.0.0.0"),
         ("POSTGRES_HOST", "127.0.0.1"),
         ("POSTGRES_PORT", "5432"),
-        ("POSTGRES_DB", "rentnerproxy_marketplace"),
+        ("POSTGRES_DB", database),
         ("POSTGRES_USER", user),
         ("POSTGRES_PASSWORD", password),
         ("VALKEY_PASSWORD", password),
@@ -71,7 +118,7 @@ pub fn create_environment(input: &Environment, maintenance: bool) -> Result<Envi
         ("APP_STORAGE_DIR", "/data/storage/public"),
         ("APP_PRIVATE_STORAGE_DIR", "/data/storage/private"),
         ("BACKUP_DIR", "/data/backups"),
-        ("MAIL_FROM_NAME", "TanStack Dummy"),
+        ("MAIL_FROM_NAME", trimmed_mail_from_name),
         ("CONTAINER_LOG_READER_URL", "http://127.0.0.1:3004"),
         ("CORE_ORIGIN", "http://127.0.0.1:3004"),
     ]
@@ -155,12 +202,24 @@ pub fn create_environment(input: &Environment, maintenance: bool) -> Result<Envi
     {
         return Err("appliance_configuration_invalid: SMTP_SECURE");
     }
-    let email = regex::Regex::new(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").expect("static mail expression");
-    if !email.is_match(env["MAIL_FROM"].trim()) {
+    if !valid_mail_from(env["MAIL_FROM"].trim()) {
         return Err("appliance_configuration_invalid: MAIL_FROM");
     }
     // Full application and realtime/passkey validation remains owned by TypeScript entrypoints.
     Ok(env)
+}
+
+fn valid_mail_from(value: &str) -> bool {
+    let Some((local, domain)) = value.split_once('@') else {
+        return false;
+    };
+    !local.is_empty()
+        && !domain.contains('@')
+        && !value.chars().any(char::is_whitespace)
+        && domain
+            .bytes()
+            .enumerate()
+            .any(|(index, byte)| byte == b'.' && index > 0 && index + 1 < domain.len())
 }
 
 pub fn service_environment(env: &Environment) -> Environment {

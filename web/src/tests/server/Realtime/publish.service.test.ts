@@ -1,5 +1,6 @@
 import type { BunRealtimeWebSocket } from '@/websockets/Types/bun.ts'
-import { registerRealtimeConnection } from '@/websockets/Server/realtimeConnectionRegistry.ts'
+import { realtimeWebSocketHandler } from '@/websockets/Server/realtimeWebSocket.ts'
+import { getRealtimeRevocationEpoch } from '@/websockets/Server/realtimeSessionValidation.ts'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'bun:test'
 import {
     restoreTestGlobals,
@@ -21,6 +22,7 @@ import {
     publishUserUpdatedService,
 } from '@/server/Realtime/publish.service.ts'
 import { REALTIME_PUBLISH_PATH } from '@/lib/Realtime/realtimeProtocol.ts'
+import { DEV_REALTIME_PUBLISH_SECRET } from '@/server/Realtime/environment.service.ts'
 
 const publishMocks = (function () {
     return {
@@ -42,7 +44,7 @@ vi.mock('@/server/Logging/logger.ts', function () {
 
 vi.mock('@/server/Valkey/valkey.service.ts', function () {
     return {
-        getValkeyPublisher: function () {
+        getValkeyConnection: function () {
             return { publish: publishMocks.valkeyPublish }
         },
     }
@@ -247,23 +249,33 @@ describe('Realtime publish service', function () {
         )
     })
 
-    it('nutzt die lokale HTTP-Bridge ohne konfigurierte Base-URL', async function () {
-        publishMocks.fetch.mockResolvedValueOnce(
-            new Response(null, { status: 204 }),
-        )
-        stubTestGlobal('fetch', publishMocks.fetch)
+    it.each([undefined, '', '  '])(
+        'uses the local HTTP bridge and default secret for a missing or blank secret (%j)',
+        async function (secret) {
+            restoreEnvironmentValue('REALTIME_PUBLISH_SECRET', secret)
+            publishMocks.fetch.mockResolvedValueOnce(
+                new Response(null, { status: 204 }),
+            )
+            stubTestGlobal('fetch', publishMocks.fetch)
 
-        await publishAuditLogCreatedService({
-            auditLogId,
-            createdAt: timestamp,
-        })
+            await publishAuditLogCreatedService({
+                auditLogId,
+                createdAt: timestamp,
+            })
 
-        expect(publishMocks.fetch).toHaveBeenCalledWith(
-            `http://127.0.0.1:3001${REALTIME_PUBLISH_PATH}`,
-            expect.objectContaining({ method: 'POST' }),
-        )
-        expect(publishMocks.serverPublish).not.toHaveBeenCalled()
-    })
+            expect(publishMocks.fetch).toHaveBeenCalledWith(
+                `http://127.0.0.1:3001${REALTIME_PUBLISH_PATH}`,
+                expect.objectContaining({
+                    method: 'POST',
+                    headers: expect.objectContaining({
+                        'x-realtime-publish-secret':
+                            DEV_REALTIME_PUBLISH_SECRET,
+                    }),
+                }),
+            )
+            expect(publishMocks.serverPublish).not.toHaveBeenCalled()
+        },
+    )
 
     it('meldet einen abgelehnten Bridge-Aufruf als Fehler', async function () {
         publishMocks.fetch.mockResolvedValueOnce(
@@ -301,20 +313,28 @@ describe('Realtime publish service', function () {
                 username: 'synthetic-user',
                 permissions: [],
                 sessionHash: 'a'.repeat(64),
-                expiresAt: '2000-01-01T00:00:00.000Z',
-                absoluteExpiresAt: '2000-01-01T08:00:00.000Z',
-                revocationEpoch: Symbol(),
+                expiresAt: new Date(Date.now() + 60_000).toISOString(),
+                absoluteExpiresAt: new Date(Date.now() + 120_000).toISOString(),
+                revocationEpoch: getRealtimeRevocationEpoch(),
             },
             subscribe: vi.fn(),
             unsubscribe: vi.fn(),
             send: vi.fn(),
             close: vi.fn(),
         } satisfies BunRealtimeWebSocket
-        registerRealtimeConnection(websocket)
-        await publishSystemSettingsUpdatedService({
-            companyName: 'Synthetic company',
-            updatedAt: timestamp,
-        })
+        realtimeWebSocketHandler.open(websocket)
+        const now = vi
+            .spyOn(Date, 'now')
+            .mockReturnValue(Date.parse(websocket.data.expiresAt))
+        try {
+            await publishSystemSettingsUpdatedService({
+                companyName: 'Synthetic company',
+                updatedAt: timestamp,
+            })
+        } finally {
+            now.mockRestore()
+            realtimeWebSocketHandler.close(websocket)
+        }
         expect(websocket.close).toHaveBeenCalledWith(4001, expect.any(String))
         expect(websocket.unsubscribe).toHaveBeenCalledWith('system-settings')
         expect(websocket.unsubscribe.mock.invocationCallOrder[0]).toBeLessThan(

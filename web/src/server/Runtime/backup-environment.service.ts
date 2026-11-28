@@ -23,22 +23,31 @@ const optionalTimezoneSchema = z.preprocess(
         .optional(),
 )
 
-const optionalPostgresCommandTimeoutSchema = z.preprocess(
-    normalizeOptionalEnvironmentValue,
-    z
-        .string()
-        .regex(
-            /^\d+$/,
-            'BACKUP_POSTGRES_TIMEOUT_SECONDS muss eine ganze Zahl sein.',
+const postgresCommandTimeoutRangeError = `BACKUP_POSTGRES_TIMEOUT_SECONDS muss zwischen ${BACKUP_POSTGRES_TIMEOUT_SECONDS.min} und ${BACKUP_POSTGRES_TIMEOUT_SECONDS.max} Sekunden liegen.`
+
+const postgresCommandTimeoutSchema = z
+    .string()
+    .regex(
+        /^\d+$/,
+        'BACKUP_POSTGRES_TIMEOUT_SECONDS muss eine ganze Zahl sein.',
+    )
+    .refine((value) => {
+        const seconds = Number(value)
+        return (
+            seconds >= BACKUP_POSTGRES_TIMEOUT_SECONDS.min &&
+            seconds <= BACKUP_POSTGRES_TIMEOUT_SECONDS.max
         )
-        .refine(
-            (value) =>
-                Number(value) >= BACKUP_POSTGRES_TIMEOUT_SECONDS.min &&
-                Number(value) <= BACKUP_POSTGRES_TIMEOUT_SECONDS.max,
-            `BACKUP_POSTGRES_TIMEOUT_SECONDS muss zwischen ${BACKUP_POSTGRES_TIMEOUT_SECONDS.min} und ${BACKUP_POSTGRES_TIMEOUT_SECONDS.max} Sekunden liegen.`,
-        )
-        .optional(),
-)
+    }, postgresCommandTimeoutRangeError)
+
+export function getPostgresCommandTimeoutMs() {
+    const configured =
+        normalizeOptionalEnvironmentValue(
+            process.env.BACKUP_POSTGRES_TIMEOUT_SECONDS,
+        ) ?? String(BACKUP_POSTGRES_TIMEOUT_SECONDS.default)
+    const timeout = postgresCommandTimeoutSchema.safeParse(configured)
+    if (!timeout.success) throw new Error(postgresCommandTimeoutRangeError)
+    return Number(timeout.data) * 1000
+}
 
 const backupDirectorySchema = z
     .string()
@@ -53,7 +62,10 @@ export const backupEnvironmentSchema = z.object({
     APP_PRIVATE_STORAGE_DIR: z.string().trim().min(1).optional(),
     BACKUP_DIR: backupDirectorySchema,
     BACKUP_TIMEZONE: optionalTimezoneSchema,
-    BACKUP_POSTGRES_TIMEOUT_SECONDS: optionalPostgresCommandTimeoutSchema,
+    BACKUP_POSTGRES_TIMEOUT_SECONDS: z.preprocess(
+        normalizeOptionalEnvironmentValue,
+        postgresCommandTimeoutSchema.optional(),
+    ),
     VITE_APP_VERSION: z.string().trim().min(1),
 })
 

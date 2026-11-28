@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop -- Owned disposable resources are exercised and cleaned up in lifecycle order. */
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { appendFile, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,10 +13,12 @@ const prefix = 'rentnerproxy-marketplace-appliance-' + nonce
 const directory = await mkdtemp(join(tmpdir(), prefix + '-'))
 const containers = new Set<string>()
 const images = new Set<string>()
-let runtimeImage:
-    | Awaited<ReturnType<typeof createLocalRuntimeImageReferenceService>>
-    | undefined
+const volumes = new Set<string>()
+const runtimeImages: Awaited<
+    ReturnType<typeof createLocalRuntimeImageReferenceService>
+>[] = []
 const volume = prefix + '-data'
+const previousBase = process.env.PREVIOUS_RUNTIME_IMAGE_ID
 const password = 'synthetic $ ; " ä ' + nonce
 const environment = {
     ...process.env,
@@ -74,7 +76,11 @@ async function health(name: string) {
     }
     throw new Error('Isolated appliance readiness timed out.')
 }
-async function start(image: string, name: string, command: string[] = []) {
+async function start(
+    image: string,
+    name: string,
+    { data = volume, command = [] as string[] } = {},
+) {
     containers.add(name)
     await docker([
         'run',
@@ -87,7 +93,7 @@ async function start(image: string, name: string, command: string[] = []) {
         '--network',
         'none',
         '--mount',
-        'type=volume,source=' + volume + ',target=/data',
+        'type=volume,source=' + data + ',target=/data',
         ...[
             'POSTGRES_PASSWORD',
             'POSTGRES_USER',
@@ -104,6 +110,164 @@ async function start(image: string, name: string, command: string[] = []) {
         ...command,
     ])
     await health(name)
+}
+
+async function createVolume(name: string) {
+    volumes.add(name)
+    await docker([
+        'volume',
+        'create',
+        '--label',
+        'rentnerproxy-marketplace.test=' + nonce,
+        name,
+    ])
+}
+
+async function createFixtureImage(source: string, variant: string) {
+    const runtimeImage = await createLocalRuntimeImageReferenceService({
+        source,
+        tag: prefix + ':base-' + variant,
+        docker,
+    })
+    runtimeImages.push(runtimeImage)
+    await writeFile(
+        join(directory, 'Dockerfile'),
+        [
+            'FROM ' + runtimeImage.reference,
+            'USER root',
+            'ENTRYPOINT ["tini", "--", "container-entrypoint.sh"]',
+            'CMD ["start"]',
+            'ENV POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=5432 POSTGRES_DB=rentnerproxy_marketplace NODE_ENV=production',
+            'COPY runtime.ts /app/web/src/server/productionEntrypoint.ts',
+            'COPY runtime.ts /app/web/src/server/productionWorkerEntrypoint.ts',
+            'COPY worker-health.ts /app/web/src/server/workerHealthcheck.ts',
+            'HEALTHCHECK --interval=1s --timeout=15s --start-period=1s --retries=30 CMD ["container-healthcheck.sh"]',
+        ].join('\n') + '\n',
+    )
+    const image = prefix + ':fixture-' + variant
+    images.add(image)
+    await docker([
+        'build',
+        '--label',
+        'rentnerproxy-marketplace.test=' + nonce,
+        '-t',
+        image,
+        directory,
+    ])
+    return image
+}
+
+async function cleanStop(name: string) {
+    await docker(['stop', '--time', '30', name])
+    const result = await docker([
+        'inspect',
+        '--format',
+        '{{.State.ExitCode}}',
+        name,
+    ])
+    assert(result.stdout.trim() === '0', 'Appliance did not drain cleanly.')
+}
+
+async function query(name: string, sql: string) {
+    const result = await docker([
+        'exec',
+        name,
+        'appliance-psql',
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-Atqc',
+        sql,
+    ])
+    return result.stdout.trim()
+}
+
+async function measureAppliance(base: string, name: string, startedAt: number) {
+    const readinessMs = Math.round(performance.now() - startedAt)
+    await Bun.sleep(2_000)
+    const [size, memory] = await Promise.all([
+        docker(['image', 'inspect', '--format', '{{.Size}}', base]),
+        docker(['exec', name, 'cat', '/sys/fs/cgroup/memory.current'], true),
+    ])
+    const bytes = size.stdout.trim()
+    const memoryBytes = memory.stdout.trim()
+    assert(/^\d+$/.test(bytes), 'Could not measure appliance image size.')
+    return `${bytes} | ${readinessMs} | ${/^\d+$/.test(memoryBytes) ? memoryBytes : 'Unavailable'}`
+}
+
+async function verifyPersistedUpgrade(previous: string, currentImage: string) {
+    const previousImage = await createFixtureImage(previous, 'previous')
+    const data = prefix + '-upgrade-data'
+    const old = prefix + '-previous'
+    const upgraded = prefix + '-upgraded'
+    const restored = prefix + '-rolled-back'
+    await createVolume(data)
+    const startedAt = performance.now()
+    await start(previousImage, old, { data })
+    const measurement = await measureAppliance(previous, old, startedAt)
+    const read =
+        "SET ROLE appliance_fixture_reader; SELECT document->>'phase' FROM appliance_upgrade_fixture ORDER BY id"
+    await query(
+        old,
+        `
+        CREATE ROLE appliance_fixture_reader NOLOGIN;
+        CREATE TABLE appliance_upgrade_fixture (id integer PRIMARY KEY, document jsonb);
+        INSERT INTO appliance_upgrade_fixture VALUES (1, '{"phase":"original"}');
+        GRANT SELECT ON appliance_upgrade_fixture TO appliance_fixture_reader;
+    `,
+    )
+    const systemId = await query(
+        old,
+        'SELECT system_identifier FROM pg_control_system()',
+    )
+    assert(
+        /^\d+$/.test(systemId),
+        'Missing system identifier in the previous cluster.',
+    )
+    await cleanStop(old)
+
+    await start(currentImage, upgraded, { data })
+    assert(
+        (await query(
+            upgraded,
+            'SELECT system_identifier FROM pg_control_system()',
+        )) === systemId && (await query(upgraded, read)) === 'original',
+        'The new appliance could not read the existing cluster and its role grants.',
+    )
+    await query(
+        upgraded,
+        `INSERT INTO appliance_upgrade_fixture VALUES (2, '{"phase":"upgraded"}')`,
+    )
+    const backup = await docker([
+        'exec',
+        '--user',
+        'bun',
+        upgraded,
+        'sh',
+        '-ec',
+        'export PGPASSWORD="$POSTGRES_PASSWORD"; ' +
+            'pg_dump -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/appliance-fixture.dump; ' +
+            'pg_restore --list /tmp/appliance-fixture.dump',
+    ])
+    assert(
+        backup.stdout.includes('TABLE DATA public appliance_upgrade_fixture'),
+        'The bundled backup tools could not read the fixture archive.',
+    )
+    await cleanStop(upgraded)
+
+    await start(previousImage, restored, { data })
+    assert(
+        (await query(
+            restored,
+            'SELECT system_identifier FROM pg_control_system()',
+        )) === systemId &&
+            (await query(restored, read)) === 'original\nupgraded',
+        'The previous appliance could not read data written by the new appliance.',
+    )
+    await cleanStop(restored)
+    console.log(
+        'Verified PostgreSQL 18 persisted upgrade, backup tooling and rollback on the same isolated volume.',
+    )
+    return measurement
 }
 
 try {
@@ -129,11 +293,17 @@ try {
             '.',
         ])
     }
-    runtimeImage = await createLocalRuntimeImageReferenceService({
-        source: base,
-        tag: prefix + ':base',
-        docker,
-    })
+    const configuration = await docker([
+        'image',
+        'inspect',
+        '--format',
+        '{{len .Config.Volumes}} {{json .Config.ExposedPorts}} {{.Config.StopSignal}}',
+        base,
+    ])
+    assert(
+        configuration.stdout.trim() === '0 {"3000/tcp":{}} SIGTERM',
+        'The appliance image must expose only its public port and declare no implicit volumes.',
+    )
     await writeFile(join(directory, '.env'), '')
     await writeFile(
         join(directory, 'compose.yml'),
@@ -175,39 +345,14 @@ try {
         join(directory, 'worker-health.ts'),
         "const time = Number(await Bun.file('/data/storage/fixture-worker-heartbeat').text()); process.exit(Date.now() - time < 5000 ? 0 : 1)\n",
     )
-    await writeFile(
-        join(directory, 'Dockerfile'),
-        [
-            'FROM ' + runtimeImage.reference,
-            'USER root',
-            'ENTRYPOINT ["tini", "--", "container-entrypoint.sh"]',
-            'CMD ["start"]',
-            'ENV POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=5432 POSTGRES_DB=rentnerproxy_marketplace NODE_ENV=production',
-            'COPY runtime.ts /app/web/src/server/productionEntrypoint.ts',
-            'COPY runtime.ts /app/web/src/server/productionWorkerEntrypoint.ts',
-            'COPY worker-health.ts /app/web/src/server/workerHealthcheck.ts',
-            'HEALTHCHECK --interval=1s --timeout=15s --start-period=1s --retries=30 CMD ["container-healthcheck.sh"]',
-        ].join('\n') + '\n',
-    )
-    const image = prefix + ':fixture'
-    images.add(image)
-    await docker([
-        'build',
-        '--label',
-        'rentnerproxy-marketplace.test=' + nonce,
-        '-t',
-        image,
-        directory,
-    ])
-    await docker([
-        'volume',
-        'create',
-        '--label',
-        'rentnerproxy-marketplace.test=' + nonce,
-        volume,
-    ])
+    const image = await createFixtureImage(base, 'current')
+    await createVolume(volume)
     const first = prefix + '-first'
+    const startedAt = performance.now()
     await start(image, first)
+    const currentMeasurement = previousBase
+        ? await measureAppliance(base, first, startedAt)
+        : null
     const core = await docker([
         'exec',
         first,
@@ -242,13 +387,7 @@ try {
         'const result = await fetch("http://127.0.0.1:3004/logs?service=worker"); const text = await result.text(); if (!result.ok || !text.includes("fixture worker ready")) process.exit(1)',
     ])
     assert(logs.code === 0, 'Bundled process logs are unavailable.')
-    await docker(['stop', '--time', '30', first])
-    assert(
-        (
-            await docker(['inspect', '--format', '{{.State.ExitCode}}', first])
-        ).stdout.trim() === '0',
-        'Appliance did not drain cleanly.',
-    )
+    await cleanStop(first)
     const second = prefix + '-second'
     await start(image, second)
     const persisted = await docker([
@@ -284,7 +423,7 @@ try {
         'Required child failure did not stop the appliance.',
     )
     const maintenance = prefix + '-maintenance'
-    await start(image, maintenance, ['maintenance'])
+    await start(image, maintenance, { command: ['maintenance'] })
     await docker([
         'exec',
         maintenance,
@@ -305,10 +444,28 @@ try {
         ).stdout.trim() === 'persistent-fixture',
         'Maintenance cannot access existing data.',
     )
-    await docker(['stop', '--time', '30', maintenance])
+    await cleanStop(maintenance)
     console.log(
         'Appliance verified: authenticated private dependencies, startup, logs, graceful drain, container replacement, persistence, required-child failure and PostgreSQL-only maintenance. No Drizzle or application migrations executed.',
     )
+    if (previousBase) {
+        const previousMeasurement = await verifyPersistedUpgrade(
+            previousBase,
+            image,
+        )
+        const summary = [
+            '## Marketplace appliance comparison (' + process.arch + ')',
+            '',
+            '| Build | Image bytes | Fresh fixture readiness (ms) | Cgroup memory bytes after 2 s idle |',
+            '| --- | ---: | ---: | ---: |',
+            `| Alpine packages | ${previousMeasurement} |`,
+            `| Official PostgreSQL image | ${currentMeasurement} |`,
+            '',
+        ].join('\n')
+        console.log(summary)
+        if (process.env.GITHUB_STEP_SUMMARY)
+            await appendFile(process.env.GITHUB_STEP_SUMMARY, summary + '\n')
+    }
 } finally {
     for (const name of containers) {
         const owner = await docker(
@@ -328,22 +485,24 @@ try {
             await docker(['rm', '-f', name])
         }
     }
-    const owner = await docker(
-        [
-            'volume',
-            'inspect',
-            '--format',
-            '{{ index .Labels "rentnerproxy-marketplace.test" }}',
-            volume,
-        ],
-        true,
-    )
-    if (owner.code === 0) {
-        assert(
-            owner.stdout.trim() === nonce,
-            'Refusing cleanup of an unowned volume.',
+    for (const name of volumes) {
+        const owner = await docker(
+            [
+                'volume',
+                'inspect',
+                '--format',
+                '{{ index .Labels "rentnerproxy-marketplace.test" }}',
+                name,
+            ],
+            true,
         )
-        await docker(['volume', 'rm', volume])
+        if (owner.code === 0) {
+            assert(
+                owner.stdout.trim() === nonce,
+                'Refusing cleanup of an unowned volume.',
+            )
+            await docker(['volume', 'rm', name])
+        }
     }
     for (const image of images) {
         const imageOwner = await docker(
@@ -359,7 +518,7 @@ try {
         if (imageOwner.code === 0 && imageOwner.stdout.trim() === nonce)
             await docker(['image', 'rm', image])
     }
-    await runtimeImage?.cleanup()
+    for (const image of runtimeImages) await image.cleanup()
     const path = relative(resolve(tmpdir()), resolve(directory))
     assert(
         path &&

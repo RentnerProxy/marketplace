@@ -28,6 +28,7 @@ const MAIL_RESTORE_QUIESCENCE_KEY =
 const DEFAULT_ACTIVE_DRAIN_TIMEOUT_MS = 60_000
 const DEFAULT_ACTIVE_DRAIN_POLL_INTERVAL_MS = 100
 const DEFAULT_OWNER_LEASE_MS = 2 * 60_000
+const OWNER_LEASE_RECOVERY_MIN_RETRY_MS = 1_000
 
 const replaceOwnedQuiescenceScript = `
 if server.call('get', KEYS[1]) == ARGV[1] then
@@ -210,6 +211,7 @@ export function createMailRestoreQuiescenceService(
     )
     const valkey = getValkeyConnection()
     let valkeyRecoveryStarted = false
+    let closed = false
     let valkeyRecoveryPromise = Promise.resolve()
     let ownerLeaseRecoveryTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -557,7 +559,7 @@ export function createMailRestoreQuiescenceService(
             stored.record.phase !== 'paused' ||
             stored.record.queues.some((queue) => queue.pendingJobIds.length > 0)
         ) {
-            return false
+            return 'incompatible'
         }
 
         const result = await tryWithExclusiveStorageMutationBarrier(
@@ -611,7 +613,8 @@ export function createMailRestoreQuiescenceService(
                 return true
             },
         )
-        return result.acquired && result.result
+        if (!result.acquired) return 'busy'
+        return result.result ? 'recovered' : 'incompatible'
     }
 
     function startOwnerLeaseHeartbeat(token: string) {
@@ -719,7 +722,10 @@ export function createMailRestoreQuiescenceService(
                     !(await reconcileExpiredRunningRestore(stored, observation))
                 ) {
                     scheduleOwnerLeaseReconciliation(
-                        Math.max(1_000, Math.floor(ownerLeaseMs / 3)),
+                        Math.max(
+                            OWNER_LEASE_RECOVERY_MIN_RETRY_MS,
+                            Math.floor(ownerLeaseMs / 3),
+                        ),
                     )
                 }
             }
@@ -750,7 +756,14 @@ export function createMailRestoreQuiescenceService(
         }
 
         if (stored.record.restoreBaseline.kind === 'unknown') {
-            if (await recoverEmptyUnknownQuiescence(stored)) return
+            const result = await recoverEmptyUnknownQuiescence(stored)
+            if (result === 'recovered') return
+            if (result === 'busy') {
+                scheduleOwnerLeaseReconciliation(
+                    OWNER_LEASE_RECOVERY_MIN_RETRY_MS,
+                )
+                return
+            }
             throw new Error(
                 'Der Mail-Quiesce kann nach einem unbekannten Restore-Zustand nicht automatisch freigegeben werden.',
             )
@@ -901,6 +914,7 @@ export function createMailRestoreQuiescenceService(
     }
 
     function scheduleOwnerLeaseReconciliation(delayMs: number) {
+        if (closed) return
         clearTimeout(ownerLeaseRecoveryTimer)
         ownerLeaseRecoveryTimer = setTimeout(handleValkeyReady, delayMs)
         ownerLeaseRecoveryTimer.unref()
@@ -908,6 +922,7 @@ export function createMailRestoreQuiescenceService(
 
     return {
         close: async function () {
+            closed = true
             if (valkeyRecoveryStarted) {
                 valkey.off('ready', handleValkeyReady)
             }

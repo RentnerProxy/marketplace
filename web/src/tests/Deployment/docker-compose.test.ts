@@ -22,7 +22,6 @@ describe('self-contained appliance deployment', function () {
                 [project.id]: {
                     image: project.imageRepository + ':v1.0.0-alpha.1',
                     restart: 'unless-stopped',
-                    init: true,
                     stop_grace_period: '4h10m',
                     ports: ['${APP_PORT:-6600}:3000'],
                     env_file: ['.env'],
@@ -46,6 +45,9 @@ describe('self-contained appliance deployment', function () {
             'AUTH_ENCRYPTION_KEY',
             'BACKUP_PATH',
             'MAIL_FROM',
+            'MARKETPLACE_CANDIDATE_GITHUB_APP_CLIENT_ID',
+            'MARKETPLACE_CANDIDATE_GITHUB_APP_INSTALLATION_ID',
+            'MARKETPLACE_CANDIDATE_GITHUB_APP_PRIVATE_KEY_FILE',
             'MARKETPLACE_CANDIDATE_GITHUB_TOKEN',
             'OAUTH_DISCORD_CLIENT_ID',
             'OAUTH_DISCORD_CLIENT_SECRET',
@@ -67,10 +69,12 @@ describe('self-contained appliance deployment', function () {
     })
 
     test('packages the server, tools and fixed private targets without a host control socket', function () {
-        expect(dockerfile).toContain(
-            'apk add --no-cache postgresql18 postgresql18-client su-exec',
+        expect(dockerfile).toMatch(
+            /^FROM postgres:18\.\d+-alpine3\.\d+ AS postgres-runtime$/mu,
         )
+        expect(dockerfile).toContain('COPY --from=postgres-runtime / /')
         for (const assignment of [
+            'PGDATA=/data/postgresql/18/docker',
             'POSTGRES_HOST=127.0.0.1',
             'POSTGRES_PORT=5432',
             'POSTGRES_DB=' + project.databaseName,
@@ -82,5 +86,8 @@ describe('self-contained appliance deployment', function () {
             expect(dockerfile).toContain(assignment)
         expect(JSON.stringify(compose)).not.toContain('docker.sock')
         expect(dockerfile).toContain('--start-period=5m')
+        expect(dockerfile).toContain(
+            'ENTRYPOINT ["tini", "--", "container-entrypoint.sh"]',
+        )
     })
 })

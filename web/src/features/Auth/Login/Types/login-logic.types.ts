@@ -10,6 +10,7 @@ export type LoginLogicReturn = {
     state: TwoFactorLogin['state'] & {
         isLoading: boolean
         isPasskeyLoading: boolean
+        isPublicRegistrationEnabled: boolean
     }
     setter: TwoFactorLogin['setter']
     handler: Pick<

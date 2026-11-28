@@ -75,8 +75,7 @@ function fixtureFetch(
         expect(options.redirect).toBe('manual')
         const parsed = new URL(url)
         const authenticated =
-            (parsed.hostname === 'api.github.com' &&
-                parsed.pathname !== repository) ||
+            parsed.hostname === 'api.github.com' ||
             parsed.hostname === 'uploads.github.com'
         expect(new Headers(options.headers).get('authorization')).toBe(
             authenticated ? `Bearer ${token}` : null,
@@ -88,6 +87,42 @@ function fixtureFetch(
 function assertAnonymous(options: RequestInit) {
     expect(new Headers(options.headers).has('authorization')).toBe(false)
 }
+
+async function refuseAuthorization() {
+    throw new Error('A rejected release must not request authorization')
+}
+
+test('uses the installation token when anonymous repository reads are rate limited', async () => {
+    const authenticatedFetch = fixtureFetch((url, options) => {
+        if (url.pathname === repository) return Response.json(repo)
+        if (url.pathname === branchRulesPath)
+            return branchRulesResponse(options)
+        expect(url.pathname).toBe(branch)
+        return branchRef()
+    })
+    const fetcher = ((url: string, options: RequestInit) => {
+        if (!new Headers(options.headers).has('authorization'))
+            return Promise.resolve(new Response(null, { status: 403 }))
+        return authenticatedFetch(url, options)
+    }) as typeof fetch
+
+    await expect(createDistribution(token, fetcher).head()).resolves.toBe(
+        parent,
+    )
+})
+
+test('identifies a rate-limited repository request without exposing its body', async () => {
+    const fetcher = fixtureFetch((url) => {
+        expect(url.pathname).toBe(repository)
+        return new Response('private response details', {
+            status: 403,
+            headers: { 'x-ratelimit-remaining': '0' },
+        })
+    })
+    await expect(createDistribution(token, fetcher).head()).rejects.toThrow(
+        'GitHub catalog API GET /repos/RentnerProxy/app-catalog returned HTTP 403 (rate limited)',
+    )
+})
 
 test('promotes signed catalog files in one commit against the exact public head', async () => {
     const mutations: unknown[] = []
@@ -225,8 +260,7 @@ test.each([
 ])(
     'requires public catalog identity pinned to the organization and main',
     async (wrongRepo) => {
-        const fetcher = fixtureFetch((url, options) => {
-            assertAnonymous(options)
+        const fetcher = fixtureFetch((url) => {
             expect(url.pathname).toBe(repository)
             return Response.json(wrongRepo)
         })
@@ -381,10 +415,7 @@ test('resumes an exact draft, authorizes publication after upload and verifies a
             uploadCount += 1
             return Response.json(asset)
         }
-        if (url.pathname === repository) {
-            assertAnonymous(options)
-            return Response.json(repo)
-        }
+        if (url.pathname === repository) return Response.json(repo)
         if (url.pathname === `${repository}/immutable-releases`)
             return settingsAvailable && !published
                 ? Response.json({ enabled: true })
@@ -589,6 +620,94 @@ test('distinguishes a missing publication from an exact draft and rejects confli
     await expect(distribution.inspectRelease(release)).rejects.toThrow(
         'different publisher',
     )
+})
+
+test('rejects duplicate catalog releases and unexpected or repeated assets without writing', async () => {
+    let published = false
+    let listed: object[] = []
+    let listedAssets: object[] = []
+    const writes: string[] = []
+    const fetcher = fixtureFetch((url, options) => {
+        if ((options.method ?? 'GET') !== 'GET') {
+            writes.push(`${options.method} ${url.pathname}`)
+            return new Response(null, { status: 204 })
+        }
+        if (url.pathname === repository) return Response.json(repo)
+        if (url.pathname === branchRulesPath)
+            return branchRulesResponse(options)
+        if (url.pathname === `${repository}/immutable-releases`)
+            return Response.json({ enabled: true })
+        if (url.pathname === `${releases}/tags/${tag}`)
+            return published
+                ? Response.json({ ...entry, draft: false, immutable: true })
+                : missing()
+        if (url.pathname === releases) return Response.json(listed)
+        if (url.pathname === `${releases}/${entry.id}/assets`)
+            return Response.json(listedAssets)
+        expect(url.pathname).toBe(`${repository}/git/ref/tags/${tag}`)
+        return published
+            ? Response.json({
+                  ref: `refs/tags/${tag}`,
+                  object: { type: 'commit', sha: parent },
+              })
+            : missing()
+    })
+    const distribution = createDistribution(token, fetcher)
+    // Local paths are never read because every check fails before an upload.
+    const files = new Map(
+        assets.map(({ name }) => [name, join(tmpdir(), name)] as const),
+    )
+    const draft = { ...entry, draft: true, immutable: false }
+
+    listed = [draft, { ...draft, id: entry.id + 1 }]
+    for (const operation of [
+        () => distribution.inspectRelease(release),
+        () => distribution.ensureRelease(release, files, refuseAuthorization),
+        () =>
+            distribution.discardUnpublishedDraft(release, refuseAuthorization),
+    ])
+        // oxlint-disable-next-line no-await-in-loop -- check each operation in order
+        await expect(operation()).rejects.toThrow(
+            'duplicate releases for the catalog tag',
+        )
+
+    const unexpected = {
+        ...assets[0]!,
+        id: 9,
+        name: 'unexpected.tar.zst',
+        browser_download_url: `https://github.com/RentnerProxy/app-catalog/releases/download/${tag}/unexpected.tar.zst`,
+    }
+    listed = [draft]
+    for (const variant of [[assets[0]!, assets[0]!], [unexpected]]) {
+        listedAssets = variant
+        for (const operation of [
+            () => distribution.inspectRelease(release),
+            () =>
+                distribution.ensureRelease(release, files, refuseAuthorization),
+            () =>
+                distribution.discardUnpublishedDraft(
+                    release,
+                    refuseAuthorization,
+                ),
+        ])
+            // oxlint-disable-next-line no-await-in-loop -- check each operation in order
+            await expect(operation()).rejects.toThrow(
+                'unexpected or duplicate asset',
+            )
+    }
+
+    published = true
+    for (const variant of [
+        [assets[0]!, assets[0]!, assets[1]!],
+        [assets[0]!, assets[1]!, unexpected],
+    ]) {
+        listedAssets = variant
+        // oxlint-disable-next-line no-await-in-loop -- check each variant in order
+        await expect(distribution.verifyRelease(release)).rejects.toThrow(
+            'unexpected or duplicate asset',
+        )
+    }
+    expect(writes).toEqual([])
 })
 
 test('discards only an exact authorized draft and confirms absence before returning', async () => {

@@ -1,4 +1,4 @@
-import type { CreateRunInput } from '@/server/Admin/Backups/Types/run-registry.types.ts'
+import type { CreateRunInput } from '@/server/Admin/Backups/Types/backup-run.types.ts'
 import { publishAdminBackupsChangedService } from '@/server/Realtime/publish.service.ts'
 import {
     prepareAuditContextService,
@@ -6,7 +6,7 @@ import {
     writeAuditLogInTransactionService,
 } from '@/lib/AuditLogs/auditLogs.ts'
 import { lockAuditUsersInTransactionService } from '@/lib/AuditLogs/user-locks.ts'
-import type { BackupRunWriteExecutor } from './backup-service.types.ts'
+import type { BackupRunWriteExecutor } from './Types/backup-service.types.ts'
 import { and, desc, eq, inArray, lte } from 'drizzle-orm'
 import { BACKUP_TARGET_KEY } from '@/config/backup.config.ts'
 import { db } from '@/db'
@@ -15,7 +15,7 @@ import { backupRuns } from '@/db/schema.ts'
 import {
     BACKUP_FAILURE_MESSAGE,
     getStoredBackupErrorMessageService,
-} from './error.service.ts'
+} from './backup.errors.ts'
 
 export async function createRun(
     input: CreateRunInput,

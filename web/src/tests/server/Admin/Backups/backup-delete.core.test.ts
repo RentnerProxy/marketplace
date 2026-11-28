@@ -21,7 +21,7 @@ vi.mock('@/server/Runtime/environment.service.ts', () => ({
     },
 }))
 const { deleteBackupFilesService } =
-    await import('@/server/Admin/Backups/backup-delete.service.ts')
+    await import('@/server/Admin/Backups/backup-files.service.ts')
 let testRoot = ''
 let backupDirectory = ''
 
@@ -32,7 +32,7 @@ beforeEach(async () => {
         BACKUP_DIR: backupDirectory,
         APP_STORAGE_DIR: path.join(testRoot, 'storage'),
     }
-    await mkdir(backupDirectory)
+    await mkdir(backupDirectory, { mode: 0o700 })
 })
 
 afterEach(async () => {

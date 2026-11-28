@@ -35,6 +35,7 @@ const permission = mock(async (_client: unknown, _pathname: string) => {})
 const cacheSession = mock()
 const queryOptions = { queryKey: ['system-settings'] }
 let setupRequired = false
+let publicRegistrationEnabled = false
 let hash = ''
 let currentPathname = '/forgot-password'
 let activePublicRouteId = '/_public/forgot-password'
@@ -89,6 +90,11 @@ mock.module('@/lib/Queries/authenticatedSessionCache.ts', () => ({
 mock.module('@/lib/Queries/appQueries.ts', () => ({
     systemSettingsQueryOptions: () => queryOptions,
 }))
+mock.module('@tanstack/react-query', () => ({
+    useQuery: () => ({
+        data: { isPublicRegistrationEnabled: publicRegistrationEnabled },
+    }),
+}))
 mock.module('@/features/Auth/FirstSuperUser/middleware.ts', () => ({
     getFirstSuperUserSetupStatusHandler: setupStatus,
 }))
@@ -108,11 +114,16 @@ mock.module('@/features/MarketplaceApps/index.tsx', () => ({
 mock.module('@/features/MarketplaceBlog/index.tsx', () => ({
     default: () => createElement('section', null, 'Marketplace blog screen'),
 }))
-for (const name of ['Imprint', 'Privacy', 'Register']) {
+for (const name of ['Imprint', 'Privacy']) {
     mock.module(`@/features/Auth/${name}/index.tsx`, () => ({
         default: () => createElement('section', null, `${name} screen`),
     }))
 }
+mock.module('@/features/Auth/Register/index.tsx', () => ({
+    default: () => createElement('section', null, 'Register screen'),
+    RegistrationClosed: () =>
+        createElement('section', null, 'Registration closed'),
+}))
 mock.module('@/features/Auth/Login/index.tsx', () => ({ default: LoginPage }))
 mock.module('@/features/Auth/FirstSuperUser/index.tsx', () => ({
     default: () => createElement('main', null, 'Setup screen'),
@@ -136,8 +147,8 @@ mock.module('@tanstack/react-router-devtools', () => ({
 mock.module('@tanstack/react-devtools', () => ({
     TanStackDevtools: () => null,
 }))
-mock.module('@/integrations/TanstackQuery/devtools.tsx', () => ({
-    default: { name: 'Query tools' },
+mock.module('@tanstack/react-query-devtools', () => ({
+    ReactQueryDevtoolsPanel: () => null,
 }))
 mock.module('@rentnerkev/calendar', () => ({ CalendarProvider: Provider }))
 mock.module('@rentnerkev/inputs', () => ({ InputProvider: Provider }))
@@ -177,6 +188,7 @@ beforeEach(() => {
     permission.mockReset().mockResolvedValue(undefined)
     cacheSession.mockClear()
     setupRequired = false
+    publicRegistrationEnabled = false
     setupStatus.mockClear()
     hash = ''
     currentPathname = '/forgot-password'
@@ -363,16 +375,24 @@ describe('Thin route boundary contracts', () => {
         expect(html).not.toContain('Public shell')
     })
 
-    it('renders standalone registration without an enclosing public shell or authentication', () => {
-        const options = route('/register')
-        expect(options.beforeLoad).toBeUndefined()
-        expect(options.loader).toBeUndefined()
-        const html = renderToStaticMarkup(createElement(options.component!))
-        expect(html).toContain('Register screen')
-        expect(html).not.toContain('Public shell')
-        expect(authenticate).not.toHaveBeenCalled()
-        expect(setupStatus).not.toHaveBeenCalled()
-    })
+    it.each([
+        { enabled: false, screen: 'Registration closed' },
+        { enabled: true, screen: 'Register screen' },
+    ])(
+        'renders the standalone registration route with its current policy ($enabled)',
+        async ({ enabled, screen }) => {
+            publicRegistrationEnabled = enabled
+            const options = route('/register')
+            expect(options.beforeLoad).toBeUndefined()
+            await options.loader!(params('/register'))
+            expect(client.ensureQueryData).toHaveBeenCalledWith(queryOptions)
+            const html = renderToStaticMarkup(createElement(options.component!))
+            expect(html).toContain(screen)
+            expect(html).not.toContain('Public shell')
+            expect(authenticate).not.toHaveBeenCalled()
+            expect(setupStatus).not.toHaveBeenCalled()
+        },
+    )
 
     it.each(['/', '/apps', '/blog', '/imprint', '/privacy'])(
         'explicitly indexes only public page %s with its canonical URL',

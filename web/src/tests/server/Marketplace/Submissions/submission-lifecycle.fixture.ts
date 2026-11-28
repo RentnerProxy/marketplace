@@ -16,7 +16,10 @@ import {
     users,
 } from '@/db/schema.ts'
 import type { SubmissionArtifact } from '@/lib/Marketplace/Types/submission.types.ts'
-import { catalogPublisherWorkflow } from '@/lib/Marketplace/catalogPublication.ts'
+import {
+    catalogPublicationQueue,
+    catalogPublisherWorkflow,
+} from '@/lib/Marketplace/catalogPublication.ts'
 import {
     decideCandidateService,
     invalidateSubmission,
@@ -50,6 +53,7 @@ import {
     readSubmission,
     listSubmissionsService,
     submissionDetailService,
+    type Submission,
 } from '@/server/Marketplace/Submissions/submission-store.service.ts'
 import { reconcileNextSubmissionService } from '@/server/Marketplace/Submissions/validation.worker.ts'
 import {
@@ -59,9 +63,15 @@ import {
     repository,
 } from './submission.fixture.ts'
 
+type Claim = typeof marketplaceRepositoryClaims.$inferSelect
+
 vi.mock('@/server/Realtime/publish.service.ts', () => ({
     publishAuditLogCreatedService: vi.fn(async () => {}),
 }))
+
+function legacySubmissionJson(value: object) {
+    return sql`to_jsonb(${JSON.stringify(value)}::text)`
+}
 
 async function user(accountType: 'public' | 'staff') {
     const suffix = crypto.randomUUID()
@@ -300,8 +310,8 @@ export async function exerciseSubmissionLifecycle() {
             'submissionConflict',
         )
         await Promise.all([
-            reconcileNextSubmissionService(token),
-            reconcileNextSubmissionService(token),
+            reconcileNextSubmissionService(),
+            reconcileNextSubmissionService(),
         ])
         const rateLimited = await readSubmission(first.id)
         expect(rateLimited).toMatchObject({
@@ -316,7 +326,7 @@ export async function exerciseSubmissionLifecycle() {
             Date.now() + 100_000,
         )
         await makeDue(first.id)
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         const lost = await readSubmission(first.id)
         expect(lost).toMatchObject({ status: 'validating', buildRunId: null })
         fixture = await fixtureCandidate(lost, claim)
@@ -336,13 +346,25 @@ export async function exerciseSubmissionLifecycle() {
             })),
         )
         await makeDue(first.id)
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         const validated = await readSubmission(first.id)
         expect(discoveryPages).toEqual([1, 2])
         expect(dispatches).toHaveLength(2)
         expect(validated.status).toBe('awaitingReview')
         const candidate = fixture.receipt.candidate
         expect(validated.validation?.candidate).toEqual(candidate)
+        // A validated candidate awaiting review is not publication work.
+        expect(
+            (await listCatalogPublicationWorkService()).map(
+                ({ submissionId }) => submissionId,
+            ),
+        ).not.toContain(first.id)
+        await expect(
+            getCatalogPublicationWorkService({
+                submissionId: first.id,
+                approvalRevision: validated.revision,
+            }),
+        ).rejects.toThrow('submissionConflict')
         const input = {
             id: first.id,
             revision: validated.revision,
@@ -410,7 +432,26 @@ export async function exerciseSubmissionLifecycle() {
             submissionId: first.id,
             approvalRevision: approval.revision,
         })
-        expect(await listCatalogPublicationWorkService()).toContainEqual({
+        const [storedApproval] = await db
+            .select({
+                approval: sql`jsonb_typeof(${marketplaceSubmissions.approval})`,
+                history: sql`jsonb_typeof(${marketplaceSubmissions.history})`,
+            })
+            .from(marketplaceSubmissions)
+            .where(eq(marketplaceSubmissions.id, first.id))
+        expect(storedApproval).toEqual({ approval: 'object', history: 'array' })
+
+        await db
+            .update(marketplaceSubmissions)
+            .set({
+                approval: legacySubmissionJson(approval),
+                history: legacySubmissionJson(approved.history),
+            })
+            .where(eq(marketplaceSubmissions.id, first.id))
+        const queue: unknown = await Response.json({
+            items: await listCatalogPublicationWorkService(),
+        }).json()
+        expect(catalogPublicationQueue.parse(queue).items).toContainEqual({
             submissionId: first.id,
             approvalRevision: approval.revision,
             revision: approved.revision,
@@ -458,6 +499,63 @@ export async function exerciseSubmissionLifecycle() {
         await db
             .delete(marketplaceSubmissions)
             .where(inArray(marketplaceSubmissions.id, prefixIds))
+
+        // Only the review status authorizes publication. A stored approval on an
+        // unreviewed row must neither queue nor hand off the candidate.
+        const unreviewed = Array.from(
+            ['submitted', 'awaitingReview'] as const,
+            (status, index) => {
+                const unreviewedRequest = fixtureRequest(
+                    claim.id,
+                    `1.5.${index}`,
+                )
+                return {
+                    ...fixtureSubmission(claim),
+                    id: unreviewedRequest.requestId,
+                    version: unreviewedRequest.version,
+                    request: unreviewedRequest,
+                    status,
+                    revision: approval.revision,
+                    validation: approved.validation,
+                    approval: { ...approval, id: unreviewedRequest.requestId },
+                    nextCheckAt: null,
+                }
+            },
+        )
+        await db.insert(marketplaceSubmissions).values(unreviewed)
+        const reviewedQueue = (await listCatalogPublicationWorkService()).map(
+            ({ submissionId }) => submissionId,
+        )
+        expect(reviewedQueue).toContain(first.id)
+        /* oxlint-disable no-await-in-loop -- check each unreviewed status in order */
+        for (const row of unreviewed) {
+            const identity = {
+                submissionId: row.id,
+                approvalRevision: approval.revision,
+            }
+            expect(reviewedQueue).not.toContain(row.id)
+            await expect(
+                getCatalogPublicationWorkService(identity),
+            ).rejects.toThrow('submissionConflict')
+            await expect(
+                authorizePublicationAttemptService({
+                    ...identity,
+                    run: firstPublisher,
+                }),
+            ).rejects.toThrow('submissionConflict')
+            expect(await readSubmission(row.id)).toMatchObject({
+                status: row.status,
+                revision: approval.revision,
+                publicationRun: null,
+            })
+        }
+        /* oxlint-enable no-await-in-loop */
+        await db.delete(marketplaceSubmissions).where(
+            inArray(
+                marketplaceSubmissions.id,
+                unreviewed.map(({ id }) => id),
+            ),
+        )
         expect(approved.history.map(({ status }) => status)).toEqual([
             'submitted',
             'validating',
@@ -509,6 +607,17 @@ export async function exerciseSubmissionLifecycle() {
         expect(await authorizePublicationAttemptService(firstAttempt)).toEqual(
             authorized,
         )
+        const [storedAttempt] = await db
+            .select({
+                run: sql`jsonb_typeof(${marketplaceSubmissions.publicationRun})`,
+            })
+            .from(marketplaceSubmissions)
+            .where(eq(marketplaceSubmissions.id, first.id))
+        expect(storedAttempt?.run).toBe('object')
+        await db
+            .update(marketplaceSubmissions)
+            .set({ publicationRun: legacySubmissionJson(firstAttempt.run) })
+            .where(eq(marketplaceSubmissions.id, first.id))
         expect(await listCatalogPublicationWorkService()).toContainEqual({
             ...publication,
             revision: authorized.revision,
@@ -702,6 +811,11 @@ export async function exerciseSubmissionLifecycle() {
         await expect(
             confirmCatalogRevocationService(publication, 20, revocation),
         ).resolves.toBe('revoked')
+        const confirmed = await readSubmission(first.id)
+        await db
+            .update(marketplaceSubmissions)
+            .set({ history: legacySubmissionJson(confirmed.history) })
+            .where(eq(marketplaceSubmissions.id, first.id))
         await expect(
             confirmCatalogRevocationService(publication, 20, revocation),
         ).resolves.toBe('revoked')
@@ -870,7 +984,7 @@ export async function exerciseSubmissionLifecycle() {
             publication: null,
         })
         proofRemoved = true
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         expect((await readSubmission(later.id)).history.at(-1)).toMatchObject({
             status: 'failed',
             failure: 'ownershipChanged',
@@ -936,7 +1050,7 @@ export async function exerciseSubmissionLifecycle() {
             { ...assign, claimId: null, revision: assignment.revision },
             staff,
         )
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         expect(
             (await readSubmission(officialSubmission.id)).history.at(-1),
         ).toMatchObject({
@@ -957,13 +1071,171 @@ export async function exerciseSubmissionLifecycle() {
             }),
         )
         await db.insert(marketplaceSubmissions).values(otherIntents)
-        await reconcileNextSubmissionService(token)
+        await reconcileNextSubmissionService()
         expect(await readSubmission(waiting.id)).toMatchObject({
             status: 'submitted',
             dispatchRequestedAt: null,
             buildRunId: null,
         })
         expect(dispatches).toHaveLength(2)
+
+        // Store an approved candidate directly, as the review would have left it.
+        const insertApproved = async (
+            submission: Submission,
+            submissionClaim: Claim,
+            runId: string,
+        ) => {
+            submissionsCreated.push(submission.id)
+            const bundle = await fixtureCandidate(
+                submission,
+                submissionClaim,
+                runId,
+            )
+            const stored = {
+                ...approval,
+                id: submission.id,
+                actorId: staff,
+                candidate: bundle.receipt.candidate,
+            }
+            await db.insert(marketplaceSubmissions).values({
+                ...submission,
+                status: 'approved',
+                revision: stored.revision,
+                buildRunId: bundle.run.id,
+                validation: {
+                    candidate: bundle.receipt.candidate,
+                    report: bundle.receipt.report,
+                    bundle: bundle.bundle,
+                    evidence: bundle.evidence,
+                },
+                approval: stored,
+                nextCheckAt: null,
+            })
+            fixture = bundle
+            const identity = {
+                submissionId: submission.id,
+                approvalRevision: stored.revision,
+            }
+            // The handoff is valid before the guarded change happens.
+            expect(
+                (await getApprovedPublicationService(identity)).approval,
+            ).toEqual(stored)
+            return { identity, approval: stored }
+        }
+
+        // A reviewer who loses review authority after approving cannot start the
+        // publication. The approval stays recorded, but the row fails closed.
+        const demotedRequest = fixtureRequest(claim.id, '1.6.0')
+        const demoted = await insertApproved(
+            {
+                ...fixtureSubmission(claim),
+                id: demotedRequest.requestId,
+                version: demotedRequest.version,
+                request: demotedRequest,
+            },
+            claim,
+            '9002',
+        )
+        await db
+            .delete(staffUserPermissions)
+            .where(
+                and(
+                    eq(staffUserPermissions.userId, staff),
+                    eq(staffUserPermissions.permissionId, reviewerPermission),
+                ),
+            )
+        await expect(
+            authorizePublicationAttemptService({
+                ...demoted.identity,
+                run: firstPublisher,
+            }),
+        ).rejects.toThrow('submissionConflict')
+        const revokedApproval = await readSubmission(demotedRequest.requestId)
+        expect(revokedApproval).toMatchObject({
+            status: 'failed',
+            approval: demoted.approval,
+            publicationRun: null,
+            nextCheckAt: null,
+        })
+        expect(revokedApproval.history.at(-1)).toMatchObject({
+            status: 'failed',
+            failure: 'approvalRevoked',
+        })
+        expect(
+            (await listCatalogPublicationWorkService()).some(
+                ({ submissionId }) => submissionId === demotedRequest.requestId,
+            ),
+        ).toBe(false)
+        await db
+            .insert(staffUserPermissions)
+            .values({ userId: staff, permissionId: reviewerPermission })
+        // Restoring the permission does not revive the failed approval.
+        await expect(
+            authorizePublicationAttemptService({
+                ...demoted.identity,
+                run: firstPublisher,
+            }),
+        ).rejects.toThrow('submissionConflict')
+
+        // Reassigning an official app after approval invalidates the approval, even
+        // when the app returns to the same repository claim under a new revision.
+        repositoryIdentity = {
+            ...repository,
+            full_name: 'RentnerProxy/submission-fixture',
+            owner: { id: Number(pipeline.officialOwnerId) },
+        }
+        challenge = official.challenge
+        const reassigned = await changeOfficialAppService(
+            { ...assign, revision: assignment.revision + 1 },
+            staff,
+        )
+        const officialClaim = await readClaim(official.id)
+        const namespacedRequest = {
+            ...fixtureRequest(official.id, '1.6.1'),
+            appId: officialAppId,
+        }
+        const namespaced = await insertApproved(
+            {
+                ...fixtureSubmission(officialClaim),
+                id: namespacedRequest.requestId,
+                appId: officialAppId,
+                version: namespacedRequest.version,
+                request: namespacedRequest,
+                namespaceRevision: reassigned.revision,
+            },
+            officialClaim,
+            '9003',
+        )
+        const unassigned = await changeOfficialAppService(
+            { ...assign, claimId: null, revision: reassigned.revision },
+            staff,
+        )
+        const returned = await changeOfficialAppService(
+            { ...assign, revision: unassigned.revision },
+            staff,
+        )
+        expect(returned).toMatchObject({
+            claimId: official.id,
+            revision: reassigned.revision + 2,
+        })
+        await expect(
+            authorizePublicationAttemptService({
+                ...namespaced.identity,
+                run: firstPublisher,
+            }),
+        ).rejects.toThrow('ownershipChanged')
+        const reassignedApproval = await readSubmission(
+            namespacedRequest.requestId,
+        )
+        expect(reassignedApproval).toMatchObject({
+            status: 'failed',
+            approval: namespaced.approval,
+            publicationRun: null,
+        })
+        expect(reassignedApproval.history.at(-1)).toMatchObject({
+            status: 'failed',
+            failure: 'ownershipChanged',
+        })
     } finally {
         fetchMock.mockRestore()
         if (oldToken === undefined)

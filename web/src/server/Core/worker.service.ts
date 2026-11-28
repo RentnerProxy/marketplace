@@ -6,47 +6,32 @@ import { z } from 'zod'
 import { CORE_RUNTIME } from '@/config/core.config.ts'
 import { getCoreCommandEnvironmentService } from './environment.service.ts'
 import { CoreCommandError, isUncertainCoreErrorCode } from './error.ts'
-import { coreErrorSchema } from './protocol.ts'
+import {
+    coreBinaryResultFrameSchema,
+    coreErrorFrameSchema,
+    coreResultFrameSchema,
+} from './protocol.ts'
 import { logError } from '@/server/Logging/logger.ts'
 import type {
     CoreWorkerInput,
     CoreWorkerTerminal,
 } from './Types/worker.types.ts'
 
+const frameDecoder = new TextDecoder('utf-8', { fatal: true })
+const requestIdSchema = z.number().int().positive().safe()
+
 const frameSchema = z.discriminatedUnion('type', [
     z.object({ type: z.literal('ready'), protocol: z.literal(1) }).strict(),
     z
         .object({
             type: z.literal('progress'),
-            requestId: z.number().int().positive().safe(),
+            requestId: requestIdSchema,
             progress: z.unknown(),
         })
         .strict(),
-    z
-        .object({
-            type: z.literal('result'),
-            requestId: z.number().int().positive().safe(),
-            result: z.unknown(),
-        })
-        .strict(),
-    z
-        .object({
-            type: z.literal('binaryResult'),
-            requestId: z.number().int().positive().safe(),
-            binaryBytes: z
-                .number()
-                .int()
-                .min(0)
-                .max(CORE_RUNTIME.maxBinaryOutputBytes),
-        })
-        .strict(),
-    z
-        .object({
-            type: z.literal('error'),
-            requestId: z.number().int().positive().safe(),
-            error: coreErrorSchema,
-        })
-        .strict(),
+    coreResultFrameSchema.extend({ requestId: requestIdSchema }),
+    coreBinaryResultFrameSchema.extend({ requestId: requestIdSchema }),
+    coreErrorFrameSchema.extend({ requestId: requestIdSchema }),
 ])
 
 function protocolError() {
@@ -104,7 +89,7 @@ type ActiveRequest = {
     uploaded: boolean
     finishing: boolean
     expectsBinary: boolean
-    binary?: { bytes: Buffer; received: number }
+    binary?: { bytes: Buffer; received: number; version: string }
 }
 
 const liveWorkers = new Set<CoreWorker>()
@@ -130,6 +115,7 @@ export class CoreWorker {
     private outputBytes = 0
     private errorBytes = 0
     private idleTimer?: ReturnType<typeof setTimeout>
+    private exitTimer?: ReturnType<typeof setTimeout>
     private readyTimer?: ReturnType<typeof setTimeout>
     private readyResolve!: () => void
     private readyReject!: (error: unknown) => void
@@ -160,6 +146,7 @@ export class CoreWorker {
                 this.poisoned = true
                 clearTimeout(this.idleTimer)
                 clearTimeout(this.readyTimer)
+                clearTimeout(this.exitTimer)
                 this.readyReject(
                     new CoreCommandError(
                         'CORE_UNAVAILABLE',
@@ -181,12 +168,6 @@ export class CoreWorker {
                             this.settleTerminal(active)
                         else {
                             active?.binary?.bytes.fill(0)
-                            if (
-                                active?.expectsBinary &&
-                                active.terminal?.type === 'result' &&
-                                Buffer.isBuffer(active.terminal.result)
-                            )
-                                active.terminal.result.fill(0)
                             active?.reject(uncertainError())
                         }
                         resolve()
@@ -204,9 +185,7 @@ export class CoreWorker {
             this.poison(protocolError())
         })
         this.child.stdin.on('error', () => this.poison(uncertainError()))
-        this.child.stdout.on('data', (chunk: Buffer) =>
-            this.consume(Buffer.from(chunk)),
-        )
+        this.child.stdout.on('data', (chunk: Buffer) => this.consume(chunk))
         this.child.stdout.on('error', () => this.poison(protocolError()))
         this.child.stderr.on('data', (chunk: Buffer) => {
             this.errorBytes += chunk.length
@@ -267,6 +246,7 @@ export class CoreWorker {
             this.ready &&
             !this.poisoned &&
             !this.exited &&
+            !this.closing &&
             this.sequence < Number.MAX_SAFE_INTEGER
         )
     }
@@ -323,7 +303,7 @@ export class CoreWorker {
                 reject,
                 uploaded: false,
                 finishing: false,
-                expectsBinary: input.binaryOutput === true,
+                expectsBinary: input.binaryOutput,
             }
             this.active = active
             const header = `{"requestId":${requestId},"cancellationPath":${JSON.stringify(active.cancellationPath)},"request":${input.payload}${input.binaryInput === undefined ? '' : `,"binaryBytes":${input.binaryInput.length}`}}\n`
@@ -388,7 +368,7 @@ export class CoreWorker {
         let offset = 0
         while (offset < bytes.length) {
             const receiving = this.active
-            if (receiving?.binary) {
+            if (receiving?.binary && !receiving.terminal) {
                 const binary = receiving.binary
                 const length = Math.min(
                     bytes.length - offset,
@@ -403,14 +383,7 @@ export class CoreWorker {
                 binary.received += length
                 offset += length
                 if (binary.received === binary.bytes.length) {
-                    receiving.terminal = {
-                        type: 'result',
-                        requestId: receiving.requestId,
-                        result: binary.bytes,
-                    }
-                    receiving.binary = undefined
-                    clearTimeout(receiving.killTimer)
-                    this.finish(receiving)
+                    this.finishBinary(receiving, binary)
                 }
                 continue
             }
@@ -426,13 +399,14 @@ export class CoreWorker {
                 return
             }
             // Accumulate fragments without repeatedly copying an ever-growing prefix.
-            const record = Buffer.concat(this.pendingChunks, this.pendingBytes)
+            const record =
+                this.pendingChunks.length === 1
+                    ? this.pendingChunks[0]
+                    : Buffer.concat(this.pendingChunks, this.pendingBytes)
             this.pendingChunks = []
             this.pendingBytes = 0
             try {
-                const value: unknown = JSON.parse(
-                    new TextDecoder('utf-8', { fatal: true }).decode(record),
-                )
+                const value: unknown = JSON.parse(frameDecoder.decode(record))
                 const message = frameSchema.parse(value)
                 if (!this.ready) {
                     if (message.type !== 'ready') throw protocolError()
@@ -450,18 +424,14 @@ export class CoreWorker {
                         throw protocolError()
                     if (message.type === 'binaryResult') {
                         if (!active.expectsBinary) throw protocolError()
-                        const data = Buffer.alloc(message.binaryBytes)
-                        if (data.length)
-                            active.binary = { bytes: data, received: 0 }
-                        else {
-                            active.terminal = {
-                                type: 'result',
-                                requestId: active.requestId,
-                                result: data,
-                            }
-                            clearTimeout(active.killTimer)
-                            this.finish(active)
+                        const binary = {
+                            bytes: Buffer.alloc(message.binaryBytes),
+                            received: 0,
+                            version: message.version,
                         }
+                        active.binary = binary
+                        if (!binary.bytes.length)
+                            this.finishBinary(active, binary)
                     } else if (message.type !== 'progress') {
                         if (
                             active.expectsBinary &&
@@ -485,6 +455,19 @@ export class CoreWorker {
             }
             offset = end + 1
         }
+    }
+
+    private finishBinary(
+        active: ActiveRequest,
+        binary: { bytes: Buffer; version: string },
+    ) {
+        active.terminal = {
+            type: 'result',
+            requestId: active.requestId,
+            result: { version: binary.version, bytes: binary.bytes },
+        }
+        clearTimeout(active.killTimer)
+        this.finish(active)
     }
 
     private finish(active: ActiveRequest) {
@@ -523,7 +506,7 @@ export class CoreWorker {
                 }
                 this.active = undefined
                 this.settleTerminal(active, terminal)
-                if (this.closing) this.poison(uncertainError())
+                if (this.closing) this.endIdleWorker()
             })().catch(() => this.poison(protocolError()))
         })
     }
@@ -560,6 +543,7 @@ export class CoreWorker {
         this.poisoned = true
         clearTimeout(this.readyTimer)
         clearTimeout(this.idleTimer)
+        clearTimeout(this.exitTimer)
         this.readyReject(error)
         const active = this.active
         // Keep the request owned until close and directory cleanup confirm termination.
@@ -570,20 +554,32 @@ export class CoreWorker {
         if (!this.exited) this.child.kill('SIGKILL')
     }
 
-    async close() {
+    private endIdleWorker() {
+        this.exitTimer = setTimeout(
+            () => this.poison(uncertainError()),
+            CORE_RUNTIME.workerExitTimeoutMs,
+        )
+        this.child.stdin.end()
+    }
+
+    close(): Promise<void> {
+        if (this.closing || this.exited || this.poisoned) return this.closed
         this.closing = true
-        if (this.active && !this.poisoned) {
+        this.reference(true)
+        clearTimeout(this.idleTimer)
+        if (this.active) {
             this.cancel(
                 new CoreCommandError(
                     'CORE_CANCELLED',
                     'Der Core-Auftrag wurde beim Herunterfahren abgebrochen.',
                 ),
             )
-            await this.closed
-            return
+        } else if (this.ready) {
+            this.endIdleWorker()
+        } else {
+            this.poison(uncertainError())
         }
-        this.poison(uncertainError())
-        await this.closed
+        return this.closed
     }
 
     killOnExit() {

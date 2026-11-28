@@ -3,21 +3,19 @@ import type {
     PrivateStorageFileIdentity,
 } from './private-files.types.ts'
 
-export type StorageMutationFenceKind = 'admission' | 'shared' | 'exclusive'
-
-export type StorageMutationFenceMetadata = {
+type StorageMutationFenceMetadata = {
     version: 1
-    kind: StorageMutationFenceKind
+    kind: 'shared' | 'exclusive'
     owner: string
 }
 
-export type StorageMutationFenceContext = {
+type StorageMutationFenceContext = {
     rootDirectory: string
     sharedDirectory: string
     directories: PrivateStorageDirectorySnapshot[]
 }
 
-export type StorageMutationFenceOwnedFile = {
+type StorageMutationFenceOwnedFile = {
     path: string
     identity: PrivateStorageFileIdentity
     metadata: StorageMutationFenceMetadata

@@ -91,11 +91,9 @@ fn destination_replacement_or_root_replacement_after_rename_is_uncertain() {
                     std::fs::create_dir(&roots.backup_path)?;
                 }
                 _ => {
-                    std::fs::rename(
-                        &roots.storage_path,
-                        directory.path().join("original-storage"),
-                    )?;
-                    std::fs::create_dir(&roots.storage_path)?;
+                    let storage_path = directory.path().join("storage");
+                    std::fs::rename(&storage_path, directory.path().join("original-storage"))?;
+                    std::fs::create_dir(storage_path)?;
                 }
             }
             Ok(())
@@ -104,4 +102,22 @@ fn destination_replacement_or_root_replacement_after_rename_is_uncertain() {
         assert_eq!(error.code, "CORE_OPERATION_UNCERTAIN", "{attack}");
         assert!(roots.backup.symlink_metadata(NAME).unwrap().is_file());
     }
+}
+
+#[test]
+fn a_storage_root_appearing_during_a_read_invalidates_the_observation() {
+    let directory = tempfile::tempdir().unwrap();
+    let context = OperationContext::cleanup();
+    let existing = roots(directory.path());
+    write_state(state(), &existing, &context, files::sync_dir).unwrap();
+    drop(existing);
+    let storage = directory.path().join("storage");
+    std::fs::remove_dir(&storage).unwrap();
+    let request =
+        json!({"backupDirectory":directory.path().join("backup"),"storageDirectory":storage});
+    let observed = workflows::read_backup_roots(&request, &context)
+        .unwrap()
+        .unwrap();
+    std::fs::create_dir(storage).unwrap();
+    assert!(read_bytes(&observed, &context).is_err());
 }

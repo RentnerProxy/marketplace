@@ -1,34 +1,35 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
-import { stubTestGlobal } from '@/tests/shared/bunTestStubs.ts'
+import { afterEach, expect, it, vi } from 'bun:test'
 import {
-    i18nextMock,
-    resetLanguageTestHarness,
-    restoreLanguageTestHarness,
-} from './useTranslationStoreTestHarness.ts'
+    getSnapshot,
+    setLanguage,
+    subscribe,
+} from '@/language/languageStore.ts'
+import { restoreTestGlobals } from '@/tests/shared/bunTestStubs.ts'
+import { stubBrowserLanguage } from './useTranslationStoreTestHarness.ts'
 
-describe('useTranslationStore English default', function () {
-    beforeEach(resetLanguageTestHarness)
-    afterEach(restoreLanguageTestHarness)
+afterEach(restoreTestGlobals)
 
-    it('uses English on a first visit from a German browser', async function () {
-        const storage = {
-            getItem: vi.fn(function () {
-                return null
-            }),
-            setItem: vi.fn(),
-        }
-        stubTestGlobal('window', {
-            localStorage: storage,
-            navigator: { language: 'de-DE' },
-        })
-        stubTestGlobal('document', { documentElement: { lang: '' } })
+it('uses English on a first visit from a German browser and ignores stale switches', async function () {
+    const { documentElement, localStorage } = stubBrowserLanguage(null, 'de-DE')
+    const subscriber = vi.fn()
+    const unsubscribe = subscribe(subscriber)
+    await Promise.resolve()
 
-        await import('@/language/useTranslationStore.ts')
+    expect(getSnapshot().language).toBe('en')
+    expect(documentElement.lang).toBe('en')
+    expect(localStorage.setItem).not.toHaveBeenCalled()
+    expect(subscriber).not.toHaveBeenCalled()
 
-        expect(i18nextMock.api.init).toHaveBeenCalledWith(
-            expect.objectContaining({ lng: 'en' }),
-        )
-        expect(document.documentElement.lang).toBe('en')
-        expect(storage.setItem).not.toHaveBeenCalled()
-    })
+    await setLanguage('de')
+    subscriber.mockClear()
+
+    const pendingFrench = setLanguage('fr')
+    await setLanguage('de')
+    await pendingFrench
+
+    expect(getSnapshot().language).toBe('de')
+    expect(documentElement.lang).toBe('de')
+    expect(localStorage.setItem).toHaveBeenLastCalledWith('app-language', 'de')
+    expect(subscriber).not.toHaveBeenCalled()
+    unsubscribe()
 })

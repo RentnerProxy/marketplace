@@ -1,4 +1,4 @@
-use regex::Regex;
+use regex_lite::Regex;
 use serde::Serialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -27,21 +27,42 @@ fn patterns() -> &'static Vec<(Regex, &'static str)> {
     static PATTERNS: OnceLock<Vec<(Regex, &'static str)>> = OnceLock::new();
     PATTERNS.get_or_init(|| [
         (r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\))", ""),
-        (r"(?i)([a-z][a-z0-9+.-]*://)[^\s/@]+@", "${1}[REDACTED]@"),
-        (r#"(?i)([?#&](?:access|token|secret|password|code|key|api_key|access_token|refresh_token)=)[^&#\s\"'<>]+"#, "${1}[REDACTED]"),
-        (r#"(?i)(\"(?:[^\"\s]*(?:password|secret|token|encryption_key|api_key)|authorization|cookie|set-cookie)\"\s*:\s*)\"(?:\\.|[^\"\\])*\""#, "${1}\"[REDACTED]\""),
-        (r#"(?i)\b((?:[a-z0-9_]*(?:password|secret|token|encryption_key|api_key))\s*[=:]\s*)(?:\"[^\"\r\n]*\"|'[^'\r\n]*'|[^\s,;]+)"#, "${1}[REDACTED]"),
-        (r"(?i)\b((?:authorization|cookie|set-cookie)\s*[:=]\s*).+", "${1}[REDACTED]"),
-        (r"(?i)\b((?:Bearer|Basic)\s+)[a-z0-9+/_=.-]+", "${1}[REDACTED]"),
-        (r"(?i)\beyJ[a-z0-9_-]+\.[a-z0-9_-]+\.[a-z0-9_-]+\b", "[REDACTED]"),
-        (r"\b((?:STATEMENT|DETAIL|CONTEXT|QUERY):\s*).+", "${1}[REDACTED]"),
-    ].into_iter().map(|(pattern, replacement)| (Regex::new(pattern).expect("static log redaction expression"), replacement)).collect())
+        (r"(?i)([a-z%FOLD][a-z0-9+.%FOLD-]*://)[^%SPACE/@]+@", "${1}[REDACTED]@"),
+        (r#"(?i)([?#&](?:acce%S%S|to%Ken|%Secret|pa%S%Sword|code|%Key|api_%Key|acce%S%S_to%Ken|refre%Sh_to%Ken)=)[^&#%SPACE\"'<>]+"#, "${1}[REDACTED]"),
+        (r#"(?i)(\"(?:[^\"%SPACE]*%KEY|%HEADER)\"[%SPACE]*:[%SPACE]*)\"(?:\\.|[^\"\\])*\""#, "${1}\"[REDACTED]\""),
+        (r#"(?i)\b{start-half}([a-z0-9_%FOLD]*%KEY[%SPACE]*[=:][%SPACE]*)(?:\"[^\"\r\n]*\"|'[^'\r\n]*'|[^%SPACE,;]+)"#, "${1}[REDACTED]"),
+        (r"(?i)\b{start-half}(%HEADER[%SPACE]*[:=][%SPACE]*).+", "${1}[REDACTED]"),
+        (r"(?i)\b((?:Bearer|Ba%Sic)[%SPACE]+)[a-z0-9+/_=.%FOLD-]+", "${1}[REDACTED]"),
+        (r"(?i)\beyJ[a-z0-9_%FOLD-]+\.[a-z0-9_%FOLD-]+\.[a-z0-9_%FOLD-]*(?:[a-z0-9_-]\b|[%FOLD]\b{end-half})", "[REDACTED]"),
+        (r"\b((?:STATEMENT|DETAIL|CONTEXT|QUERY):[%SPACE]*).+", "${1}[REDACTED]"),
+    ].into_iter().map(|(pattern, replacement)| (redaction_pattern(pattern), replacement)).collect())
+}
+
+fn redaction_pattern(pattern: &str) -> Regex {
+    // Retain the Unicode space and ASCII-letter case folds that the previous
+    // engine matched implicitly, so those spellings still redact secrets.
+    let pattern = pattern
+        .replace(
+            "%KEY",
+            "(?:pa%S%Sword|%Secret|to%Ken|encryption_%Key|api_%Key)",
+        )
+        .replace("%HEADER", "(?:authorization|coo%Kie|%Set-coo%Kie)")
+        .replace(
+            "%SPACE",
+            r"\s\x{85}\x{a0}\x{1680}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}",
+        )
+        .replace("%FOLD", r"\x{17f}\x{212a}")
+        .replace("%S", r"[s\x{17f}]")
+        .replace("%K", r"[k\x{212a}]");
+    Regex::new(&pattern).expect("static log redaction expression")
 }
 
 pub fn redact_line(message: &str) -> String {
     let mut value = message.to_owned();
     for (pattern, replacement) in patterns() {
-        value = pattern.replace_all(&value, *replacement).into_owned();
+        if let std::borrow::Cow::Owned(redacted) = pattern.replace_all(&value, *replacement) {
+            value = redacted;
+        }
     }
     value.retain(|character| !character.is_control() || character == '\t');
     if value.encode_utf16().count() > MAX_LINE {

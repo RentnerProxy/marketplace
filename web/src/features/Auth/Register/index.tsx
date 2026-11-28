@@ -19,6 +19,26 @@ const inputDesign = {
     iconColor: 'text-[#728578]',
 }
 
+export function RegistrationClosed() {
+    const { t } = useTranslationStore()
+    return (
+        <AuthLayout>
+            <h1 className="font-display text-3xl leading-[1.1] tracking-tight sm:text-4xl">
+                {t('auth.register.title')}
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-[#65786c]">
+                {t('auth.register.disabled')}
+            </p>
+            <Link
+                to="/login"
+                className="mt-5 inline-block rounded font-bold text-[#176b34] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0d6d2b]"
+            >
+                {t('auth.login.login')}
+            </Link>
+        </AuthLayout>
+    )
+}
+
 export default function RegisterPage() {
     const { t, language } = useTranslationStore()
     const { state, handler, setter } = useRegisterLogic()

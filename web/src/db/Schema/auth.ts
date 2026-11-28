@@ -217,7 +217,10 @@ export const sessions = appSchema.table(
     },
     function (table) {
         return [
-            index('sessions_user_id_idx').on(table.userId),
+            index('sessions_user_id_expires_at_idx').on(
+                table.userId,
+                table.expiresAt,
+            ),
             index('sessions_expires_at_idx').on(table.expiresAt),
         ]
     },

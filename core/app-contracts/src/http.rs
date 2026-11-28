@@ -33,6 +33,20 @@ pub struct HttpDescriptor {
     pub event: Option<&'static str>,
 }
 
+fn path_parameter_schema(name: &str) -> &'static str {
+    match name {
+        "domain" => "LegacyHandoffDomain",
+        _ => "RecordId",
+    }
+}
+
+impl HttpDescriptor {
+    /// The protocol document that admits a value for the path parameter.
+    pub fn path_parameter_schema(&self) -> Option<&'static str> {
+        self.path_parameter.map(path_parameter_schema)
+    }
+}
+
 #[derive(Default)]
 pub struct HttpRequestOptions<'a> {
     pub path_value: Option<&'a str>,
@@ -95,7 +109,7 @@ impl ProtocolContracts {
         let descriptor = operation.descriptor();
         let path = match (descriptor.path_parameter, options.path_value) {
             (Some(name), Some(value)) => {
-                self.validate("RecordId", &Value::from(value))?;
+                self.validate(path_parameter_schema(name), &Value::from(value))?;
                 descriptor.path.replace(&format!("{{{name}}}"), value)
             }
             (None, None) => descriptor.path.to_owned(),

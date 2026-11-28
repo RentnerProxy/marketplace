@@ -7,6 +7,15 @@ import {
 } from '../hook-harness.ts'
 
 vi.mock('react', () => hookReact)
+let publicRegistrationEnabled: boolean | undefined
+vi.mock('@tanstack/react-query', () => ({
+    useQuery: () => ({
+        data: { isPublicRegistrationEnabled: publicRegistrationEnabled },
+    }),
+}))
+vi.mock('@/lib/Queries/appQueries.ts', () => ({
+    systemSettingsQueryOptions: () => ({}),
+}))
 const { default: usePublicHeaderLogic } =
     await import('@/layouts/PublicLayout/Hooks/usePublicHeaderLogic.ts')
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
@@ -25,6 +34,7 @@ beforeEach(() => {
     resetHooks()
     vi.clearAllMocks()
     listeners.clear()
+    publicRegistrationEnabled = undefined
     windowMock.scrollY = 0
     Object.defineProperty(globalThis, 'window', {
         configurable: true,
@@ -35,6 +45,20 @@ afterEach(() => {
     if (originalWindow)
         Object.defineProperty(globalThis, 'window', originalWindow)
     else Reflect.deleteProperty(globalThis, 'window')
+})
+
+it('shows the registration entry only when the server setting enables it', () => {
+    expect(
+        renderHook(usePublicHeaderLogic).state.isPublicRegistrationEnabled,
+    ).toBe(false)
+    publicRegistrationEnabled = true
+    expect(
+        renderHook(usePublicHeaderLogic).state.isPublicRegistrationEnabled,
+    ).toBe(true)
+    publicRegistrationEnabled = false
+    expect(
+        renderHook(usePublicHeaderLogic).state.isPublicRegistrationEnabled,
+    ).toBe(false)
 })
 
 it('updates the attached header appearance while scrolling and removes its listener', () => {

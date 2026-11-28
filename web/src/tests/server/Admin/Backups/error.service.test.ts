@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import {
     BACKUP_FAILURE_MESSAGE,
     getStoredBackupErrorMessageService,
-} from '@/server/Admin/Backups/error.service.ts'
+} from '@/server/Admin/Backups/backup.errors.ts'
 
 describe('Backup error persistence boundary', function () {
     it('exports the exact safe operational message', function () {

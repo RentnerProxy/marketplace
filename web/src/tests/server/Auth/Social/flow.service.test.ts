@@ -56,6 +56,7 @@ const insertValues = mock((_values: unknown) => ({
 }))
 let linkedRows = [{ id: 'linked-account' }]
 let existingUsers: Array<{ id: string }> = []
+let publicRegistrationEnabled = true
 const transaction = { insert: () => ({ values: insertValues }) }
 const transact = mock(
     async (run: (value: typeof transaction) => Promise<unknown>) =>
@@ -159,6 +160,9 @@ mock.module('@/server/Auth/Social/login.service.ts', () => ({
 mock.module('@/server/Auth/Social/registration.service.ts', () => ({
     SOCIAL_REGISTRATION_COOKIE: 'social-registration',
 }))
+mock.module('@/server/Auth/Registration/policy.service.ts', () => ({
+    isPublicRegistrationEnabledService: async () => publicRegistrationEnabled,
+}))
 
 const {
     beginSocialAuthorizationService,
@@ -199,6 +203,7 @@ beforeEach(() => {
         },
     }
     existingUsers = []
+    publicRegistrationEnabled = true
     linkedRows = [{ id: 'linked-account' }]
     for (const operation of [
         readChallenge,
@@ -396,6 +401,43 @@ describe('Social authorization and callbacks', () => {
         ).toContain('social-error=account_exists')
         expect(handoff).not.toHaveBeenCalled()
         expect(insertValues).not.toHaveBeenCalled()
+    })
+
+    it.each([false, true])(
+        'only starts a social registration handoff when registration is enabled (%s)',
+        async (enabled) => {
+            publicRegistrationEnabled = enabled
+            signIn.mockResolvedValueOnce({
+                kind: 'registration',
+                redirectTo: '',
+                code: '',
+            })
+            const response = await finishSocialCallbackService(
+                callback(),
+                'github',
+            )
+            expect(response.headers.get('location')).toBe(
+                'https://market.example.test' +
+                    (enabled
+                        ? '/register#social'
+                        : '/login#social-error=registration_disabled'),
+            )
+            expect(handoff).toHaveBeenCalledTimes(enabled ? 1 : 0)
+        },
+    )
+
+    it('still signs an existing social account in when registration is disabled', async () => {
+        publicRegistrationEnabled = false
+        signIn.mockResolvedValueOnce({
+            kind: 'success',
+            redirectTo: '/dashboard',
+            code: '',
+        })
+        const response = await finishSocialCallbackService(callback(), 'github')
+        expect(response.headers.get('location')).toBe(
+            'https://market.example.test/dashboard',
+        )
+        expect(handoff).not.toHaveBeenCalled()
     })
 
     it('leaves the callback unconsumed when IP rate limiting refuses it', async () => {

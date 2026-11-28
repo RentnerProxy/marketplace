@@ -286,6 +286,18 @@
             "valid": false
         },
         {
+            "title": "check the monitoring-class probe for one host",
+            "schema": "AuthorizationRequest",
+            "document": {
+                "capability": {
+                    "id": "diagnostics.upstream.probe.v2",
+                    "scope": "proxyHosts"
+                },
+                "resourceId": "proxy-edge"
+            },
+            "valid": true
+        },
+        {
             "title": "check one resource",
             "schema": "AuthorizationRequest",
             "document": {
@@ -868,9 +880,463 @@
             "valid": false
         },
         {
+            "title": "a listed host names its domains and probe revision for probing",
+            "schema": "ProxyHostPage",
+            "document": {
+                "hosts": [
+                    {
+                        "id": "host-1",
+                        "revision": "revision-1",
+                        "hostname": "app.example.net",
+                        "enabled": true,
+                        "domains": ["*.example.net", "app.example.net"],
+                        "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                        "upstream": {
+                            "scheme": "http",
+                            "targets": [
+                                { "address": "192.0.2.10", "port": 8080 }
+                            ],
+                            "pool": null
+                        }
+                    },
+                    {
+                        "id": "host-2",
+                        "revision": "revision-2",
+                        "hostname": "legacy.example.net"
+                    }
+                ]
+            },
+            "valid": true
+        },
+        {
+            "title": "a listed host never has an empty domain list",
+            "schema": "ProxyHostPage",
+            "document": {
+                "hosts": [
+                    {
+                        "id": "host-1",
+                        "revision": "revision-1",
+                        "hostname": "app.example.net",
+                        "domains": []
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a listed probe revision is a lowercase SHA-256",
+            "schema": "ProxyHostPage",
+            "document": {
+                "hosts": [
+                    {
+                        "id": "host-1",
+                        "revision": "revision-1",
+                        "hostname": "app.example.net",
+                        "probeRevision": "2C26B46B68FFC68FF99B453C1D30413413422D706483BFA0F98A5E886266E7AE"
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
             "title": "upstream probe is restricted to an existing host and deadline",
             "schema": "UpstreamProbe",
             "document": { "hostId": "host-1", "timeoutMs": 10001 },
+            "valid": false
+        },
+        {
+            "title": "a probe batch names a domain and deadline for each host",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 1000
+                    },
+                    {
+                        "hostId": "host-2",
+                        "domain": "api.example.net",
+                        "timeoutMs": 8000
+                    }
+                ]
+            },
+            "valid": true
+        },
+        {
+            "title": "a probe batch is never empty",
+            "schema": "UpstreamProbeBatch",
+            "document": { "probes": [] },
+            "valid": false
+        },
+        {
+            "title": "a probe batch names each host once",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 3000
+                    },
+                    {
+                        "hostId": "host-1",
+                        "domain": "www.example.net",
+                        "timeoutMs": 3000
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe deadline leaves room for the platform checks",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 8001
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe deadline is at least one second",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "app.example.net",
+                        "timeoutMs": 999
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a wildcard domain cannot be probed",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [
+                    {
+                        "hostId": "host-1",
+                        "domain": "*.example.net",
+                        "timeoutMs": 3000
+                    }
+                ]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe names its domain",
+            "schema": "UpstreamProbeBatch",
+            "document": {
+                "probes": [{ "hostId": "host-1", "timeoutMs": 3000 }]
+            },
+            "valid": false
+        },
+        {
+            "title": "a probed host reports the first failing stage",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": 200,
+                "failure": { "stage": "tls", "code": "tls_failed" }
+            },
+            "valid": true
+        },
+        {
+            "title": "a probed host tolerates additional result fields",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 0,
+                "httpStatus": null,
+                "failure": {
+                    "stage": "configuration",
+                    "code": "host_not_active",
+                    "detail": "later addition"
+                },
+                "addresses": ["192.0.2.10"]
+            },
+            "valid": true
+        },
+        {
+            "title": "a TLS failure stage carries only the TLS failure code",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": null,
+                "failure": { "stage": "tls", "code": "tls_verified" }
+            },
+            "valid": false
+        },
+        {
+            "title": "a probed host states that no stage failed",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": 200
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe revision is a lowercase SHA-256",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "probed",
+                "hostId": "host-1",
+                "domain": "app.example.net",
+                "probeRevision": "sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+                "durationMs": 120,
+                "httpStatus": 200,
+                "failure": null
+            },
+            "valid": false
+        },
+        {
+            "title": "a probe the platform did not run names its host and reason",
+            "schema": "UpstreamProbeOutcome",
+            "document": {
+                "outcome": "rateLimited",
+                "hostId": "host-1",
+                "domain": "app.example.net"
+            },
+            "valid": true
+        },
+        {
+            "title": "a probe batch result returns at least one result",
+            "schema": "UpstreamProbeBatchResult",
+            "document": { "results": [] },
+            "valid": false
+        },
+        {
+            "title": "an open incident names its category, severity, plain text and resource",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "an incident without a resource omits it",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "app-health",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "The upstream did not answer within 3 seconds after 3 checks."
+            },
+            "valid": true
+        },
+        {
+            "title": "a resolved incident carries only its status",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "resolved"
+            },
+            "valid": true
+        },
+        {
+            "title": "a resolved incident takes no text",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "resolved",
+                "message": "Recovered"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident severity has no info level",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "info",
+                "title": "app.example.net is unreachable",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a URL",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Details at https://status.example.net",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a bare web address",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "See www.example.net",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a mail link",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Write to mailto:ops@example.net",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain format characters",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net‮tnemhcatta",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain line breaks",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First line\nSecond line",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a line separator",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First Second",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text cannot contain a paragraph separator",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "First Second",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "incident text keeps spaces and emoji",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "Upstream down 🚨",
+                "message": "Still down after 3 checks — investigating.",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "incident text folds only ASCII letters when it looks for a scheme",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Marked ſ://example.net as unreachable",
+                "resourceId": "host-1"
+            },
+            "valid": true
+        },
+        {
+            "title": "incident text rejects an upper case URL scheme",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "Details at HTTPS://status.example.net",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "an incident title stays within 80 characters",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "message": "The upstream did not answer within 3 seconds after 3 checks.",
+                "resourceId": "host-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "an incident message stays within 400 characters",
+            "schema": "AppIncidentChange",
+            "document": {
+                "status": "open",
+                "category": "host-availability",
+                "severity": "error",
+                "title": "app.example.net is unreachable",
+                "message": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "resourceId": "host-1"
+            },
             "valid": false
         },
         {
@@ -939,6 +1405,398 @@
                         "requestId": "request-1"
                     }
                 }
+            },
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff domain is a provider profile",
+            "schema": "LegacyHandoffDomain",
+            "document": "docker-discovery",
+            "valid": true
+        },
+        {
+            "title": "a legacy handoff domain rejects a record ID outside the provider profiles",
+            "schema": "LegacyHandoffDomain",
+            "document": "proxy-hosts",
+            "valid": false
+        },
+        {
+            "title": "a legacy handoff domain is case sensitive",
+            "schema": "LegacyHandoffDomain",
+            "document": "Monitoring",
+            "valid": false
+        },
+        {
+            "title": "a platform-owned domain carries no export",
+            "schema": "LegacyHandoffStatus",
+            "document": { "domain": "monitoring", "state": "platform" },
+            "valid": true
+        },
+        {
+            "title": "a platform-owned domain rejects a digest",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "platform",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "an exported domain carries its digest and part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": true
+        },
+        {
+            "title": "an exported domain may have no parts",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "dns",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 0
+            },
+            "valid": true
+        },
+        {
+            "title": "an exported domain admits the maximum part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "crowdsec",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 1024
+            },
+            "valid": true
+        },
+        {
+            "title": "an exported domain rejects more parts than the journal holds",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "crowdsec",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 1025
+            },
+            "valid": false
+        },
+        {
+            "title": "an exported domain requires its part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "an exported domain requires its digest",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a committed domain carries only its digest",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "load-balancer",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a committed domain rejects a part count",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "load-balancer",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a handoff status rejects unknown members",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "oidc",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "installationId": "install-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "a handoff status rejects a domain outside the provider profiles",
+            "schema": "LegacyHandoffStatus",
+            "document": { "domain": "proxy-hosts", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a handoff status rejects an unknown state",
+            "schema": "LegacyHandoffStatus",
+            "document": { "domain": "monitoring", "state": "handoff" },
+            "valid": false
+        },
+        {
+            "title": "a handoff digest is lowercase hexadecimal",
+            "schema": "LegacyHandoffStatus",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a begin result carries the fixed export",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": true
+        },
+        {
+            "title": "a begin result after commit carries only the digest",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a begin result never reports platform ownership",
+            "schema": "LegacyHandoffBeginResult",
+            "document": { "domain": "monitoring", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a begin result after commit rejects a part count",
+            "schema": "LegacyHandoffBeginResult",
+            "document": {
+                "domain": "monitoring",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit result reports ownership",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a commit result rejects an open export",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "exported",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit result rejects platform ownership",
+            "schema": "LegacyHandoffCommitResult",
+            "document": { "domain": "dns", "state": "platform" },
+            "valid": false
+        },
+        {
+            "title": "a commit result requires the digest",
+            "schema": "LegacyHandoffCommitResult",
+            "document": { "domain": "dns", "state": "committed" },
+            "valid": false
+        },
+        {
+            "title": "a commit result rejects unknown members",
+            "schema": "LegacyHandoffCommitResult",
+            "document": {
+                "domain": "dns",
+                "state": "committed",
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "installationId": "install-1"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request names the export and the first sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 0
+            },
+            "valid": true
+        },
+        {
+            "title": "a part request names the last possible sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1023
+            },
+            "valid": true
+        },
+        {
+            "title": "a part request rejects a sequence beyond the journal",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1024
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects a negative sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": -1
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects a fractional sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 1.5
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request requires a sequence",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part request requires the export digest",
+            "schema": "LegacyHandoffPartRequest",
+            "document": { "sequence": 0 },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects a malformed digest",
+            "schema": "LegacyHandoffPartRequest",
+            "document": { "digest": "9f86d081884c7d65", "sequence": 0 },
+            "valid": false
+        },
+        {
+            "title": "a part request rejects unknown members",
+            "schema": "LegacyHandoffPartRequest",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "sequence": 0,
+                "domain": "monitoring"
+            },
+            "valid": false
+        },
+        {
+            "title": "a part carries app wire JSON",
+            "schema": "LegacyHandoffPart",
+            "document": {
+                "sequence": 2,
+                "part": {
+                    "kind": "monitor",
+                    "items": [{ "id": "monitor-1", "intervalSeconds": 60 }],
+                    "history": null
+                }
+            },
+            "valid": true
+        },
+        {
+            "title": "a part may be any wire JSON value",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 0, "part": ["entry", 1, null, true] },
+            "valid": true
+        },
+        {
+            "title": "a part requires its content",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 0 },
+            "valid": false
+        },
+        {
+            "title": "a part rejects a sequence beyond the journal",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 1024, "part": {} },
+            "valid": false
+        },
+        {
+            "title": "a part rejects unknown members",
+            "schema": "LegacyHandoffPart",
+            "document": { "sequence": 0, "part": {}, "partCount": 1 },
+            "valid": false
+        },
+        {
+            "title": "a part rejects numbers outside the exact JSON integer range",
+            "schema": "LegacyHandoffPart",
+            "document": {
+                "sequence": 0,
+                "part": { "count": 9007199254740992 }
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit names the exported digest",
+            "schema": "LegacyHandoffCommit",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            },
+            "valid": true
+        },
+        {
+            "title": "a commit rejects an uppercase digest",
+            "schema": "LegacyHandoffCommit",
+            "document": {
+                "digest": "9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2B0B822CD15D6C15B0F00A08"
+            },
+            "valid": false
+        },
+        {
+            "title": "a commit rejects a truncated digest",
+            "schema": "LegacyHandoffCommit",
+            "document": { "digest": "9f86d081884c7d659a2feaa0c55ad015" },
+            "valid": false
+        },
+        {
+            "title": "a commit requires a digest",
+            "schema": "LegacyHandoffCommit",
+            "document": {},
+            "valid": false
+        },
+        {
+            "title": "a commit rejects unknown members",
+            "schema": "LegacyHandoffCommit",
+            "document": {
+                "digest": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                "partCount": 3
             },
             "valid": false
         }

@@ -1,6 +1,8 @@
 import {
     httpOperations,
+    pathParameterSchemas,
     type HttpOperationDefinition,
+    type HttpPathParameter,
 } from './http-operations.ts'
 
 function schema(name: string) {
@@ -102,8 +104,13 @@ for (const [name, operation] of Object.entries(httpOperations)) {
     item[method === 'GET' ? 'get' : 'post'] = describeOperation(name, operation)
 }
 
-function pathParameter(name: string) {
-    return { name, in: 'path', required: true, schema: schema('RecordId') }
+function pathParameter(name: HttpPathParameter) {
+    return {
+        name,
+        in: 'path',
+        required: true,
+        schema: schema(pathParameterSchemas[name]),
+    }
 }
 
 export const httpComponents = {
@@ -154,6 +161,8 @@ export const httpComponents = {
         operationId: pathParameter('operationId'),
         providerId: pathParameter('providerId'),
         secretId: pathParameter('secretId'),
+        incidentKey: pathParameter('incidentKey'),
+        domain: pathParameter('domain'),
         ResumeCursor: {
             name: 'Last-Event-ID',
             in: 'header',

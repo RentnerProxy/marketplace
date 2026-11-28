@@ -347,6 +347,7 @@ type RoleLink = FileLink & { version: number }
 function readRole(files: ReadonlyMap<string, Buffer>, path: string) {
     return JSON.parse(files.get(path)!.toString()) as {
         signed: {
+            expires: string
             meta?: Record<string, RoleLink>
             targets?: Record<string, FileLink>
         }
@@ -509,6 +510,7 @@ async function publicationFixture(
     const deferrals: number[] = []
     const publisherReads = new Map<string, Set<string>>()
     const faults = {
+        marketplace: false,
         promotion: false,
         receipt: false,
         readOnce: false,
@@ -585,6 +587,7 @@ async function publicationFixture(
     }
 
     const request = async (input: Request) => {
+        if (faults.marketplace) throw new Error('simulated Marketplace outage')
         if (input.operation === 'queue')
             return {
                 items: approvals
@@ -711,6 +714,8 @@ async function publicationFixture(
         deferrals,
         approvals,
         catalog,
+        timestampExpiry: () =>
+            Date.parse(storedState().timestamp.signed.expires),
         rootSigners: c.root,
         nextRun: () => {
             currentRun = { ...currentRun, runId: '5552' }
@@ -780,6 +785,69 @@ test('continues with the next approval when a distribution read fails', async ()
         '2.0.0',
     ])
     expect(fixture.events).toContain('recorded:2.0.0')
+})
+
+test.each([
+    {
+        name: 'another approval',
+        substitute: (_work: Work, other: Work) => other.approval,
+    },
+    {
+        name: 'another approval revision',
+        substitute: (work: Work) => ({
+            ...work.approval,
+            revision: work.approval.revision + 1,
+        }),
+    },
+])(
+    'defers queued work when the Marketplace returns $name',
+    async ({ substitute }) => {
+        const fixture = await publicationFixture(['1.0.0', '2.0.0'])
+        const [queued, other] = fixture.approvals
+        if (!queued || !other) throw new Error('Expected two approvals')
+        const marketplace = fixture.options.marketplace as (
+            input: Request,
+        ) => Promise<unknown>
+        fixture.options.marketplace = (async (input: Request) =>
+            input.operation === 'get' &&
+            input.submissionId === queued.approval.id
+                ? {
+                      ...queued,
+                      approval: substitute(queued, other),
+                      revision: queued.revision + 5,
+                  }
+                : marketplace(input)) as PublisherOptions['marketplace']
+        await expectFailure(
+            publishCatalogQueue(fixture.options),
+            'Marketplace returned a different approval',
+        )
+        // The answer is not authorized or released, and its revision is not trusted.
+        expect(fixture.deferrals).toEqual([queued.revision])
+        expect(
+            fixture.events.filter((entry) => entry.endsWith(':1.0.0')),
+        ).toEqual([])
+        expect(
+            fixture.catalog().releases.map(({ version }) => version),
+        ).toEqual(['2.0.0'])
+    },
+)
+
+test('publisher refresh renews a due timestamp while the Marketplace is unreachable', async () => {
+    const hour = day / 24
+    const fixture = await publicationFixture(['1.0.0'], {
+        createdAt: new Date(Date.now() - 13 * hour),
+    })
+    fixture.faults.marketplace = true
+    const { core, distribution, root } = fixture.options
+    expect(fixture.timestampExpiry() - Date.now()).toBeLessThan(36 * hour)
+    await refreshDistributionCatalog(core, distribution, root)
+    expect(fixture.events).toEqual(['promoted'])
+    expect(fixture.timestampExpiry() - Date.now()).toBeGreaterThan(47 * hour)
+    await expectFailure(
+        publishCatalogQueue(fixture.options),
+        'simulated Marketplace outage',
+    )
+    expect(fixture.events).toEqual(['promoted'])
 })
 
 test('publisher refresh atomically rotates an expired installed root before ordinary reads resume', async () => {

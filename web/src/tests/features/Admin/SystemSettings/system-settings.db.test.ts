@@ -1,7 +1,6 @@
 import { execFile } from 'node:child_process'
 import { access, mkdir } from 'node:fs/promises'
 import { promisify } from 'node:util'
-import { faker } from '@faker-js/faker'
 import { eq, inArray } from 'drizzle-orm'
 import sharp from 'sharp'
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
@@ -19,7 +18,7 @@ const DEFAULT_TEST_USER_PASSWORD = 'user123'
 const DEFAULT_TEST_USER_BACKGROUND_DARKNESS = DEFAULT_BACKGROUND_DARKNESS
 const BUN_EXECUTABLE = process.env.npm_execpath ?? 'bun'
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL
-const TEST_RUN_ID = faker.string.uuid()
+const TEST_RUN_ID = crypto.randomUUID()
 const TEST_SETTINGS_ID = `${TEST_MARKER}-${TEST_RUN_ID}`.slice(0, 50)
 const TEST_CREATOR_EMAIL = `test-db-creator+${TEST_RUN_ID}@example.com`
 const TEST_CREATOR_USERNAME = `${TEST_MARKER}-creator-${TEST_RUN_ID}`.slice(
@@ -42,7 +41,7 @@ function createDemoImageBuffer() {
             width: 512,
             height: 512,
             channels: 4,
-            background: faker.color.rgb(),
+            background: '#3a8296',
         },
     })
         .png()
@@ -194,7 +193,7 @@ describe('Systemsettings DB-Demodaten', function () {
     })
 
     it('schreibt einen isolierten Test-Benutzer mit Bildern in die Datenbank', async function () {
-        const uniqueId = faker.string.uuid()
+        const uniqueId = crypto.randomUUID()
         const demoUserEmail = `test-db-user+${TEST_RUN_ID}-${uniqueId}@example.com`
         const demoUser = {
             username: `${TEST_MARKER}-user-${TEST_RUN_ID}-${uniqueId}`.slice(

@@ -3,10 +3,11 @@ import { lstat, open } from 'node:fs/promises'
 import {
     BACKUP_ARCHIVE_ENCRYPTION_CONFIG,
     BACKUP_ARCHIVE_EXTENSION,
+    BACKUP_DOWNLOAD_CHUNK_BYTES,
     BACKUP_LIMITS,
     BACKUP_TIMEOUTS,
 } from '@/config/backup.config.ts'
-import { authenticateBackupArchiveService } from './archive-encryption.service.ts'
+import { authenticateBackupArchiveService } from './archive-core.service.ts'
 import { getBackupFilePath } from './backup-directory.service.ts'
 import { BackupApiError } from './http.service.ts'
 import type {
@@ -198,9 +199,9 @@ export async function prepareBackupDownloadService(
                                 streamController.close()
                                 return
                             }
-                            const buffer = Buffer.alloc(
+                            const buffer = Buffer.allocUnsafe(
                                 Math.min(
-                                    BACKUP_ARCHIVE_ENCRYPTION_CONFIG.chunkBytes,
+                                    BACKUP_DOWNLOAD_CHUNK_BYTES,
                                     remaining,
                                 ),
                             )

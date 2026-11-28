@@ -69,10 +69,9 @@ export function githubHttp(token: string, fetcher: typeof fetch) {
         path: string
         method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
         body?: unknown
-        anonymous?: boolean
         allowMissing?: boolean
     }) {
-        const { path, method = 'GET', body, anonymous, allowMissing } = options
+        const { path, method = 'GET', body, allowMissing } = options
         if (
             path !== '/graphql' &&
             path !== repositoryPath &&
@@ -88,7 +87,7 @@ export function githubHttp(token: string, fetcher: typeof fetch) {
                 headers: {
                     accept: 'application/vnd.github+json',
                     'x-github-api-version': '2026-03-10',
-                    ...(anonymous ? {} : { authorization: `Bearer ${token}` }),
+                    authorization: `Bearer ${token}`,
                     ...(body === undefined
                         ? {}
                         : { 'content-type': 'application/json' }),
@@ -103,8 +102,14 @@ export function githubHttp(token: string, fetcher: typeof fetch) {
         }
         if (!response.ok) {
             await response.body?.cancel()
+            const rateLimited =
+                response.status === 429 ||
+                (response.status === 403 &&
+                    (response.headers.get('x-ratelimit-remaining') === '0' ||
+                        response.headers.has('retry-after')))
+            const endpoint = path.split('?', 1)[0]
             throw new Error(
-                `GitHub catalog API returned HTTP ${response.status}`,
+                `GitHub catalog API ${method} ${endpoint} returned HTTP ${response.status}${rateLimited ? ' (rate limited)' : ''}`,
             )
         }
         if (response.status === 204 && method === 'DELETE') return null

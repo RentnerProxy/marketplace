@@ -10,7 +10,7 @@ import { ActionMenu } from '@/shared/ActionMenu/index.tsx'
 const SYSTEM_ACTOR_FILTER_VALUE = 'system'
 
 export default function useAuditTableLogic() {
-    const { language, t } = useTranslationStore()
+    const { t } = useTranslationStore()
     const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(
         null,
     )
@@ -19,7 +19,7 @@ export default function useAuditTableLogic() {
         () => [
             {
                 accessorKey: 'action',
-                header: t('admin.auditLogs.action', { lng: language }),
+                header: t('admin.auditLogs.action'),
                 enableHiding: false,
                 meta: {
                     filter: {
@@ -160,7 +160,7 @@ export default function useAuditTableLogic() {
                 ),
             },
         ],
-        [language, t],
+        [t],
     )
 
     return {

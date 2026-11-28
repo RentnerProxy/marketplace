@@ -1,4 +1,4 @@
-/* eslint-disable no-await-in-loop -- Wait only for the atomic credential bootstrap, without requiring a healthy Valkey server. */
+/* oxlint-disable no-await-in-loop -- Wait only for the atomic credential bootstrap, without requiring a healthy Valkey server. */
 import {
     closeSync,
     constants,
@@ -78,7 +78,7 @@ export async function waitForValkeyPasswordFileService(
                 !('code' in error) ||
                 error.code !== 'ENOENT'
             ) {
-                // eslint-disable-next-line preserve-caught-error -- Keep filesystem details out of the secret boundary error.
+                // oxlint-disable-next-line preserve-caught-error -- Keep filesystem details out of the secret boundary error.
                 throw new Error(
                     'VALKEY_PASSWORD_FILE konnte nicht geladen werden.',
                 )

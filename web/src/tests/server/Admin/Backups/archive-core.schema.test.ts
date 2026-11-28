@@ -20,7 +20,7 @@ const metadata = {
 const absolute = path.resolve('fixture')
 
 describe('Archive native result contracts', () => {
-    it.each(['create', 'encrypt', 'decrypt', 'authenticate'])(
+    it.each(['create', 'authenticate'])(
         'checks %s envelope lengths and checksums',
         (operation) => {
             expect(parse(operation, metadata)).toEqual(metadata)
@@ -90,26 +90,7 @@ describe('Archive native result contracts', () => {
             ).toBeDefined()
         },
     )
-    it('validates collection, entry and bounded copy metadata', () => {
-        const file = { path: 'storage/image.webp', size: 10, type: 'file' }
-        const directory = { path: 'storage', size: 0, type: 'directory' }
-        expect(parse('validateEntry', file)).toEqual(file)
-        expect(parse('validateEntry', directory)).toEqual(directory)
-        expect(() =>
-            parse('validateEntry', { ...directory, size: 1 }),
-        ).toThrow()
-        expect(() =>
-            parse('validateEntry', { ...file, path: '../outside' }),
-        ).toThrow()
-        expect(
-            parse('collect', [
-                { ...file, absolutePath: absolute },
-                { ...directory, absolutePath: null },
-            ]),
-        ).toBeDefined()
-        expect(() =>
-            parse('collect', [{ ...file, absolutePath: null }]),
-        ).toThrow()
+    it('validates bounded copy metadata', () => {
         expect(
             parse('copy', { archiveSize: 10, checksumSha256: 'b'.repeat(64) }),
         ).toBeDefined()
@@ -119,7 +100,6 @@ describe('Archive native result contracts', () => {
                 checksumSha256: 'b'.repeat(64),
             }),
         ).toThrow()
-        expect(parse('processTar', manifest)).toEqual(manifest)
     })
     it('requires safe bounded background paths and string identities', () => {
         const entry = {

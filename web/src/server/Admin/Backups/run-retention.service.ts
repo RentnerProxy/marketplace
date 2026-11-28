@@ -1,7 +1,7 @@
 import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import { publishAdminBackupsChangedService } from '@/server/Realtime/publish.service.ts'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
-import type { BackupDeletionActor } from './Types/run-retention.types.ts'
+import type { BackupDeletionActor } from './Types/backup-run.types.ts'
 import type { AuditReceipt } from '@/lib/AuditLogs/Types/audit.types.ts'
 import {
     prepareAuditContextService,
@@ -12,7 +12,7 @@ import { and, desc, eq, isNotNull, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { backupRuns } from '@/db/schema.ts'
 import { logError } from '@/server/Logging/logger.ts'
-import { deleteBackupFilesService } from './backup-delete.service.ts'
+import { deleteBackupFilesService } from './backup-files.service.ts'
 import {
     getOrCreateBackupSettings,
     serializeBackupSettings,

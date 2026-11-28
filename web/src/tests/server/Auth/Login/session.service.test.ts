@@ -547,7 +547,7 @@ vi.mock('@/lib/AuditLogs/auditLogs.ts', function () {
     }
 })
 vi.mock('@/server/Maintenance/state.service.ts', function () {
-    return { getMaintenanceStateService: services.getMaintenance }
+    return { getFreshMaintenanceStateService: services.getMaintenance }
 })
 vi.mock('@/lib/Permissions/permissions.ts', function () {
     return {

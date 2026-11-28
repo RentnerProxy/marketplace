@@ -14,7 +14,7 @@ let requesting = false
 let minimized = false
 let mobileOpen = false
 const navItems: AuthenticatedNavItem[] = [
-    { labelKey: 'nav.home', to: '/user/dashboard', icon: Home },
+    { labelKey: 'nav.dashboard', to: '/user/dashboard', icon: Home },
 ]
 vi.mock('@tanstack/react-router', () => ({
     Outlet: () => createElement('article', null, 'Route content'),
@@ -304,7 +304,7 @@ it.each([false, true])(
 
 it('toggles visible navigation groups independently of desktop visibility', () => {
     const item: AuthenticatedNavItem = {
-        labelKey: 'nav.group',
+        labelKey: 'nav.user',
         icon: Home,
         children: navItems,
     }
@@ -316,7 +316,7 @@ it('toggles visible navigation groups independently of desktop visibility', () =
     }
     expect(
         renderToStaticMarkup(createElement(NavigationItem, props)),
-    ).toContain('nav.home')
+    ).toContain('nav.dashboard')
     expect(
         renderToStaticMarkup(createElement(NavigationItem, props)),
     ).toContain('font-(family-name:--marketplace-mono)')
@@ -325,17 +325,17 @@ it('toggles visible navigation groups independently of desktop visibility', () =
     ).toContain('data-active="true"')
     const tree = NavigationItem(props)
     callbacks(tree, 'onClick')[0]?.()
-    expect(action).toHaveBeenCalledWith('nav.group')
+    expect(action).toHaveBeenCalledWith('nav.user')
     expect(
         renderToStaticMarkup(
             createElement(NavigationItem, {
                 ...props,
-                openGroups: { 'nav.group': false },
+                openGroups: { 'nav.user': false },
             }),
         ),
-    ).not.toContain('nav.home')
+    ).not.toContain('nav.dashboard')
     expect(
-        NavigationItem({ ...props, item: { labelKey: 'hidden', icon: Home } }),
+        NavigationItem({ ...props, item: { labelKey: 'nav.overview', icon: Home } }),
     ).toBeNull()
 })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { BackupImportError } from '@/server/Admin/Backups/import.errors.ts'
+import { BackupImportError } from '@/server/Admin/Backups/backup.errors.ts'
 import {
     AuthenticationRequiredError,
     PermissionDeniedError,

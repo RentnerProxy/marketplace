@@ -1,4 +1,3 @@
-import { faker } from '@faker-js/faker'
 import { describe, expect, it } from 'bun:test'
 import { PERMISSIONS } from '@/config/permissions.config.ts'
 import { inviteStaffInputSchema } from '@/features/Admin/StaffManagement/validation.ts'
@@ -9,27 +8,27 @@ import {
     updateUserProfileInputSchema,
 } from '@/features/Admin/UserManagement/validation.ts'
 
+const username = 'fixture-user'
+const email = 'Fixture@Example.test'
+
 function createValidUpdateUserInput() {
     return {
-        id: Bun.randomUUIDv7(),
+        id: '01941f29-7c00-7000-8000-000000000001',
         accountType: 'public',
-        username: faker.internet.username().slice(0, 50),
-        email: faker.internet.email(),
-        firstName: faker.person.firstName(),
-        lastName: faker.person.lastName(),
-        street: faker.location.street(),
-        houseNumber: faker.location.buildingNumber(),
-        postalCode: faker.location.zipCode(),
-        city: faker.location.city(),
+        username,
+        email,
+        firstName: 'Alex',
+        lastName: 'Example',
+        street: 'Example Street',
+        houseNumber: '12A',
+        postalCode: '12345',
+        city: 'Example City',
         permissionKeys: ['admin.dashboard', 'admin.userManagement'],
     }
 }
 
 describe('UserManagement Validierung', function () {
     it('normalizes a valid staff invitation', function () {
-        const username = faker.internet.username().slice(0, 40)
-        const email = faker.internet.email()
-
         const result = inviteStaffInputSchema.safeParse({
             permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD],
             username: ` ${username} `,
@@ -47,7 +46,7 @@ describe('UserManagement Validierung', function () {
     it('rejects invalid staff invitation addresses', function () {
         const result = inviteStaffInputSchema.safeParse({
             permissionKeys: [PERMISSIONS.ADMIN_DASHBOARD],
-            username: faker.internet.username(),
+            username,
             email: 'keine-email',
         })
 
@@ -74,7 +73,7 @@ describe('UserManagement Validierung', function () {
     it('lehnt zu lange optionale Profildaten ab', function () {
         const result = updateUserProfileInputSchema.safeParse({
             ...createValidUpdateUserInput(),
-            city: faker.string.alphanumeric(101),
+            city: 'a'.repeat(101),
         })
 
         expect(result.success).toBe(false)

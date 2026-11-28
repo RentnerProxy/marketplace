@@ -35,18 +35,22 @@ export default function useSocialLoginLogic(): SocialLoginLogicReturn {
             window.location.pathname + window.location.search,
         )
         const reason = hash.slice('#social-error='.length)
-        const known = new Set([
+        const known = [
             'failed',
             'cancelled',
             'account_exists',
             'inactive',
             'expired',
             'link_failed',
-        ])
-        toast.error(
-            t('auth.social.' + (known.has(reason) ? reason : 'failed')),
-            { title: t('common.error'), dedupeKey: 'social-auth-callback' },
-        )
+        ] as const
+        const errorKey =
+            reason === 'registration_disabled'
+                ? 'auth.register.disabled'
+                : (`auth.social.${known.find((entry) => entry === reason) ?? 'failed'}` as const)
+        toast.error(t(errorKey), {
+            title: t('common.error'),
+            dedupeKey: 'social-auth-callback',
+        })
     }, [t])
     useEffect(() => {
         if (!isError || reportedQueryError.current === errorUpdatedAt) return

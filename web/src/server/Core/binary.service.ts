@@ -14,6 +14,20 @@ function getCoreBinaryDirectories() {
     ]
 }
 
+export function getCoreStorageLibraryPaths() {
+    const name =
+        process.platform === 'win32'
+            ? 'marketplace_storage.dll'
+            : 'libmarketplace_storage.so'
+    return getCoreBinaryDirectories().flatMap((directory) => {
+        const library = path.join(directory, name)
+        // The CLI and library need separate profiles to avoid MSVC PDB collisions.
+        if (path.basename(directory) === 'debug')
+            return [library, path.join(directory, '..', 'ffi', name)]
+        return [library]
+    })
+}
+
 export async function getCoreBinaryPathService(binary: CoreBinary) {
     const name =
         CORE_RUNTIME.binaries[binary] +

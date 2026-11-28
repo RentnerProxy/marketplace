@@ -17,6 +17,7 @@ const commands: Record<string, string[]> = {
         ...manifest,
         '--locked',
         '--bins',
+        '--lib',
         '-p',
         'marketplace-core',
     ],
@@ -203,4 +204,15 @@ if (command === 'coverage') {
     const args = commands[command ?? '']
     if (!args) throw new Error('Unbekannter Rust-Projektbefehl.')
     process.exitCode = await run([...cargo, ...args])
+    if (command === 'build' && process.exitCode === 0)
+        process.exitCode = await run([
+            ...cargo,
+            'build',
+            ...manifest,
+            '--locked',
+            '--profile',
+            'ffi',
+            '-p',
+            'marketplace-storage-ffi',
+        ])
 }

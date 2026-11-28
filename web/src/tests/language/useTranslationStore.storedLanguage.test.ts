@@ -1,59 +1,39 @@
-import { AVAILABLE_LANGUAGES } from '@/config/language.config.ts'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
-import { stubTestGlobal } from '@/tests/shared/bunTestStubs.ts'
+import { afterEach, expect, it, vi } from 'bun:test'
 import {
-    i18nextMock,
-    resetLanguageTestHarness,
-    restoreLanguageTestHarness,
-} from './useTranslationStoreTestHarness.ts'
+    getServerSnapshot,
+    getSnapshot,
+    setLanguage,
+    subscribe,
+    translateCurrentLanguage,
+} from '@/language/languageStore.ts'
+import { restoreTestGlobals } from '@/tests/shared/bunTestStubs.ts'
+import { stubBrowserLanguage } from './useTranslationStoreTestHarness.ts'
 
-describe('useTranslationStore gespeicherte Sprache', function () {
-    beforeEach(resetLanguageTestHarness)
-    afterEach(restoreLanguageTestHarness)
+afterEach(restoreTestGlobals)
 
-    it('übernimmt eine gespeicherte Sprache und synchronisiert DOM und Storage', async function () {
-        const storage = {
-            getItem: vi.fn(function () {
-                return 'de'
-            }),
-            setItem: vi.fn(),
-        }
-        const documentElement = { lang: '' }
-        stubTestGlobal('window', {
-            localStorage: storage,
-            navigator: { language: 'en-US' },
-        })
-        stubTestGlobal('document', { documentElement })
-        i18nextMock.api.resolvedLanguage = 'de'
+it('loads the saved preference after the initial English snapshot and syncs subscribers and storage', async function () {
+    const { documentElement, localStorage } = stubBrowserLanguage('de', 'en-US')
+    expect(getSnapshot()).toBe(getServerSnapshot())
+    expect(translateCurrentLanguage('common.save')).toBe('Save')
 
-        const useTranslationStore = (
-            await import('@/language/useTranslationStore.ts')
-        ).default
-        const store = useTranslationStore()
+    const { promise, resolve } = Promise.withResolvers<void>()
+    const subscriber = vi.fn(resolve)
+    const unsubscribe = subscribe(subscriber)
+    expect(getSnapshot()).toBe(getServerSnapshot())
+    await promise
 
-        expect(i18nextMock.api.init).toHaveBeenCalledWith(
-            expect.objectContaining({ lng: 'de' }),
-        )
-        expect(documentElement.lang).toBe('de')
-        expect(store.language).toBe('de')
-        expect(store.t('common.save')).toBe('translated:common.save')
+    expect(getSnapshot().language).toBe('de')
+    expect(translateCurrentLanguage('common.save')).toBe('Speichern')
+    expect(getServerSnapshot().t('common.save')).toBe('Save')
+    expect(documentElement.lang).toBe('de')
+    expect(localStorage.setItem).not.toHaveBeenCalled()
 
-        await store.setLanguage('de')
+    await setLanguage('en')
+    expect(documentElement.lang).toBe('en')
+    expect(localStorage.setItem).toHaveBeenLastCalledWith('app-language', 'en')
+    expect(subscriber).toHaveBeenCalledTimes(2)
 
-        expect(storage.setItem).toHaveBeenCalledWith('app-language', 'de')
-        expect(i18nextMock.api.changeLanguage).toHaveBeenCalledWith('de')
-        expect(documentElement.lang).toBe('de')
-        for (const language of AVAILABLE_LANGUAGES) {
-            // eslint-disable-next-line no-await-in-loop -- Shared i18next transitions must complete in order.
-            await store.setLanguage(language)
-            expect(storage.setItem).toHaveBeenLastCalledWith(
-                'app-language',
-                language,
-            )
-            expect(i18nextMock.api.changeLanguage).toHaveBeenLastCalledWith(
-                language,
-            )
-            expect(documentElement.lang).toBe(language)
-        }
-    })
+    unsubscribe()
+    await setLanguage('de')
+    expect(subscriber).toHaveBeenCalledTimes(2)
 })

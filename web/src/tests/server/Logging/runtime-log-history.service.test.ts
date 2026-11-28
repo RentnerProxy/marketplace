@@ -10,6 +10,7 @@ import {
 import { RUNTIME_LOGS } from '@/config/logging.config.ts'
 import type { RuntimeLogEntry } from '@/lib/RuntimeLogs/Types/runtime-log.types.ts'
 import type { AppValkeyClient } from '@/server/Valkey/Types/valkey-client.types.ts'
+import { mockValkeyDefineCommand } from '@/tests/shared/valkey-script.test.helpers.ts'
 import {
     attachRuntimeLogConnectionService,
     getRuntimeLogSnapshotService,
@@ -18,18 +19,20 @@ import {
 } from '@/server/Logging/runtime-log-history.service.ts'
 
 function createClient() {
+    const evalScript = vi.fn(
+        async (
+            script: string,
+            _keyCount: number,
+            ..._arguments: Array<string | number>
+        ): Promise<unknown> => (script.includes('LRANGE') ? [] : 1),
+    )
     return {
         status: 'wait',
         get: async () => null,
         set: async () => 'OK' as const,
         del: async () => 0,
-        eval: vi.fn(
-            async (
-                script: string,
-                _keyCount: number,
-                ..._arguments: Array<string | number>
-            ): Promise<unknown> => (script.includes('LRANGE') ? [] : 1),
-        ),
+        eval: evalScript,
+        defineCommand: mockValkeyDefineCommand(evalScript),
         ping: async () => 'PONG',
         publish: async () => 0,
         subscribe: async () => 0,
@@ -188,6 +191,27 @@ describe('Begrenzter, bereinigter Laufzeit-Logverlauf', function () {
         ])
         expect(result.entries[1]?.context).toEqual({ durationMs: 5 })
         expect(JSON.stringify(result)).not.toContain('synthetic-secret')
+    })
+
+    it('keeps returned snapshots independent from the pending and local buffers', async function () {
+        const context = { count: 1 }
+        recordRuntimeLogService({
+            level: 'info',
+            event: 'app.request',
+            context,
+        })
+        context.count = 2
+
+        const first = await getRuntimeLogSnapshotService('webserver', client)
+        expect(first.entries[0]?.context.count).toBe(1)
+        const returnedEntry = first.entries[0]
+        if (!returnedEntry) throw new Error('Expected a recorded runtime log')
+        returnedEntry.context.count = 3
+        returnedEntry.event = 'app.modified'
+
+        const second = await getRuntimeLogSnapshotService('webserver', client)
+        expect(second.entries[0]?.context.count).toBe(1)
+        expect(second.entries[0]?.event).toBe('app.request')
     })
 
     it('behält bei ausgefallenem gemeinsamem Verlauf ausschließlich lokale Ereignisse lesbar', async function () {

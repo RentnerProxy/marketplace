@@ -3,8 +3,8 @@ import { CANDIDATE_PIPELINE as pipeline } from '@/config/submissions.config.ts'
 import type { marketplaceRepositoryClaims } from '@/db/schema.ts'
 import { repositoryName } from '@/lib/Marketplace/sourceRequest.ts'
 import { commit } from '../../../../../contracts/v1/primitives.ts'
+import { publicRepositoryGitHubToken } from './github-credentials.service.ts'
 import {
-    candidateGitHubToken,
     GitHubRequestError,
     githubJson,
     githubNumericId,
@@ -25,7 +25,7 @@ const repositoryResponse = z.object({
 
 export async function readPublicRepository(
     repository: string,
-    token = candidateGitHubToken(),
+    token = publicRepositoryGitHubToken(),
 ) {
     try {
         const info = repositoryResponse.parse(
@@ -71,7 +71,7 @@ export async function verifyRepositoryClaim(
     sourceCommit?: string,
 ) {
     try {
-        const token = candidateGitHubToken()
+        const token = publicRepositoryGitHubToken()
         const info = await readPublicRepository(claim.repository, token)
         if (
             info.repositoryId !== claim.repositoryId ||

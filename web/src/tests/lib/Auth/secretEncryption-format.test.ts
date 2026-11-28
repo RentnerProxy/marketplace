@@ -151,6 +151,23 @@ describe('Auth secret canonical wire format and authenticated bytes', function (
         expect(readRequiredEnvironment).toHaveBeenCalledTimes(1)
     })
 
+    it('shares concurrent imports and reloads the key when the environment changes', async function () {
+        const importKey = vi.spyOn(crypto.subtle, 'importKey')
+        encodedKey = Buffer.alloc(32, 41).toString('base64')
+        const [first, second] = await Promise.all([
+            encryptAuthSecret('first synthetic value'),
+            encryptAuthSecret('second synthetic value'),
+        ])
+        expect(await decryptAuthSecret(first)).toBe('first synthetic value')
+        expect(importKey).toHaveBeenCalledTimes(1)
+
+        encodedKey = Buffer.alloc(32, 42).toString('base64')
+        await expect(decryptAuthSecret(second)).rejects.toThrow()
+        const current = await encryptAuthSecret('current synthetic value')
+        expect(await decryptAuthSecret(current)).toBe('current synthetic value')
+        expect(importKey).toHaveBeenCalledTimes(2)
+    })
+
     it.each(['iv', 'ciphertext', 'tag'] as const)(
         'authenticates the %s bytes',
         async function (part) {

@@ -4,15 +4,12 @@ import type {
     BackupTarEntry,
     BackupArchiveIntegrity,
 } from '@/tests/server/Admin/Backups/archive-tar.test.types.ts'
-import {
-    BACKUP_INTEGRITY_KEY_DERIVATION,
-    BACKUP_INTEGRITY_VERSION,
-} from '@/config/backup.config.ts'
 import { encryptionKeySchema } from '@/server/Runtime/environment-schema.service.ts'
 import { getRequiredServerEnvironment } from '@/server/Runtime/environment.service.ts'
 export const BACKUP_INTEGRITY_FILE_NAME = 'integrity.json'
+const integrityVersion = 2
 const TAR_INTEGRITY_PREFIX = Buffer.from(
-    `tanstack-backup-integrity-v${BACKUP_INTEGRITY_VERSION}\0`,
+    `tanstack-backup-integrity-v${integrityVersion}\0`,
     'utf8',
 )
 function encodeIntegrityEntry(entry: BackupTarEntry) {
@@ -39,9 +36,9 @@ function getBackupIntegrityKey() {
         hkdfSync(
             'sha256',
             Buffer.from(parsedKey.data, 'base64'),
-            BACKUP_INTEGRITY_KEY_DERIVATION.salt,
-            BACKUP_INTEGRITY_KEY_DERIVATION.info,
-            BACKUP_INTEGRITY_KEY_DERIVATION.length,
+            'tanstack-backup-key-v1',
+            'archive-integrity-v2',
+            32,
         ),
     )
 }
@@ -103,7 +100,7 @@ export function createBackupIntegrityTracker() {
 
         completed = true
         return {
-            version: BACKUP_INTEGRITY_VERSION,
+            version: integrityVersion,
             algorithm: 'hmac-sha256',
             entryCount,
             totalBytes,

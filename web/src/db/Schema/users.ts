@@ -130,8 +130,14 @@ export const notifications = appSchema.table(
     },
     function (table) {
         return [
-            index('notifications_user_id_idx').on(table.userId),
-            index('notifications_is_read_idx').on(table.isRead),
+            index('notifications_user_id_created_at_idx').on(
+                table.userId,
+                table.createdAt,
+            ),
+            index('notifications_user_id_is_read_idx').on(
+                table.userId,
+                table.isRead,
+            ),
             index('notifications_reference_id_idx').on(table.referenceId),
         ]
     },

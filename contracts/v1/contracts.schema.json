@@ -205,7 +205,7 @@
                     }
                 },
                 "capabilities": {
-                    "maxItems": 10,
+                    "maxItems": 12,
                     "type": "array",
                     "items": {
                         "anyOf": [
@@ -268,7 +268,43 @@
                                 "properties": {
                                     "id": {
                                         "type": "string",
+                                        "const": "diagnostics.upstream.probe.v2"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
                                         "const": "notifications.publish.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "installation"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "notifications.incidents.manage.v1"
                                     },
                                     "scope": {
                                         "type": "string",
@@ -469,6 +505,40 @@
                     ],
                     "additionalProperties": false,
                     "description": "Write versions must be readable and include the target version. Order migrations by source version. Every declared forward migration must lead to the target, with one outgoing step per source version. Zero denotes fresh state."
+                },
+                "incidentCategories": {
+                    "description": "Incident categories the app opens with notifications.incidents.manage.v1. Users subscribe to each category. The SDK checks unique IDs, and that the categories and the capability are declared together.",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "description": "App-local category ID. Keep it stable across releases: subscriptions refer to it together with the app ID.",
+                                "$ref": "#/$defs/RecordId"
+                            },
+                            "name": {
+                                "type": "string",
+                                "pattern": "^[^\\p{Cc}\\p{Cs}\\p{Cf}\\p{Zl}\\p{Zp}]{1,80}$",
+                                "description": "Name users see when they subscribe and in notifications: one line of plain text without format characters."
+                            },
+                            "resource": {
+                                "type": "string",
+                                "enum": [
+                                    "proxyHost",
+                                    "none"
+                                ],
+                                "description": "What each incident of the category refers to. A proxyHost incident names a host the app may read or probe, and only users who may view that host receive it."
+                            }
+                        },
+                        "required": [
+                            "id",
+                            "name",
+                            "resource"
+                        ],
+                        "additionalProperties": false
+                    }
                 },
                 "resources": {
                     "type": "object",
@@ -1213,7 +1283,43 @@
                                 "properties": {
                                     "id": {
                                         "type": "string",
+                                        "const": "diagnostics.upstream.probe.v2"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "proxyHosts"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
                                         "const": "notifications.publish.v1"
+                                    },
+                                    "scope": {
+                                        "type": "string",
+                                        "const": "installation"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "scope"
+                                ],
+                                "additionalProperties": false
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string",
+                                        "const": "notifications.incidents.manage.v1"
                                     },
                                     "scope": {
                                         "type": "string",
@@ -1414,7 +1520,43 @@
                             "properties": {
                                 "id": {
                                     "type": "string",
+                                    "const": "diagnostics.upstream.probe.v2"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "proxyHosts"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
                                     "const": "notifications.publish.v1"
+                                },
+                                "scope": {
+                                    "type": "string",
+                                    "const": "installation"
+                                }
+                            },
+                            "required": [
+                                "id",
+                                "scope"
+                            ],
+                            "additionalProperties": false
+                        },
+                        {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "const": "notifications.incidents.manage.v1"
                                 },
                                 "scope": {
                                     "type": "string",
@@ -2576,6 +2718,26 @@
                                 "maxLength": 253,
                                 "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
                                 "description": "Lowercase ASCII hostname. Encode international names as A-labels."
+                            },
+                            "enabled": {
+                                "description": "Whether the host serves traffic. Platforms that serve diagnostics.upstream.probe.v2 always include it.",
+                                "type": "boolean"
+                            },
+                            "domains": {
+                                "description": "Every domain of the host in ascending order. Platforms that serve diagnostics.upstream.probe.v2 always include it; a probe names one of these domains that is not a wildcard.",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "maxLength": 255,
+                                    "pattern": "^(?:\\*\\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                                    "description": "Lowercase ASCII domain, optionally with a leading wildcard label."
+                                }
+                            },
+                            "probeRevision": {
+                                "description": "Changes only when something an upstream probe observes changes. Platforms that serve diagnostics.upstream.probe.v2 always include it, and each probe result carries the value from when the probe ran.",
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
                             }
                         },
                         "required": [
@@ -2757,6 +2919,242 @@
                 }
             ]
         },
+        "UpstreamProbeBatch": {
+            "type": "object",
+            "properties": {
+                "probes": {
+                    "minItems": 1,
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "hostId": {
+                                "description": "Host ID from the proxy host listing.",
+                                "$ref": "#/$defs/RecordId"
+                            },
+                            "domain": {
+                                "type": "string",
+                                "maxLength": 253,
+                                "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                                "description": "One of the listed domains of the host, sent to the upstream like a request for that domain. Wildcard domains cannot be probed."
+                            },
+                            "timeoutMs": {
+                                "type": "integer",
+                                "minimum": 1000,
+                                "maximum": 8000,
+                                "description": "Upstream deadline in milliseconds. It leaves room for the platform checks within the App API request deadline."
+                            }
+                        },
+                        "required": [
+                            "hostId",
+                            "domain",
+                            "timeoutMs"
+                        ],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required": [
+                "probes"
+            ],
+            "additionalProperties": false,
+            "description": "Probe hosts that a diagnostics.upstream.probe.v2 grant covers, each through the domain the app chooses from the listing. The SDK checks that each host appears once. The platform admits every probe with monitoring-class capacity separate from interactive Domain Checks, against a budget of this installation sized for 1,000 hosts probed every 60 seconds."
+        },
+        "UpstreamProbeOutcome": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "outcome": {
+                            "type": "string",
+                            "const": "probed"
+                        },
+                        "hostId": {
+                            "description": "Host ID from the proxy host listing.",
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "domain": {
+                            "type": "string",
+                            "maxLength": 253,
+                            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                            "description": "One of the listed domains of the host, sent to the upstream like a request for that domain. Wildcard domains cannot be probed."
+                        },
+                        "probeRevision": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Equals the probeRevision of the host in the listing when the probe ran. A different value means that something the probe observes changed since the host was listed."
+                        },
+                        "durationMs": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 12000,
+                            "description": "Duration of the upstream stage."
+                        },
+                        "httpStatus": {
+                            "anyOf": [
+                                {
+                                    "type": "integer",
+                                    "minimum": 100,
+                                    "maximum": 599
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Status of the upstream response, or null without one. Compare it with the expected status only when failure is null. Built-in monitoring accepts exactly the expected status, and any 2xx or 3xx status while the expected status is the default 200."
+                        },
+                        "failure": {
+                            "anyOf": [
+                                {
+                                    "oneOf": [
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stage": {
+                                                    "type": "string",
+                                                    "const": "configuration"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "configuration_stale",
+                                                        "configuration_changed",
+                                                        "host_not_active",
+                                                        "runtime_unavailable"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "stage",
+                                                "code"
+                                            ],
+                                            "additionalProperties": {}
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stage": {
+                                                    "type": "string",
+                                                    "const": "tls"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "const": "tls_failed"
+                                                }
+                                            },
+                                            "required": [
+                                                "stage",
+                                                "code"
+                                            ],
+                                            "additionalProperties": {}
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "stage": {
+                                                    "type": "string",
+                                                    "const": "upstream"
+                                                },
+                                                "code": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "upstream_unreachable",
+                                                        "upstream_timeout",
+                                                        "upstream_dns_failed",
+                                                        "upstream_responded",
+                                                        "access_denied",
+                                                        "upstream_error",
+                                                        "redirect_not_followed",
+                                                        "unexpected_status",
+                                                        "redirect_host",
+                                                        "wildcard_domain",
+                                                        "skipped"
+                                                    ]
+                                                }
+                                            },
+                                            "required": [
+                                                "stage",
+                                                "code"
+                                            ],
+                                            "additionalProperties": {}
+                                        }
+                                    ],
+                                    "description": "The first stage that prevented a usable upstream response, checked in this order: the active proxy configuration did not serve the host and domain, upstream TLS verification failed, or the upstream sent no HTTP response. Built-in monitoring reports configuration failures as unknown, tls_failed and the upstream codes upstream_unreachable, upstream_timeout and upstream_dns_failed as unhealthy, and any other upstream code as an invalid response."
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "outcome",
+                        "hostId",
+                        "domain",
+                        "probeRevision",
+                        "durationMs",
+                        "httpStatus",
+                        "failure"
+                    ],
+                    "additionalProperties": {}
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "outcome": {
+                            "type": "string",
+                            "enum": [
+                                "scopeDenied",
+                                "hostRemoved",
+                                "hostDisabled",
+                                "domainNotFound",
+                                "configurationChanged",
+                                "busy",
+                                "rateLimited",
+                                "unavailable"
+                            ],
+                            "description": "The probe did not run or its result was discarded. scopeDenied: the grant no longer covers the host. hostRemoved, hostDisabled and domainNotFound: list the hosts again. configurationChanged: the host or proxy configuration changed during the probe; discard it. busy: monitoring-class capacity is in use or a probe of the same host is running. rateLimited: this installation exhausted its probe budget. unavailable: the proxy runtime cannot run probes. Retry busy, rateLimited and unavailable later with backoff."
+                        },
+                        "hostId": {
+                            "description": "Host ID from the proxy host listing.",
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "domain": {
+                            "type": "string",
+                            "maxLength": 253,
+                            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+                            "description": "One of the listed domains of the host, sent to the upstream like a request for that domain. Wildcard domains cannot be probed."
+                        }
+                    },
+                    "required": [
+                        "outcome",
+                        "hostId",
+                        "domain"
+                    ],
+                    "additionalProperties": {}
+                }
+            ],
+            "description": "The result of one probe."
+        },
+        "UpstreamProbeBatchResult": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "minItems": 1,
+                    "maxItems": 32,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/UpstreamProbeOutcome"
+                    }
+                }
+            },
+            "required": [
+                "results"
+            ],
+            "additionalProperties": {},
+            "description": "One result for every requested probe, in request order."
+        },
         "AppNotification": {
             "type": "object",
             "properties": {
@@ -2787,6 +3185,65 @@
                 "message"
             ],
             "additionalProperties": false
+        },
+        "AppIncidentChange": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "const": "open"
+                        },
+                        "category": {
+                            "description": "An incident category the manifest declares.",
+                            "$ref": "#/$defs/RecordId"
+                        },
+                        "severity": {
+                            "type": "string",
+                            "enum": [
+                                "warning",
+                                "error",
+                                "critical"
+                            ]
+                        },
+                        "title": {
+                            "type": "string",
+                            "pattern": "^[^\\p{Cc}\\p{Cs}\\p{Cf}\\p{Zl}\\p{Zp}]{1,80}$"
+                        },
+                        "message": {
+                            "type": "string",
+                            "pattern": "^[^\\p{Cc}\\p{Cs}\\p{Cf}\\p{Zl}\\p{Zp}]{1,400}$"
+                        },
+                        "resourceId": {
+                            "description": "Required for a proxyHost category and absent otherwise: the listed host ID the incident refers to. The app must hold a read or probe grant that covers the host.",
+                            "$ref": "#/$defs/RecordId"
+                        }
+                    },
+                    "required": [
+                        "status",
+                        "category",
+                        "severity",
+                        "title",
+                        "message"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "const": "resolved"
+                        }
+                    },
+                    "required": [
+                        "status"
+                    ],
+                    "additionalProperties": false
+                }
+            ],
+            "description": "Assert the current state of the incident the path key names. Open creates or updates it and resolve closes it. The SDK rejects link-like text. The platform renders title and message as plain text in its own templates, delivers through mail and webhook channels to users who subscribe to the category and may see the resource, and never sends a notification twice for a repeated state. Send the current state again with every observation: while notifications are paused after a restore, the platform keeps no incidents. Derive the idempotency key from the incident key and the asserted state, so a repeated observation reuses it and stays within the platform's idempotency record limit."
         },
         "AppAuditEvent": {
             "type": "object",
@@ -2826,6 +3283,232 @@
             ],
             "additionalProperties": false,
             "description": "Return only to the authorized backend. Keep secret values out of logs and browser messages."
+        },
+        "LegacyHandoffDomain": {
+            "type": "string",
+            "enum": [
+                "monitoring",
+                "docker-discovery",
+                "load-balancer",
+                "dns",
+                "oidc",
+                "crowdsec"
+            ],
+            "description": "Built-in feature domain that an official app takes over. It equals a provider profile. The app manifest must declare that profile, and the installation must hold the platform grant to register a provider for it."
+        },
+        "LegacyHandoffStatus": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "platform"
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "exported"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        },
+                        "partCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1024,
+                            "description": "Number of parts in the fixed export."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest",
+                        "partCount"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "committed"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest"
+                    ],
+                    "additionalProperties": false
+                }
+            ],
+            "description": "Ownership of the domain as seen by the active generation of the calling installation. platform means the platform still owns it. exported means this installation is importing the fixed export. committed means this installation owns it. Another holder is a conflict, never a state."
+        },
+        "LegacyHandoffBeginResult": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "exported"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        },
+                        "partCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1024,
+                            "description": "Number of parts in the fixed export."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest",
+                        "partCount"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "domain": {
+                            "$ref": "#/$defs/LegacyHandoffDomain"
+                        },
+                        "state": {
+                            "type": "string",
+                            "const": "committed"
+                        },
+                        "digest": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$",
+                            "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                        }
+                    },
+                    "required": [
+                        "domain",
+                        "state",
+                        "digest"
+                    ],
+                    "additionalProperties": false
+                }
+            ],
+            "description": "exported carries the fixed export that this installation imports. committed means this installation already owns the domain and carries the committed digest without a part count."
+        },
+        "LegacyHandoffPartRequest": {
+            "type": "object",
+            "properties": {
+                "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                },
+                "sequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023,
+                    "description": "Zero-based position of a part in the fixed export. Valid sequences satisfy 0 <= sequence < partCount."
+                }
+            },
+            "required": [
+                "digest",
+                "sequence"
+            ],
+            "additionalProperties": false,
+            "description": "Read one part of the export that begin fixed for this installation. The digest binds the read to that export. A read of a replaced export with a different digest fails and returns no part."
+        },
+        "LegacyHandoffPart": {
+            "type": "object",
+            "properties": {
+                "sequence": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1023,
+                    "description": "Zero-based position of a part in the fixed export. Valid sequences satisfy 0 <= sequence < partCount."
+                },
+                "part": {
+                    "$ref": "#/$defs/JsonValue"
+                }
+            },
+            "required": [
+                "sequence",
+                "part"
+            ],
+            "additionalProperties": false,
+            "description": "One exported part as App API wire JSON. The SDK checks that the compact JSON.stringify form of part is at most 262144 UTF-8 bytes. Import it durably before commit."
+        },
+        "LegacyHandoffCommit": {
+            "type": "object",
+            "properties": {
+                "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                }
+            },
+            "required": [
+                "digest"
+            ],
+            "additionalProperties": false,
+            "description": "Commit exactly the digest that begin returned after every part is imported durably. The platform retires its state once."
+        },
+        "LegacyHandoffCommitResult": {
+            "type": "object",
+            "properties": {
+                "domain": {
+                    "$ref": "#/$defs/LegacyHandoffDomain"
+                },
+                "state": {
+                    "type": "string",
+                    "const": "committed"
+                },
+                "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "Opaque lowercase hexadecimal SHA-256 of the fixed export. It binds the domain and the ordered part hashes. Pass it unchanged to every part read and to commit."
+                }
+            },
+            "required": [
+                "domain",
+                "state",
+                "digest"
+            ],
+            "additionalProperties": false,
+            "description": "This installation owns the domain. A repeated commit with the same digest returns the same result."
         },
         "UiBridgeMessage": {
             "oneOf": [
@@ -3295,9 +3978,20 @@
         "OwnedProxyHostChange",
         "UpstreamProbe",
         "UpstreamProbeResult",
+        "UpstreamProbeBatch",
+        "UpstreamProbeOutcome",
+        "UpstreamProbeBatchResult",
         "AppNotification",
+        "AppIncidentChange",
         "AppAuditEvent",
         "AppSecret",
+        "LegacyHandoffDomain",
+        "LegacyHandoffStatus",
+        "LegacyHandoffBeginResult",
+        "LegacyHandoffPartRequest",
+        "LegacyHandoffPart",
+        "LegacyHandoffCommit",
+        "LegacyHandoffCommitResult",
         "UiBridgeMessage",
         "Problem",
         "Operation"

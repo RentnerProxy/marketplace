@@ -3,3 +3,4 @@ pub mod archive;
 pub mod postgres;
 pub mod protocol;
 pub mod storage;
+mod validation;

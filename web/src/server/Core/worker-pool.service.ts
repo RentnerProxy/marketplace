@@ -4,16 +4,13 @@ import { CoreCommandError } from './error.ts'
 import { CoreWorker } from './worker.service.ts'
 import { getCoreBinaryPathService } from './binary.service.ts'
 import { validateCoreBinaryInputService } from './binary-payload.service.ts'
-import type { CoreBinary } from './Types/core.types.ts'
-import type {
-    CoreWorkerInput,
-    CoreWorkerOptions,
-} from './Types/worker.types.ts'
+import type { CoreBinary, CoreCommandOptions } from './Types/core.types.ts'
+import type { CoreWorkerInput } from './Types/worker.types.ts'
 
 type Job = {
     input: CoreWorkerInput
     bytes: number
-    options: CoreWorkerOptions
+    options: CoreCommandOptions
     resolve: (value: unknown) => void
     reject: (error: unknown) => void
     finished: boolean
@@ -39,7 +36,7 @@ class CoreWorkerPool {
         private readonly onClosed: (pool: CoreWorkerPool) => void,
     ) {}
 
-    admit(input: CoreWorkerInput, bytes: number, options: CoreWorkerOptions) {
+    admit(input: CoreWorkerInput, bytes: number, options: CoreCommandOptions) {
         if (this.closing)
             throw new CoreCommandError(
                 'CORE_UNAVAILABLE',
@@ -218,7 +215,7 @@ let closingPools: Promise<void> | undefined
 export function runPooledCoreCommandService(
     binary: CoreBinary,
     request: Record<string, unknown>,
-    options: CoreWorkerOptions = {},
+    options: CoreCommandOptions = {},
 ): Promise<unknown> {
     const startedAt = performance.now()
     const logLifecycle = !CORE_RUNTIME.quietOperations[binary].some(
@@ -250,13 +247,8 @@ export function runPooledCoreCommandService(
                 'CORE_REQUEST_TOO_LARGE',
                 'Die Core-Anfrage überschreitet das Größenlimit.',
             )
-        // Environment configuration changes must never dispatch into an older executable.
-        const key = JSON.stringify([
-            binary,
-            process.env.CORE_BINARY_DIR?.trim(),
-            process.env.NODE_ENV,
-            CORE_RUNTIME.binaries[binary],
-        ])
+        // NUL cannot appear in environment values or executable paths.
+        const key = `${binary}\0${process.env.CORE_BINARY_DIR?.trim() ?? ''}\0${process.env.NODE_ENV ?? ''}\0${CORE_RUNTIME.binaries[binary]}`
         let entry = pools.get(key)
         if (!entry) {
             for (const [oldKey, oldEntry] of pools) {
@@ -280,7 +272,7 @@ export function runPooledCoreCommandService(
                 payload,
                 binaryOutput:
                     binary === 'storage' &&
-                    request.operation === 'readBackgroundBytes',
+                    request.operation === 'readBackgroundRepresentation',
                 binaryInput:
                     raw === undefined
                         ? undefined

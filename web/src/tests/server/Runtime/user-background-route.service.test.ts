@@ -58,6 +58,38 @@ describe('Nitro background route forwarding', function () {
         },
     )
 
+    it('forwards conditional headers and preserves a private 304 from the application', async function () {
+        const etag = 'W/"synthetic-private-tag"'
+        fetchSsr.mockResolvedValueOnce(
+            new Response(null, {
+                status: 304,
+                headers: {
+                    etag,
+                    vary: 'Cookie',
+                    'cache-control': 'private, no-cache, must-revalidate',
+                },
+            }),
+        )
+        const request = new Request(
+            'https://app.example.test/api/user/background',
+            {
+                headers: {
+                    'if-none-match': etag,
+                    cookie: 'session=synthetic-session',
+                },
+            },
+        )
+        const response = await app.fetch(request)
+        expect(fetchSsr).toHaveBeenCalledWith('ssr', request)
+        expect(response.status).toBe(304)
+        expect(response.headers.get('etag')).toBe(etag)
+        expect(response.headers.get('vary')).toBe('Cookie')
+        expect(response.headers.get('cache-control')).toBe(
+            'private, no-cache, must-revalidate',
+        )
+        expect(await response.text()).toBe('')
+    })
+
     it.each([401, 404, 503])(
         'preserves the protected application handler response %s',
         async function (status) {

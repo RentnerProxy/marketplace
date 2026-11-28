@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import httpFixtures from '../../../../contracts/v1/http-fixtures.json'
 import fixtures from '../../../../contracts/v1/protocol-fixtures.json'
+import probeFixtures from '../../../../contracts/v1/upstream-probe-fixtures.json'
+import {
+    pathParameterSchemas,
+    type HttpOperationDefinition,
+} from '../../../../contracts/v1/http-operations.ts'
+import { providerProfile } from '../../../../contracts/v1/manifest.ts'
 import { buildContractDocuments } from '../../../../contracts/v1/schemas.ts'
 import {
     ContractError,
@@ -11,6 +17,7 @@ import {
     prepareHttpRequest,
     rpcLimits,
     type HttpOperationName,
+    type ProtocolDocument,
     type ProtocolDocumentName,
 } from '../../../../contracts/v1/index.ts'
 
@@ -100,6 +107,142 @@ describe('app protocol v1', () => {
             expect(metadata?.responses[status]).toBeDefined()
         }
     })
+
+    test('restricts each path parameter to its protocol document', () => {
+        const { paths, components } = buildContractDocuments()['openapi.json']
+        const operations: [string, HttpOperationDefinition][] =
+            Object.entries(httpOperations)
+        for (const [, { method, path, pathParameter }] of operations) {
+            if (!pathParameter) continue
+            const metadata = paths[path]?.[method === 'GET' ? 'get' : 'post']
+            expect(metadata?.parameters).toContainEqual({
+                $ref: '#/components/parameters/' + pathParameter,
+            })
+            expect(components.parameters[pathParameter]).toEqual({
+                name: pathParameter,
+                in: 'path',
+                required: true,
+                schema: {
+                    $ref:
+                        '#/components/schemas/' +
+                        pathParameterSchemas[pathParameter],
+                },
+            })
+        }
+    })
+
+    test('accepts exactly the provider profiles as legacy handoff domains', () => {
+        const { $defs } = buildContractDocuments()['contracts.schema.json']
+        expect($defs.LegacyHandoffDomain.enum).toEqual(providerProfile.options)
+        for (const domain of providerProfile.options) {
+            const { path } = prepareHttpRequest('getLegacyHandoff', {
+                pathParameter: domain,
+            })
+            expect(path).toBe('/platform/v1/legacy-handoffs/' + domain)
+        }
+        expect(() =>
+            prepareHttpRequest('getLegacyHandoff', {
+                pathParameter: 'proxy-hosts',
+            }),
+        ).toThrow(ContractError)
+    })
+
+    const decimals = (length: number) => Array.from({ length }, () => 0.000_001)
+    const partSizes: [string, () => unknown, boolean][] = [
+        ['ASCII at the limit', () => 'a'.repeat(262_142), true],
+        ['ASCII above the limit', () => 'a'.repeat(262_143), false],
+        ['UTF-8 at the limit', () => 'ä'.repeat(131_071), true],
+        ['escapes at the limit', () => '\n'.repeat(131_071), true],
+        ['escapes above the limit', () => '\n'.repeat(131_072), false],
+        ['decimals at the limit', () => decimals(29_127), true],
+        ['decimals above the limit', () => decimals(29_128), false],
+    ]
+    for (const [label, part, valid] of partSizes) {
+        test('bounds a legacy handoff part: ' + label, () => {
+            const check = () =>
+                parseProtocolDocument('LegacyHandoffPart', {
+                    sequence: 0,
+                    part: part(),
+                })
+            if (valid) expect(check()).toBeDefined()
+            else expect(check).toThrow(ContractError)
+        })
+    }
+})
+
+type ProbeOutcome = ProtocolDocument<'UpstreamProbeOutcome'>
+type MonitoringOutcome = {
+    status: string
+    code: string
+    durationMs: number | null
+    httpStatus: number | null
+} | null
+
+const unknownOutcome = (code: string): MonitoringOutcome => ({
+    status: 'unknown',
+    code,
+    durationMs: null,
+    httpStatus: null,
+})
+const unreachableCodes = new Set([
+    'upstream_unreachable',
+    'upstream_timeout',
+    'upstream_dns_failed',
+])
+
+/** Classifies a probe result as the contract describes built-in host monitoring. */
+function monitoringOutcome(
+    result: ProbeOutcome,
+    expectedStatus: number,
+): MonitoringOutcome {
+    if (result.outcome === 'busy') return unknownOutcome('busy')
+    if (result.outcome === 'unavailable')
+        return unknownOutcome('runtime_unavailable')
+    if (result.outcome !== 'probed') return null
+    const { failure, httpStatus, durationMs } = result
+    if (failure?.stage === 'configuration') return unknownOutcome(failure.code)
+    if (failure?.stage === 'tls')
+        return {
+            status: 'unhealthy',
+            code: 'tls_failed',
+            durationMs,
+            httpStatus: null,
+        }
+    if (failure === null && httpStatus !== null) {
+        const accepted =
+            httpStatus === expectedStatus ||
+            (expectedStatus === 200 && httpStatus >= 200 && httpStatus < 400)
+        return {
+            status: accepted ? 'healthy' : 'unhealthy',
+            code: accepted ? 'expected_status' : 'unexpected_status',
+            durationMs,
+            httpStatus,
+        }
+    }
+    if (failure?.stage === 'upstream' && unreachableCodes.has(failure.code))
+        return {
+            status: 'unhealthy',
+            code: failure.code,
+            durationMs,
+            httpStatus: null,
+        }
+    return unknownOutcome('invalid_response')
+}
+
+describe('shared upstream probe fixtures', () => {
+    for (const fixture of probeFixtures.cases) {
+        test(fixture.title, () => {
+            const result = parseProtocolDocument(
+                'UpstreamProbeOutcome',
+                fixture.result,
+            )
+            const parsed: unknown = result
+            expect(parsed).toEqual(fixture.result)
+            expect(monitoringOutcome(result, fixture.expectedStatus)).toEqual(
+                fixture.monitoring,
+            )
+        })
+    }
 })
 
 describe('app HTTP SDK v1', () => {

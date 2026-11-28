@@ -43,6 +43,7 @@ async function getPublicSystemSettings() {
         faviconSrc: version
             ? `${paths.relativeFavicon}?v=${version}`
             : '/favicon.ico',
+        isPublicRegistrationEnabled: settings.isPublicRegistrationEnabled,
         isMaintenanceModeEnabled: settings.isMaintenanceModeEnabled,
         isMaintenanceModeActive: maintenanceState.isActive,
         isMaintenanceModeScheduled: maintenanceState.isScheduled,

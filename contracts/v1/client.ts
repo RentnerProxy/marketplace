@@ -1,6 +1,7 @@
 import {
     httpOperation,
     httpOperations,
+    pathParameterSchemas,
     type HttpMethod,
     type HttpOperationName,
     type HttpSocket,
@@ -69,7 +70,10 @@ export function prepareHttpRequest(
     const path = operation.pathParameter
         ? operation.path.replace(
               '{' + operation.pathParameter + '}',
-              parseProtocolDocument('RecordId', options.pathParameter),
+              parseProtocolDocument(
+                  pathParameterSchemas[operation.pathParameter],
+                  options.pathParameter,
+              ),
           )
         : operation.path
     const headers: Record<string, string> = {}

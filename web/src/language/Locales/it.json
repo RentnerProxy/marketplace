@@ -165,7 +165,8 @@
             "verifyDescription": "Conferma l’e-mail per attivare il tuo account.",
             "invalidVerification": "Link non valido o scaduto. Registrati di nuovo.",
             "verificationFailed": "Conferma non riuscita. Riprova.",
-            "retryRegistration": "Ricomincia la registrazione"
+            "retryRegistration": "Ricomincia la registrazione",
+            "disabled": "La registrazione pubblica è al momento chiusa."
         },
         "passwordReset": {
             "newPasswordTitle": "Nuova password",

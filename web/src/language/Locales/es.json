@@ -165,7 +165,8 @@
             "verifyDescription": "Confirma tu correo para activar tu cuenta.",
             "invalidVerification": "El enlace no es válido o ha caducado. Regístrate de nuevo.",
             "verificationFailed": "No se pudo confirmar el correo. Inténtalo de nuevo.",
-            "retryRegistration": "Volver a iniciar el registro"
+            "retryRegistration": "Volver a iniciar el registro",
+            "disabled": "El registro público está cerrado por el momento."
         },
         "passwordReset": {
             "newPasswordTitle": "Nueva contraseña",

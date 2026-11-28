@@ -14,7 +14,13 @@ fn directory_walk_opens_existing_and_creates_only_missing_components() {
     for create in [false, true] {
         let opened = open_absolute(&directory.path().join("existing"), create).unwrap();
         assert!(same(&before, &opened.dir_metadata().unwrap()));
-        let opened = descend(&root, Path::new("existing"), create, false).unwrap();
+        let opened = descend(
+            &root,
+            Path::new("existing"),
+            create,
+            DirectoryPermissions::Unrestricted,
+        )
+        .unwrap();
         assert!(same(&before, &opened.dir_metadata().unwrap()));
     }
 
@@ -22,7 +28,12 @@ fn directory_walk_opens_existing_and_creates_only_missing_components() {
         let missing = if absolute_walk {
             open_absolute(&directory.path().join(path), false)
         } else {
-            descend(&root, Path::new(path), false, false)
+            descend(
+                &root,
+                Path::new(path),
+                false,
+                DirectoryPermissions::PreparePrivate,
+            )
         };
         assert_eq!(missing.unwrap_err().code, "ENOENT");
         assert!(
@@ -35,7 +46,7 @@ fn directory_walk_opens_existing_and_creates_only_missing_components() {
         let opened = if absolute_walk {
             open_absolute(&directory.path().join(path), true)
         } else {
-            descend(&root, Path::new(path), true, true)
+            descend(&root, Path::new(path), true, DirectoryPermissions::Private)
         }
         .unwrap();
         let actual = root.open_dir_nofollow(path).unwrap();
@@ -54,9 +65,25 @@ fn directory_walk_rejects_files_without_replacing_them() {
     let root = Dir::open_ambient_dir(directory.path(), ambient_authority()).unwrap();
     for create in [false, true] {
         assert!(open_absolute(&path, create).is_err());
-        assert!(descend(&root, Path::new("file"), create, true).is_err());
+        assert!(
+            descend(
+                &root,
+                Path::new("file"),
+                create,
+                DirectoryPermissions::Private
+            )
+            .is_err()
+        );
         assert!(open_absolute(&path.join("child"), create).is_err());
-        assert!(descend(&root, Path::new("file/child"), create, true).is_err());
+        assert!(
+            descend(
+                &root,
+                Path::new("file/child"),
+                create,
+                DirectoryPermissions::Private
+            )
+            .is_err()
+        );
         assert_eq!(std::fs::read(&path).unwrap(), b"unchanged");
     }
 }
@@ -79,9 +106,25 @@ fn directory_walk_rejects_directory_and_dangling_symlinks() {
     for name in ["link", "dangling"] {
         for create in [false, true] {
             assert!(open_absolute(&directory.path().join(name), create).is_err());
-            assert!(descend(&root, Path::new(name), create, true).is_err());
+            assert!(
+                descend(
+                    &root,
+                    Path::new(name),
+                    create,
+                    DirectoryPermissions::PreparePrivate
+                )
+                .is_err()
+            );
             assert!(open_absolute(&directory.path().join(name).join("child"), create).is_err());
-            assert!(descend(&root, &Path::new(name).join("child"), create, true).is_err());
+            assert!(
+                descend(
+                    &root,
+                    &Path::new(name).join("child"),
+                    create,
+                    DirectoryPermissions::PreparePrivate
+                )
+                .is_err()
+            );
             assert!(
                 std::fs::symlink_metadata(directory.path().join(name))
                     .unwrap()
@@ -94,28 +137,49 @@ fn directory_walk_rejects_directory_and_dangling_symlinks() {
 
 #[cfg(unix)]
 #[test]
-fn secure_descent_repairs_existing_directory_modes_on_every_walk() {
+fn descent_applies_permissions_independently_of_missing_directory_creation() {
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
 
     let directory = tempfile::tempdir().unwrap();
     let root = Dir::open_ambient_dir(directory.path(), ambient_authority()).unwrap();
     std::fs::create_dir_all(directory.path().join("parent/child")).unwrap();
-    for create in [false, true] {
+    for (create, permissions, existing_mode, expected_mode) in
+        [false, true].into_iter().flat_map(|create| {
+            [
+                (create, DirectoryPermissions::Private, 0o755, None),
+                (
+                    create,
+                    DirectoryPermissions::PreparePrivate,
+                    0o755,
+                    Some(0o700),
+                ),
+                (create, DirectoryPermissions::PreparePrivate, 0o750, None),
+                (create, DirectoryPermissions::PreparePrivate, 0o777, None),
+            ]
+        })
+    {
         for name in ["parent", "parent/child"] {
             std::fs::set_permissions(
                 directory.path().join(name),
-                std::fs::Permissions::from_mode(0o777),
+                std::fs::Permissions::from_mode(existing_mode),
             )
             .unwrap();
         }
-        descend(&root, Path::new("parent/child"), create, true).unwrap();
+        let result = descend(&root, Path::new("parent/child"), create, permissions);
+        let mode = if let Some(expected_mode) = expected_mode {
+            result.unwrap();
+            expected_mode
+        } else {
+            assert_eq!(result.unwrap_err().code, "STORAGE_INVALID");
+            existing_mode
+        };
         for name in ["parent", "parent/child"] {
             assert_eq!(
                 std::fs::metadata(directory.path().join(name))
                     .unwrap()
                     .mode()
                     & 0o7777,
-                0o700
+                mode
             );
         }
     }
@@ -136,7 +200,12 @@ fn directory_walk_propagates_permission_errors_when_permissions_are_enforced() {
     // actual filesystem rather than assuming the runner's privilege level.
     let enforced = blocked_dir.open_dir_nofollow("child").is_err();
     let absolute_result = open_absolute(&blocked.join("child"), true);
-    let relative_result = descend(&root, Path::new("blocked/child"), true, false);
+    let relative_result = descend(
+        &root,
+        Path::new("blocked/child"),
+        true,
+        DirectoryPermissions::Unrestricted,
+    );
     std::fs::set_permissions(&blocked, std::fs::Permissions::from_mode(0o700)).unwrap();
     if enforced {
         assert_eq!(absolute_result.unwrap_err().code, "EACCES");
@@ -167,12 +236,12 @@ fn private_publication_replaces_root_and_nested_targets_without_leaving_stages()
     for relative in ["payload.bin", "nested/payload.bin"] {
         let destination = root.join(relative);
         for payload in [b"original".as_slice(), b"replacement".as_slice()] {
-            write(
+            write_bytes(
                 &json!({
                     "rootDirectory": root,
                     "filePath": destination,
-                    "dataBase64": STANDARD.encode(payload),
                 }),
+                payload,
                 &OperationContext::cleanup(),
             )
             .unwrap();

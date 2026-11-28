@@ -3,10 +3,13 @@ import type { SQL } from 'drizzle-orm'
 import { PgDialect } from 'drizzle-orm/pg-core'
 import { registerService } from '@/server/Auth/Registration/register.service.ts'
 import { pendingRegistrations } from '@/db/Schema/registration.ts'
+import { systemSettings } from '@/db/Schema/systemSettings.ts'
 import { createTokenHash } from '@/lib/Auth/tokens.ts'
 import type { SocialRegistrationIdentity } from '@/lib/Auth/Types/social-auth.types.ts'
 
 const state = {
+    publicRegistrationEnabled: true as boolean | null,
+    allowedWhenWriting: true,
     identity: null as SocialRegistrationIdentity | null,
     duplicate: false,
     consumed: true,
@@ -46,8 +49,26 @@ const clearCookie = vi.fn(() => undefined)
 const cleanup = vi.fn(async (_table: unknown, _predicate: SQL) => {
     state.order.push('cleanup')
 })
+function settingsSelection(enabled: boolean | null) {
+    const rows = enabled === null ? [] : [{ enabled }]
+    return {
+        where: () => ({
+            limit: () =>
+                Object.assign(Promise.resolve(rows), {
+                    for: async (lock: string) => {
+                        expect(lock).toBe('share')
+                        expect(state.order.at(-1)).toBe('lock')
+                        return rows
+                    },
+                }),
+        }),
+    }
+}
 vi.mock('@/db', () => ({
     db: {
+        select: () => ({
+            from: () => settingsSelection(state.publicRegistrationEnabled),
+        }),
         transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
             let selection = 0
             const tx = {
@@ -55,16 +76,19 @@ vi.mock('@/db', () => ({
                     state.order.push('lock')
                 },
                 select: () => ({
-                    from: () => ({
-                        where: () => ({
-                            limit: async () =>
-                                ++selection === 1
-                                    ? [{ id: 'admin' }]
-                                    : state.duplicate
-                                      ? [{ id: 'existing' }]
-                                      : [],
-                        }),
-                    }),
+                    from: (table: unknown) =>
+                        table === systemSettings
+                            ? settingsSelection(state.allowedWhenWriting)
+                            : {
+                                  where: () => ({
+                                      limit: async () =>
+                                          ++selection === 1
+                                              ? [{ id: 'admin' }]
+                                              : state.duplicate
+                                                ? [{ id: 'existing' }]
+                                                : [],
+                                  }),
+                              },
                 }),
                 delete: () => ({
                     where: async () => {
@@ -124,12 +148,46 @@ const identity = {
 describe('Registration requests', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        state.publicRegistrationEnabled = true
+        state.allowedWhenWriting = true
         state.identity = null
         state.duplicate = false
         state.consumed = true
         state.inserts = []
         state.order = []
     })
+
+    it.each([null, false])(
+        'rejects public registration without staging or sending when the setting is %s',
+        async (enabled) => {
+            state.publicRegistrationEnabled = enabled
+            expect(await registerService(input)).toEqual({
+                success: false,
+                error: 'registration.disabled',
+            })
+            expect(state.order).toEqual([])
+            expect(state.inserts).toEqual([])
+            expect(queue).not.toHaveBeenCalled()
+        },
+    )
+
+    it.each([false, true])(
+        'rechecks the setting inside the write transaction (social: %s)',
+        async (withSocialIdentity) => {
+            state.allowedWhenWriting = false
+            if (withSocialIdentity) state.identity = identity
+            expect(await registerService(input)).toEqual({
+                success: false,
+                error: 'registration.disabled',
+            })
+            expect(state.order).toEqual(['lock', 'commit'])
+            expect(state.inserts).toEqual([])
+            expect(queue).not.toHaveBeenCalled()
+            expect(consume).not.toHaveBeenCalled()
+            expect(clearCookie).not.toHaveBeenCalled()
+            expect(createAccount).not.toHaveBeenCalled()
+        },
+    )
 
     it('stages only pending registration with hashed password/token and a fragment confirmation link', async () => {
         expect(await registerService(input)).toEqual({

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'bun:test'
 import { BACKUP_LIMITS } from '@/config/backup.config.ts'
-import type { BackupImportAdmission } from '@/server/Admin/Backups/import.types.ts'
+import type { BackupImportAdmission } from '@/server/Admin/Backups/Types/import.types.ts'
 
 const core = vi.fn(async (_binary: string, request: Record<string, unknown>) =>
     request.operation === 'admissionAcquire' ? { token: 'lease-token' } : null,
@@ -45,7 +45,7 @@ describe('Import admission core adapter', () => {
         ])
         expect(core.mock.calls[1][1]).toMatchObject({
             token: 'lease-token',
-            byteLength: 230,
+            byteLength: 100,
         })
         const release = lease.release()
         expect(lease.release()).toBe(release)
@@ -122,11 +122,25 @@ describe('Import admission core adapter', () => {
             status: 408,
         })
         const second = await admit()
-        await expect(second.beforeWrite(231)).rejects.toMatchObject({
+        await expect(second.beforeWrite(101)).rejects.toMatchObject({
             status: 507,
         })
         const third = await admit()
         await expect(third.beforeWrite(-1)).rejects.toMatchObject({
+            status: 507,
+        })
+    })
+    it('reserves space for the encrypted copy, TAR and extracted payload on restore', async () => {
+        const lease = await acquire({
+            maximumUploadBytes: 100,
+            requestSignal: new AbortController().signal,
+            forRestore: true,
+        })
+        leases.push(lease)
+        await lease.beforeWrite(160)
+        expect(core.mock.calls[0]?.[1]).toMatchObject({ forRestore: true })
+        expect(core.mock.calls[1]?.[1]).toMatchObject({ byteLength: 160 })
+        await expect(lease.beforeWrite(1)).rejects.toMatchObject({
             status: 507,
         })
     })

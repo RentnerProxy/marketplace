@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import CompanyLogoSection from '@/features/Admin/SystemSettings/Components/CompanyLogoSection.tsx'
 import MaintenanceSection from '@/features/Admin/SystemSettings/Components/MaintenanceSection.tsx'
 import CompanyNameSection from '@/features/Admin/SystemSettings/Components/CompanyNameSection.tsx'
+import PublicRegistrationSection from '@/features/Admin/SystemSettings/Components/PublicRegistrationSection.tsx'
 import type {
     CompanyLogoSectionProps,
     MaintenanceSectionProps,
@@ -149,6 +150,35 @@ describe('CompanyLogoSection', () => {
             expect(target.src).not.toBe('/broken.png')
         }
     })
+})
+
+it('renders the saved registration state as a labelled switch and forwards changes', () => {
+    const onChange = mock()
+    const tree = PublicRegistrationSection({
+        enabled: false,
+        disabled: false,
+        onChange,
+    })
+    const control = findElement(
+        tree,
+        (element) => element.props.role === 'switch',
+    )
+    expect(control.props).toMatchObject({
+        type: 'checkbox',
+        checked: false,
+        'aria-labelledby': 'public-registration-label',
+        'aria-describedby': 'public-registration-description',
+    })
+    invoke(control, 'onChange', { currentTarget: { checked: true } })
+    expect(onChange).toHaveBeenCalledWith(true)
+    const saving = PublicRegistrationSection({
+        enabled: true,
+        disabled: true,
+        onChange,
+    })
+    expect(
+        findElement(saving, (element) => element.props.role === 'switch').props,
+    ).toMatchObject({ checked: true, disabled: true })
 })
 
 describe('CompanyNameSection', () => {

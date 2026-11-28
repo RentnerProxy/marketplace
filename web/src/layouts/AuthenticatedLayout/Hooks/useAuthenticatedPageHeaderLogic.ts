@@ -4,11 +4,13 @@ import useTranslationStore from '@/language/useTranslationStore.ts'
 import { NAVBAR_ITEMS } from '@/config/navbar.config.ts'
 import type { AuthenticatedNavItem } from '@/shared/Types/navigation.types.ts'
 
+type NavigationLabelKey = AuthenticatedNavItem['labelKey']
+
 function findNavigationItem(
     items: Array<AuthenticatedNavItem>,
     pathname: string,
-    groupKey: string | null = null,
-): { item: AuthenticatedNavItem; groupKey: string | null } | null {
+    groupKey: NavigationLabelKey | null = null,
+): { item: AuthenticatedNavItem; groupKey: NavigationLabelKey | null } | null {
     for (const item of items) {
         if (item.to === pathname) {
             return { item, groupKey }

@@ -1,17 +1,7 @@
-import { readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { z } from 'zod'
 import { WORKER_HEALTH } from '@/config/health.config.ts'
-
-const workerHeartbeatSchema = z
-    .object({
-        version: z.literal(1),
-        status: z.enum(['healthy', 'unhealthy']),
-        updatedAt: z.number().int().nonnegative(),
-        pid: z.number().int().positive(),
-    })
-    .strict()
 
 function getWorkerHeartbeatPath() {
     return path.join(tmpdir(), 'rentnerproxy-marketplace-worker-heartbeat.json')
@@ -32,30 +22,6 @@ async function writeWorkerHeartbeat(
 
     await writeFile(temporaryPath, content, { encoding: 'utf8', mode: 0o600 })
     await rename(temporaryPath, heartbeatPath)
-}
-
-export async function assertWorkerHeartbeatHealthyService(options?: {
-    heartbeatPath?: string
-    maxAgeMs?: number
-    now?: number
-}) {
-    const heartbeatPath = options?.heartbeatPath ?? getWorkerHeartbeatPath()
-    const maxAgeMs = options?.maxAgeMs ?? WORKER_HEALTH.maxAgeMs
-    const now = options?.now ?? Date.now()
-    const content = await readFile(heartbeatPath, 'utf8')
-    const heartbeat = workerHeartbeatSchema.parse(JSON.parse(content))
-
-    if (heartbeat.status !== 'healthy') {
-        throw new Error('Der Background-Worker meldet keinen gesunden Zustand.')
-    }
-
-    const age = now - heartbeat.updatedAt
-
-    if (age < 0 || age > maxAgeMs) {
-        throw new Error('Der Background-Worker-Heartbeat ist veraltet.')
-    }
-
-    return heartbeat
 }
 
 export async function isBackgroundWorkerRuntimeHealthyService(options: {

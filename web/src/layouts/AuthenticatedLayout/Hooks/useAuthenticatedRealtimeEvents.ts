@@ -25,6 +25,7 @@ import {
 } from '@/lib/Realtime/realtimeEventCache.ts'
 import { shouldReconnectForPermissionChange } from '@/lib/Permissions/realtimeEventPermissions.ts'
 import { rememberMaintenanceReturnPath } from '@/lib/Maintenance/maintenanceReturnPath.ts'
+import { SYSTEM_SETTINGS_QUERY_KEY } from '@/lib/Queries/appQueries.ts'
 
 export default function useAuthenticatedRealtimeEvents() {
     const queryClient = useQueryClient()
@@ -83,10 +84,20 @@ export default function useAuthenticatedRealtimeEvents() {
                 }
 
                 if (realtimeEvent.type === 'system-settings.updated') {
-                    updateSystemSettingsCache(
-                        queryClient,
-                        realtimeEvent.payload,
-                    )
+                    if (
+                        realtimeEvent.payload.isPublicRegistrationEnabled ===
+                        undefined
+                    ) {
+                        updateSystemSettingsCache(
+                            queryClient,
+                            realtimeEvent.payload,
+                        )
+                    } else {
+                        // Concurrent writes can publish out of order. Reload both settings queries.
+                        await queryClient.invalidateQueries({
+                            queryKey: SYSTEM_SETTINGS_QUERY_KEY,
+                        })
+                    }
                 }
 
                 if (realtimeEvent.type === 'maintenance-mode.changed') {

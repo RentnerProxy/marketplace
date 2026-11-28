@@ -1,15 +1,19 @@
-import { BACKUP_IMPORT_LIMITS, BACKUP_LIMITS } from '@/config/backup.config.ts'
+import {
+    BACKUP_ARCHIVE_OVERHEAD_BYTES,
+    BACKUP_IMPORT_LIMITS,
+    BACKUP_LIMITS,
+} from '@/config/backup.config.ts'
 import { runCoreCommandService } from '@/server/Core/command.service.ts'
 import {
     archiveAdmissionSchema,
     parseArchiveCoreResultService,
 } from './archive-core.schema.ts'
 import { getBackupFilePath } from './backup-directory.service.ts'
-import { BackupImportError } from './import.errors.ts'
+import { BackupImportError } from './backup.errors.ts'
 import type {
     AcquireBackupImportAdmissionInput,
     BackupImportAdmission,
-} from './import.types.ts'
+} from './Types/import.types.ts'
 
 function importError(error: unknown): never {
     if (error instanceof Error && 'code' in error) {
@@ -60,9 +64,15 @@ export async function acquireBackupImportAdmissionService(
     let pending = Promise.resolve()
     let reserved = 0
     let consumed = 0
-    const maximumWorkingBytes =
-        input.maximumUploadBytes * 2 +
-        Math.max(0, input.maximumUploadBytes - 70)
+    // Restore also writes a temporary TAR and its extracted payload.
+    const maximumWorkingBytes = input.forRestore
+        ? input.maximumUploadBytes +
+          2 *
+              Math.max(
+                  0,
+                  input.maximumUploadBytes - BACKUP_ARCHIVE_OVERHEAD_BYTES,
+              )
+        : input.maximumUploadBytes
     let releasePromise: Promise<void> | undefined
     function assertActive() {
         if (controller.signal.aborted) throw controller.signal.reason
@@ -87,6 +97,7 @@ export async function acquireBackupImportAdmissionService(
                 operation: 'admissionAcquire',
                 directory: temporaryDirectory,
                 maximumUploadBytes: input.maximumUploadBytes,
+                ...(input.forRestore ? { forRestore: true } : {}),
             },
             {
                 validateResult: (result) =>
@@ -124,7 +135,7 @@ export async function acquireBackupImportAdmissionService(
                         const reserveBytes = Math.min(
                             maximumWorkingBytes - reserved,
                             Math.max(
-                                16 * 1024 * 1024,
+                                BACKUP_IMPORT_LIMITS.diskCheckIntervalBytes,
                                 consumed + byteLength - reserved,
                             ),
                         )

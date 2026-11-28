@@ -1,4 +1,4 @@
-use super::{MAX_ARCHIVE, files, invalid, text};
+use super::{MAX_ARCHIVE, crypto::ENVELOPE_OVERHEAD, files, invalid, text};
 use crate::protocol::{CoreError, CoreResult, OperationContext};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -59,7 +59,11 @@ pub(crate) fn execute(request: &Value, context: &OperationContext) -> CoreResult
                 use std::os::unix::fs::PermissionsExt;
                 fs::set_permissions(directory, fs::Permissions::from_mode(0o700))?;
             }
-            let maximum = maximum * 2 + maximum.saturating_sub(70);
+            let maximum = if request["forRestore"].as_bool() == Some(true) {
+                maximum + 2 * maximum.saturating_sub(ENVELOPE_OVERHEAD)
+            } else {
+                maximum
+            };
             capacity(directory, maximum)?;
             let mut random = [0; 32];
             getrandom::fill(&mut random)

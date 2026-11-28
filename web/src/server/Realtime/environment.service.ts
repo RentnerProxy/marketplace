@@ -1,3 +1,6 @@
+export const DEV_REALTIME_PUBLISH_SECRET =
+    'rentnerproxy-marketplace-dev-realtime'
+
 export function getRealtimePortService() {
     const port = Number(process.env.REALTIME_WS_PORT ?? 3001)
 

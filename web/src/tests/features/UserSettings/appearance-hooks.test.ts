@@ -16,6 +16,8 @@ import type {
     UserFontSize,
     UserThemeMode,
 } from '@/lib/Theme/Types/userTheme.types.ts'
+import de from '@/language/Locales/de.json'
+import en from '@/language/Locales/en.json'
 
 type PreferenceResult<T> =
     ({ success: true } & T) | { success: false; error: string }
@@ -49,6 +51,16 @@ const themeMode = vi.fn(
 
 vi.mock('@rentnerkev/toasts', () => ({
     toast: { success, error: failure },
+}))
+vi.mock('@/language/languageStore.ts', () => ({
+    translateCurrentLanguage(
+        key: 'language.savedDescription' | 'language.savedTitle',
+    ) {
+        const messages = translation.language === 'en' ? en : de
+        return key === 'language.savedTitle'
+            ? messages.language.savedTitle
+            : messages.language.savedDescription
+    },
 }))
 vi.mock('@/features/UserSettings/middleware.ts', () => ({
     updateCurrentUserFontFamilyHandler: fontFamily,
@@ -271,10 +283,13 @@ describe('language preference actions', function () {
         expect(render(useLanguageSettingsLogic).state.hasLanguageChanged).toBe(
             true,
         )
+        setLanguage.mockImplementationOnce(async () => {
+            translation.language = 'en'
+        })
         await render(useLanguageSettingsLogic).handler.handleSaveLanguage()
         expect(setLanguage).toHaveBeenCalledWith('en')
-        expect(success).toHaveBeenCalledWith('language.savedDescription', {
-            title: 'language.savedTitle',
+        expect(success).toHaveBeenCalledWith(en.language.savedDescription, {
+            title: en.language.savedTitle,
         })
         expect(render(useLanguageSettingsLogic).state.isSavingLanguage).toBe(
             false,

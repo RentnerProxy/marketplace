@@ -28,7 +28,9 @@ export default createServerEntry({
                 process.env.ORIGIN?.trim() ||
                 (import.meta.env.DEV ? new URL(request.url).origin : ''),
 
-            configuredUrl: import.meta.env.VITE_REALTIME_WS_URL,
+            configuredUrl:
+                process.env.VITE_REALTIME_WS_URL ??
+                import.meta.env.VITE_REALTIME_WS_URL,
             developmentPort: import.meta.env.DEV
                 ? (import.meta.env.VITE_REALTIME_WS_DEV_PORT ?? '3001')
                 : undefined,

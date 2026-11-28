@@ -19,6 +19,7 @@ import {
     ADMIN_STAFF_TOPIC,
     ADMIN_USERS_TOPIC,
 } from '@/lib/Realtime/realtimeProtocol.ts'
+import * as maintenanceState from '@/server/Maintenance/state.service.ts'
 
 const restoreStateMocks = (function () {
     return {
@@ -214,6 +215,47 @@ describe('Realtime-Server-Sicherheit', function () {
             'admin-audit-logs',
             JSON.stringify(event),
         )
+    })
+
+    it('invalidates the local maintenance cache before publishing state changes', function () {
+        const invalidate = vi.spyOn(
+            maintenanceState,
+            'invalidateMaintenanceStateService',
+        )
+        const publish = vi.fn(function () {
+            expect(invalidate).toHaveBeenCalledTimes(publish.mock.calls.length)
+            return 0
+        })
+        const server = { publish, async stop() {} }
+        const timestamp = new Date().toISOString()
+        dispatchRealtimeEvent(server, 'system-settings', {
+            type: 'system-settings.updated',
+            payload: { companyName: 'Synthetic company', updatedAt: timestamp },
+        })
+        dispatchRealtimeEvent(server, 'maintenance-mode', {
+            type: 'maintenance-mode.changed',
+            payload: {
+                isMaintenanceModeEnabled: false,
+                isMaintenanceModeActive: false,
+                isMaintenanceModeScheduled: false,
+                maintenanceStartsAt: null,
+                updatedAt: timestamp,
+            },
+        })
+        dispatchRealtimeEvent(server, 'system-settings', {
+            type: 'system-restore.changed',
+            payload: {
+                version: 1,
+                status: 'completed',
+                phase: 'finalizing',
+                percent: 100,
+                processedBytes: 1,
+                totalBytes: 1,
+                startedAt: timestamp,
+                updatedAt: timestamp,
+            },
+        })
+        expect(publish).toHaveBeenCalledTimes(3)
     })
 
     it('schließt nur die WebSockets der widerrufenen Sitzung', function () {

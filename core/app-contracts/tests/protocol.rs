@@ -1,7 +1,8 @@
 use std::sync::LazyLock;
 
 use rentnerproxy_app_contracts::{
-    ContractError, HttpMethod, HttpOperation, HttpRequestOptions, HttpSocket, ProtocolContracts,
+    ContractError, HttpDescriptor, HttpMethod, HttpOperation, HttpRequestOptions, HttpSocket,
+    ProtocolContracts, UPSTREAM_PROBE_FIXTURES,
 };
 use serde_json::{Value, json};
 
@@ -23,6 +24,25 @@ fn shared_protocol_fixtures_agree_with_the_typescript_contract() {
                 case.get("document").unwrap()
             ),
             expected_validation(case),
+            "{}",
+            case["title"].as_str().unwrap()
+        );
+    }
+}
+
+#[test]
+fn shared_upstream_probe_fixtures_are_bundled_valid_outcomes() {
+    assert_eq!(
+        UPSTREAM_PROBE_FIXTURES,
+        include_str!("../../../contracts/v1/upstream-probe-fixtures.json")
+    );
+    let fixtures: Value = serde_json::from_str(UPSTREAM_PROBE_FIXTURES).unwrap();
+    let cases = fixtures["cases"].as_array().unwrap();
+    assert!(!cases.is_empty());
+    for case in cases {
+        assert_eq!(
+            CONTRACTS.validate("UpstreamProbeOutcome", &case["result"]),
+            Ok(()),
             "{}",
             case["title"].as_str().unwrap()
         );
@@ -100,6 +120,20 @@ fn generated_http_operations_match_openapi() {
                     "{id}: {name}"
                 );
             }
+            if let Some(name) = descriptor.path_parameter {
+                let reference = format!("#/components/parameters/{name}");
+                assert!(
+                    parameters
+                        .iter()
+                        .any(|parameter| parameter["$ref"] == reference),
+                    "{id}: {name}"
+                );
+                assert_eq!(
+                    schema_name(&document["components"]["parameters"][name]["schema"]),
+                    descriptor.path_parameter_schema(),
+                    "{id}: {name}"
+                );
+            }
 
             let status = descriptor.success_status.to_string();
             let response = spec["responses"]
@@ -125,6 +159,135 @@ fn generated_http_operations_match_openapi() {
         }
     }
     assert_eq!(HttpOperation::from_id("unknownOperation"), None);
+}
+
+#[test]
+fn legacy_handoff_operations_address_one_provider_domain() {
+    let expected = [
+        HttpDescriptor {
+            method: HttpMethod::Get,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}",
+            path_parameter: Some("domain"),
+            idempotency_key: false,
+            resume_cursor: false,
+            request: None,
+            success_status: 200,
+            response: Some("LegacyHandoffStatus"),
+            event: None,
+        },
+        HttpDescriptor {
+            method: HttpMethod::Post,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}/begin",
+            path_parameter: Some("domain"),
+            idempotency_key: true,
+            resume_cursor: false,
+            request: None,
+            success_status: 200,
+            response: Some("LegacyHandoffBeginResult"),
+            event: None,
+        },
+        HttpDescriptor {
+            method: HttpMethod::Post,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}/parts",
+            path_parameter: Some("domain"),
+            idempotency_key: false,
+            resume_cursor: false,
+            request: Some("LegacyHandoffPartRequest"),
+            success_status: 200,
+            response: Some("LegacyHandoffPart"),
+            event: None,
+        },
+        HttpDescriptor {
+            method: HttpMethod::Post,
+            socket: HttpSocket::Core,
+            path: "/platform/v1/legacy-handoffs/{domain}/commit",
+            path_parameter: Some("domain"),
+            idempotency_key: true,
+            resume_cursor: false,
+            request: Some("LegacyHandoffCommit"),
+            success_status: 200,
+            response: Some("LegacyHandoffCommitResult"),
+            event: None,
+        },
+    ];
+    let operations = [
+        HttpOperation::GetLegacyHandoff,
+        HttpOperation::BeginLegacyHandoff,
+        HttpOperation::ReadLegacyHandoffPart,
+        HttpOperation::CommitLegacyHandoff,
+    ];
+    for (operation, expected) in operations.into_iter().zip(expected) {
+        assert_eq!(operation.descriptor(), expected, "{}", operation.id());
+        assert_eq!(
+            operation.descriptor().path_parameter_schema(),
+            Some("LegacyHandoffDomain"),
+            "{}",
+            operation.id()
+        );
+    }
+}
+
+#[test]
+fn legacy_handoff_domains_are_exactly_the_provider_profiles() {
+    let schema: Value =
+        serde_json::from_str(include_str!("../../../contracts/v1/contracts.schema.json")).unwrap();
+    let domains = &schema["$defs"]["LegacyHandoffDomain"]["enum"];
+    assert_eq!(
+        domains,
+        &schema["$defs"]["AppManifest"]["properties"]["providers"]["items"]["enum"]
+    );
+    for domain in domains.as_array().unwrap() {
+        let domain = domain.as_str().unwrap();
+        let options = HttpRequestOptions {
+            path_value: Some(domain),
+            ..HttpRequestOptions::default()
+        };
+        let request = CONTRACTS.prepare_http_request(HttpOperation::GetLegacyHandoff, options);
+        assert_eq!(
+            request.unwrap().path(),
+            format!("/platform/v1/legacy-handoffs/{domain}")
+        );
+    }
+}
+
+#[test]
+fn bounds_the_serialized_size_of_a_legacy_handoff_part() {
+    for (label, part, valid) in [
+        ("ASCII at the limit", json!("a".repeat(262_142)), true),
+        ("ASCII above the limit", json!("a".repeat(262_143)), false),
+        ("UTF-8 at the limit", json!("\u{e4}".repeat(131_071)), true),
+        ("escapes at the limit", json!("\n".repeat(131_071)), true),
+        (
+            "escapes above the limit",
+            json!("\n".repeat(131_072)),
+            false,
+        ),
+        (
+            "decimals at the limit",
+            Value::from(vec![0.000_001; 29_127]),
+            true,
+        ),
+        (
+            "decimals above the limit",
+            Value::from(vec![0.000_001; 29_128]),
+            false,
+        ),
+    ] {
+        let document = json!({"sequence": 0, "part": part});
+        let expected = if valid {
+            Ok(())
+        } else {
+            Err(ContractError::InvalidShape)
+        };
+        assert_eq!(
+            CONTRACTS.validate("LegacyHandoffPart", &document),
+            expected,
+            "{label}"
+        );
+    }
 }
 
 #[test]

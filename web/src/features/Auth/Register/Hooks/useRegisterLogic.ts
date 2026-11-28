@@ -8,6 +8,7 @@ import { registerHandler, verifyRegistrationHandler } from '../middleware.ts'
 import { cancelSocialAuthHandler } from '@/features/Auth/Social/middleware.ts'
 import useSocialAuthState from '@/shared/Auth/Hooks/useSocialAuthState.ts'
 import useTranslationStore from '@/language/useTranslationStore.ts'
+import type { TranslationKey } from '@/language/translation.ts'
 import type { RegisterLogicReturn } from '../Types/register-logic.types.ts'
 
 export default function useRegisterLogic(): RegisterLogicReturn {
@@ -28,7 +29,7 @@ export default function useRegisterLogic(): RegisterLogicReturn {
     const submittedToken = useRef<string | null>(null)
     const isSocial = Boolean(social.data?.registration)
     const email = emailDraft ?? social.data?.registration?.email ?? ''
-    function reportError(key: string) {
+    function reportError(key: TranslationKey) {
         toast.error(
             t(key, { min: REGISTRATION_POLICY.minimumPasswordLength }),
             {
@@ -76,6 +77,10 @@ export default function useRegisterLogic(): RegisterLogicReturn {
         },
         onSuccess: async (result) => {
             if (!result.success) {
+                if (result.error === 'registration.disabled') {
+                    reportError('auth.register.disabled')
+                    return
+                }
                 reportError(
                     result.error === 'registration.passwordRequired'
                         ? 'auth.register.passwordPolicy'
@@ -120,7 +125,11 @@ export default function useRegisterLogic(): RegisterLogicReturn {
         onSuccess: (result) => {
             if (token.current !== submittedToken.current) return
             if (!result.success) {
-                reportError('auth.register.invalidVerification')
+                reportError(
+                    result.error === 'registration.disabled'
+                        ? 'auth.register.disabled'
+                        : 'auth.register.invalidVerification',
+                )
                 return
             }
             token.current = null

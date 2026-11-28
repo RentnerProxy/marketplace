@@ -26,13 +26,13 @@ export default function useUsersTableColumns({
     onPasswordReset,
     onConvertAccount,
 }: UsersTableProps) {
-    const { language, t } = useTranslationStore()
+    const { t } = useTranslationStore()
 
     return useMemo<Array<TableColumn<UserManagementUser>>>(
         () => [
             {
                 accessorKey: 'username',
-                header: t('admin.users.username', { lng: language }),
+                header: t('admin.users.username'),
                 size: 230,
                 minSize: 150,
                 enableHiding: false,
@@ -190,7 +190,6 @@ export default function useUsersTableColumns({
             isDeletingUser,
             isResendingPasswordReset,
             isTogglingUserActive,
-            language,
             onConvertAccount,
             onDeleteUser,
             onEditUser,

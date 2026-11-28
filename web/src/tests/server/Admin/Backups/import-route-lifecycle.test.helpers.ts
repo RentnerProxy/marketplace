@@ -1,11 +1,11 @@
 import { vi } from 'bun:test'
-import { BackupImportError } from '@/server/Admin/Backups/import.errors.ts'
+import { BackupImportError } from '@/server/Admin/Backups/backup.errors.ts'
 import type {
     AcquireBackupImportAdmissionInput,
     BackupImportAdmission,
     BackupImportContext,
-} from '@/server/Admin/Backups/import.types.ts'
-import type { RegisterImportedBackupInput } from '@/server/Admin/Backups/backup-service.types.ts'
+} from '@/server/Admin/Backups/Types/import.types.ts'
+import type { RegisterImportedBackupInput } from '@/server/Admin/Backups/Types/backup-service.types.ts'
 import type { AuditReceipt } from '@/lib/AuditLogs/Types/audit.types.ts'
 import { validateBackupUploadRequest as actualValidateUpload } from '@/server/Admin/Backups/upload.service.ts'
 
@@ -113,7 +113,7 @@ export function createImportRouteLifecycleHarness() {
         state.uploadExists = true
         state.hooks.get('after-upload')?.()
         return {
-            filePath: '/synthetic-backups/.import-admission/upload.enc',
+            filePath: '/synthetic-backups/.import-admission/upload.partial',
             dispose: uploadDispose,
         }
     })
@@ -129,14 +129,14 @@ export function createImportRouteLifecycleHarness() {
         state.published = true
         state.hooks.get('after-publish')?.()
     })
-    const copy = vi.fn(async function (
+    const stageBackup = vi.fn(async function (
         _filePath: string,
         _context: BackupImportContext,
     ) {
-        state.events.push('copy')
-        failAt('copy')
+        state.events.push('stage')
+        failAt('stage')
         state.staged = true
-        state.hooks.get('after-copy')?.()
+        state.hooks.get('after-stage')?.()
         return {
             fileName: 'import-synthetic.tanstack-backup.tar',
             fileSize: 4,
@@ -196,7 +196,7 @@ export function createImportRouteLifecycleHarness() {
             acquireBackupImportAdmissionService: acquire,
         }))
         vi.mock('@/server/Admin/Backups/archive-import.service.ts', () => ({
-            copyImportedBackup: copy,
+            prepareUploadedBackupImport: stageBackup,
         }))
         vi.mock('@/server/Admin/Backups/run-create.service.ts', () => ({
             registerImportedBackupService: register,
@@ -234,7 +234,7 @@ export function createImportRouteLifecycleHarness() {
         validate,
         acquire,
         receive,
-        copy,
+        stageBackup,
         register,
         publish,
         publishAudit,

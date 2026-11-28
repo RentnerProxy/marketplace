@@ -1,27 +1,9 @@
 import { runCoreCommandService } from '@/server/Core/command.service.ts'
 import { getRequiredServerEnvironment } from '@/server/Runtime/environment.service.ts'
-import { BACKUP_POSTGRES_TIMEOUT_SECONDS } from '@/config/backup.config.ts'
-import type { PostgresCoreOperation } from './Types/postgres-process.types.ts'
-
-function getPostgresCommandTimeoutMs() {
-    const configured =
-        process.env.BACKUP_POSTGRES_TIMEOUT_SECONDS?.trim() ??
-        String(BACKUP_POSTGRES_TIMEOUT_SECONDS.default)
-    const seconds = Number(configured)
-    if (
-        !/^\d+$/.test(configured) ||
-        !Number.isSafeInteger(seconds) ||
-        seconds < BACKUP_POSTGRES_TIMEOUT_SECONDS.min ||
-        seconds > BACKUP_POSTGRES_TIMEOUT_SECONDS.max
-    )
-        throw new Error(
-            `BACKUP_POSTGRES_TIMEOUT_SECONDS muss zwischen ${BACKUP_POSTGRES_TIMEOUT_SECONDS.min} und ${BACKUP_POSTGRES_TIMEOUT_SECONDS.max} Sekunden liegen.`,
-        )
-    return seconds * 1000
-}
+import { getPostgresCommandTimeoutMs } from '@/server/Runtime/backup-environment.service.ts'
 
 async function runPostgresCommand(
-    operation: PostgresCoreOperation,
+    operation: 'postgresDump' | 'postgresRestore',
     filePath: string,
 ) {
     const timeoutMs = getPostgresCommandTimeoutMs()

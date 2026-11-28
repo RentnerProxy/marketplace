@@ -226,6 +226,38 @@ beforeEach(() => {
 })
 
 describe('Start password-reset privacy middleware', () => {
+    it('falls back to the request origin in development when ORIGIN is unset', async () => {
+        const configuredOrigin = process.env.ORIGIN
+        const development = process.env.DEV
+        try {
+            delete process.env.ORIGIN
+            process.env.DEV = 'true'
+            const send = (origin: string) =>
+                dispatch(
+                    requestFor('/_serverFn/synthetic', 'POST', { origin }),
+                    'serverFn',
+                )
+
+            expect((await send('https://app.example.test')).status).toBe(200)
+            expect((await send('https://other.example.test')).status).toBe(403)
+            process.env.ORIGIN = 'https://configured.example.test'
+            expect((await send('https://app.example.test')).status).toBe(403)
+            expect((await send('https://configured.example.test')).status).toBe(
+                200,
+            )
+
+            delete process.env.DEV
+            delete process.env.ORIGIN
+            expect((await send('https://app.example.test')).status).toBe(403)
+            expect((await send('')).status).toBe(403)
+        } finally {
+            if (configuredOrigin === undefined) delete process.env.ORIGIN
+            else process.env.ORIGIN = configuredOrigin
+            if (development === undefined) delete process.env.DEV
+            else process.env.DEV = development
+        }
+    })
+
     it('reconciles privacy, status and cookies through the real Start middleware pipeline', async () => {
         terminal.mockResolvedValueOnce(
             new Response('Synthetic framework body', {
@@ -247,7 +279,7 @@ describe('Start password-reset privacy middleware', () => {
             'synthetic_first=1; HttpOnly',
         ])
         expect(await response.text()).toBe('Synthetic framework body')
-        expect(restoreGate).toHaveBeenCalledTimes(1)
+        expect(restoreGate).not.toHaveBeenCalled()
         expect(barrier).toHaveBeenCalledTimes(1)
     })
 
@@ -352,7 +384,7 @@ describe('Start password-reset privacy middleware', () => {
                 new URL(request.url).pathname,
             )
             expect(observedResults[0].context).toBe(markerContext)
-            expect(restoreGate).toHaveBeenCalledTimes(1)
+            expect(restoreGate).not.toHaveBeenCalled()
             expect(barrier).toHaveBeenCalledTimes(1)
             expect(barrier).toHaveBeenCalledWith(expect.any(Function), {
                 signal: request.signal,
@@ -369,6 +401,7 @@ describe('Start password-reset privacy middleware', () => {
                 'retry-after': '3',
             },
         })
+        barrier.mockRejectedValueOnce(new RestoreInProgressError())
         restoreGate.mockResolvedValueOnce(restoreResponse)
         const response = await dispatch(
             requestFor('/password-reset', 'GET', { accept: 'text/html' }),
@@ -381,7 +414,8 @@ describe('Start password-reset privacy middleware', () => {
         )
         expect(response.headers.get('retry-after')).toBe('3')
         expectPrivacy(response.headers)
-        expect(barrier).not.toHaveBeenCalled()
+        expect(barrier).toHaveBeenCalledTimes(1)
+        expect(restoreGate).toHaveBeenCalledTimes(1)
         expect(terminal).not.toHaveBeenCalled()
     })
 
@@ -393,7 +427,7 @@ describe('Start password-reset privacy middleware', () => {
             expect(response.status).toBe(503)
             expect(response.headers.get('retry-after')).toBe('3')
             expectPrivacy(response.headers)
-            expect(restoreGate).toHaveBeenCalledTimes(2)
+            expect(restoreGate).toHaveBeenCalledTimes(1)
             expect(terminal).not.toHaveBeenCalled()
         },
     )
@@ -412,7 +446,7 @@ describe('Start password-reset privacy middleware', () => {
 
             expect(response.status).toBe(site === 'same-origin' ? 200 : 403)
             expectPrivacy(response.headers)
-            expect(restoreGate).toHaveBeenCalledTimes(1)
+            expect(restoreGate).not.toHaveBeenCalled()
             expect(barrier).toHaveBeenCalledTimes(1)
             expect(terminal).toHaveBeenCalledTimes(
                 site === 'same-origin' ? 1 : 0,
@@ -441,9 +475,10 @@ describe('Start password-reset privacy middleware', () => {
         'preserves final error response privacy after a thrown %s failure',
         async (failureSource) => {
             const failure = new Error('Synthetic middleware failure')
-            if (failureSource === 'restore')
+            if (failureSource === 'restore') {
+                barrier.mockRejectedValueOnce(new RestoreInProgressError())
                 restoreGate.mockRejectedValueOnce(failure)
-            else if (failureSource === 'barrier')
+            } else if (failureSource === 'barrier')
                 barrier.mockRejectedValueOnce(failure)
             else terminal.mockRejectedValueOnce(failure)
             const log = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -596,9 +631,7 @@ describe('Start password-reset privacy middleware', () => {
             )
             expect(response.headers.has('pragma')).toBe(false)
             expect(eventResponses[0].headers.has('cache-control')).toBe(false)
-            expect(restoreGate).toHaveBeenCalledTimes(
-                path.startsWith('/assets/') ? 0 : 1,
-            )
+            expect(restoreGate).not.toHaveBeenCalled()
             expect(terminal).toHaveBeenCalledTimes(1)
         },
     )

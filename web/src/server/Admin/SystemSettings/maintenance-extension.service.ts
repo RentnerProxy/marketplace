@@ -10,7 +10,10 @@ import {
 import type { AuditReceipt } from '@/lib/AuditLogs/Types/audit.types.ts'
 import { requireMutationPermissionService } from '@/server/Auth/transaction-authorization.service.ts'
 import { logError } from '@/server/Logging/logger.ts'
-import { publishMaintenanceStateService } from '@/server/Maintenance/state.service.ts'
+import {
+    invalidateMaintenanceStateService,
+    publishMaintenanceStateService,
+} from '@/server/Maintenance/state.service.ts'
 import {
     clearPendingMaintenanceExtensionRequest,
     getPendingMaintenanceExtensionRequest,
@@ -145,6 +148,7 @@ export async function resolveMaintenanceExtensionRequestService(
         }
     }
 
+    if (data.status === 'approved') invalidateMaintenanceStateService()
     await publishCommittedAuditLogService(auditReceipt)
 
     if (data.status === 'approved') {

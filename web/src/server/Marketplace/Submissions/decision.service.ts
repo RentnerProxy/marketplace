@@ -10,7 +10,7 @@ import { parseApproval } from '../../../../../contracts/v1/index.ts'
 import type { SubmissionStatus } from '@/lib/Marketplace/Types/submission.types.ts'
 import { assertRetainedCandidate } from './candidate-review.service.ts'
 import { InvalidCandidateError } from './candidate-run.service.ts'
-import { candidateGitHubToken } from './github.service.ts'
+import { candidateGitHubToken } from './github-credentials.service.ts'
 import { assertCurrentNamespace } from './namespace.service.ts'
 import {
     RepositoryOwnershipError,
@@ -112,7 +112,7 @@ export async function decideCandidateService(
 
     const approvalClaim = await (async () => {
         if (input.action === 'reject') return null
-        const token = candidateGitHubToken()
+        const token = await candidateGitHubToken()
         if (!token) throw new Error('buildsUnavailable')
         try {
             return await checkCurrentCandidate(row, token)

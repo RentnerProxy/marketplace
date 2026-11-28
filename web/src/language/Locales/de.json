@@ -278,7 +278,8 @@
             "verifyDescription": "Bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.",
             "invalidVerification": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte registriere dich erneut.",
             "verificationFailed": "Deine E-Mail-Adresse konnte nicht bestätigt werden. Bitte versuche es erneut.",
-            "retryRegistration": "Registrierung erneut starten"
+            "retryRegistration": "Registrierung erneut starten",
+            "disabled": "Die öffentliche Registrierung ist derzeit geschlossen."
         },
         "passwordReset": {
             "validating": "Reset-Link wird geprüft …",
@@ -623,6 +624,10 @@
             "maintenanceDisabled": "Wartungsmodus wurde deaktiviert.",
             "maintenancePlanned": "Wartungsmodus wurde geplant.",
             "maintenanceSaveError": "Wartungsmodus konnte nicht gespeichert werden.",
+            "publicRegistration": "Öffentliche Registrierung",
+            "publicRegistrationDescription": "Erlaubt neue Marketplace-Konten per E-Mail oder über externe Anmeldedienste.",
+            "publicRegistrationSaved": "Die Registrierungseinstellung wurde gespeichert.",
+            "publicRegistrationSaveError": "Die Registrierungseinstellung konnte nicht gespeichert werden.",
             "maintenanceStartRequired": "Bitte wähle einen gültigen Startzeitpunkt aus.",
             "maintenanceToastTitle": "Wartungsmodus",
             "extensionRequestMissing": "Es gibt keinen offenen Antrag.",

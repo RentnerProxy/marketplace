@@ -1,6 +1,6 @@
-ARG BUN_VERSION=1.4.4
+ARG BUN_VERSION=1.4.5
 
-FROM rust:1.100.0-alpine3.24@sha256:de1e0058543a81ed7b046629167db587c67a94bdf37cce14eb27f0ec83baaffb AS core-sources
+FROM rust:1.100.0-alpine3.24 AS core-sources
 
 WORKDIR /app/core
 RUN apk add --no-cache musl-dev
@@ -16,7 +16,9 @@ COPY core/artifacts/Cargo.toml ./artifacts/
 COPY core/artifacts/src ./artifacts/src
 COPY core/tooling/Cargo.toml ./tooling/
 COPY core/tooling/src ./tooling/src
-COPY contracts/v1/contracts.schema.json /app/contracts/v1/contracts.schema.json
+COPY core/ffi/Cargo.toml ./ffi/Cargo.toml
+COPY core/ffi/src ./ffi/src
+COPY contracts/v1/contracts.schema.json contracts/v1/upstream-probe-fixtures.json /app/contracts/v1/
 
 FROM core-sources AS candidate-probe-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
@@ -31,30 +33,44 @@ FROM core-sources AS core-builder
 RUN --mount=type=cache,id=rentnerproxy-marketplace-cargo-registry,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,id=rentnerproxy-marketplace-cargo-musl-release,target=/app/core/target,sharing=locked \
     cargo build --release --locked --bins -p marketplace-core -p marketplace-app-pipeline \
+    && RUSTFLAGS='-C target-feature=-crt-static' cargo build --locked --profile ffi -p marketplace-storage-ffi \
     && mkdir /native \
     && find target/release -maxdepth 1 -type f -name 'marketplace-*' ! -name '*.d' -exec cp '{}' /native/ ';' \
+    && cp target/ffi/libmarketplace_storage.so /native/ \
     && test -x /native/marketplace-appliance \
     && test -x /native/marketplace-archive \
     && test -x /native/marketplace-app-pipeline \
     && test -x /native/marketplace-storage
 
-FROM valkey/valkey:9.1.4-alpine AS valkey-runtime
+FROM valkey/valkey:9.2.0-alpine AS valkey-runtime
 
 FROM oven/bun:${BUN_VERSION}-alpine AS base
 
 WORKDIR /app
 
-FROM alpine:3.24 AS runtime-base
+FROM postgres:18.7-alpine3.24 AS postgres-runtime
+
+# Marketplace starts PostgreSQL through its own supervisor and su-exec.
+RUN rm -f /usr/local/bin/gosu \
+    /usr/local/bin/docker-entrypoint.sh \
+    /usr/local/bin/docker-ensure-initdb.sh \
+    /usr/local/bin/docker-enforce-initdb.sh
+
+# Copy the filesystem so the appliance controls mounts, ports and startup.
+FROM scratch AS runtime-base
+COPY --from=postgres-runtime / /
 
 WORKDIR /app
 
 ENV BUN_RUNTIME_TRANSPILER_CACHE_PATH=0 \
-    BUN_INSTALL_BIN=/usr/local/bin
+    BUN_INSTALL_BIN=/usr/local/bin \
+    LANG=C.UTF-8 \
+    PGDATA=/data/postgresql/18/docker
 
 COPY --from=base /usr/local/bin/bun /usr/local/bin/bun
 
 RUN apk upgrade --no-cache \
-    && apk add --no-cache postgresql18 postgresql18-client su-exec tini bash openssl libgcc libstdc++ ca-certificates \
+    && apk add --no-cache su-exec tini bash openssl libgcc libstdc++ ca-certificates \
     && addgroup -g 1000 bun \
     && adduser -u 1000 -G bun -s /bin/sh -D bun \
     && addgroup -g 1001 valkey \
@@ -72,6 +88,7 @@ COPY --chmod=755 \
     /usr/local/bin/
 
 RUN bun --version \
+    && postgres --version | grep -E '^postgres \(PostgreSQL\) 18\.' \
     && pg_dump --version | grep -E '^pg_dump \(PostgreSQL\) 18\.' \
     && pg_restore --version | grep -E '^pg_restore \(PostgreSQL\) 18\.' \
     && valkey-server --version && valkey-cli --version
@@ -80,6 +97,7 @@ HEALTHCHECK --interval=30s --timeout=15s --start-period=5m --retries=3 \
     CMD ["container-healthcheck.sh"]
 
 ENTRYPOINT ["tini", "--", "container-entrypoint.sh"]
+STOPSIGNAL SIGTERM
 CMD ["start"]
 
 FROM base AS deps
@@ -167,7 +185,8 @@ COPY --from=core-builder /native/ /usr/local/bin/
 COPY --from=integration-web ./src ./web/src
 COPY core/tests/fixtures ./core/tests/fixtures
 ENV NODE_ENV=test \
-    CORE_BINARY_DIR=/usr/local/bin
+    CORE_BINARY_DIR=/usr/local/bin \
+    CORE_STORAGE_FFI=required
 HEALTHCHECK NONE
 USER bun
 ENTRYPOINT ["bun", "--no-env-file", "test", "--isolate", "--timeout", "30000", "--path-ignore-patterns", "__no_ignore__", ".core.test.ts"]
