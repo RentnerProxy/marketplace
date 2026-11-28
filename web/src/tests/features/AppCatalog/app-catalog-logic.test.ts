@@ -142,6 +142,8 @@ describe('app catalog logic', () => {
     it('reports failures only without earlier data and retries on request', () => {
         isError = true
         expect(renderHook(useAppCatalogLogic).state.isError).toBe(false)
+        catalog = []
+        expect(renderHook(useAppCatalogLogic).state.isError).toBe(false)
         catalog = undefined
         const failed = renderHook(useAppCatalogLogic)
         expect(failed.state.isError).toBe(true)

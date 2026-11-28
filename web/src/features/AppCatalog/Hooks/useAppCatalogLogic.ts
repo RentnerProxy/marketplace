@@ -63,7 +63,8 @@ export default function useAppCatalogLogic(): AppCatalogLogicReturn {
             apps,
             totalCount: allApps.length,
             isLoading,
-            isError: isError && allApps.length === 0,
+            // A failed refetch keeps earlier (even empty) data on screen.
+            isError: isError && data === undefined,
             isSignedIn,
             query,
             sort,
