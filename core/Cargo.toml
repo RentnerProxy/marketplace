@@ -50,3 +50,10 @@ strip = "debuginfo"
 [profile.ffi]
 inherits = "release"
 panic = "unwind"
+
+# Temporary: the app-sdk change for Rust candidates (RentnerProxy/app-sdk#8) until its release.
+[patch.crates-io]
+rentnerproxy-app-catalog = { git = "https://github.com/RentnerProxy/app-sdk", rev = "0a71ae7fab3eb2a601fc4490d3d45f93308c760c" }
+rentnerproxy-app-contracts = { git = "https://github.com/RentnerProxy/app-sdk", rev = "0a71ae7fab3eb2a601fc4490d3d45f93308c760c" }
+rentnerproxy-app-pipeline = { git = "https://github.com/RentnerProxy/app-sdk", rev = "0a71ae7fab3eb2a601fc4490d3d45f93308c760c" }
+rentnerproxy-artifacts = { git = "https://github.com/RentnerProxy/app-sdk", rev = "0a71ae7fab3eb2a601fc4490d3d45f93308c760c" }

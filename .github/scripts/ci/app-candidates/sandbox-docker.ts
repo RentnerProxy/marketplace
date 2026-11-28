@@ -30,8 +30,10 @@ export function attach(
     return runAppPipeline<null>('sandbox-attach', { args, ...options })
 }
 
-interface SandboxOptions {
+export interface SandboxOptions {
     target: AppManifest['target']
+    /** A local builder image ID; the pinned appliance image by default. */
+    image?: string
     network?: string
     user?: string
     memoryMiB: number
@@ -45,11 +47,18 @@ interface SandboxLifecycle {
     remove(name: string): Promise<unknown>
 }
 
+export function sandboxConfig({
+    image = applianceImage,
+    ...options
+}: SandboxOptions) {
+    return { image, ...options }
+}
+
 const dockerLifecycle: SandboxLifecycle = {
     create(name, options) {
         return runAppPipeline('sandbox-create', {
             name,
-            config: { image: applianceImage, ...options },
+            config: sandboxConfig(options),
         })
     },
     remove(name) {

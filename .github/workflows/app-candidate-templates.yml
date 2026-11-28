@@ -1,0 +1,62 @@
+name: App Candidate Templates
+
+# Builds the app templates through the reusable candidate pipeline as development candidates.
+# The pinned commits are the reviewed template states that new apps start from.
+on:
+    pull_request:
+        paths:
+            - '.github/workflows/app-candidate*.yml'
+            - '.github/actions/native-tools/**'
+            - '.github/scripts/ci/app-candidates/**'
+            - .github/scripts/native-tools.ts
+            - 'web/src/lib/Core/**'
+            - 'web/src/lib/Marketplace/**'
+            - web/src/config/submissions.config.ts
+            - '.github/scripts/ci/fixtures/app-candidate/**'
+            - .github/scripts/security/install-trivy.sh
+            - 'core/app-pipeline/**'
+            - 'core/tooling/**'
+            - 'core/Cargo.*'
+            - core/rust-toolchain.toml
+            - Dockerfile
+            - 'web/src/tests/tooling/GitHub/app-candidate-*.test.ts'
+            - package.json
+            - bun.lock
+            - bunfig.toml
+    push:
+        branches: [main]
+        paths:
+            - '.github/workflows/app-candidate*.yml'
+            - '.github/actions/native-tools/**'
+            - '.github/scripts/ci/app-candidates/**'
+            - .github/scripts/native-tools.ts
+            - 'web/src/lib/Core/**'
+            - 'web/src/lib/Marketplace/**'
+            - web/src/config/submissions.config.ts
+            - '.github/scripts/ci/fixtures/app-candidate/**'
+            - .github/scripts/security/install-trivy.sh
+            - 'core/app-pipeline/**'
+            - 'core/tooling/**'
+            - 'core/Cargo.*'
+            - core/rust-toolchain.toml
+            - Dockerfile
+            - 'web/src/tests/tooling/GitHub/app-candidate-*.test.ts'
+            - package.json
+            - bun.lock
+            - bunfig.toml
+
+permissions:
+    contents: read
+
+concurrency:
+    group: app-candidate-templates-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    rust:
+        name: Rust template
+        uses: ./.github/workflows/app-candidate.yml
+        with:
+            source_repository: RentnerProxy/app-template-rs
+            source_commit: caf873f06a334e81bfc41912c5630fc72fcb231d
+            artifact_prefix: template-rs

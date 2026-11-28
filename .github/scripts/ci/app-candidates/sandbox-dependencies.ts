@@ -12,6 +12,9 @@ import {
 interface Dependencies {
     packageSha256: string
     lockSha256?: string
+    /** Present for a Rust backend: the admitted core/Cargo.lock. */
+    cargoLockSha256?: string
+    hasCargoDependencies?: boolean
     path?: string
 }
 

@@ -95,7 +95,8 @@ jobs:
         name: Build and validate (${{ matrix.target }})
         needs: resolve
         runs-on: ${{ matrix.runner }}
-        timeout-minutes: 18
+        # Rust backends add a builder image, a crate fetch and a release build of up to 10 minutes.
+        timeout-minutes: 25
         strategy:
             fail-fast: false
             matrix:
