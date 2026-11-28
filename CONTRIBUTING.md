@@ -27,7 +27,7 @@ Use only an isolated development environment for contribution work; never access
 
 ## Code and generated files
 
-TypeScript application code lives under `web/src`; native filesystem and process operations live under `core`. Keep routes thin and preserve server-side authentication, authorization, input validation, and storage boundaries. Follow neighboring modules and the checked-in TypeScript, Oxlint, Bun formatter, rustfmt, and Clippy configuration. The [Rust core guide](core/README.md) describes ownership and compatibility contracts.
+TypeScript application code lives under `web/src`; native filesystem and process operations live under `core`. Keep routes thin and preserve server-side authentication, authorization, input validation, and storage boundaries. Follow neighboring modules and the checked-in TypeScript, Oxlint, Bun formatter, rustfmt, and Clippy configuration. The [Rust core guide](core/README.md) describes ownership and compatibility contracts. The app contracts and their fixtures live in [RentnerProxy/app-sdk](https://github.com/RentnerProxy/app-sdk) and are consumed as the published `@rentnerproxy/app-contracts` package and `rentnerproxy-*` crates; propose contract changes there.
 
 Keep TypeScript tests under `web/src/tests` and Rust tests under `core/tests`. Do not manually edit `web/src/routeTree.gen.ts`, build output, or other generated files. Regenerate them with their owning tools. Do not manually edit `web/drizzle`; propose schema changes in the schema source and generate migrations with `bun run db:generate`. Database migration execution requires the intended database and authorization; never use production data as a test fixture.
 

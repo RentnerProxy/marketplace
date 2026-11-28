@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import type { z } from 'zod'
-import type { Catalog } from '../../../../contracts/v1/index.ts'
+import type { Catalog } from '@rentnerproxy/app-contracts'
 import type {
     catalogPublicationQueue,
     catalogPublicationWork,

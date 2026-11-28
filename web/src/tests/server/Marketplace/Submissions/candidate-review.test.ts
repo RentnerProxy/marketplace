@@ -7,7 +7,7 @@ import {
 } from '@/server/Marketplace/Submissions/candidate-run.service.ts'
 import { verifySubmissionReceipt } from '@/server/Marketplace/Submissions/candidate-review.service.ts'
 import { candidateNamespace } from '@/server/Marketplace/Submissions/ownership.service.ts'
-import { appId } from '../../../../../../contracts/v1/primitives.ts'
+import { appId } from '@rentnerproxy/app-contracts/schemas'
 import {
     fixtureCandidate,
     fixtureClaim,

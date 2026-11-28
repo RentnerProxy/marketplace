@@ -4,7 +4,7 @@ import {
     imageCropAreaSchema,
     imageDataUrlSchema,
 } from '@/lib/Validation/zodSchemas.ts'
-import { appId } from '../../../../contracts/v1/primitives.ts'
+import { appId } from '@rentnerproxy/app-contracts/schemas'
 
 export const storeAppInputSchema = z.object({ appId })
 

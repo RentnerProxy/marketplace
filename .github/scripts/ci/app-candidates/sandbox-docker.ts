@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { AppManifest } from '../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
 import { runAppPipeline, runAppPipelineSync } from '../../native-tools.ts'
 
 export const applianceImage =

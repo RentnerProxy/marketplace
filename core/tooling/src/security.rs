@@ -1,4 +1,4 @@
-pub(crate) use marketplace_artifacts::invalid;
+pub(crate) use rentnerproxy_artifacts::invalid;
 use serde_json::{Value, json};
 use std::io;
 use std::path::Path;
@@ -30,7 +30,7 @@ pub fn execute(operation: &str, input: Value) -> io::Result<Value> {
         "checksum" => {
             let expected = string(&input, "expected")?;
             if !lower_hex(expected, 64)
-                || marketplace_artifacts::file_identity(
+                || rentnerproxy_artifacts::file_identity(
                     Path::new(string(&input, "path")?),
                     1024 * 1024 * 1024,
                 )?

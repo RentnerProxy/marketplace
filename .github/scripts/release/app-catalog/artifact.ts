@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, realpath, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import type { z } from 'zod'
-import { checkApprovalBinding } from '../../../../contracts/v1/index.ts'
+import { checkApprovalBinding } from '@rentnerproxy/app-contracts'
 import { CANDIDATE_PIPELINE as pipeline } from '../../../../web/src/config/submissions.config.ts'
 import { verifyNativeArtifactStream } from '../../../../web/src/lib/Core/native-tool.ts'
 import {

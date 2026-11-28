@@ -6,8 +6,8 @@ import {
     catalogPublisherEnvironment,
     catalogPublisherWorkflow,
 } from '@/lib/Marketplace/catalogPublication.ts'
-import { commit, githubId } from '../../../../../contracts/v1/primitives.ts'
-import type { Publication } from '../../../../../contracts/v1/index.ts'
+import { commit, githubId } from '@rentnerproxy/app-contracts/schemas'
+import type { Publication } from '@rentnerproxy/app-contracts'
 import { candidateGitHubToken } from './github-credentials.service.ts'
 import {
     candidateApiPath,
