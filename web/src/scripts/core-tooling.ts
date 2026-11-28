@@ -156,15 +156,6 @@ async function coverage() {
         },
         {
             args: [
-                process.execPath,
-                '--no-env-file',
-                'web/src/scripts/Contracts/generate-contracts.ts',
-                '--check',
-            ],
-            env: testEnv,
-        },
-        {
-            args: [
                 ...cov,
                 'report',
                 ...manifest,

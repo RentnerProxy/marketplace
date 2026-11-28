@@ -1,7 +1,7 @@
-use marketplace_app_pipeline::{
+use rentnerproxy_app_pipeline::{
     dependency, evidence, package, publication, sandbox, sbom, smoke, source,
 };
-use marketplace_artifacts::{FileIdentity, invalid, read_request, verify_stream};
+use rentnerproxy_artifacts::{FileIdentity, invalid, read_request, verify_stream};
 use serde_json::Value;
 use std::io::{self, Write};
 use std::path::Path;

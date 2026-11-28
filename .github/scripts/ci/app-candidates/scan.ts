@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import type { AppManifest } from '../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
 import { runAppPipeline, runAppPipelineSync } from '../../native-tools.ts'
 
 type ManifestIdentity = Pick<AppManifest, 'id' | 'version' | 'display'>

@@ -12,7 +12,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { validateCandidatePackage } from '../../../../../.github/scripts/ci/app-candidates/archive.ts'
-import type { AppManifest } from '../../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
 import { inspectCandidateLinkage } from './app-candidate-elf.test.helpers.ts'
 
 interface FixtureEntry {

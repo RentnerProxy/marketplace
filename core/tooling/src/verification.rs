@@ -2,8 +2,8 @@ use std::io;
 use std::path::Path;
 use std::sync::LazyLock;
 
-use marketplace_artifacts::{FileIdentity, invalid, parse_json, read_file};
 use regex::Regex;
+use rentnerproxy_artifacts::{FileIdentity, invalid, parse_json, read_file};
 use serde::Deserialize;
 use serde_json::{Value, json};
 

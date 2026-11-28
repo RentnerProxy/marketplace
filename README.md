@@ -117,7 +117,7 @@ Large binary payloads are read directly into the clearable destination buffer wh
 
 ## Project structure
 
-`web/` contains TypeScript source, public assets and the relocated Drizzle directory. `core/` contains Cargo and native programs for archives, storage, PostgreSQL tools and the appliance process manager. The manifest, Bun lockfile, web configuration and `drizzle.config.ts` remain at the root. Responsibilities, dependency decisions and verification commands are described in [core/README.md](core/README.md).
+`web/` contains TypeScript source, public assets and the relocated Drizzle directory. `core/` contains Cargo and native programs for archives, storage, PostgreSQL tools and the appliance process manager. App contracts, catalog verification and the package pipeline come from the published packages of [RentnerProxy/app-sdk](https://github.com/RentnerProxy/app-sdk); `core/app-catalog` and `core/app-pipeline` only hold their executables. The manifest, Bun lockfile, web configuration and `drizzle.config.ts` remain at the root. Responsibilities, dependency decisions and verification commands are described in [core/README.md](core/README.md).
 
 ```text
 web/src/features/<Area>/<Feature>/

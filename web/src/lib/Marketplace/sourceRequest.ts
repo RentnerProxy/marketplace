@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { commit } from '../../../../contracts/v1/primitives.ts'
+import { commit } from '@rentnerproxy/app-contracts/schemas'
 
 export const repositoryName = z
     .string()

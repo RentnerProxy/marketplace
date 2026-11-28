@@ -22,8 +22,8 @@ import {
     checkPublicationBinding,
     type Catalog,
     type Publication,
-} from '../../../../../contracts/v1/index.ts'
-import { candidate } from '../../../../../contracts/v1/publication.ts'
+} from '@rentnerproxy/app-contracts'
+import { candidate } from '@rentnerproxy/app-contracts/schemas'
 import { candidateGitHubToken } from './github-credentials.service.ts'
 import {
     assertCatalogPublisherRun,

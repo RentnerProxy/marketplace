@@ -4,7 +4,7 @@ import {
     RateLimitError,
 } from '@/server/RateLimit/rateLimit.service.ts'
 import { catalogPublicationRequest } from '@/lib/Marketplace/catalogPublication.ts'
-import { ContractError } from '../../../../../contracts/v1/index.ts'
+import { ContractError } from '@rentnerproxy/app-contracts'
 import { InvalidCandidateError } from './candidate-run.service.ts'
 import { RepositoryOwnershipError } from './ownership.service.ts'
 import {

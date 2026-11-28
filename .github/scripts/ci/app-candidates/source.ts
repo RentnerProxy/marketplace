@@ -9,11 +9,11 @@ import {
 } from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
-import type { AppManifest } from '../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
 import {
+    appManifest,
     commit as commitSha,
-    sourceIdentity,
-} from '../../../../contracts/v1/primitives.ts'
+} from '@rentnerproxy/app-contracts/schemas'
 import {
     repositoryName,
     sourceRequest,
@@ -22,7 +22,9 @@ import { runAppPipeline, runAppPipelineSync } from '../../native-tools.ts'
 
 export { sourceRequest }
 
-export const resolvedSource = sourceRequest.extend({ source: sourceIdentity })
+export const resolvedSource = sourceRequest.extend({
+    source: appManifest.shape.source,
+})
 
 type SourceRequest = z.output<typeof sourceRequest>
 type ResolvedSource = SourceRequest & { source: AppManifest['source'] }

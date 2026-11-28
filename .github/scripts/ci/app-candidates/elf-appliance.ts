@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, posix } from 'node:path'
-import type { AppManifest } from '../../../../contracts/v1/index.ts'
+import type { AppManifest } from '@rentnerproxy/app-contracts'
 import { runAppPipeline } from '../../native-tools.ts'
 import { attach, docker, withSandbox } from './sandbox-docker.ts'
 

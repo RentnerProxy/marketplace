@@ -7,6 +7,7 @@ minimumReleaseAgeExcludes = [
     "@rentnerkev/select",
     "@rentnerkev/toasts",
     "@rentnerkev/tooltips",
+    "@rentnerproxy/app-contracts",
 ]
 linker = "isolated"
 globalStore = false
@@ -40,8 +41,5 @@ ignorePatterns = [
     ".output/",
     "node_modules/",
     "web/src/routeTree.gen.ts",
-    "contracts/v1/contracts.schema.json",
-    "contracts/v1/openapi.json",
-    "contracts/v1/http-operations.generated.ts",
     "bun.lock",
 ]
